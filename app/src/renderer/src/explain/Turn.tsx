@@ -6,17 +6,9 @@ import { memo } from 'react'
 import { languageName, speaks, type Language } from '../../../shared/languages'
 import { Inline } from '../components/Inline'
 import type { Aid } from './aids'
+import { Icon } from '../components/Icon'
 
 export type TurnData = { id: string; from: 'learner' | 'duet'; text: string; via?: 'text' | 'voice' }
-
-function EyeIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-      <path d="M2.5 12s3.4-5.2 9.5-5.2 9.5 5.2 9.5 5.2-3.4 5.2-9.5 5.2S2.5 12 2.5 12Z" fill="none" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" strokeWidth="1.6" />
-    </svg>
-  )
-}
 
 export const Turn = memo(function Turn({
   id,
@@ -54,7 +46,7 @@ export const Turn = memo(function Turn({
             aria-label={showing ? 'Hide English meaning' : 'Show English meaning'}
             onClick={() => (showing ? onHide(id) : onReveal(id, text))}
           >
-            <EyeIcon />
+            <Icon name="eye" size={14} />
             {showing ? 'Hide meaning' : 'Meaning'}
           </button>
         )}

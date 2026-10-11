@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { say } from '../components/errors'
 import { restoredText } from './backup'
+import { Icon } from '../components/Icon'
 
 export type Notice = { text: string; error?: boolean }
 
@@ -61,7 +62,7 @@ export function BackupMenu({
         aria-label="More"
         onClick={() => setOpen(!open)}
       >
-        ⋯
+        <Icon name="more" size={18} />
       </button>
       {open && (
         <div className="menu" role="menu" onClick={close}>

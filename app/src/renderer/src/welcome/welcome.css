@@ -39,4 +39,6 @@ html, body { background: #101013; }
 .ok { color: #32d74b; font-size: 12.5px; font-weight: 500; }
 
 .legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 12px; margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--fg-2); }
-.legend .w { margin-right: 6px; }
+.legend li { display: flex; align-items: center; gap: 8px; }
+/* Each kind of word's colour, glowing as the words do. */
+.legend .swatch { width: 10px; height: 10px; border-radius: 50%; padding: 0; background: var(--c); box-shadow: 0 0 8px color-mix(in srgb, var(--c) 60%, transparent); }

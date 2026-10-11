@@ -9,6 +9,7 @@ import { type AudioPermission, type Language, type Level, type OverlaySettings, 
 import { Mascot } from '../components/Mascot'
 import { Words } from '../components/Words'
 import { JOBS, LEVELS } from '../overlay/words'
+import { Icon } from '../components/Icon'
 
 const STEPS = (['Language', 'Level', 'Permissions', 'Colours'] as const).filter(
   (step) => step !== 'Permissions' || window.duet.welcome.asksPermissions
@@ -29,7 +30,7 @@ function Check({ on, title, hint, state, children }: { on: boolean; title: strin
     <div className="check card-box">
       <div className="row">
         <i className={`tick${on ? ' on' : ''}`} aria-hidden="true">
-          {on ? '✓' : ''}
+          {on && <Icon name="check" size={12} />}
         </i>
         <span className="grow">
           <b>{title}</b>
@@ -205,16 +206,14 @@ export function Welcome(): React.JSX.Element {
             <ul className="legend">
               {(Object.keys(JOBS) as (keyof typeof JOBS)[]).map((job) => (
                 <li key={job}>
-                  <span className="w" data-t={job}>
-                    ●
-                  </span>
+                  <span className="swatch w" data-t={job} aria-hidden="true" />
                   {JOBS[job]}
                 </li>
               ))}
             </ul>
             <p className="muted">
-              Hover the strip for the full line and the English. Hover a word for what it means, and ☆ to keep it. Drag the strip anywhere;{' '}
-              ⚙ holds the rest.
+              Hover the strip for the full line and the English. Hover a word for what it means, and <Icon name="star" size={13} /> to keep it.
+              Drag the strip anywhere; <Icon name="settings" size={13} /> holds the rest.
             </p>
           </>
         )}

@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { joinTokens, mixedLine } from '../../../shared/levels'
 import type { OverlayLine, OverlaySettings, Token } from '../../../shared/types'
 import { JOBS, pairOf } from './words'
+import { Icon } from '../components/Icon'
 
 type Hover = { pair: number; job: Token['job']; left: number }
 
@@ -71,7 +72,8 @@ export function LineView({
           <span>{word.english}</span>
           <span className="row">
             <button type="button" className={`pill${starred(hover.pair) ? ' on' : ''}`} onClick={() => onStar(hover.pair)}>
-              {starred(hover.pair) ? '★ Saved' : '☆ Save word'}
+              <Icon name="star" size={13} filled={starred(hover.pair)} />
+              {starred(hover.pair) ? 'Saved' : 'Save word'}
             </button>
             <button type="button" className="pill" onClick={() => window.duet.explainLine(line.id)}>
               Explain line

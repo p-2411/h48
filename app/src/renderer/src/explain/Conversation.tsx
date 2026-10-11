@@ -3,7 +3,9 @@
 // when it ends its turns join the thread, so text picks up where voice left off. Card previews
 // (save, review) wait for the learner's click or answer; "Use my cards" opens saved cards to Duet.
 // Rendered with the line as its key, so a new line starts a new conversation (and a new voice hook).
+// The composer renders into `dock`, the tab's slot below its scrolling part.
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { ExplainState } from '../../../shared/explain'
 import type { Moment } from '../../../shared/moment'
 import { say } from '../components/errors'
@@ -26,7 +28,15 @@ function mascotState(status: TutorLiveStatus, replying: boolean, cheering: boole
   return replying ? 'thinking' : 'idle'
 }
 
-export function Conversation({ state, moment }: { state: ExplainState; moment: Moment }): React.JSX.Element {
+export function Conversation({
+  state,
+  moment,
+  dock
+}: {
+  state: ExplainState
+  moment: Moment
+  dock: HTMLElement | null
+}): React.JSX.Element {
   const live = useLiveTutor(moment)
   const { language } = moment
   const [draft, setDraft] = useState('')
@@ -40,7 +50,12 @@ export function Conversation({ state, moment }: { state: ExplainState; moment: M
   const thread: TurnData[] = [
     ...state.chat.map((message, index) => ({ id: `c${index}`, ...message })),
     ...(voiceOn
-      ? live.transcripts.map((turn) => ({ id: turn.id, from: turn.role === 'tutor' ? ('duet' as const) : ('learner' as const), text: turn.text, via: 'voice' as const }))
+      ? live.transcripts.map((turn) => ({
+          id: turn.id,
+          from: turn.role === 'tutor' ? ('duet' as const) : ('learner' as const),
+          text: turn.text,
+          via: 'voice' as const
+        }))
       : [])
   ]
   const aids = useTurnAids(thread, language)
@@ -48,7 +63,17 @@ export function Conversation({ state, moment }: { state: ExplainState; moment: M
 
   // Keep the newest thing in view: a turn (or a voice turn growing), Duet replying, a card, a result
   // or an error. On opening, with nothing in the conversation yet, the explanation stays in view.
-  const watched = [thread.length, thread.at(-1)?.text.length, state.replying, cards.card?.id, cards.pending?.id, cards.result?.actionId, state.chatError, live.error, cards.actionError]
+  const watched = [
+    thread.length,
+    thread.at(-1)?.text.length,
+    state.replying,
+    cards.card?.id,
+    cards.pending?.id,
+    cards.result?.actionId,
+    state.chatError,
+    live.error,
+    cards.actionError
+  ]
   const scrollKey = watched.join('|')
   const empty = watched.every((part) => !part)
   useEffect(() => {
@@ -57,7 +82,14 @@ export function Conversation({ state, moment }: { state: ExplainState; moment: M
 
   // A failed text reply can be asked again: main sends the same message without adding it twice.
   const last = state.chat.at(-1)
-  const unanswered = state.chatError && !state.replying && !voiceOn && last?.from === 'learner' && last.via === 'text' ? last.text : undefined
+  const unanswered =
+    state.chatError &&
+    !state.replying &&
+    !voiceOn &&
+    last?.from === 'learner' &&
+    last.via === 'text'
+      ? last.text
+      : undefined
   const { result } = cards
 
   return (
@@ -80,18 +112,33 @@ export function Conversation({ state, moment }: { state: ExplainState; moment: M
       {state.replying && <p className="turn duet muted">…</p>}
 
       {cards.card && <OpenedCard card={cards.card} onClose={cards.closeCard} />}
-      {cards.pending && <CardPreview pending={cards.pending} language={language} voiceOn={voiceOn} busy={cards.busy} onConfirm={cards.confirm} />}
+      {cards.pending && (
+        <CardPreview
+          pending={cards.pending}
+          language={language}
+          voiceOn={voiceOn}
+          busy={cards.busy}
+          onConfirm={cards.confirm}
+        />
+      )}
 
       {/* Results and errors are announced; the turns and the composer are not, so streaming voice
           doesn't flood a screen reader. Always rendered, so a new notice is read out. */}
       <div className="notices" role="status">
         {/* Duet's typed reply, for screen readers (spoken voice turns are heard already). */}
-        <span className="sr-only">{last?.from === 'duet' && last.via === 'text' ? `Duet: ${last.text}` : ''}</span>
+        <span className="sr-only">
+          {last?.from === 'duet' && last.via === 'text' ? `Duet: ${last.text}` : ''}
+        </span>
         {result && (
           <div className="notice row">
             <span>{result.message}</span>
             {(result.kind === 'saved-card' || result.kind === 'reviewed-card') && (
-              <button type="button" className="btn quiet" disabled={cards.busy} onClick={cards.undo}>
+              <button
+                type="button"
+                className="btn quiet"
+                disabled={cards.busy}
+                onClick={cards.undo}
+              >
                 Undo
               </button>
             )}
@@ -101,7 +148,11 @@ export function Conversation({ state, moment }: { state: ExplainState; moment: M
           <div className="notice error row">
             <span>{say(state.chatError, 'Could not answer that.')}</span>
             {unanswered && (
-              <button type="button" className="btn quiet" onClick={() => window.duet.explain.ask(unanswered)}>
+              <button
+                type="button"
+                className="btn quiet"
+                onClick={() => window.duet.explain.ask(unanswered)}
+              >
                 Try again
               </button>
             )}
@@ -113,7 +164,11 @@ export function Conversation({ state, moment }: { state: ExplainState; moment: M
             {live.status === 'error' && (
               <>
                 {live.microphoneBlocked && window.duet.welcome.asksPermissions && (
-                  <button type="button" className="btn quiet" onClick={() => window.duet.welcome.openSettings('microphone')}>
+                  <button
+                    type="button"
+                    className="btn quiet"
+                    onClick={() => window.duet.welcome.openSettings('microphone')}
+                  >
                     Open System Settings
                   </button>
                 )}
@@ -127,27 +182,34 @@ export function Conversation({ state, moment }: { state: ExplainState; moment: M
         {cards.actionError && <p className="notice error">{cards.actionError}</p>}
       </div>
 
-      <div className="composer">
-        <div className="composer-mascot">
-          <Mascot state={mascotState(live.status, !!state.replying || state.loading, cards.cheering)} scale={voiceOn ? 0.5 : 0.34} />
-        </div>
-        {isVoiceOn(live.status) ? (
-          <VoiceBar live={live} status={live.status} endButton={endButton} />
-        ) : (
-          <Composer
-            box={box}
-            draft={draft}
-            onDraft={setDraft}
-            language={language}
-            replying={!!state.replying}
-            explore={cards.explore}
-            onOpenCards={cards.openCards}
-            onStartVoice={() => void live.start()}
-          />
+      {dock &&
+        createPortal(
+          <div className="composer">
+            <div className="composer-mascot">
+              <Mascot
+                state={mascotState(live.status, !!state.replying || state.loading, cards.cheering)}
+                scale={voiceOn ? 0.5 : 0.34}
+              />
+            </div>
+            {isVoiceOn(live.status) ? (
+              <VoiceBar live={live} status={live.status} endButton={endButton} />
+            ) : (
+              <Composer
+                box={box}
+                draft={draft}
+                onDraft={setDraft}
+                language={language}
+                replying={!!state.replying}
+                explore={cards.explore}
+                onOpenCards={cards.openCards}
+                onStartVoice={() => void live.start()}
+              />
+            )}
+          </div>,
+          dock
         )}
-      </div>
-      {/* After the composer, which sticks to the bottom: scrolling here brings the newest turn
-          just above it rather than under it. */}
+      {/* Last in the scrolling part: scrolling here brings the newest turn to the bottom of it,
+          just above the composer. */}
       <div ref={end} aria-hidden="true" />
     </section>
   )

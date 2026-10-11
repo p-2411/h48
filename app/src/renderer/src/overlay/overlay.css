@@ -44,7 +44,7 @@
 .strip:has(.due) { padding-right: 86px; }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
 .dot.on { background: #32d74b; box-shadow: 0 0 6px #32d74b; }
-.due { font-size: 10.5px; font-weight: 600; color: #111; background: #fff; border-radius: 999px; padding: 2px 7px; }
+.due { font-size: 11px; font-weight: 600; color: #111; background: #fff; border-radius: 999px; padding: 2px 7px; }
 
 /* Actions: above the strip's right end, only while the pointer is on Duet (or the settings are
    open). Their row spans the strip's whole width, and its bottom padding bridges the gap to the
@@ -66,7 +66,8 @@
   background: var(--glass); border: 0.5px solid var(--glass-edge);
 }
 .meter-name { align-self: center; margin-right: 6px; font-size: 12px; font-weight: 500; color: var(--fg-2); }
-.meter .bar { display: flex; align-items: flex-end; height: 100%; padding: 0 2px 8px; }
+/* Each bar's click area is wider than the bar, so a level is easy to hit. */
+.meter .bar { display: flex; align-items: flex-end; height: 100%; padding: 0 3px 8px; }
 .meter .bar i { display: block; width: 4px; height: var(--h); border-radius: 2px; background: rgba(255, 255, 255, 0.22); transition: background 0.15s; }
 .meter .bar.on i { background: #fff; }
 .meter .bar:hover i { background: rgba(255, 255, 255, 0.6); }
@@ -87,11 +88,11 @@
   font-size: 13px;
 }
 .popup b { font-size: 17px; font-weight: 600; }
-.popup .job { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: color-mix(in srgb, var(--c, #555) 70%, #111); }
+.popup .job { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: color-mix(in srgb, var(--c, #555) 70%, #111); }
 .popup .job[data-t='n'] { --c: var(--c-n); } .popup .job[data-t='v'] { --c: var(--c-v); } .popup .job[data-t='a'] { --c: var(--c-a); }
 .popup .job[data-t='p'] { --c: var(--c-p); } .popup .job[data-t='x'] { --c: var(--c-x); } .popup .job[data-t='g'] { --c: var(--c-g); }
 .popup .row { display: flex; gap: 6px; margin-top: 6px; }
-.pill { font-size: 11.5px; font-weight: 500; padding: 4px 9px; border-radius: 999px; background: #efeff2; color: #111; }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; padding: 4px 9px; border-radius: 999px; background: #efeff2; color: #111; }
 .pill:hover { background: #e2e2e7; }
 .pill.on { background: #111; color: #fff; }
 
@@ -101,12 +102,12 @@
   position: absolute; z-index: 4; bottom: calc(100% + 40px); right: 0; width: 330px; max-height: 440px; overflow-y: auto; padding: 14px; border-radius: 16px;
   background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg); display: flex; flex-direction: column; gap: 9px;
 }
-.settings .label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.settings .label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
 .segment { display: flex; padding: 2px; border-radius: 8px; background: var(--fill); }
 .segment button { flex: 1; padding: 4px 6px; border-radius: 6px; font-size: 12px; color: var(--fg-2); }
 .segment button[aria-pressed='true'] { background: #636366; color: #fff; font-weight: 500; }
 .toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; font-size: 13px; }
-.toggle small { display: block; font-size: 11px; color: var(--text-3); }
+.toggle small { display: block; font-size: 12px; color: var(--text-3); }
 .switch { flex: none; position: relative; width: 28px; height: 17px; border-radius: 9px; background: var(--fill); transition: background 0.2s; }
 .switch i { position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; transition: transform 0.2s var(--ease); }
 .toggle.is-on .switch { background: #fff; }
@@ -116,7 +117,7 @@
 .keys { flex: none; min-width: 52px; padding: 4px 9px; border-radius: 7px; background: var(--fill); font-size: 13px; letter-spacing: 0.04em; }
 .keys:hover { background: rgba(255, 255, 255, 0.16); }
 .keys.on { background: #fff; color: #111; }
-.error-text { font-size: 11.5px; color: #ff6961; }
+.error-text { font-size: 12px; color: #ff6961; }
 
 /* Words that need the learner: a notice, the review nudge, a saved toast. */
 .notice, .toast { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--fg-2); }

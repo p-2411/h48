@@ -6,6 +6,8 @@ html, body, #root { height: 100%; overflow: hidden; background: transparent; }
 .window-head { -webkit-app-region: drag; margin-top: -40px; padding-top: 40px; }
 .window-head button { -webkit-app-region: no-drag; }
 .window > :last-child { flex: 1; min-height: 0; overflow: auto; padding-bottom: 20px; }
+/* Explain scrolls inside itself, above the dock with its composer. */
+.window > .explain-tab { overflow: hidden; padding-bottom: 0; }
 .window-head { display: flex; align-items: center; justify-content: space-between; }
 .script { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .script-row { width: 100%; display: grid; grid-template-columns: 40px 1fr; gap: 10px; padding: 9px 10px; border-radius: 10px; text-align: left; }

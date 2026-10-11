@@ -234,8 +234,10 @@ export async function translateForLearner(
       instructions:
         `Translate the ${languageName(language)} Duet just spoke into concise, natural English for a learner. Return only the translation. Preserve uncertainty and tone; do not add notes, romanisation, labels or quotation marks.`,
       input,
-      max_output_tokens: 220,
-      reasoning: { effort: 'low' }
+      // A plain rewrite needs no reasoning; with it on, reasoning used up the budget and long turns
+      // came back empty.
+      max_output_tokens: 1_200,
+      reasoning: { effort: 'none' }
     })
     const translation = response.output_text.trim()
     if (!translation) throw new Error('EMPTY_TRANSLATION')
@@ -271,8 +273,10 @@ export async function romaniseForLearner(
       store: false,
       instructions: reading.instructions,
       input,
-      max_output_tokens: 260,
-      reasoning: { effort: 'low' }
+      // A plain rewrite needs no reasoning; with it on, reasoning used up the budget and long turns
+      // came back empty.
+      max_output_tokens: 1_200,
+      reasoning: { effort: 'none' }
     })
     const romanised = response.output_text.trim()
     if (!romanised) throw new Error('EMPTY_READING')

@@ -6,6 +6,7 @@
 // dragged anywhere by its background.
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import type { SaveResult } from '../../../shared/cards'
+import { Icon } from '../components/Icon'
 import { say } from '../components/errors'
 import { LevelMeter } from './LevelMeter'
 import { LineView } from './LineView'
@@ -88,7 +89,7 @@ export function Overlay(): React.JSX.Element {
     if (!result) return
     const card = 'saved' in result ? result.saved : result.duplicate
     setStars((now) => ({ ...now, [key(pair)]: card.id }))
-    setToast('saved' in result ? { text: `★ Saved “${card.expression}”`, cardId: card.id } : { text: `Already saved “${card.expression}”` })
+    setToast('saved' in result ? { text: `Saved “${card.expression}”`, cardId: card.id } : { text: `Already saved “${card.expression}”` })
   }
 
   const notice = loaded ? actionable(status, settings.language) : undefined
@@ -114,10 +115,10 @@ export function Overlay(): React.JSX.Element {
             aria-label={stars[key()] ? 'Remove the saved line' : 'Save this line'}
             onClick={() => star()}
           >
-            {stars[key()] ? '★' : '☆'}
+            <Icon name="star" filled={!!stars[key()]} />
           </button>
           <button type="button" className="act icon" disabled={!current} title="Replay this line" aria-label="Replay this line" onClick={() => window.duet.replay(current?.id)}>
-            ↺
+            <Icon name="replay" />
           </button>
           <button
             type="button"
@@ -126,7 +127,7 @@ export function Overlay(): React.JSX.Element {
             aria-label="Settings"
             onClick={() => setSettingsOpen(!settingsOpen)}
           >
-            ⚙
+            <Icon name="settings" />
           </button>
         </div>
 

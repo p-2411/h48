@@ -5,7 +5,8 @@
   --fg: #fff;
   --fg-2: #d6d6d6;
   --text-2: #a6a6a6;
-  --text-3: #767676;
+  /* The faintest text: 5.2 to 6.4:1 on every Duet surface, so small labels stay readable. */
+  --text-3: #8e8e93;
   --fill: rgba(118, 118, 128, 0.24);
   --c-n: #4da3ff;
   --c-v: #ff9f0a;
@@ -24,6 +25,10 @@ html, body, #root { height: 100%; margin: 0; background: transparent; overflow: 
    than pushing its box wider; text with spaces, and Japanese, still wraps where it normally would. */
 body { overflow-wrap: anywhere; }
 button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+/* A button that can't be pressed looks it, everywhere (some kinds dim further on their own). */
+button:disabled { cursor: default; opacity: 0.45; }
+/* Icons sit on the text's centre line and keep their size in tight rows. */
+.icon { flex: none; vertical-align: -0.15em; }
 :focus-visible { outline: 2px solid #fff; outline-offset: 2px; border-radius: 4px; }
 
 /* Words glow a little in the colour of their job; glue words stay flat. */

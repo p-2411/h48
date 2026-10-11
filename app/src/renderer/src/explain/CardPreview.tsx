@@ -4,6 +4,7 @@ import type { Language } from '../../../shared/languages'
 import { RATINGS } from '../../../shared/cards'
 import type { PendingTutorAction, ReviewRating, TutorCard } from '../../../shared/tutor'
 import { clock } from '../components/time'
+import { Icon } from '../components/Icon'
 
 /** A save or review preview. Its buttons are disabled while a confirm is out (`busy`). */
 export function CardPreview({
@@ -63,7 +64,7 @@ export function OpenedCard({ card, onClose }: { card: TutorCard; onClose: () => 
         <span className="label">Your card</span>
         <span className="spacer" />
         <button type="button" className="btn quiet" aria-label="Close the card" onClick={onClose}>
-          ×
+          <Icon name="close" size={14} />
         </button>
       </div>
       <p className="big-line" lang={card.language}>

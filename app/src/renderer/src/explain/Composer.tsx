@@ -3,6 +3,7 @@
 import type { RefObject } from 'react'
 import type { Language } from '../../../shared/languages'
 import { focusMessageBox } from './focus'
+import { Icon } from '../components/Icon'
 
 // Common questions that fill in the message box (to send as is, or finish first).
 const PILLS = [
@@ -81,10 +82,7 @@ export function Composer({
           Send
         </button>
         <button type="button" className="btn mic" title="Talk instead: Duet hears you, and how you say it" aria-label="Talk with Duet" onClick={onStartVoice}>
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-            <rect x="5.5" y="1.5" width="5" height="8.5" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
-            <path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-          </svg>
+          <Icon name="mic" />
         </button>
       </div>
       <p className="faint">The microphone is used only while you talk. Audio is not saved.</p>

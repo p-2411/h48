@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Script as ScriptData } from '../../../shared/types'
 import { clock } from '../components/time'
 import { Words } from '../components/Words'
+import { Icon } from '../components/Icon'
 
 export function Script({ script, current }: { script: ScriptData; current: number | null }): React.JSX.Element {
   const list = useRef<HTMLOListElement>(null)
@@ -76,7 +77,8 @@ export function Script({ script, current }: { script: ScriptData; current: numbe
                   }
                 }}
               >
-                {saved.has(line.id) ? '★ Saved' : saving.has(line.id) ? 'Saving…' : failed.has(line.id) ? 'Retry save' : '☆ Save'}
+                <Icon name="star" size={14} filled={saved.has(line.id)} />
+                {saved.has(line.id) ? 'Saved' : saving.has(line.id) ? 'Saving…' : failed.has(line.id) ? 'Retry save' : 'Save'}
               </button>
             </span>
           </li>
