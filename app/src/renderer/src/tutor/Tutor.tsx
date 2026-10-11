@@ -1,6 +1,6 @@
 // Duet keeps the current video phrase close without letting it crowd out the conversation. Voice,
 // hidden meanings, cards and confirmations share one readable surface.
-import { useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import type { Moment } from '../../../shared/moment'
 import type {
   PendingTutorAction,
@@ -8,10 +8,10 @@ import type {
   TutorActionResult,
   TutorCard
 } from '../../../shared/tutor'
-import { languageModule, languageName, speaks } from '../../../shared/languages'
+import { languageModule, languageName, speaks, type Language } from '../../../shared/languages'
 import { clock } from '../components/time'
 import { DuetMascot } from './DuetMascot'
-import { ENGLISH_HELP_DELAY_MS } from './timing'
+import { ENGLISH_HELP_DELAY_MS, TURN_SETTLE_MS } from './timing'
 import { useLiveTutor, type TranscriptSegment, type TutorLiveStatus } from './useLiveTutor'
 
 const STATUS: Record<TutorLiveStatus, string> = {
@@ -30,7 +30,7 @@ const STATUS: Record<TutorLiveStatus, string> = {
 const RATINGS: ReviewRating[] = ['again', 'hard', 'good', 'easy']
 
 type Translation = { source: string; loading: boolean; text?: string; error?: string }
-type Pronunciation = { source: string; loading: boolean; text?: string }
+type Pronunciation = { source: string; loading: boolean; text?: string; failed?: boolean }
 
 function EyeIcon(): React.JSX.Element {
   return (
@@ -50,6 +50,69 @@ function CardsIcon(): React.JSX.Element {
   )
 }
 
+type TurnViewProps = {
+  turn: TranscriptSegment
+  language: Language
+  /** The live status for the latest Duet turn; 'idle' for older ones so their mascots rest. */
+  status: TutorLiveStatus
+  revealed: boolean
+  translation?: Translation
+  pronunciation?: Pronunciation
+  onReveal: (turn: TranscriptSegment) => void
+  onHide: (turnId: string) => void
+}
+
+/** One turn of the conversation. Memoised, so a streaming turn doesn't re-render all the others. */
+const TurnView = memo(function TurnView({
+  turn,
+  language,
+  status,
+  revealed,
+  translation,
+  pronunciation,
+  onReveal,
+  onHide
+}: TurnViewProps): React.JSX.Element {
+  const canReveal = turn.role === 'tutor' && speaks(language, turn.text)
+  return (
+    <article className={`turn ${turn.role}`}>
+      <header className="turn-heading">
+        <span className="speaker">
+          {turn.role === 'tutor' && <DuetMascot status={status} small />}
+          {turn.role === 'learner' ? 'You' : 'Duet'}
+        </span>
+        {canReveal && (
+          <button
+            type="button"
+            className={`meaning-button${revealed ? ' is-on' : ''}`}
+            aria-label={revealed ? 'Hide English meaning' : 'Reveal English meaning'}
+            title={revealed ? 'Hide English meaning' : 'Reveal English meaning'}
+            onClick={() => (revealed ? onHide(turn.id) : onReveal(turn))}
+          >
+            <EyeIcon />
+            <span>{revealed ? 'Hide meaning' : 'Meaning'}</span>
+          </button>
+        )}
+      </header>
+      <p className="turn-text" lang={canReveal ? language : undefined}>
+        {turn.text}
+      </p>
+      {canReveal && pronunciation?.text && (
+        <p className="turn-pronunciation" aria-label={`${languageName(language)} pronunciation`}>
+          {pronunciation.text}
+        </p>
+      )}
+      {revealed && (
+        <p className={`turn-meaning${translation?.error ? ' has-error' : ''}`}>
+          {translation?.loading
+            ? 'Revealing meaning…'
+            : (translation?.text ?? translation?.error ?? 'Meaning unavailable.')}
+        </p>
+      )}
+    </article>
+  )
+})
+
 export function Tutor(): React.JSX.Element {
   const [moment, setMoment] = useState<Moment>()
   const [card, setCard] = useState<TutorCard>()
@@ -65,6 +128,10 @@ export function Tutor(): React.JSX.Element {
   const [exploreEnabled, setExploreEnabled] = useState(false)
   const transcriptEnd = useRef<HTMLDivElement>(null)
   const helpOffered = useRef(new Set<string>())
+  // The text each turn's pronunciation or meaning was last asked for, so a paid call isn't
+  // repeated for the same words, even after a failure.
+  const pronouncing = useRef(new Map<string, string>())
+  const translating = useRef(new Map<string, string>())
   const autoStartClaimed = useRef(false)
   const live = useLiveTutor(moment)
 
@@ -87,6 +154,8 @@ export function Tutor(): React.JSX.Element {
       setRevealed(new Set())
       setTranslations({})
       setPronunciations({})
+      pronouncing.current.clear()
+      translating.current.clear()
       setExploreEnabled(false)
       autoStartClaimed.current = false
       helpOffered.current.clear()
@@ -133,12 +202,18 @@ export function Tutor(): React.JSX.Element {
   useEffect(() => {
     // Chromium can return a Promise here. Never return it from an effect: React would treat it as
     // a cleanup callback and crash Duet as soon as the transcript changes.
+    // Only a new turn scrolls; scrolling on every streamed word made the view jitter.
     transcriptEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-  }, [live.transcripts])
-
-  useEffect(() => {
-    if (live.transcripts.length > 0) setContextOpen(false)
   }, [live.transcripts.length])
+
+  // Fold the phrase away when the first turn arrives. Adjusting state while rendering is React's
+  // pattern for this; an effect would cost an extra render pass.
+  const hasTurns = live.transcripts.length > 0
+  const [hadTurns, setHadTurns] = useState(hasTurns)
+  if (hasTurns !== hadTurns) {
+    setHadTurns(hasTurns)
+    if (hasTurns) setContextOpen(false)
+  }
 
   useEffect(() => {
     if (closeAfterEnd && live.status === 'ended') window.duet.tutor.close()
@@ -165,31 +240,94 @@ export function Tutor(): React.JSX.Element {
   useEffect(() => {
     if (!lastTurn || lastTurn.role !== 'tutor' || !moment || !languageModule(moment.language).reading) return
     if (!speaks(moment.language, lastTurn.text)) return
-    const source = lastTurn.text
-    const existing = pronunciations[lastTurn.id]
-    if (existing?.source === source && (existing.loading || existing.text)) return
+    const { id, text: source } = lastTurn
+    if (pronouncing.current.get(id) === source) return
+    // Wait for the turn to settle, so a half-spoken turn isn't sent and then sent again.
     const timer = window.setTimeout(() => {
-      setPronunciations((current) => ({
-        ...current,
-        [lastTurn.id]: { source, loading: true }
-      }))
+      pronouncing.current.set(id, source)
+      setPronunciations((current) => ({ ...current, [id]: { source, loading: true } }))
+      // Results for words the turn has since outgrown are dropped.
       window.duet.tutor
         .pronounce(source)
         .then((text) =>
-          setPronunciations((current) => ({
-            ...current,
-            [lastTurn.id]: { source, loading: false, text }
-          }))
+          setPronunciations((current) =>
+            current[id]?.source === source
+              ? { ...current, [id]: { source, loading: false, text } }
+              : current
+          )
         )
         .catch(() =>
-          setPronunciations((current) => ({
-            ...current,
-            [lastTurn.id]: { source, loading: false }
-          }))
+          setPronunciations((current) =>
+            current[id]?.source === source
+              ? { ...current, [id]: { source, loading: false, failed: true } }
+              : current
+          )
         )
-    }, 550)
+    }, TURN_SETTLE_MS)
     return () => window.clearTimeout(timer)
-  }, [lastTurn, moment, pronunciations])
+  }, [lastTurn, moment])
+
+  const requestTranslation = useCallback((id: string, source: string): void => {
+    if (translating.current.get(id) === source) return
+    translating.current.set(id, source)
+    setTranslations((current) => ({ ...current, [id]: { source, loading: true } }))
+    // Results for words the turn has since outgrown are dropped.
+    window.duet.tutor
+      .translate(source)
+      .then((text) =>
+        setTranslations((current) =>
+          current[id]?.source === source
+            ? { ...current, [id]: { source, loading: false, text } }
+            : current
+        )
+      )
+      .catch((error: unknown) => {
+        // Let the learner retry by pressing Meaning again.
+        if (translating.current.get(id) === source) translating.current.delete(id)
+        setTranslations((current) =>
+          current[id]?.source === source
+            ? {
+                ...current,
+                [id]: {
+                  source,
+                  loading: false,
+                  error: error instanceof Error ? error.message : 'Could not reveal the meaning.'
+                }
+              }
+            : current
+        )
+      })
+  }, [])
+
+  // A meaning revealed while Duet was still speaking covers only part of the turn. Ask again for
+  // the whole turn once it settles.
+  useEffect(() => {
+    if (!lastTurn || !revealed.has(lastTurn.id)) return
+    const asked = translating.current.get(lastTurn.id)
+    if (asked === undefined || asked === lastTurn.text) return
+    const timer = window.setTimeout(
+      () => requestTranslation(lastTurn.id, lastTurn.text),
+      TURN_SETTLE_MS
+    )
+    return () => window.clearTimeout(timer)
+  }, [lastTurn, revealed, requestTranslation])
+
+  const reveal = useCallback(
+    (turn: TranscriptSegment): void => {
+      setRevealed((current) => new Set(current).add(turn.id))
+      helpOffered.current.add(turn.id)
+      requestTranslation(turn.id, turn.text)
+    },
+    [requestTranslation]
+  )
+
+  const hideMeaning = useCallback((turnId: string): void => {
+    setRevealed((current) => {
+      const next = new Set(current)
+      next.delete(turnId)
+      return next
+    })
+  }, [])
 
   if (!moment)
     return (
@@ -204,6 +342,7 @@ export function Tutor(): React.JSX.Element {
   const canStart = ['idle', 'ended', 'error'].includes(live.status)
   const cardMoment = card?.source.kind === 'video' ? card.source.moment : undefined
   const latestRating = card?.reviews.filter((review) => !review.undone).at(-1)?.rating
+  const lastTutorId = live.transcripts.findLast((turn) => turn.role === 'tutor')?.id
 
   const explore = async (): Promise<void> => {
     try {
@@ -213,41 +352,6 @@ export function Tutor(): React.JSX.Element {
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'Could not enable saved history.')
     }
-  }
-
-  const reveal = async (turn: TranscriptSegment): Promise<void> => {
-    setRevealed((current) => new Set(current).add(turn.id))
-    helpOffered.current.add(turn.id)
-    const existing = translations[turn.id]
-    if (existing?.source === turn.text && (existing.loading || existing.text)) return
-    setTranslations((current) => ({
-      ...current,
-      [turn.id]: { source: turn.text, loading: true }
-    }))
-    try {
-      const translation = await window.duet.tutor.translate(turn.text)
-      setTranslations((current) => ({
-        ...current,
-        [turn.id]: { source: turn.text, loading: false, text: translation }
-      }))
-    } catch (error) {
-      setTranslations((current) => ({
-        ...current,
-        [turn.id]: {
-          source: turn.text,
-          loading: false,
-          error: error instanceof Error ? error.message : 'Could not reveal the meaning.'
-        }
-      }))
-    }
-  }
-
-  const hideMeaning = (turnId: string): void => {
-    setRevealed((current) => {
-      const next = new Set(current)
-      next.delete(turnId)
-      return next
-    })
   }
 
   const confirm = async (rating?: ReviewRating): Promise<void> => {
@@ -363,49 +467,19 @@ export function Tutor(): React.JSX.Element {
           </div>
         )}
 
-        {live.transcripts.map((turn) => {
-          const canReveal = turn.role === 'tutor' && speaks(moment.language, turn.text)
-          const isRevealed = revealed.has(turn.id)
-          const translation = translations[turn.id]
-          const pronunciation = pronunciations[turn.id]
-          return (
-            <article key={turn.id} className={`turn ${turn.role}`}>
-              <header className="turn-heading">
-                <span className="speaker">
-                  {turn.role === 'tutor' && <DuetMascot status={live.status} small />}
-                  {turn.role === 'learner' ? 'You' : 'Duet'}
-                </span>
-                {canReveal && (
-                  <button
-                    type="button"
-                    className={`meaning-button${isRevealed ? ' is-on' : ''}`}
-                    aria-label={isRevealed ? 'Hide English meaning' : 'Reveal English meaning'}
-                    title={isRevealed ? 'Hide English meaning' : 'Reveal English meaning'}
-                    onClick={() => (isRevealed ? hideMeaning(turn.id) : void reveal(turn))}
-                  >
-                    <EyeIcon />
-                    <span>{isRevealed ? 'Hide meaning' : 'Meaning'}</span>
-                  </button>
-                )}
-              </header>
-              <p className="turn-text" lang={canReveal ? moment.language : undefined}>
-                {turn.text}
-              </p>
-              {canReveal && pronunciation?.text && (
-                <p className="turn-pronunciation" aria-label={`${languageName(moment.language)} pronunciation`}>
-                  {pronunciation.text}
-                </p>
-              )}
-              {isRevealed && (
-                <p className={`turn-meaning${translation?.error ? ' has-error' : ''}`}>
-                  {translation?.loading
-                    ? 'Revealing meaning…'
-                    : (translation?.text ?? translation?.error ?? 'Meaning unavailable.')}
-                </p>
-              )}
-            </article>
-          )
-        })}
+        {live.transcripts.map((turn) => (
+          <TurnView
+            key={turn.id}
+            turn={turn}
+            language={moment.language}
+            status={turn.id === lastTutorId ? live.status : 'idle'}
+            revealed={revealed.has(turn.id)}
+            translation={translations[turn.id]}
+            pronunciation={pronunciations[turn.id]}
+            onReveal={reveal}
+            onHide={hideMeaning}
+          />
+        ))}
 
         {card && (
           <section className="opened-card" aria-label="Earlier encounter">
