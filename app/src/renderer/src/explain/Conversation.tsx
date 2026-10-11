@@ -6,7 +6,7 @@
 // Explain renders it with the line as its key, so a new line starts a new conversation (and a new
 // voice hook). The composer renders into `dock`, the page's slot below its scrolling part; the
 // mascot (thinking, listening, speaking) into `mascotSlot`, in the page's top bar.
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { createPortal } from 'react-dom'
 import type { Language } from '../../../shared/languages'
@@ -73,7 +73,7 @@ export function Conversation({
   /** Where the mascot goes: the page's top bar, at this times its full size. */
   mascotSlot: HTMLElement | null
   mascotScale?: number
-  /** A free conversation (Talk): no line, and the cards open to Duet from the start. */
+  /** A free conversation (Talk): no line; it sets what voice talks about and the suggestions. */
   free?: boolean
   /** Starts voice as it opens (Talk opened from the hub's mic). */
   startVoice?: boolean
@@ -85,13 +85,15 @@ export function Conversation({
   const cards = useCardActions()
   const endButton = useVoiceHandoff(live, box, bridge.voiceTurns)
   const voiceOn = isVoiceOn(live.status)
+  // Voice starts on this window's conversation (claimed first; voice starts even if that fails).
+  const beginVoice = useCallback(() => void bridge.claim().catch(() => undefined).then(() => live.start()), [bridge, live])
   // Voice asked for on opening starts once (not again when StrictMode runs effects twice).
   const voiceStarted = useRef(false)
   useEffect(() => {
     if (!startVoice || voiceStarted.current) return
     voiceStarted.current = true
-    void bridge.claim().catch(() => undefined).then(() => live.start())
-  }, [startVoice, bridge, live])
+    beginVoice()
+  }, [startVoice, beginVoice])
 
   // The thread: what main keeps, then the voice conversation under way.
   const thread: TurnData[] = [
@@ -241,7 +243,7 @@ export function Conversation({
                     Open System Settings
                   </button>
                 )}
-                <button type="button" className="btn quiet" onClick={() => void bridge.claim().catch(() => undefined).then(() => live.start())}>
+                <button type="button" className="btn quiet" onClick={beginVoice}>
                   Try voice again
                 </button>
               </>
@@ -274,7 +276,7 @@ export function Conversation({
                 onDraft={setDraft}
                 language={language}
                 replying={!!state.replying}
-                onStartVoice={() => void bridge.claim().catch(() => undefined).then(() => live.start())}
+                onStartVoice={beginVoice}
                 onSend={bridge.ask}
                 free={free}
               />

@@ -1,13 +1,14 @@
 // Checks the strip's state: which line it shows (overlay/useOverlay.ts chooseLine), the status dot
-// (overlay/notice.ts statusDot), the settings upgrade (main/upgrade-settings.ts) and the overlay
-// window's bounds near the top of the screen (main/windows/overlay-size.ts).
+// (overlay/notice.ts statusDot), the settings upgrade (main/upgrade-settings.ts), the overlay
+// window's bounds near the top of the screen (main/windows/overlay-size.ts), swipes and level steps
+// (overlay/wheel.ts, overlay/levels.ts), and the app's name and data folder (main/data-folder.ts).
 // Run: npx jiti scripts/test-overlay.mjs
 import { join } from 'node:path'
 import { chooseLine } from '../src/renderer/src/overlay/useOverlay.ts'
 import { statusDot } from '../src/renderer/src/overlay/notice.ts'
 import { hoverOn } from '../src/renderer/src/overlay/words.ts'
 import { WheelSteps } from '../src/renderer/src/overlay/wheel.ts'
-import { levelAt } from '../src/renderer/src/overlay/levels.ts'
+import { LevelSteps, levelAt } from '../src/renderer/src/overlay/levels.ts'
 import { upgradeSettings } from '../src/main/upgrade-settings.ts'
 import { settingsChange } from '../src/main/ipc/settings-change.ts'
 import { OVERLAY, overlayBounds, stripOnScreen } from '../src/main/windows/overlay-size.ts'
@@ -140,6 +141,27 @@ check(strip.step(40, 10, 1530) === 0 && strip.step(0, 30, 1560) === 0, 'the same
 check(strip.step(2, -60, 1900) === -1, 'later, a swipe left: one step down')
 // The level slider: the level under the pointer, by where it is along the row (26 px a level),
 // kept to Auto–5 however far the drag goes.
+// One level at a time, however quick: each step starts from the last one asked for, and the settings
+// coming back (a beat later) don't pull it back to a step already passed.
+const steps = new LevelSteps(1)
+check(steps.step(1, 0).next === 2 && steps.step(1, 10).next === 3, 'two quick steps: 1 → 2 → 3')
+steps.heard(2, 20)
+check(steps.step(1, 30).next === 4, 'the settings echoing the first step (2) don\'t pull the next one back')
+steps.heard(3, 40)
+steps.heard(4, 50)
+check(steps.step(-1, 60).next === 3, 'once the settings have caught up, steps go on from there')
+const ends = new LevelSteps(5)
+const atTop = ends.step(1, 0)
+check(atTop.next === 5 && !atTop.moved, 'at the top the level can\'t move (the circle tugs and springs back)')
+check(ends.set(0, 10) === 0 && ends.step(1, 20).next === 1, 'a level picked directly (Auto) is where steps go on from')
+const elsewhere = new LevelSteps(2)
+elsewhere.heard(4, 0)
+check(elsewhere.step(1, 10).next === 5, 'a level set elsewhere (Settings) is taken when nothing is on its way')
+const stale = new LevelSteps(1)
+stale.step(1, 0)
+stale.heard(3, 5_000)
+check(stale.step(1, 5_010).next === 4, 'a step the settings never answered stops counting after a while')
+
 check(levelAt(0) === 0 && levelAt(25) === 0, 'the first place is Auto')
 check(levelAt(26) === 1 && levelAt(60) === 2 && levelAt(155) === 5, 'each 26 px is the next level')
 check(levelAt(-40) === 0 && levelAt(400) === 5, 'dragged past either end: the end level')
@@ -148,4 +170,4 @@ check(levelAt(-40) === 0 && levelAt(400) === 5, 'dragged past either end: the en
 check(JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).productName === 'Duet', 'the app is called Duet')
 check(dataFolder('/Users/x/Library/Application Support') === join('/Users/x/Library/Application Support', 'app'), 'its data stays in the app folder')
 
-console.log('Overlay line choice, status dot and settings upgrade tests passed.')
+console.log('Overlay line choice, status dot, settings, level and data folder tests passed.')

@@ -67,12 +67,10 @@
 .voice-state.listening i { background: #32d74b; box-shadow: 0 0 8px #32d74b; }
 .voice-state.speaking i { background: #fff; box-shadow: 0 0 8px #fff; }
 .voice-state.working i, .voice-state.connecting i, .voice-state.reconnecting i, .voice-state.requesting-microphone i { background: #ff9f0a; }
-/* The mascot in the page's top bar (the panel's tabs row, Talk's title row). */
+/* The mascot in the page's top bar (the panel's tabs row, Talk's head). */
 .head-mascot { display: flex; align-items: center; }
-.pill.on { background: var(--fill); color: #fff; }
-.pill:disabled { cursor: default; }
-/* The composer, in the dock below the scrolling part (no backdrop blur: in the panel's vibrancy
-   window it has nothing to sample and paints black): the suggestions, then the message bar, one pill
+/* The composer, in the dock below the scrolling part (no backdrop blur: the page's surface under it
+   is opaque, so a blur would only cost): the suggestions, then the message bar, one pill
    with the message box, the mic and Send in it. */
 .composer { display: flex; flex-direction: column; gap: 8px; padding: 8px 0 14px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }

@@ -44,7 +44,7 @@ export const tools: FunctionTool[] = [
     type: 'function',
     name: 'search_cards',
     description:
-      'Search local learning cards only after the learner opens their saved cards to Duet (the Use my cards button) and has attempted recall.',
+      'Search local learning cards only when the context says the saved cards are open to Duet (savedCardsOpenToDuet), and after the learner has attempted recall.',
     strict: true,
     parameters: {
       type: 'object',
@@ -63,7 +63,7 @@ export const tools: FunctionTool[] = [
     type: 'function',
     name: 'open_card',
     description:
-      'After the learner opens their saved cards to Duet (the Use my cards button), open a known local card and its stored nuance visibly.',
+      'When the saved cards are open to Duet (savedCardsOpenToDuet), open a known local card and its stored nuance visibly.',
     strict: true,
     parameters: {
       type: 'object',

@@ -10,14 +10,12 @@ type LineToken = Token & { swapped?: boolean }
 
 export function Words({
   tokens,
-  swapped,
   state,
   script = 'native',
   onEnter,
   onLeave
 }: {
   tokens: LineToken[]
-  swapped?: boolean
   /** A word's rung (its colour), by its pair; none leaves it uncoloured. */
   state?: (pair: number | null, token: LineToken) => WordState | undefined
   /** How swapped-in words are written: their own script, or their reading. */
@@ -34,7 +32,7 @@ export function Words({
         return (
           <span key={index}>
             <span
-              className={`w${token.swapped || swapped ? ' sw' : ''}${live ? ' live' : ''}`}
+              className={`w${token.swapped ? ' sw' : ''}${live ? ' live' : ''}`}
               data-k={state ? state(token.pair, token) : token.pair === null ? 'ignored' : 'unknown'}
               onMouseEnter={live ? (event) => onEnter({ ...token, pair: token.pair! }, event.currentTarget) : undefined}
               onMouseLeave={live ? onLeave : undefined}

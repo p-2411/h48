@@ -1,7 +1,7 @@
 // Checkpoints, main-process side: offered at a pause the learner makes or a natural break, the end of
 // a scene or conversation judged from the dialogue (triggers.ts, scenes.ts), shown as a glow on the
-// strip; one challenge from the last few minutes of the video when the strip is clicked
-// (src/main/challenges/pick.ts). The video waits while one is open. A miss becomes a card; finishing
+// strip; one challenge from the last few minutes of the video when the learner points at the strip
+// (or clicks it), growing out of it (src/main/challenges/pick.ts). The video waits while one is open. A miss becomes a card; finishing
 // keeps the day. Off unless turned on in Settings; Duet turns them on itself after the third video
 // watched, unless the learner chose.
 //

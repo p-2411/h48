@@ -35,9 +35,9 @@ export const tutorApi = {
     invoke<TutorActionResult>('tutor:confirm-action', actionId, rating),
   undo: (): Promise<TutorActionResult> =>
     invoke<TutorActionResult>('tutor:undo'),
-  /** Call on each finished learner transcript. Only a learner turn after a preview lets the voice
-   * model commit that save or rating; the model's own turns never count. */
-  /** The learner began a turn; `heard` is its first piece, when known. */
+  /** The learner began a turn; `heard` is its first piece, when known. Only the learner speaking
+   * after a preview (this, or `heard`) lets the voice model commit that save or rating; the model's
+   * own turns never count. */
   learnerTurn: (heard?: string) => ipcRenderer.send('tutor:learner-turn', heard),
   /** More of the learner's turn, as heard. */
   heard: (text: string) => ipcRenderer.send('tutor:heard', text),

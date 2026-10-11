@@ -4,7 +4,7 @@
 // that step. Every choice can be changed later in Settings, in the home base.
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
-import { joinTokens, mixedLine } from '../../../shared/levels'
+import { joinTokens, MAX_LEVEL, mixedLine } from '../../../shared/levels'
 import { LANGUAGE_CODES, languageModule, languageName } from '../../../shared/languages'
 import { type AudioPermission, type Language, type Level, type OverlaySettings, type OverlayStatus } from '../../../shared/types'
 import { Mascot } from '../components/Mascot'
@@ -165,7 +165,7 @@ export function Welcome(): React.JSX.Element {
               ))}
             </div>
             <div className="sample glass">
-              <p className="mix" lang={settings.level === 5 ? language : undefined}>
+              <p className="mix" lang={settings.level === MAX_LEVEL ? language : undefined}>
                 <Words tokens={mixedLine(sample, settings.level)} />
               </p>
               <p className="faint">

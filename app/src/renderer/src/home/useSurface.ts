@@ -8,7 +8,7 @@
 import { useCallback, useRef, useState, type RefObject } from 'react'
 import { DURATION, reducedMotion } from '../components/motion'
 
-export type Stage = 'closed' | 'growing' | 'open' | 'shrinking'
+type Stage = 'closed' | 'growing' | 'open' | 'shrinking'
 
 // Leaving the page and the tile's own quick fades, in ms; the grow and the shrink.
 const QUICK = 80

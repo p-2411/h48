@@ -7,11 +7,9 @@ import { useState, type ReactNode } from 'react'
 import { fadeUp } from '../components/motion'
 
 export function ChatSurface({
-  className,
   top,
   children
 }: {
-  className?: string
   /** Above the conversation, scrolling with it (Explain: the line's card, and the explanation). */
   top?: ReactNode
   /** The conversation, given the dock to put its message bar in. */
@@ -19,7 +17,7 @@ export function ChatSurface({
 }): React.JSX.Element {
   const [dock, setDock] = useState<HTMLDivElement | null>(null)
   return (
-    <div className={className ? `chat ${className}` : 'chat'}>
+    <div className="chat">
       <div className="chat-scroll">
         {top}
         {children(dock)}

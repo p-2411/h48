@@ -11,10 +11,10 @@ import { AnimatePresence, motion, useAnimate, type Variants } from 'motion/react
 import { useEffect, useRef, useState } from 'react'
 import { languageName } from '../../../shared/languages'
 import { AUTO, MAX_LEVEL } from '../../../shared/levels'
-import type { Level, OverlaySettings } from '../../../shared/types'
+import type { OverlaySettings } from '../../../shared/types'
 import { EASE_IN, EASE_OUT, GLIDE, GLIDING, reducedMotion, SPRING } from '../components/motion'
 import { levelAt } from './levels'
-import type { Tug } from './useLevelStep'
+import type { LevelStep } from './useLevelStep'
 import { WheelSteps } from './wheel'
 import { LEVELS } from './words'
 
@@ -35,17 +35,15 @@ const DIGIT: Variants = {
 
 export function LevelSlider({
   settings,
-  tug,
-  onStep
+  steps
 }: {
   settings: OverlaySettings
-  /** The last swipe's tug (useLevelStep). */
-  tug?: Tug
-  /** One level on (1) or back (-1), from a swipe on the circle. */
-  onStep: (direction: number) => void
+  /** Changing the level (useLevelStep): a swipe with its tug, or a step or pick on the open row. */
+  steps: LevelStep
 }): React.JSX.Element {
+  const { tug, step: onStep } = steps
   const language = languageName(settings.language)
-  const wheel = useRef(new WheelSteps())
+  const [wheel] = useState(() => new WheelSteps())
   // Open since which tug: a newer tug (a swipe) folds it, with no state to set.
   const [openSince, setOpenSince] = useState<number | null>(null)
   const open = openSince !== null && openSince >= (tug?.count ?? 0)
@@ -68,12 +66,8 @@ export function LevelSlider({
   }
   const current = LEVELS.find((item) => item.level === settings.level)!
   const describe = (item: (typeof LEVELS)[number]): string => `${item.mark} · ${item.name} ${language}: swaps in ${item.adds}`
-  const set = (level: Level): void => {
-    if (level !== settings.level) window.duet.setLevel(level)
-  }
-  const go = (steps: number): void => {
-    if (steps) set(Math.min(MAX_LEVEL, Math.max(AUTO, settings.level + steps)) as Level)
-  }
+  const set = steps.pick
+  const go = steps.nudge
 
   // Dragging the handle: the level under the pointer, as it moves.
   const track = useRef<HTMLDivElement>(null)
@@ -129,9 +123,9 @@ export function LevelSlider({
       // A swipe on the open levels moves the handle along them, one level a swipe; on the folded
       // circle it's a swipe like any other: the circle is tugged, nothing opens.
       onWheel={(event) => {
-        const steps = wheel.current.step(event.deltaY, event.deltaX, event.timeStamp)
-        if (open) go(steps)
-        else onStep(steps)
+        const turned = wheel.step(event.deltaY, event.deltaX, event.timeStamp)
+        if (open) go(turned)
+        else onStep(turned)
       }}
       onKeyDown={(event) => {
         if (event.key === 'ArrowRight' || event.key === 'ArrowUp') go(1)

@@ -1,6 +1,6 @@
 // The home base: an ordinary window (with the Dock icon) for the hub and its places: Today, Watching,
-// Your words (with Review), Talk and Settings. On macOS it is drawn in the sidebar material under a
-// dark tint, with the window buttons inset in the page, like the side panel.
+// Your words (with Review), Talk and Settings. Its page paints Duet's grain surface (styles/ui.css)
+// over the whole window, with the window buttons inset in the page, like the side panel.
 import { BrowserWindow } from 'electron'
 import { loadPage, webPreferences } from './load'
 

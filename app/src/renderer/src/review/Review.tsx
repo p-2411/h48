@@ -1,5 +1,5 @@
 // Review: the next due card, recall first, then reveal and rate. Ratings and what they mean are
-// always shown; the interval on each button comes from the scheduler and is exactly what saving
+// shown in Your words (the daily session shows the ratings only); the interval on each button comes from the scheduler and is exactly what saving
 // that rating will do.
 import { useEffect, useRef, useState } from 'react'
 import { RATING_LABELS, RATINGS, type Card, type Rating } from '../../../shared/cards'

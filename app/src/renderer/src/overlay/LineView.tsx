@@ -6,7 +6,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { STATE_LABELS } from '../../../shared/knowledge'
-import { joinTokens, mixedLine, pairReading } from '../../../shared/levels'
+import { joinTokens, MAX_LEVEL, mixedLine, pairReading } from '../../../shared/levels'
 import type { OverlayLine, OverlaySettings, Token } from '../../../shared/types'
 import { hoverOn, JOBS, pairOf } from './words'
 import { Icon } from '../components/Icon'
@@ -143,7 +143,7 @@ export function LineView({
         </motion.div>
       )}
       </AnimatePresence>
-      <p className="mix" lang={settings.level === 5 ? settings.language : undefined}>
+      <p className="mix" lang={settings.level === MAX_LEVEL ? settings.language : undefined}>
         <Words
           tokens={mixedLine(ready, settings.level, (pair) => stateOf(ready, pair))}
           script={settings.wordScript}
@@ -166,7 +166,7 @@ export function LineView({
             animate={{ height: 'auto', opacity: 1, transition: { duration: DURATION.base, ease: EASE_OUT } }}
             exit={{ height: 0, opacity: 0, transition: { duration: DURATION.base * 0.7, ease: EASE_IN } }}
           >
-            {settings.level < 5 && settings.showFullLine && (
+            {settings.level < MAX_LEVEL && settings.showFullLine && (
               <p className="source" lang={settings.language}>
                 {joinTokens(ready.source)}
               </p>

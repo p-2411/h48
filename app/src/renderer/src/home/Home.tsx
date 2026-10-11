@@ -1,5 +1,5 @@
 // The home base: a hub of glass tiles (Today, Continue watching, Your words, Talk to Duet) under a
-// top bar with the gear. A tile grows into its page and shrinks back into it (useSurface); ‹ Home or
+// top bar with the Duet mark, the language menu and the gear. A tile grows into its page and shrinks back into it (useSurface); ‹ Home or
 // Esc goes back. Main can ask for a place (Home opened from the Dock, the menu bar, the strip's ⚙,
 // a card's "Open in Your words"): it grows out of its tile the same way. Spec:
 // docs/superpowers/specs/2026-10-12-home-redesign-design.md.

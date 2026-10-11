@@ -1,6 +1,8 @@
 // The overlay: a strip the size of a subtitle at the bottom of the window, showing only the mixed
 // line. Everything else appears when reached for: hovering the strip shows the original, the
-// English and the actions above it; hovering a word shows its popup; ⚙ opens the settings. Words
+// English and the actions above it (not while a checkpoint is offered or open: then the strip is
+// for that); hovering a word shows its popup; ⚙ opens the settings; two fingers swiped sideways on
+// the strip change the level. Words
 // show on the strip itself only when the learner can act on them (see notice.ts). The strip sits on
 // the video, no wider than it (the main process moves the window; see placement.ts), and can be
 // dragged anywhere by its background. The mascot button left of it (or the talk keys) starts talking
@@ -66,7 +68,7 @@ export function Overlay(): React.JSX.Element {
   const { settings, status, current, building, translating, fit, loaded } = useOverlay()
   // Two fingers dragged right or left on the strip move the level one step (the level circle shows it).
   const level = useLevelStep(settings.level)
-  const stripSwipes = useRef(new WheelSteps({ sideways: true }))
+  const [stripSwipes] = useState(() => new WheelSteps({ sideways: true }))
   const [settingsOpen, setSettingsOpen] = useState(false)
   // The pointer is on Duet: the strip shows more of the line (in React, so its size change glides).
   const [hovered, setHovered] = useState(false)
@@ -74,7 +76,7 @@ export function Overlay(): React.JSX.Element {
   const talk = useStripTalk(settings.language, useCallback((text: string) => setToast({ text }), []))
   // Stars given in this run, by line and word ("12:3", or "12:line"), so they show as saved.
   const [stars, setStars] = useState<Record<string, string>>({})
-  // A checkpoint offered (the strip glows; a click opens it) and the one open.
+  // A checkpoint offered (the strip glows; pointing at it or a click opens it) and the one open.
   const [offer, setOffer] = useState<Offer | null>(null)
   const [checkpoint, setCheckpoint] = useState<CheckpointView>()
   // The checkpoint's card is still folding back into the strip (the strip's top corners stay square
@@ -98,7 +100,8 @@ export function Overlay(): React.JSX.Element {
   // only passing over doesn't), the question grows out of it, in place of the usual hover (no
   // actions row, no longer line). A click opens it at once.
   const pointing = useRef<number | undefined>(undefined)
-  useEffect(() => () => window.clearTimeout(pointing.current), [])
+  // The offer going (or a checkpoint opening) ends the wait: it would ask for one that has gone.
+  useEffect(() => () => window.clearTimeout(pointing.current), [offer, checkpoint])
   const openCheckpoint = (event: React.MouseEvent<HTMLElement>): void => {
     const pressed = pressedAt.current
     const moved = pressed ? Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) > 4 : true
@@ -155,7 +158,6 @@ export function Overlay(): React.JSX.Element {
 
   // The word's colour changing is the answer; one that couldn't change says so.
   const ignore = (wordKey: string, ignored: boolean): void => {
-    if (!settings) return
     window.duet.knowledge
       .setIgnored(settings.language, wordKey, ignored)
       .catch((error) => setToast({ text: say(error, ignored ? 'Could not leave that word out. Try again.' : 'Could not bring that word back. Try again.') }))
@@ -215,7 +217,7 @@ export function Overlay(): React.JSX.Element {
       >
         <AnimatePresence>{settingsOpen && <SettingsPopover key="settings" settings={settings} />}</AnimatePresence>
         <div className="actions" role="toolbar" aria-label="Line actions">
-          <LevelSlider settings={settings} tug={level.tug} onStep={level.step} />
+          <LevelSlider settings={settings} steps={level} />
           <span className="spacer" />
           <button
             type="button"
@@ -351,7 +353,7 @@ export function Overlay(): React.JSX.Element {
             startDrag(event)
           }}
           onClick={openCheckpoint}
-          onWheel={(event) => level.step(stripSwipes.current.step(event.deltaY, event.deltaX, event.timeStamp))}
+          onWheel={(event) => level.step(stripSwipes.step(event.deltaY, event.deltaX, event.timeStamp))}
         >
           <i
             className={`dot ${dot.tone}`}

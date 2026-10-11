@@ -7,8 +7,9 @@
 //
 // A save or a rating is two steps: prepare (a visible preview) and commit. The learner commits by
 // clicking in the window. A model can commit only when the learner spoke or wrote after the preview
-// appeared: each text message, and each spoken turn the window reports ("tutor:learner-turn"),
-// counts; a commit tool call with none since the preview is refused. So a model can not confirm its
+// appeared: each text message, and anything the learner says that the window reports (the start of
+// a spoken turn, "tutor:learner-turn", and more of it as heard, "tutor:heard"), counts; a commit
+// tool call with none since the preview is refused. So a model can not confirm its
 // own preview.
 //
 // Practice words (the knowledge ladder): the tutor may record that the learner used a word in a
@@ -137,7 +138,7 @@ export class Tutor {
       if (!this.context) throw new Error('Open Explain on a line before starting voice.')
       if (typeof offer?.sdp !== 'string') throw new Error('INVALID_SDP_OFFER')
       this.player.hold('tutor')
-      // Voice reads "Use my cards" from its context when it starts (the button is hidden in voice).
+      // Voice reads whether the saved cards are open (savedCardsOpenToDuet) from its context when it starts.
       return createLiveSession(offer.sdp, { ...this.context, exploreEnabled: this.exploreEnabled })
     })
     ipcMain.on('tutor:voice-ended', (event) => {
@@ -166,9 +167,7 @@ export class Tutor {
       if (this.isTutor(event.sender)) this.noteLearnerTurn(typeof heard === 'string' ? heard.slice(0, MAX_HEARD) : undefined)
     })
     ipcMain.on('tutor:heard', (event, heard: unknown) => {
-      if (!this.isTutor(event.sender) || typeof heard !== 'string') return
-      this.lastLearnerTurnAt = Date.now()
-      this.practice.hear(heard.slice(0, MAX_HEARD))
+      if (this.isTutor(event.sender) && typeof heard === 'string') this.noteHeard(heard.slice(0, MAX_HEARD))
     })
     ipcMain.handle('tutor:undo', (event) => {
       this.assertTutor(event)
@@ -176,8 +175,8 @@ export class Tutor {
     })
   }
 
-  /** A new conversation, owned by `window`: earlier previews and undo end; Explore is on only when
-   * the context opens the cards to Duet (home Talk). */
+  /** A new conversation, owned by `window`: earlier previews and undo end; the saved cards are open
+   * to Duet when the context says so (Explain and Talk open them; the strip's talk doesn't). */
   open(context: TutorContext, window: TutorWindow): void {
     this.reset()
     this.context = context
@@ -188,6 +187,12 @@ export class Tutor {
   private noteLearnerTurn(text?: string): void {
     this.lastLearnerTurnAt = Date.now()
     this.practice.learnerTurn(text)
+  }
+
+  /** More of the learner's spoken turn. */
+  private noteHeard(text: string): void {
+    this.lastLearnerTurnAt = Date.now()
+    this.practice.hear(text)
   }
 
   /** `window`'s conversation is over (its window closed): its previews, undo and any hold on the

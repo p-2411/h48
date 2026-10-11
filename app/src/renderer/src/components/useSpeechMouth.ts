@@ -71,8 +71,9 @@ export function useSpeechMouth(
             source.connect(analyser)
             // The original audio element remains the only speaker.
             const currentContext = context
-            void currentContext.resume().catch(() => {
+            void currentContext.resume().catch((cause) => {
               if (context !== currentContext) return
+              console.warn('[duet] the mouth could not follow Duet\'s voice', cause)
               failed = true
               cancelAnimationFrame(frame)
               detach()
@@ -106,15 +107,17 @@ export function useSpeechMouth(
           mouth.style.borderRadius = `0 0 ${50 - level * 12}% ${50 - level * 12}% / 0 0 ${100 - level * 24}% ${100 - level * 24}%`
         }
         // Transcript/status events can precede the end of audible playback. Let actual audio
-        // finish, then settle without removing the pose or restarting the CSS speaking loop.
+        // finish, then settle without removing the pose or restarting the CSS speaking loop; once
+        // Duet is no longer speaking, the mouth goes back to the state's own (idle, listening…).
         if (requested.current || target > 0.001 || level > 0.002 || Math.abs(velocity) > 0.01) {
           frame = requestAnimationFrame(tick)
         } else {
-          releaseAudio()
+          detach()
           lastFrame = 0
         }
-      } catch {
+      } catch (cause) {
         // Audio analysis is optional; the normal speaking animation remains the fallback.
+        console.warn('[duet] the mouth could not follow Duet\'s voice', cause)
         failed = true
         cancelAnimationFrame(frame)
         detach()

@@ -18,8 +18,8 @@ const LABEL: Record<MascotState | 'opening', string> = {
   correction: 'gently correcting'
 }
 
-/** The mascot at `scale` times its full size (420 x 190); `opening: false` skips the opening (a
- * message's avatar). */
+/** The mascot at `scale` times its full size (420 x 190); `opening: false` skips the opening (where
+ * it should just be there, as on the hub's Talk tile). */
 export function Mascot({
   state,
   scale = 1,
@@ -32,6 +32,7 @@ export function Mascot({
   opening?: boolean
   /** Duration of the mark-to-glass morph, in milliseconds. */
   openingDuration?: number
+  /** Duet's voice as it plays: while speaking, the mouth follows its loudness (useSpeechMouth). */
   speechAudio?: RefObject<HTMLAudioElement | null>
 }): React.JSX.Element {
   const [opening, setOpening] = useState(() => opens && !reducedMotion())

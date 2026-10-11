@@ -25,7 +25,7 @@ export type LineContext = {
   explanation?: Explanation
   /** The conversation so far, in text and voice. */
   conversation?: ChatMessage[]
-  /** The learner opened their saved cards to Duet (the Use my cards button). Text reads it with
+  /** The saved cards are open to Duet in this conversation (Explain and Talk open them). Text reads it with
    * each message, voice when a session starts; the button is hidden while voice is on. */
   exploreEnabled?: boolean
 }
@@ -106,18 +106,18 @@ Interruption policy: Stop speaking when the learner interrupts and listen to the
 Delegation policy:
 Backend tools:
 - ${name} correction and nuance reasoning using the selected line and earlier dialogue.
-- Search and open local learning cards only after the learner opens their saved cards to Duet (the Use my cards button).
+- Search and open local learning cards only when the context says the saved cards are open to Duet (savedCardsOpenToDuet).
 - Save local learning cards after explicit confirmation.
 - Preview and commit explicit FSRS review ratings.
 Delegate to the backend when:
 - A ${name} correction, nuance explanation or comparison needs careful reasoning.
 - The learner asks about saving or undoing.
-- The learner has opened their saved cards to Duet (the Use my cards button) and asks about an earlier encounter, a saved card or review.
+- The saved cards are open to Duet (savedCardsOpenToDuet) and the learner asks about an earlier encounter, a saved card or review.
 - The request depends on application data or would change application state.
 Do not delegate to the backend when:
 - You are greeting, asking a brief clarification, speaking a supplied phrase or managing ordinary conversation.
 - You are responding to a pronunciation attempt using the live audio you just heard.
-- The learner has not opened their saved cards to Duet (the Use my cards button) and the request would search saved learning history.
+- The saved cards are not open to Duet here (no savedCardsOpenToDuet) and the request would search saved learning history: say they aren't open in this conversation.
 Delegate before giving any answer that depends on backend data. Never announce a save or review as complete until its tool result says it succeeded.`
 }
 
@@ -165,7 +165,7 @@ export function lineContext({ moment, delivery, explanation, conversation, explo
 /** Recall, card writes and practice words, the same in voice and text. */
 function toolWorkflows(): string {
   return `Recall workflow:
-- Saved learning history is private by default. Search or open it only after the learner opens their saved cards to Duet (the Use my cards button) in this conversation.
+- Saved learning history is private by default. Search or open it only when the context says the saved cards are open to Duet (savedCardsOpenToDuet); otherwise say they aren't open in this conversation.
 - When asked about an earlier encounter, first ask the learner what they remember.
 - Search cards only after their attempt or when they explicitly ask to reveal it.
 - Open the matching card so the source and stored learning target are visible.

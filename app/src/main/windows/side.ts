@@ -1,7 +1,7 @@
 // A side window: an ordinary window at the right edge of the screen, beside the video, kept above
 // other windows so it is not lost behind the browser. The side panel is one.
-// One can open where it was last left (when that is still on a screen), and can be drawn in the
-// macOS sidebar material, as the strip is drawn in dark glass.
+// One can open where it was last left (when that is still on a screen); its page paints Duet's grain
+// surface over the window (styles/ui.css).
 import { BrowserWindow, screen, type Rectangle } from 'electron'
 import { loadPage, webPreferences, type Page } from './load'
 

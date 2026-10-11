@@ -20,6 +20,8 @@
 //   audio.ts, listen.ts, hearing.ts, spoken.ts   the video's sound: hearing lines, how they were said
 //   detect.ts       which language a caption line is in; replay.ts going back to a line
 //   settings.ts, shortcut.ts, welcome.ts, demo.ts   settings, the show/hide keys, first run, demos
+// First: where the data lives, before any other module can read it.
+import './pin-data-folder'
 import { app, globalShortcut, nativeTheme, Notification, type Tray } from 'electron'
 import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
@@ -62,7 +64,6 @@ import { openAISceneJudge } from './checkpoints/scenes'
 import { isFrom } from './windows/from'
 import { createOverlay, toggleOverlay } from './windows/overlay'
 import appIcon from '../../resources/icon.png?asset'
-import { dataFolder } from './data-folder'
 
 // In development, settings such as OPENAI_API_KEY can live in app/.env.local (git-ignored).
 if (is.dev) {
@@ -78,10 +79,6 @@ const TICK_MS = 100
 const HEARING_TICK_MS = 500
 
 let tray: Tray | undefined
-
-// The data stays where it has always been, whatever the app is called (before anything reads it);
-// a folder given on the command line (--user-data-dir, a test or preview copy) is kept.
-if (!app.commandLine.hasSwitch('user-data-dir')) app.setPath('userData', dataFolder(app.getPath('appData')))
 
 // One Duet at a time: a second copy would read the same captions and write the same database.
 const primary = app.requestSingleInstanceLock()

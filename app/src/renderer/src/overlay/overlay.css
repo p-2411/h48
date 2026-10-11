@@ -66,8 +66,9 @@
   background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg);
 }
 .actions .spacer { flex: 1; }
-/* The level on the hover row: its number in a round button like the others (.act); hovered, it
-   slides open into the six levels (Auto, then 1 to 5) and is a slider, its white circle the handle (LevelSlider.tsx). */
+/* The level on the hover row: folded, its number on a circle (.level-blob) that a swipe tugs;
+   hovered, it slides open into the six levels (Auto, then 1 to 5) and is a slider, its white circle
+   the handle (LevelSlider.tsx). */
 .level-slider { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 28px; padding: 0; overflow: hidden; }
 .level-slider.open { padding: 0 2px; }
 .level-track { display: flex; align-items: center; gap: 2px; cursor: ew-resize; touch-action: none; }
