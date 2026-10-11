@@ -187,10 +187,18 @@ export class CardStore {
       where.push('state != 0 AND paused = 0 AND due <= ?')
       values.push(now)
     }
+    // The limit is applied in the query, so a search with many matches reads only what is shown.
+    const limit = Number.isInteger(query.limit) && query.limit! > 0 ? ' LIMIT ?' : ''
+    if (limit) values.push(query.limit!)
     const rows = database()
-      .prepare(`SELECT * FROM cards WHERE ${where.join(' AND ')} ORDER BY created_at DESC`)
+      .prepare(`SELECT * FROM cards WHERE ${where.join(' AND ')} ORDER BY created_at DESC${limit}`)
       .all(...values) as CardRow[]
     return rows.map(toCard)
+  }
+
+  /** Whether any card is saved (deleted cards do not count). */
+  hasCards(): boolean {
+    return !!database().prepare('SELECT 1 FROM cards WHERE deleted_at IS NULL LIMIT 1').get()
   }
 
   /** A content edit. Scheduling is kept: use it for corrections that test the same thing. */

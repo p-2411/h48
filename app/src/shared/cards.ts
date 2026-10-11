@@ -60,6 +60,8 @@ export type CardQuery = {
   search?: string
   show?: 'all' | 'new' | 'due' | 'paused'
   type?: CardType
+  /** At most this many cards, newest first. */
+  limit?: number
 }
 
 /** What saving a draft did: saved it, or found the same card already saved. */

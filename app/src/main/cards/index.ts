@@ -87,12 +87,7 @@ export class Cards extends EventEmitter {
 
     handle('list', (query: CardQuery) => this.store.list(query))
     handle('get', (id: string) => this.store.get(id))
-    handle(
-      'save',
-      changing((draft: CardDraft, again?: boolean) =>
-        this.store.save(draft, this.scheduler, { again })
-      )
-    )
+    handle('save', (draft: CardDraft, again?: boolean) => this.saveDraft(draft, { again }))
     handle(
       'update',
       changing((id: string, content: CardContent) => this.store.update(id, content))
@@ -107,13 +102,7 @@ export class Cards extends EventEmitter {
       'pause',
       changing((id: string, paused: boolean) => this.store.setPaused(id, paused))
     )
-    handle(
-      'delete',
-      changing((id: string) => {
-        this.store.remove(id)
-        setTimeout(() => this.store.purge(), UNDO_DELETE_MS + 1000)
-      })
-    )
+    handle('delete', (id: string) => this.remove(id))
     handle(
       'restore',
       changing((id: string) => this.store.restore(id))
@@ -214,23 +203,25 @@ export class Cards extends EventEmitter {
     return { due, newAvailable }
   }
 
-  /** Saves a card made elsewhere (from the strip or the tutor); the same card already saved is found instead. */
-  saveDraft(draft: CardDraft): SaveResult {
-    const result = this.store.save(draft, this.scheduler)
+  /** Saves a card; the same card already saved is found instead, unless `again` saves it anyway. */
+  saveDraft(draft: CardDraft, { again }: { again?: boolean } = {}): SaveResult {
+    const result = this.store.save(draft, this.scheduler, { again })
     this.changed()
     return result
   }
 
-  /** Deletes a card (undoable for a while, see CardStore.remove). */
+  /** Deletes a card (undoable for a while, see CardStore.remove), then removes it for good. */
   remove(id: string): void {
     this.store.remove(id)
+    setTimeout(() => this.store.purge(), UNDO_DELETE_MS + 1000)
     this.changed()
   }
 
   /** The voice tutor uses the same collection and scheduler as My cards. These methods keep that
    * integration in one place instead of creating a second database or review implementation. */
   searchForTutor(query: string, limit = 5): Card[] {
-    return this.store.list({ search: query }).slice(0, Math.max(1, Math.min(10, Math.round(limit))))
+    const count = Number.isFinite(limit) ? Math.max(1, Math.min(10, Math.round(limit))) : 5
+    return this.store.list({ search: query, limit: count })
   }
 
   getForTutor(cardId: string): CardDetail {
@@ -239,36 +230,37 @@ export class Cards extends EventEmitter {
     return card
   }
 
-  saveFromTutor(draft: CardDraft): SaveResult {
-    return this.saveDraft(draft)
-  }
-
   prepareTutorReview(cardId: string): NonNullable<ReviewQueue['next']> & { card: CardDetail } {
     const preview = this.voiceReview.present(cardId)
     return { ...preview, card: this.getForTutor(preview.card.id) }
   }
 
   rateTutorReview(cardId: string, revision: number, rating: Rating, eventId: string): CardDetail {
-    this.voiceReview.rate(cardId, revision, rating, eventId)
+    this.voiceReview.commitRating(cardId, revision, rating, eventId)
     this.changed()
     return this.getForTutor(cardId)
   }
 
-  undoTutorReview(cardId: string): CardDetail {
-    this.voiceReview.undo()
+  /** Undoes the tutor's rating `eventId`, only if it is still the tutor's latest rating. */
+  undoTutorReview(cardId: string, eventId: string): CardDetail {
+    this.voiceReview.undoEvent(eventId)
     this.changed()
     return this.getForTutor(cardId)
+  }
+
+  /** A new tutor session (another moment, or the window closed): skips and undo start over. */
+  resetTutorReview(): void {
+    this.voiceReview.restart()
   }
 
   removeTutorCard(cardId: string): void {
     const card = this.getForTutor(cardId)
     if (card.revision !== 1 || card.reps !== 0) throw new Error('CARD_CANNOT_BE_UNDONE')
-    this.store.remove(cardId)
-    this.changed()
+    this.remove(cardId)
   }
 
   seedDemoFixtures(moment: Moment): void {
-    if (this.store.list().length) return
+    if (this.store.hasCards()) return
     this.store.save(
       {
         type: 'understand',
@@ -277,7 +269,7 @@ export class Cards extends EventEmitter {
         target:
           'Recall how ていうか redirects the thought and つもりじゃなかった denies a past intention.',
         situation: 'The speaker is correcting the impression created by the previous exchange.',
-        language: 'ja',
+        language: moment.language,
         source: { kind: 'video', moment }
       },
       this.scheduler
