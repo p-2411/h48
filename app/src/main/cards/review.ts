@@ -69,7 +69,13 @@ export class ReviewSession {
   private skipped = new Set<string>()
   private introduced = new Set<string>()
   private rated: string[] = []
-  private shown?: { card: Card; fsrs: string; outcomes: Record<Rating, Outcome>; at: number; scheduler: Scheduler }
+  private shown?: {
+    card: Card
+    fsrs: string
+    outcomes: Record<Rating, Outcome>
+    at: number
+    scheduler: Scheduler
+  }
 
   constructor(
     private store: CardStore,
@@ -85,52 +91,116 @@ export class ReviewSession {
     this.shown = undefined
   }
 
+  private show(row: CardRow, now: number): NonNullable<ReviewQueue['next']> {
+    const card = this.store.get(row.id)!
+    const scheduler = this.scheduler()
+    const outcomes = scheduler.outcomes(revive(row.fsrs), now)
+    this.shown = { card, fsrs: row.fsrs, outcomes, at: now, scheduler }
+    return {
+      card,
+      outcomes: Object.fromEntries(
+        (Object.keys(outcomes) as Rating[]).map((rating) => {
+          const dueAt = outcomes[rating].card.due.getTime()
+          return [rating, { due: dueAt, interval: interval(dueAt - now) }]
+        })
+      ) as Record<Rating, { due: number; interval: string }>
+    }
+  }
+
+  /** Shows one explicitly requested card for a voice review, while preserving the same due/new
+   * eligibility rules and stale-write protection as the normal review queue. */
+  present(cardId: string, now = Date.now()): NonNullable<ReviewQueue['next']> {
+    const db = database()
+    const row = db
+      .prepare('SELECT * FROM cards WHERE id = ? AND deleted_at IS NULL AND paused = 0')
+      .get(cardId) as CardRow | undefined
+    if (!row) throw new Error('CARD_NOT_FOUND')
+    if (row.state !== 0 && row.due > now) throw new Error('CARD_NOT_DUE')
+    if (row.state === 0) {
+      const introducedToday = (
+        db
+          .prepare(
+            'SELECT COUNT(*) n FROM reviews WHERE was_new = 1 AND undone_at IS NULL AND study_day = ?'
+          )
+          .get(studyDay(now)) as { n: number }
+      ).n
+      if (introducedToday >= this.settings().newPerDay) throw new Error('NEW_CARD_LIMIT_REACHED')
+      if (this.introduced.has(sourceKey(JSON.parse(row.source), row.expression)))
+        throw new Error('SIBLING_CARD_DEFERRED')
+    }
+    return this.show(row, now)
+  }
+
   queue(now = Date.now()): ReviewQueue {
     const db = database()
     const live = 'deleted_at IS NULL AND paused = 0'
     const { due, laterToday, newAvailable } = reviewCounts(this.settings().newPerDay, now)
 
     const candidates = [
-      ...(db.prepare(`SELECT * FROM cards WHERE ${live} AND state IN (1, 3) AND due <= ? ORDER BY due`).all(now) as CardRow[]),
-      ...(db.prepare(`SELECT * FROM cards WHERE ${live} AND state = 2 AND due <= ? ORDER BY due`).all(now) as CardRow[]),
-      ...(newAvailable > 0 ? (db.prepare(`SELECT * FROM cards WHERE ${live} AND state = 0 ORDER BY created_at`).all() as CardRow[]) : [])
+      ...(db
+        .prepare(`SELECT * FROM cards WHERE ${live} AND state IN (1, 3) AND due <= ? ORDER BY due`)
+        .all(now) as CardRow[]),
+      ...(db
+        .prepare(`SELECT * FROM cards WHERE ${live} AND state = 2 AND due <= ? ORDER BY due`)
+        .all(now) as CardRow[]),
+      ...(newAvailable > 0
+        ? (db
+            .prepare(`SELECT * FROM cards WHERE ${live} AND state = 0 ORDER BY created_at`)
+            .all() as CardRow[])
+        : [])
     ]
     const nextRow = candidates.find(
-      (row) => !this.skipped.has(row.id) && !(row.state === 0 && this.introduced.has(sourceKey(JSON.parse(row.source), row.expression)))
+      (row) =>
+        !this.skipped.has(row.id) &&
+        !(row.state === 0 && this.introduced.has(sourceKey(JSON.parse(row.source), row.expression)))
     )
     this.shown = undefined
-    let next: ReviewQueue['next']
-    if (nextRow) {
-      const card = this.store.get(nextRow.id)!
-      const scheduler = this.scheduler()
-      const outcomes = scheduler.outcomes(revive(nextRow.fsrs), now)
-      this.shown = { card, fsrs: nextRow.fsrs, outcomes, at: now, scheduler }
-      next = {
-        card,
-        outcomes: Object.fromEntries(
-          (Object.keys(outcomes) as Rating[]).map((rating) => {
-            const dueAt = outcomes[rating].card.due.getTime()
-            return [rating, { due: dueAt, interval: interval(dueAt - now) }]
-          })
-        ) as Record<Rating, { due: number; interval: string }>
-      }
-    }
+    const next = nextRow ? this.show(nextRow, now) : undefined
     const nextDue = next
       ? undefined
-      : (db.prepare(`SELECT MIN(due) n FROM cards WHERE ${live} AND state != 0 AND due > ?`).get(now) as { n: number | null }).n
-    return { counts: { due, laterToday, newAvailable }, next, nextDueAt: nextDue ?? undefined, canUndo: this.rated.length > 0 }
+      : (
+          db
+            .prepare(`SELECT MIN(due) n FROM cards WHERE ${live} AND state != 0 AND due > ?`)
+            .get(now) as { n: number | null }
+        ).n
+    return {
+      counts: { due, laterToday, newAvailable },
+      next,
+      nextDueAt: nextDue ?? undefined,
+      canUndo: this.rated.length > 0
+    }
   }
 
   /** Commits a rating for the card shown. `eventId` is the submission's own id. */
-  rate(cardId: string, revision: number, rating: Rating, eventId: string, now = Date.now()): ReviewQueue {
+  rate(
+    cardId: string,
+    revision: number,
+    rating: Rating,
+    eventId: string,
+    now = Date.now()
+  ): ReviewQueue {
     const db = database()
     if (db.prepare('SELECT 1 FROM reviews WHERE id = ?').get(eventId)) return this.queue(now)
     const shown = this.shown
-    const row = db.prepare('SELECT * FROM cards WHERE id = ? AND deleted_at IS NULL').get(cardId) as CardRow | undefined
-    if (!shown || !row || shown.card.id !== cardId || row.revision !== revision || row.fsrs !== shown.fsrs)
-      throw new StaleReviewError('This card changed since it was shown. The queue has been refreshed.')
+    const row = db
+      .prepare('SELECT * FROM cards WHERE id = ? AND deleted_at IS NULL')
+      .get(cardId) as CardRow | undefined
+    if (
+      !shown ||
+      !row ||
+      shown.card.id !== cardId ||
+      row.revision !== revision ||
+      row.fsrs !== shown.fsrs
+    )
+      throw new StaleReviewError(
+        'This card changed since it was shown. The queue has been refreshed.'
+      )
     // Shown too long ago, on another study day, or before the settings changed: show it afresh.
-    if (now - shown.at > SHOWN_FOR_MS || studyDay(now) !== studyDay(shown.at) || shown.scheduler !== this.scheduler())
+    if (
+      now - shown.at > SHOWN_FOR_MS ||
+      studyDay(now) !== studyDay(shown.at) ||
+      shown.scheduler !== this.scheduler()
+    )
       throw new StaleReviewError('That card was on screen a while. Here it is again, up to date.')
     const outcome = shown.outcomes[rating]
     const after = serialize(outcome.card)
@@ -138,10 +208,26 @@ export class ReviewSession {
       db.prepare(
         `INSERT INTO reviews (id, card_id, card_revision, rating, reviewed_at, study_day, was_new, before, after, log, scheduler)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      ).run(eventId, cardId, revision, ratingNumber(rating), now, studyDay(now), row.state === 0 ? 1 : 0, row.fsrs, after,
-        JSON.stringify(outcome.log), JSON.stringify(shown.scheduler.config))
-      db.prepare('UPDATE cards SET fsrs = ?, state = ?, due = ?, updated_at = ? WHERE id = ?').run(after, outcome.card.state,
-        outcome.card.due.getTime(), now, cardId)
+      ).run(
+        eventId,
+        cardId,
+        revision,
+        ratingNumber(rating),
+        now,
+        studyDay(now),
+        row.state === 0 ? 1 : 0,
+        row.fsrs,
+        after,
+        JSON.stringify(outcome.log),
+        JSON.stringify(shown.scheduler.config)
+      )
+      db.prepare('UPDATE cards SET fsrs = ?, state = ?, due = ?, updated_at = ? WHERE id = ?').run(
+        after,
+        outcome.card.state,
+        outcome.card.due.getTime(),
+        now,
+        cardId
+      )
     })
     this.rated.push(eventId)
     if (row.state === 0) this.introduced.add(sourceKey(JSON.parse(row.source), row.expression))
@@ -159,16 +245,26 @@ export class ReviewSession {
     const eventId = this.rated[this.rated.length - 1]
     if (!eventId) return this.queue(now)
     const db = database()
-    const review = db.prepare('SELECT * FROM reviews WHERE id = ?').get(eventId) as ReviewRow | undefined
-    const card = review && (db.prepare('SELECT * FROM cards WHERE id = ?').get(review.card_id) as CardRow | undefined)
+    const review = db.prepare('SELECT * FROM reviews WHERE id = ?').get(eventId) as
+      ReviewRow | undefined
+    const card =
+      review &&
+      (db.prepare('SELECT * FROM cards WHERE id = ?').get(review.card_id) as CardRow | undefined)
     if (!review || !card || card.fsrs !== review.after) {
       this.rated.pop()
-      throw new StaleReviewError('That card has been reviewed again since, so the rating can no longer be undone.')
+      throw new StaleReviewError(
+        'That card has been reviewed again since, so the rating can no longer be undone.'
+      )
     }
     const before = revive(review.before)
     transaction(() => {
-      db.prepare('UPDATE cards SET fsrs = ?, state = ?, due = ?, updated_at = ? WHERE id = ?').run(review.before, before.state,
-        before.due.getTime(), now, card.id)
+      db.prepare('UPDATE cards SET fsrs = ?, state = ?, due = ?, updated_at = ? WHERE id = ?').run(
+        review.before,
+        before.state,
+        before.due.getTime(),
+        now,
+        card.id
+      )
       db.prepare('UPDATE reviews SET undone_at = ? WHERE id = ?').run(now, eventId)
     })
     this.rated.pop()
@@ -177,4 +273,3 @@ export class ReviewSession {
     return this.queue(now)
   }
 }
-

@@ -164,6 +164,9 @@ export function MyCards(): React.JSX.Element {
           </button>
         </p>
       ))}
+      <p className="library-count">
+        {cards.length} {cards.length === 1 ? 'card' : 'cards'} shown · Stored on this computer only
+      </p>
       <div className="browse">
         <CardList
           cards={cards}

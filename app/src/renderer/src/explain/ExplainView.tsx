@@ -1,5 +1,6 @@
 // The explanation of one line. It opens with the line itself (the words worth noticing lit up in
-// it), Replay and Save card, then one short paragraph: what it means here and how it comes across.
+// it), Replay, Converse (the voice tutor on this line) and Save card, then one short paragraph:
+// what it means here and how it comes across.
 // The reasoning, an alternative and any doubt fold under "More"; the conversation about the line
 // follows. One component with no window of its own, so it can move into the tutor's window.
 import type { ExplainState, HearingNote } from '../../../shared/explain'
@@ -10,9 +11,12 @@ import { SaveCard } from './SaveCard'
 
 // Why the explanation could not draw on the audio, when it couldn't.
 const HEARING: Partial<Record<HearingNote, string>> = {
-  asking: 'Allow System Audio Recording when macOS asks, and Duet will hear how the next lines are said.',
-  'not-allowed': 'Duet can’t hear the video. Allow it in System Settings › Privacy & Security › Screen & System Audio Recording.',
-  'not-kept': 'This line played too long ago for Duet to hear it, so the explanation goes by the words.',
+  asking:
+    'Allow System Audio Recording when macOS asks, and Duet will hear how the next lines are said.',
+  'not-allowed':
+    'Duet can’t hear the video. Allow it in System Settings › Privacy & Security › Screen & System Audio Recording.',
+  'not-kept':
+    'This line played too long ago for Duet to hear it, so the explanation goes by the words.',
   unclear: 'Duet couldn’t make out the speech in this line, so the explanation goes by the words.'
 }
 
@@ -61,6 +65,9 @@ export function ExplainView({
               ↺ Replay
             </button>
           )}
+          <button type="button" className="btn quiet" onClick={() => window.duet.openTutor(moment.line.id)}>
+            Converse
+          </button>
           {explanation && <SaveCard key={moment.takenAt} moment={moment} explanation={explanation} />}
         </div>
       </section>

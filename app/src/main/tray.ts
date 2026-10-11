@@ -27,7 +27,7 @@ export function createTray({
       { label: 'Show or hide Duet', click: toggleOverlay },
       { label: 'Script', click: showScript },
       { label: 'Explain this line', click: explainLine },
-      { label: 'Talk about this line', click: openTutor },
+      { label: 'Converse about this line', click: openTutor },
       { label: 'My cards', click: openCards },
       { type: 'separator' },
       { label: 'Welcome and permissions…', click: openWelcome },

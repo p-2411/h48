@@ -1,25 +1,58 @@
-/* My cards. */
-.my-cards { min-height: 100%; display: flex; flex-direction: column; gap: 14px; padding: 18px 20px; }
+/* My cards: a header (Review, and backup and export under ⋯), then the list and the card open, each
+   on a panel of the same monochrome glass as Converse. */
+html, body, #root { min-height: 100%; background: #000; }
+.my-cards {
+  min-height: 100%; display: flex; flex-direction: column; gap: 14px; padding: 22px 26px 26px;
+  background:
+    radial-gradient(520px 300px at 8% -4%, rgba(255, 255, 255, 0.1), transparent 72%),
+    radial-gradient(440px 320px at 96% 8%, rgba(255, 255, 255, 0.05), transparent 72%), #000;
+}
 .top { display: flex; align-items: center; justify-content: space-between; }
-.browse { flex: 1; display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 20px; min-height: 0; }
-.list { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
-.list ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; overflow: auto; }
-.item { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 10px 12px; border-radius: 10px; text-align: left; }
-.item:hover { background: rgba(255, 255, 255, 0.04); }
-.item.is-on { background: var(--fill); }
-.item .expression { font-size: 15px; }
+.top h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.library-count { color: var(--text-3); font-size: 11px; }
+
+.browse { flex: 1; display: grid; grid-template-columns: minmax(280px, 350px) minmax(0, 1fr); gap: 18px; min-height: 0; }
+.list, .detail {
+  border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 18px; background: rgba(22, 22, 24, 0.68);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.035); backdrop-filter: blur(18px) saturate(120%);
+}
+.list { display: flex; flex-direction: column; gap: 11px; min-height: 0; padding: 14px; }
+.list ul {
+  list-style: none; margin: 0 -4px 0 0; padding: 0 4px 0 0; display: flex; flex-direction: column; gap: 5px; overflow: auto;
+  scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+.item {
+  width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 3px 9px; padding: 12px 13px; border: 1px solid transparent;
+  border-radius: 12px; text-align: left; transition: border-color 0.18s, background 0.18s;
+}
+.item:hover { background: rgba(255, 255, 255, 0.055); }
+.item.is-on { border-color: rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.095); }
+.item .expression { font-size: 15px; line-height: 1.45; }
 .item .faint { grid-column: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.item .badge { grid-row: 1; grid-column: 2; font-size: 11px; color: var(--text-2); }
-.detail { display: flex; flex-direction: column; gap: 14px; }
-.facts { display: grid; grid-template-columns: 120px 1fr; gap: 8px 14px; margin: 0; font-size: 14px; line-height: 1.45; }
-.facts dt { color: var(--text-3); font-size: 12px; padding-top: 2px; }
-.facts dd { margin: 0; }
+.item .badge { grid-row: 1; grid-column: 2; align-self: start; padding: 3px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); color: var(--text-2); font-size: 10px; }
+
+.detail { display: flex; flex-direction: column; gap: 15px; padding: 20px; overflow: auto; }
+.detail .card-box, .nuance-box { background: rgba(255, 255, 255, 0.045); box-shadow: inset 0 1px rgba(255, 255, 255, 0.045); }
+.facts { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 9px 15px; margin: 0; font-size: 14px; line-height: 1.5; }
+.facts dt { padding-top: 2px; color: var(--text-3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.045em; }
+.facts dd { margin: 0; color: var(--fg-2); }
+/* What the card's line means here, as Explain said when it was saved. */
+.nuance-box { display: flex; flex-direction: column; gap: 9px; padding: 16px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; }
+.nuance-box p { margin: 0; color: var(--fg-2); font-size: 13px; line-height: 1.55; }
 .pick { align-self: center; justify-self: center; }
 
-.top h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
 .menu-wrap { position: relative; }
-.menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; width: 260px; padding: 6px; border-radius: 12px; background: #1f1f23; border: 1px solid var(--line); display: flex; flex-direction: column; box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45); }
+.menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; width: 260px; padding: 6px; border-radius: 12px;
+  background: #1f1f23; border: 1px solid var(--line); display: flex; flex-direction: column;
+}
 .menu button { text-align: left; padding: 8px 10px; border-radius: 8px; font-size: 13px; }
 .menu button:hover { background: var(--fill); }
 .menu .faint { padding: 8px 10px 4px; }
 .type { padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); color: var(--fg); font: inherit; font-size: 12px; }
+
+@media (max-width: 820px) {
+  .my-cards { padding: 20px; }
+  .browse { grid-template-columns: 1fr; }
+  .list { max-height: 340px; }
+}
