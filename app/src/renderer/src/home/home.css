@@ -224,3 +224,5 @@
 .home-talk > * { width: 100%; max-width: 640px; }
 .home-talk-head { display: flex; align-items: center; gap: 12px; }
 .home-talk-head .btn { margin-left: auto; }
+/* No line above the message box here: the page has room enough to set it apart. */
+.home-talk .composer { border-top: none; }

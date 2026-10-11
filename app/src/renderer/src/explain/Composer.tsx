@@ -109,7 +109,6 @@ export function Composer({
           <Icon name="mic" />
         </button>
       </div>
-      <p className="faint">The microphone is used only while you talk. Audio is not saved.</p>
     </>
   )
 }
