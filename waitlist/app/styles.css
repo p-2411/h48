@@ -373,7 +373,7 @@ html:has(.stepper.is-scrolly){scroll-snap-type:y proximity}
 .privacy-lead{margin-top:20px;font-size:18px;line-height:1.55;color:var(--fg-2)}
 .privacy h2{margin-top:44px;font-size:22px;line-height:1.3;letter-spacing:-.01em}
 .privacy p{margin-top:10px;color:var(--text-2);max-width:62ch}
-.privacy strong{font-weight:500;color:var(--fg)}
+.privacy a{color:var(--fg);text-decoration:underline;text-underline-offset:3px}
 
 /* FAQ */
 .faq-items details+details{border-top:1px solid var(--line)}
