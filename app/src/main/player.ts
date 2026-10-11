@@ -16,6 +16,12 @@ export type Holder = 'wait' | 'tutor' | 'explain'
 const COMMAND_MS = 1500
 // How far back the record of video time against real time goes (the audio reader keeps a minute).
 const HISTORY_MS = 70_000
+// A replayed line pauses this long after its end, so the last word isn't cut.
+const REPLAY_SLACK = 0.3
+// How often a replay checks whether its line has ended, and how long it waits at most (the seek
+// may land a few seconds early, where the bar only steps).
+const REPLAY_CHECK_MS = 100
+const REPLAY_GIVE_UP_MS = 30_000
 
 export class Player extends EventEmitter {
   private clock = new PlayerClock()
@@ -23,6 +29,8 @@ export class Player extends EventEmitter {
   private resumeOnRelease = false
   private expected?: { playing: boolean; timer: NodeJS.Timeout }
   private history: { at: number; position: number }[] = []
+  private replayEnd?: NodeJS.Timeout
+  private replayGiveUp?: NodeJS.Timeout
 
   /** `command` asks the page to pause, play or seek (see CaptionSource.command). */
   constructor(private command: (command: PlayerCommand) => void) {
@@ -70,6 +78,7 @@ export class Player extends EventEmitter {
     this.clock.reset()
     this.history = []
     this.clearExpected()
+    this.stopReplay()
     this.holders.clear()
     this.resumeOnRelease = false
   }
@@ -81,7 +90,8 @@ export class Player extends EventEmitter {
     const playing = this.clock.playing
     if (playing === was) return
     if (this.expected?.playing === playing) return this.clearExpected()
-    // The viewer pressed play or pause.
+    // The viewer pressed play or pause: a replay's pause at the line's end is theirs to make now.
+    this.stopReplay()
     if (playing) this.dropHolds()
     else this.resumeOnRelease = false
   }
@@ -101,9 +111,36 @@ export class Player extends EventEmitter {
     this.send('play')
   }
 
-  /** Moves the video to a point, in seconds. The clock follows once the reader sees the jump. */
-  seek(seconds: number): void {
-    this.command({ type: 'seek', seconds: Math.max(0, seconds), from: this.now() })
+  /**
+   * Plays a line again from its start, because the learner asked: it plays even while something
+   * holds the video. A video that was paused (by the learner or a hold) pauses again when the line
+   * ends, so the holds still stand.
+   */
+  replay(start: number, end?: number): void {
+    this.stopReplay()
+    const pauseAfter = !this.playing || this.holders.size > 0
+    // Expected, so this play isn't taken for the viewer's own (which would drop the holds).
+    this.expect(true)
+    this.command({ type: 'seek', seconds: Math.max(0, start), from: this.now(), play: true })
+    if (!pauseAfter || end === undefined || end <= start) return
+    // Paused again once the clock, back at the line's start (or before it), passes its end.
+    let back = false
+    this.replayEnd = setInterval(() => {
+      const now = this.clock.now()
+      if (now === undefined || !this.clock.playing) return
+      if (now <= start + 1) back = true
+      else if (back && now >= end + REPLAY_SLACK) {
+        this.stopReplay()
+        this.send('pause')
+      }
+    }, REPLAY_CHECK_MS)
+    this.replayGiveUp = setTimeout(() => this.stopReplay(), REPLAY_GIVE_UP_MS)
+  }
+
+  private stopReplay(): void {
+    clearInterval(this.replayEnd)
+    clearTimeout(this.replayGiveUp)
+    this.replayEnd = this.replayGiveUp = undefined
   }
 
   isHeldBy(holder: Holder): boolean {
@@ -111,8 +148,13 @@ export class Player extends EventEmitter {
   }
 
   private send(type: 'pause' | 'play'): void {
+    this.expect(type === 'play')
+    this.command({ type })
+  }
+
+  /** Notes that the video should soon be playing (or paused) because Duet asked, not the viewer. */
+  private expect(playing: boolean): void {
     this.clearExpected()
-    const playing = type === 'play'
     // If the page never does what was asked (no play button found, say), stop holding the video
     // rather than wait on it forever.
     const timer = setTimeout(() => {
@@ -120,7 +162,6 @@ export class Player extends EventEmitter {
       if (!playing && this.clock.playing) this.dropHolds()
     }, COMMAND_MS)
     this.expected = { playing, timer }
-    this.command({ type })
   }
 
   private dropHolds(): void {

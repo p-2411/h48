@@ -35,7 +35,7 @@ export type CaptionLine = { text: string; url?: string; at: number }
 export type VideoFrame = { x: number; y: number; width: number; height: number }
 
 export type PlayerCommand =
-  { type: 'pause' } | { type: 'play' } | { type: 'seek'; seconds: number; from?: number }
+  { type: 'pause' } | { type: 'play' } | { type: 'seek'; seconds: number; from?: number; play?: boolean }
 
 // A caption counts as finished when it has stopped changing for this long, or when the next
 // caption is not just a longer version of it (YouTube's auto captions grow word by word).

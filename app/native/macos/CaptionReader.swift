@@ -21,9 +21,10 @@
 // Input: one JSON object per line on stdin, from the app:
 //   {"type":"pause"} / {"type":"play"}   presses the player's play button if the video is not
 //                                        already in that state
-//   {"type":"seek","seconds":107.25,"from":335.4}   moves the video to that point, through the seek
-//                                        bar; "from" is where the app's clock says the video is
-//                                        (the bar's own value can be stale while controls hide)
+//   {"type":"seek","seconds":107.25,"from":335.4,"play":true}   moves the video to that point,
+//                                        through the seek bar, landing on or just before it; "from" is
+//                                        where the app's clock says the video is (the bar's own value
+//                                        can be stale while controls hide); "play" plays it once there
 // Only on sites whose entry below names the elements needed (YouTube so far).
 //
 // Build: swiftc -O native/macos/CaptionReader.swift -o resources/bin/caption-reader-macos
@@ -352,28 +353,48 @@ Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
   }
 }
 
+/** Presses the player's play button if the video is not already in the state asked for (it toggles). */
+func press(play: Bool) {
+  guard let site = currentSite, let state = playerState(site),
+        let button = site.labels != nil ? playPause : playButton else { return }
+  if state.playing != play { AXUIElementPerformAction(button, kAXPressAction as CFString) }
+}
+
 // Seeking: set the seek bar's value; if the page ignores that, step with the bar's own decrement
-// and increment actions (5 seconds each on YouTube, like the arrow keys), landing just before.
+// and increment actions (5 seconds each on YouTube, like the arrow keys). Going back always lands
+// on or before the point, however close it is (a replay must hear the line's start); going forward
+// lands just before, and a little short is close enough.
 let stepSeconds = 5.0
-func seek(to seconds: Double, from position: Double?) {
+func steps(_ distance: Double, of size: Double) -> Int {
+  if distance < -0.3 { return Int((-distance / size).rounded(.up)) }
+  if distance > 1.5 { return Int((distance / size).rounded(.down)) }
+  return 0
+}
+func seek(to seconds: Double, from position: Double?, thenPlay play: Bool) {
   if let labels = currentSite?.labels {
-    // Netflix: step with its 10-second buttons, landing just before.
-    guard let now = position ?? playerState(currentSite!).map({ $0.seconds }) else { return }
-    let distance = seconds - now
-    let steps = Int((abs(distance) / labels.step).rounded(distance < 0 ? .up : .down))
-    guard let button = distance < 0 ? backButton : forwardButton else { return }
-    for _ in 0..<steps { AXUIElementPerformAction(button, kAXPressAction as CFString) }
+    // Netflix: step with its 10-second buttons.
+    if let now = position ?? playerState(currentSite!).map({ $0.seconds }) {
+      let distance = seconds - now
+      if let button = distance < 0 ? backButton : forwardButton {
+        for _ in 0..<steps(distance, of: labels.step) { AXUIElementPerformAction(button, kAXPressAction as CFString) }
+      }
+    }
+    if play { press(play: true) }
     return
   }
-  guard let bar = progress, let before = number(bar, kAXValueAttribute) else { return }
+  guard let bar = progress, let before = number(bar, kAXValueAttribute) else {
+    if play { press(play: true) }
+    return
+  }
   AXUIElementSetAttributeValue(bar, kAXValueAttribute as CFString, NSNumber(value: seconds))
   DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-    // The set worked if the bar moved (towards the target); otherwise step from the best position known.
-    guard let now = number(bar, kAXValueAttribute), abs(now - seconds) > 1.5, abs(now - before) < 1.5 else { return }
-    let distance = seconds - (position ?? now)
-    let steps = Int((abs(distance) / stepSeconds).rounded(distance < 0 ? .up : .down))
-    let action = (distance < 0 ? kAXDecrementAction : kAXIncrementAction) as CFString
-    for _ in 0..<steps { AXUIElementPerformAction(bar, action) }
+    // The set worked if the bar moved towards the point; otherwise step from the best position known.
+    if let now = number(bar, kAXValueAttribute), abs(before - seconds) > 0.3, abs(now - seconds) >= abs(before - seconds) - 0.5 {
+      let distance = seconds - (position ?? now)
+      let action = (distance < 0 ? kAXDecrementAction : kAXIncrementAction) as CFString
+      for _ in 0..<steps(distance, of: stepSeconds) { AXUIElementPerformAction(bar, action) }
+    }
+    if play { press(play: true) }
   }
 }
 
@@ -388,11 +409,11 @@ FileHandle.standardInput.readabilityHandler = { handle in
     DispatchQueue.main.async {
       switch type {
       case "pause", "play":
-        guard let site = currentSite, let state = playerState(site),
-              let button = site.labels != nil ? playPause : playButton else { return }
-        if state.playing == (type == "pause") { AXUIElementPerformAction(button, kAXPressAction as CFString) }
+        press(play: type == "play")
       case "seek":
-        if let seconds = object["seconds"] as? Double { seek(to: seconds, from: object["from"] as? Double) }
+        if let seconds = object["seconds"] as? Double {
+          seek(to: seconds, from: object["from"] as? Double, thenPlay: object["play"] as? Bool ?? false)
+        }
       default:
         break
       }

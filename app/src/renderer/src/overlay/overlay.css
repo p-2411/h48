@@ -15,7 +15,6 @@
   position: relative; max-width: min(860px, var(--fit, 860px)); min-width: 260px; padding: 10px 46px 12px 20px; border-radius: 18px;
   background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg);
   display: flex; flex-direction: column; gap: 6px; user-select: none;
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.6), 0 12px 40px rgba(0, 0, 0, 0.45);
 }
 .strip.dragging { cursor: grabbing; }
 .strip p { margin: 0; }
@@ -43,16 +42,17 @@
 .due { font-size: 10.5px; font-weight: 600; color: #111; background: #fff; border-radius: 999px; padding: 2px 7px; }
 
 /* Actions: above the strip's right end, only while the pointer is on Duet (or the settings are
-   open). Their bottom padding bridges the gap to the strip, so the pointer never leaves Duet on the
-   way up, and they linger a moment after it does. */
+   open). Their row spans the strip's whole width, and its bottom padding bridges the gap to the
+   strip, so the pointer never leaves Duet on the way up from anywhere along it; they linger a
+   moment after it does. */
 .actions {
-  position: absolute; bottom: 100%; right: 8px; padding-bottom: 6px; display: flex; gap: 4px; align-items: center;
+  position: absolute; bottom: 100%; left: 0; right: 0; padding: 0 8px 6px; display: flex; justify-content: flex-end; gap: 4px; align-items: center;
   opacity: 0; visibility: hidden; transition: opacity 0.15s var(--ease) 0.25s, visibility 0s linear 0.4s;
 }
 .dock:hover .actions, .dock:focus-within .actions, .dock.pinned .actions { opacity: 1; visibility: visible; transition-delay: 0s; }
 .act {
   font-size: 12px; font-weight: 500; height: 28px; padding: 0 11px; border-radius: 999px; white-space: nowrap;
-  background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg);
 }
 .act.icon { width: 28px; padding: 0; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
 .act:hover { background: rgba(58, 58, 62, 0.95); }
@@ -65,7 +65,7 @@
 .popup {
   position: absolute; z-index: 3; bottom: calc(100% + 40px); transform: translateX(-50%); width: max-content; max-width: 280px;
   background: #fff; color: #111; border-radius: 12px; padding: 9px 12px; display: flex; flex-direction: column; gap: 2px;
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.4); font-size: 13px;
+  font-size: 13px;
 }
 .popup b { font-size: 17px; font-weight: 600; }
 .popup .job { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: color-mix(in srgb, var(--c, #555) 70%, #111); }
@@ -80,7 +80,6 @@
 .settings {
   position: absolute; z-index: 4; bottom: calc(100% + 40px); right: 0; width: 330px; padding: 14px; border-radius: 16px;
   background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg); display: flex; flex-direction: column; gap: 9px;
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.6), 0 16px 48px rgba(0, 0, 0, 0.5);
 }
 .settings .label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
 .segment { display: flex; padding: 2px; border-radius: 8px; background: var(--fill); }
