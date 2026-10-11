@@ -64,13 +64,23 @@
 .actions .spacer { flex: 1; }
 /* The level on the hover row: its number in a round button like the others (.act); hovered, it
    slides open into the six levels (Auto, then 1 to 5) and is a slider, its white circle the handle (LevelSlider.tsx). */
-.level-slider { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; padding: 0; overflow: hidden; }
+.level-slider { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 28px; padding: 0; overflow: hidden; }
 .level-slider.open { padding: 0 2px; }
 .level-track { display: flex; align-items: center; gap: 2px; cursor: ew-resize; touch-action: none; }
 .level-slot { position: relative; width: 24px; height: 24px; display: grid; place-items: center; }
 .level-handle { position: absolute; inset: 0; border-radius: 50%; background: #fff; }
 .level-digit { position: relative; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--fg-2); }
-.level-slider:not(.open) .level-digit { color: #fff; font-size: 13px; }
+/* Folded, the circle is drawn by its blob, which a swipe tugs (stretched, squashed, sprung back) and
+   a white fill sweeps back into; the number shows dark where the fill is (LevelSlider.tsx). */
+.level-slider:not(.open), .level-slider:not(.open):hover { background: none; border-color: transparent; overflow: visible; }
+.level-frame { position: absolute; inset: 0; }
+.level-blob {
+  position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; overflow: hidden;
+  background: var(--glass); border: 0.5px solid var(--glass-edge); transition: background 0.15s;
+}
+.level-slider:not(.open):hover .level-blob { background: rgba(58, 58, 62, 0.95); }
+.level-fill { position: absolute; inset: 0; border-radius: inherit; background: #fff; opacity: 0; transform: scaleX(0); }
+.level-slider:not(.open) .level-digit { color: #fff; font-size: 13px; mix-blend-mode: difference; }
 .level-digit.on { color: #111; }
 .level-slider:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.6); outline-offset: 2px; }
 .act.icon { width: 28px; padding: 0; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
@@ -186,8 +196,8 @@
 .strip-row { position: relative; max-width: 100%; }
 .talk-button {
   /* Held to the strip's bottom edge, which stays put: the strip grows upward on hover, and a button
-     centred on it would move out from under the pointer. */
-  position: absolute; right: calc(100% + 8px); bottom: 12px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+     centred on it would move out from under the pointer. 1px up centres it on a one-line strip (38px). */
+  position: absolute; right: calc(100% + 8px); bottom: 1px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
   background: rgba(30, 30, 32, 0.92); border: 0.5px solid rgba(255, 255, 255, 0.1); color: var(--fg-2);
   opacity: 0.55; transition: opacity 0.2s var(--ease), color 0.2s var(--ease);
 }

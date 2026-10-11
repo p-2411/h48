@@ -123,6 +123,14 @@ check([1030, 1040, 1050, 1060].map((at) => wheel.step(30, 0, at)).every((steps) 
 check(wheel.step(0, -60, 1400) === -1, 'later, a swipe back (sideways): one step back')
 check(wheel.step(0, 80, 1450) === 0, 'a swipe straight back the other way waits its turn')
 check(wheel.step(0, 80, 1700) === 1, 'then steps')
+// On the strip, only a sideways swipe (two fingers dragged right or left) moves the level: scrolling
+// up or down there never does, and doesn't add up toward a step either.
+const strip = new WheelSteps({ sideways: true })
+check(strip.step(60, 0, 1000) === 0, 'the strip: scrolling down is not a step')
+check(strip.step(-80, 5, 1100) === 0, 'nor up, with a little sideways in it')
+check(strip.step(0, 30, 1500) === 0 && strip.step(0, 20, 1510) === 1, 'the strip: a swipe right is one step up (the vertical scrolling before it added nothing)')
+check(strip.step(40, 10, 1530) === 0 && strip.step(0, 30, 1560) === 0, 'the same swipe coasting (any way) is let go')
+check(strip.step(2, -60, 1900) === -1, 'later, a swipe left: one step down')
 // The level slider: the level under the pointer, by where it is along the row (26 px a level),
 // kept to Auto–5 however far the drag goes.
 check(levelAt(0) === 0 && levelAt(25) === 0, 'the first place is Auto')
