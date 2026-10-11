@@ -96,8 +96,15 @@ app.whenReady().then(() => {
   }
   const explainLine = (lineId?: number): void => {
     const moment = watcher.moment(lineId)
-    if (moment) explain.open(moment)
+    if (!moment) return
+    // "Pause while explaining": the video waits while the panel is open (see Player for who wins).
+    if (settings.current.pauseForHelp) player.hold('explain')
+    explain.open(moment)
   }
+  panel.on('closed', () => player.release('explain'))
+  settings.on('change', (_, changed) => {
+    if (changed.pauseForHelp === false) player.release('explain')
+  })
 
   const overlay = createOverlay()
   const showScript = (): void => panel.show('script')
@@ -108,7 +115,8 @@ app.whenReady().then(() => {
     showScript,
     explainLine: () => explainLine(),
     openTutor: () => openTutor(),
-    openCards: () => cards.open()
+    openCards: () => cards.open(),
+    settings
   })
   if (!globalShortcut.register(SHORTCUT, () => toggleOverlay(overlay)))
     console.error(`[duet] could not register ${SHORTCUT}; another app may be using it`)

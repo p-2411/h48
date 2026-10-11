@@ -10,7 +10,7 @@ import { EventEmitter } from 'events'
 import type { PlayerCommand } from './captions'
 import { PlayerClock, type PlayerTime } from './clock'
 
-export type Holder = 'wait' | 'tutor'
+export type Holder = 'wait' | 'tutor' | 'explain'
 
 // How long the reader has to report that a pause or play Duet asked for has happened.
 const COMMAND_MS = 1500

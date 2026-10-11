@@ -13,7 +13,7 @@ export type OverlayState = {
 }
 
 export function useOverlay(): OverlayState {
-  const [settings, setSettings] = useState<OverlaySettings>({ language: 'es', level: 2, guessFirst: true, waitForTranslation: true })
+  const [settings, setSettings] = useState<OverlaySettings>({ language: 'es', level: 2, guessFirst: true, waitForTranslation: true, pauseForHelp: false })
   const [status, setStatus] = useState<OverlayStatus>({ trusted: false })
   const [lines, setLines] = useState<OverlayLine[]>([])
   const [live, setLive] = useState('')

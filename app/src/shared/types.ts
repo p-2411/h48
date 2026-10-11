@@ -89,4 +89,6 @@ export type OverlaySettings = {
   guessFirst: boolean
   /** Pause the video while the line on screen is still being translated. */
   waitForTranslation: boolean
+  /** Pause the video while Explain is open (off by default: Duet never pauses the show unasked). */
+  pauseForHelp: boolean
 }
