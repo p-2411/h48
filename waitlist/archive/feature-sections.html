@@ -1,0 +1,110 @@
+<!doctype html>
+<!-- Archived 2026-10-11: sections removed from the Duet waitlist when the page moved to the
+     problem → fix steppers. "Quiet enough…" was dropped (show it, don't tell it); "Every word has a
+     colour", the three feature sections and "Works where you watch" were folded into the fix stepper
+     and the FAQ. The living-illustration scenes they used (subtitles, guess, save) were scripted in
+     site.js under "Living illustrations"; that code was removed with them. -->
+<html lang="en">
+<head><meta charset="utf-8"><title>Archived feature sections</title><link rel="stylesheet" href="../app/styles.css"></head>
+<body>
+    <section class="answer section container" id="answer" aria-labelledby="answer-title">
+      <h2 id="answer-title" class="wide-heading">Quiet enough to keep watching.<br><span>Present enough to keep learning.</span></h2>
+      <p class="wide-copy">Duet sits beside the video, never on top of it. It shows you just enough to learn, then gets out of the way.</p>
+    </section>
+
+    <section class="colours section container" id="colours" aria-labelledby="colours-title">
+      <div class="split-grid">
+        <div class="section-intro"><h2 id="colours-title">Every word<br><span>has a colour.</span></h2></div>
+        <div class="colours-content">
+          <div class="demo-frame line-card big" data-pairs>
+            <p class="mix"><span class="w" data-t="p" data-k="1">She</span> <span class="w sw" data-t="v" data-k="2">busca</span> <span class="w" data-t="g">the</span> <span class="w sw" data-t="n" data-k="3">dragón</span> <span class="w" data-t="g">in the</span> <span class="w" data-t="a" data-k="4">dark</span> <span class="w sw" data-t="n" data-k="5">bosque</span>.</p>
+            <p class="es-line" lang="es"><span class="w" data-t="p" data-k="1" tabindex="0">Ella</span> <span class="w" data-t="v" data-k="2" tabindex="0">busca</span> <span class="w" data-t="g">el</span> <span class="w" data-t="n" data-k="3" tabindex="0">dragón</span> <span class="w" data-t="g">en el</span> <span class="w" data-t="n" data-k="5" tabindex="0">bosque</span> <span class="w" data-t="a" data-k="4" tabindex="0">oscuro</span>.</p>
+            <p class="en-line"><span class="w" data-t="p" data-k="1">She</span> <span class="w" data-t="v" data-k="2">looks for</span> <span class="w" data-t="g">the</span> <span class="w" data-t="n" data-k="3">dragon</span> <span class="w" data-t="g">in the</span> <span class="w" data-t="a" data-k="4">dark</span> <span class="w" data-t="n" data-k="5">forest</span>.</p>
+          </div>
+          <ul class="legend" aria-label="Colour key">
+            <li data-t="n"><i aria-hidden="true"></i><div><h3>Things</h3><p lang="es">dragón, bosque</p></div></li>
+            <li data-t="v"><i aria-hidden="true"></i><div><h3>Actions</h3><p lang="es">busca, encontró</p></div></li>
+            <li data-t="a"><i aria-hidden="true"></i><div><h3>Describing words</h3><p lang="es">oscuro, viejo</p></div></li>
+            <li data-t="p"><i aria-hidden="true"></i><div><h3>People and pointers</h3><p lang="es">ella, alguien</p></div></li>
+            <li data-t="x"><i aria-hidden="true"></i><div><h3>Names</h3><p lang="es">Lucía, Madrid</p></div></li>
+            <li data-t="g"><i aria-hidden="true"></i><div><h3>Glue words</h3><p lang="es">el, en, de</p></div></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature section container" id="subtitles" aria-labelledby="subtitles-title">
+      <div class="split-grid">
+        <div class="section-intro"><h2 id="subtitles-title">Both languages.<br><span>Live, on any video.</span></h2><p>Duet writes each line as it is spoken, in your language and the one you are learning. It sits beside the video, never on top of it.</p></div>
+        <figure class="demo-card scene" data-scene="subtitles">
+          <div class="demo-frame">
+            <div class="terminal-bar"><span class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="terminal-label">Live subtitles</span><span></span></div>
+            <div class="scene-stage" aria-hidden="true">
+              <div class="panel scene-panel">
+                <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>Now · <span data-clock>0:12</span></p>
+                <div class="scene-rows"></div>
+              </div>
+            </div>
+          </div>
+          <figcaption class="sr-only">Illustration: Spanish lines appear word by word as they are spoken, each word in its colour, with the English line under each one.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="feature section container" id="guess" aria-labelledby="guess-title">
+      <div class="split-grid">
+        <div class="section-intro"><h2 id="guess-title">Guess first.<br><span>Then check.</span></h2><p>The English stays blurred until you hover it, so you read the Spanish first.</p></div>
+        <figure class="demo-card scene" data-scene="guess">
+          <div class="demo-frame">
+            <div class="terminal-bar"><span class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="terminal-label">Guess first</span><span></span></div>
+            <div class="scene-stage" aria-hidden="true">
+              <div class="panel scene-panel">
+                <div class="scene-top"><p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>Now · <span data-clock>0:12</span></p><span class="toggle"><span class="switch"><i></i></span>Guess first</span></div>
+                <div class="scene-line"><p class="es-line" lang="es" data-es></p><p class="en-line guess" data-en></p></div>
+              </div>
+              <span class="scene-cursor"><svg width="19" height="19" viewBox="0 0 30 30" fill="none"><g transform="rotate(-32 15 15)"><path d="M15 3 L24 25 L15 22 L6 25 Z" fill="#fff"></path></g></svg></span>
+            </div>
+          </div>
+          <figcaption class="sr-only">Illustration: the Spanish line is clear and the English line under it is blurred. A pointer moves over the English line and it clears, then blurs again for the next line.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="feature section container" id="review" aria-labelledby="review-title">
+      <div class="split-grid">
+        <div class="section-intro"><h2 id="review-title">Save a word.<br><span>See it again tomorrow.</span></h2><p>Click any word to save it. Short reviews bring it back with the line it came from, just before you forget it.</p></div>
+        <figure class="demo-card scene" data-scene="save">
+          <div class="demo-frame">
+            <div class="terminal-bar"><span class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="terminal-label">My words</span><span></span></div>
+            <div class="scene-stage" aria-hidden="true">
+              <div class="save-grid">
+                <div class="panel scene-panel">
+                  <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>Now · <span data-clock>0:12</span></p>
+                  <p class="es-line" lang="es" data-es></p>
+                  <p class="en-line" data-en></p>
+                </div>
+                <div class="save-side">
+                  <div class="word-box"><p class="word-head">My words<span data-count>0</span></p><ul class="word-rows" data-words></ul></div>
+                  <div class="flashcard" data-card><div class="flashcard-inner"><div class="face front"><p class="face-label">Review tomorrow</p><p class="face-word" data-front></p><p class="face-context" lang="es" data-context></p></div><div class="face back"><p class="face-label">Meaning</p><p class="face-word" data-back></p></div></div></div>
+                </div>
+              </div>
+              <span class="scene-cursor"><svg width="19" height="19" viewBox="0 0 30 30" fill="none"><g transform="rotate(-32 15 15)"><path d="M15 3 L24 25 L15 22 L6 25 Z" fill="#fff"></path></g></svg></span>
+            </div>
+          </div>
+          <figcaption class="sr-only">Illustration: a pointer clicks a Spanish word, the word moves into a My words list, and a review card flips to show its meaning.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="sites section container" id="sites" aria-labelledby="sites-title">
+      <div class="split-grid">
+        <div class="section-intro"><h2 id="sites-title">Works where<br><span>you watch.</span></h2></div>
+        <ul class="point-list">
+          <li><h3>YouTube</h3><p>Any video with captions.</p></li>
+          <li><h3>Netflix</h3><p>Films and series, with their own subtitles.</p></li>
+          <li><h3>More to come</h3><p>We start with the two you use most.</p></li>
+        </ul>
+      </div>
+    </section>
+</body>
+</html>

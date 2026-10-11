@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <title>Duet, the on-screen language assistant</title>
+  <meta name="description" content="Duet is an on-screen language assistant. Live subtitles and translation on the videos you already watch, with every word coloured by what it does. Join the waitlist.">
+  <meta property="og:title" content="Duet">
+  <meta property="og:description" content="The on-screen language assistant. Live subtitles and translation on the videos you already watch.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./sintel-lines.js"></script>
+  <script defer src="./site.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="scroll-rail" aria-hidden="true"><span class="scroll-thumb"></span></div>
+  <header class="site-header">
+    <nav class="nav" aria-label="Main navigation">
+      <a class="brand" href="#top" aria-label="Duet home"><svg class="mark" viewBox="0 0 30 24" width="30" height="24" aria-hidden="true"><rect x="1" y="2" width="17" height="12" rx="4" fill="#fff"/><rect x="10" y="9" width="19" height="13" rx="4" fill="#fff" stroke="#000" stroke-width="2"/></svg><span>Duet</span></a>
+      <div class="nav-links"><a class="nav-secondary" href="#answer">How it works</a><a class="nav-secondary" href="#faq">FAQ</a><a class="button" href="#waitlist" data-join-focus><span>Join the waitlist</span></a></div>
+    </nav>
+  </header>
+  <main id="main">
+    <div class="aura" aria-hidden="true"></div>
+
+    <section class="hero container" id="top" aria-labelledby="hero-title">
+      <h1 id="hero-title">Your on&#8209;screen language assistant.</h1>
+      <div class="hero-body">
+        <div class="hero-copy">
+          <p>Learn from real people saying real things, without leaving the show.</p>
+        </div>
+        <figure class="demo-card hero-demo">
+          <div class="demo-frame browser">
+            <div class="browser-bar" aria-hidden="true">
+              <span class="terminal-lights"><i></i><i></i><i></i></span>
+              <span class="browser-nav"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg><svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5"/></svg><svg viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3h-3"/></svg></span>
+              <span class="browser-address"><svg viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>youtube.com/watch?v=eRsGyueVLvQ</span>
+              <span class="browser-extension"><svg viewBox="0 0 30 24" width="18" height="14" aria-hidden="true"><rect x="1" y="2" width="17" height="12" rx="4" fill="#fff"/><rect x="10" y="9" width="19" height="13" rx="4" fill="#fff" stroke="#0a84ff" stroke-width="2"/></svg></span>
+            </div>
+            <div class="watch">
+              <div class="watch-main">
+                <div class="video-still" aria-hidden="true"><span class="still-sun"></span><span class="still-hills far"></span><span class="still-hills near"></span><div class="still-controls"><span class="still-pause"></span><span class="still-track"><i></i></span><span class="still-time">1:47 / 14:48</span></div></div>
+                <p class="watch-title">Sintel</p>
+                <p class="watch-meta">Blender Foundation · Open movie</p>
+              </div>
+              <div class="panel duet-panel" data-pairs>
+                <div class="duet-bar" aria-hidden="true"><span class="duet-logo"><svg viewBox="0 0 30 24" width="18" height="14" aria-hidden="true"><rect x="1" y="2" width="17" height="12" rx="4" fill="#fff"/><rect x="10" y="9" width="19" height="13" rx="4" fill="#fff" stroke="#000" stroke-width="2"/></svg></span><span class="duet-brand"><b>Duet</b><small>Learn Spanish</small></span><span class="duet-icons"><i></i><i></i></span></div>
+                <div class="duet-controls" aria-hidden="true"><span class="duet-label">Spanish</span><span class="duet-level"><b>1</b><b class="on">2</b><b>3</b><b>4</b><b>5</b></span><span class="toggle"><span class="switch"><i></i></span>Guess first</span></div>
+                <div class="duet-now line-card">
+                    <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>Now · 1:47</p>
+                    <p class="mix"><span class="w" data-t="p" data-k="1">She</span> <span class="w sw" data-t="v" data-k="2">encontró</span> <span class="w" data-t="g">the</span> <span class="w" data-t="a" data-k="3">old</span> <span class="w sw" data-t="n" data-k="4">mapa</span> <span class="w" data-t="g">in the</span> <span class="w sw" data-t="n" data-k="5">río</span>.</p>
+                    <p class="es-line" lang="es"><span class="w" data-t="p" data-k="1">Ella</span> <span class="w" data-t="v" data-k="2">encontró</span> <span class="w" data-t="g">el</span> <span class="w" data-t="n" data-k="4">mapa</span> <span class="w" data-t="a" data-k="3">viejo</span> <span class="w" data-t="g">en el</span> <span class="w" data-t="n" data-k="5">río</span>.</p>
+                    <p class="en-line guess" tabindex="0"><span class="w" data-t="p" data-k="1">She</span> <span class="w" data-t="v" data-k="2">found</span> <span class="w" data-t="g">the</span> <span class="w" data-t="a" data-k="3">old</span> <span class="w" data-t="n" data-k="4">map</span> <span class="w" data-t="g">in the</span> <span class="w" data-t="n" data-k="5">river</span>.</p>
+                </div>
+                <div class="duet-legend" aria-hidden="true"><span data-t="n"><i></i>Things</span><span data-t="v"><i></i>Actions</span><span data-t="a"><i></i>Describing</span><span data-t="p"><i></i>People</span><span data-t="x"><i></i>Names</span><span data-t="g"><i></i>Glue</span></div>
+                <div class="duet-tabs" aria-hidden="true"><b class="on">Script</b><b>My words</b></div>
+                <ol class="duet-script" data-script aria-hidden="true"></ol>
+              </div>
+            </div>
+          </div>
+          <figcaption class="sr-only">A browser window on a muted scene from the open film Sintel, with the Duet panel beside the video. The panel shows each line of dialogue as it is spoken: mixed English and Spanish, the full Spanish line, and the English line, blurred until you hover it. Under it are the colour key and the scene's script, which follows the film.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="problem section" id="problem" aria-labelledby="problem-title">
+      <div class="problem-track">
+        <div class="problem-stage container">
+          <h2 id="problem-title" class="wide-heading">You did the lessons.<br><span>But you still can’t follow the show?</span></h2>
+          <div class="problems" data-problems>
+            <ol class="problem-steps">
+              <li class="problem-step is-on"><button type="button" aria-pressed="true" aria-controls="problem-pane-1"><span class="step-num">01</span><span class="step-text"><span class="step-title">Word for word</span><span class="step-line">Translators swap words. People mean things.</span><span class="step-progress" aria-hidden="true"><i></i></span></span></button></li>
+              <li class="problem-step"><button type="button" aria-pressed="false" aria-controls="problem-pane-2"><span class="step-num">02</span><span class="step-text"><span class="step-title">Textbook Spanish</span><span class="step-line">Nobody talks like a lesson.</span><span class="step-progress" aria-hidden="true"><i></i></span></span></button></li>
+              <li class="problem-step"><button type="button" aria-pressed="false" aria-controls="problem-pane-3"><span class="step-num">03</span><span class="step-text"><span class="step-title">Pausing the show</span><span class="step-line">Learning shouldn’t stop what you love.</span><span class="step-progress" aria-hidden="true"><i></i></span></span></button></li>
+            </ol>
+            <div class="problem-board">
+              <div class="problem-pane is-on" id="problem-pane-1">
+                <div class="pane-caption"><span class="step-num">01</span><div><p class="step-title">Word for word</p><p class="step-line">Translators swap words. People mean things.</p></div></div>
+                <div class="align-figure" role="img" aria-label="Estoy hasta las narices, translated word for word as I am up to the noses, crossed out. What it means: I'm fed up.">
+                  <div class="align" aria-hidden="true">
+                    <span class="w" data-t="v">Estoy</span><span class="w" data-t="g">hasta</span><span class="w" data-t="g">las</span><span class="w" data-t="n">narices</span>
+                    <i class="ln" style="--d:.05s"></i><i class="ln" style="--d:.1s"></i><i class="ln" style="--d:.15s"></i><i class="ln" style="--d:.2s"></i>
+                    <span class="lit anim" style="--d:.1s">I am</span><span class="lit anim" style="--d:.15s">up to</span><span class="lit anim" style="--d:.2s">the</span><span class="lit anim" style="--d:.25s">noses</span>
+                  </div>
+                  <p class="literal anim" style="--d:.35s" aria-hidden="true"><span style="--d:.6s">“I am up to the noses.”</span></p>
+                  <div class="bracket anim" style="--d:.8s" aria-hidden="true"></div>
+                  <p class="meaning anim" style="--d:.95s" aria-hidden="true">“I’m fed up.”</p>
+                </div>
+              </div>
+              <div class="problem-pane" id="problem-pane-2" aria-hidden="true">
+                <div class="pane-caption"><span class="step-num">02</span><div><p class="step-title">Textbook Spanish</p><p class="step-line">Nobody talks like a lesson.</p></div></div>
+                <div class="chat-phone" role="img" aria-label="A chat with Lucía. She writes: ¿Qué pasa, tío? The reply, straight from lesson 3: Buenos días. ¿Cómo está usted? She answers: ¿Usted? Jaja.">
+                  <p class="chat-name" aria-hidden="true">Lucía</p>
+                  <p class="bubble them anim" style="--d:.05s" lang="es" aria-hidden="true">¿Qué pasa, tío?</p>
+                  <p class="bubble you anim" style="--d:.4s" lang="es" aria-hidden="true">Buenos días. ¿Cómo está usted?</p>
+                  <p class="bubble-meta anim" style="--d:.55s" aria-hidden="true">Straight from lesson 3</p>
+                  <p class="bubble them anim" style="--d:.9s" lang="es" aria-hidden="true">¿Usted? Jaja</p>
+                </div>
+              </div>
+              <div class="problem-pane" id="problem-pane-3" aria-hidden="true">
+                <div class="pane-caption"><span class="step-num">03</span><div><p class="step-title">Pausing the show</p><p class="step-line">Learning shouldn’t stop what you love.</p></div></div>
+                <div class="paused-show" role="img" aria-label="A paused show at 1:47, covered by a pop-up: Don't lose your streak! Time for today's lesson. Start lesson.">
+                  <div class="video-still" aria-hidden="true"><span class="still-sun"></span><span class="still-hills far"></span><span class="still-hills near"></span><div class="still-controls"><span class="still-play"></span><span class="still-track"><i></i></span><span class="still-time">Paused · 1:47 / 14:48</span></div></div>
+                  <div class="pop-layer" aria-hidden="true"><div class="lesson-pop anim" style="--d:.1s"><p><strong>Don’t lose your streak!</strong></p><p>Time for today’s lesson.</p><span>Start lesson</span></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="answer section container" id="answer" aria-labelledby="answer-title">
+      <h2 id="answer-title" class="wide-heading">Quiet enough to keep watching.<br><span>Present enough to keep learning.</span></h2>
+      <p class="wide-copy">Duet sits beside the video, never on top of it. It shows you just enough to learn, then gets out of the way.</p>
+    </section>
+
+    <section class="colours section container" id="colours" aria-labelledby="colours-title">
+      <div class="split-grid">
+        <div class="section-intro"><h2 id="colours-title">Every word<br><span>has a colour.</span></h2></div>
+        <div class="colours-content">
+          <div class="demo-frame line-card big" data-pairs>
+            <p class="mix"><span class="w" data-t="p" data-k="1">She</span> <span class="w sw" data-t="v" data-k="2">busca</span> <span class="w" data-t="g">the</span> <span class="w sw" data-t="n" data-k="3">dragón</span> <span class="w" data-t="g">in the</span> <span class="w" data-t="a" data-k="4">dark</span> <span class="w sw" data-t="n" data-k="5">bosque</span>.</p>
+            <p class="es-line" lang="es"><span class="w" data-t="p" data-k="1" tabindex="0">Ella</span> <span class="w" data-t="v" data-k="2" tabindex="0">busca</span> <span class="w" data-t="g">el</span> <span class="w" data-t="n" data-k="3" tabindex="0">dragón</span> <span class="w" data-t="g">en el</span> <span class="w" data-t="n" data-k="5" tabindex="0">bosque</span> <span class="w" data-t="a" data-k="4" tabindex="0">oscuro</span>.</p>
+            <p class="en-line"><span class="w" data-t="p" data-k="1">She</span> <span class="w" data-t="v" data-k="2">looks for</span> <span class="w" data-t="g">the</span> <span class="w" data-t="n" data-k="3">dragon</span> <span class="w" data-t="g">in the</span> <span class="w" data-t="a" data-k="4">dark</span> <span class="w" data-t="n" data-k="5">forest</span>.</p>
+          </div>
+          <ul class="legend" aria-label="Colour key">
+            <li data-t="n"><i aria-hidden="true"></i><div><h3>Things</h3><p lang="es">dragón, bosque</p></div></li>
+            <li data-t="v"><i aria-hidden="true"></i><div><h3>Actions</h3><p lang="es">busca, encontró</p></div></li>
+            <li data-t="a"><i aria-hidden="true"></i><div><h3>Describing words</h3><p lang="es">oscuro, viejo</p></div></li>
+            <li data-t="p"><i aria-hidden="true"></i><div><h3>People and pointers</h3><p lang="es">ella, alguien</p></div></li>
+            <li data-t="x"><i aria-hidden="true"></i><div><h3>Names</h3><p lang="es">Lucía, Madrid</p></div></li>
+            <li data-t="g"><i aria-hidden="true"></i><div><h3>Glue words</h3><p lang="es">el, en, de</p></div></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature section container" id="subtitles" aria-labelledby="subtitles-title">
+      <div class="split-grid">
+        <div class="section-intro"><h2 id="subtitles-title">Both languages.<br><span>Live, on any video.</span></h2><p>Duet writes each line as it is spoken, in your language and the one you are learning. It sits beside the video, never on top of it.</p></div>
+        <figure class="demo-card scene" data-scene="subtitles">
+          <div class="demo-frame">
+            <div class="terminal-bar"><span class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="terminal-label">Live subtitles</span><span></span></div>
+            <div class="scene-stage" aria-hidden="true">
+              <div class="panel scene-panel">
+                <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>Now · <span data-clock>0:12</span></p>
+                <div class="scene-rows"></div>
+              </div>
+            </div>
+          </div>
+          <figcaption class="sr-only">Illustration: Spanish lines appear word by word as they are spoken, each word in its colour, with the English line under each one.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="feature section container" id="guess" aria-labelledby="guess-title">
+      <div class="split-grid">
+        <div class="section-intro"><h2 id="guess-title">Guess first.<br><span>Then check.</span></h2><p>The English stays blurred until you hover it, so you read the Spanish first.</p></div>
+        <figure class="demo-card scene" data-scene="guess">
+          <div class="demo-frame">
+            <div class="terminal-bar"><span class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="terminal-label">Guess first</span><span></span></div>
+            <div class="scene-stage" aria-hidden="true">
+              <div class="panel scene-panel">
+                <div class="scene-top"><p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>Now · <span data-clock>0:12</span></p><span class="toggle"><span class="switch"><i></i></span>Guess first</span></div>
+                <div class="scene-line"><p class="es-line" lang="es" data-es></p><p class="en-line guess" data-en></p></div>
+              </div>
+              <span class="scene-cursor"><svg width="19" height="19" viewBox="0 0 30 30" fill="none"><g transform="rotate(-32 15 15)"><path d="M15 3 L24 25 L15 22 L6 25 Z" fill="#fff"></path></g></svg></span>
+            </div>
+          </div>
+          <figcaption class="sr-only">Illustration: the Spanish line is clear and the English line under it is blurred. A pointer moves over the English line and it clears, then blurs again for the next line.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="feature section container" id="review" aria-labelledby="review-title">
+      <div class="split-grid">
+        <div class="section-intro"><h2 id="review-title">Save a word.<br><span>See it again tomorrow.</span></h2><p>Click any word to save it. Short reviews bring it back with the line it came from, just before you forget it.</p></div>
+        <figure class="demo-card scene" data-scene="save">
+          <div class="demo-frame">
+            <div class="terminal-bar"><span class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="terminal-label">My words</span><span></span></div>
+            <div class="scene-stage" aria-hidden="true">
+              <div class="save-grid">
+                <div class="panel scene-panel">
+                  <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>Now · <span data-clock>0:12</span></p>
+                  <p class="es-line" lang="es" data-es></p>
+                  <p class="en-line" data-en></p>
+                </div>
+                <div class="save-side">
+                  <div class="word-box"><p class="word-head">My words<span data-count>0</span></p><ul class="word-rows" data-words></ul></div>
+                  <div class="flashcard" data-card><div class="flashcard-inner"><div class="face front"><p class="face-label">Review tomorrow</p><p class="face-word" data-front></p><p class="face-context" lang="es" data-context></p></div><div class="face back"><p class="face-label">Meaning</p><p class="face-word" data-back></p></div></div></div>
+                </div>
+              </div>
+              <span class="scene-cursor"><svg width="19" height="19" viewBox="0 0 30 30" fill="none"><g transform="rotate(-32 15 15)"><path d="M15 3 L24 25 L15 22 L6 25 Z" fill="#fff"></path></g></svg></span>
+            </div>
+          </div>
+          <figcaption class="sr-only">Illustration: a pointer clicks a Spanish word, the word moves into a My words list, and a review card flips to show its meaning.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="sites section container" id="sites" aria-labelledby="sites-title">
+      <div class="split-grid">
+        <div class="section-intro"><h2 id="sites-title">Works where<br><span>you watch.</span></h2></div>
+        <ul class="point-list">
+          <li><h3>YouTube</h3><p>Any video with captions.</p></li>
+          <li><h3>Netflix</h3><p>Films and series, with their own subtitles.</p></li>
+          <li><h3>More to come</h3><p>We start with the two you use most.</p></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Placeholder answers: confirm languages, price and sites before launch. -->
+    <section class="faq section container" id="faq" aria-labelledby="faq-title">
+      <div class="split-grid"><div class="section-intro"><h2 id="faq-title">A few things<br> to know.</h2></div><div class="faq-items">
+        <details><summary>Which languages can I learn?<span aria-hidden="true">+</span></summary><p>Spanish first, from English. More languages follow.</p></details>
+        <details><summary>Does Duet cover the video?<span aria-hidden="true">+</span></summary><p>No. It sits beside the video, or below it in a narrow window.</p></details>
+        <details><summary>How much does it cost?<span aria-hidden="true">+</span></summary><p>Early access is free. We will share pricing before it changes.</p></details>
+        <details><summary>What does Duet keep?<span aria-hidden="true">+</span></summary><p>Your saved words and settings, in your browser.</p></details>
+        <details><summary>When can I start?<span aria-hidden="true">+</span></summary><p>Join the waitlist and we will email you when your invite is ready.</p></details>
+      </div></div>
+    </section>
+
+    <section class="cta section container" id="waitlist" aria-labelledby="waitlist-title">
+      <div class="split-grid">
+        <div class="section-intro"><h2 id="waitlist-title">Be first<br><span>in line.</span></h2><p>We will email you when Duet is ready. Nothing else.</p></div>
+        <!-- Design only: sign-up is not wired up yet. -->
+        <form class="join join-large" action="#" method="post" novalidate>
+          <input type="email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
+          <button class="button" type="submit"><span>Join the waitlist</span></button>
+        </form>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer container"><div class="footer-inner"><span>© 2026 Duet</span><div class="footer-links"><a href="#answer">How it works</a><a href="#faq">FAQ</a></div><span>Film: <a href="https://durian.blender.org/">Sintel</a> © Blender Foundation, CC BY 3.0</span></div></footer>
+  <!-- Design only: sign-up is not wired up yet. site.js answers with a toast. -->
+  <form class="join join-dock" action="#" method="post" novalidate aria-label="Join the waitlist">
+    <input type="email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
+    <button class="button" type="submit"><span>Join the waitlist</span></button>
+  </form>
+  <div class="cursor cursor-blend" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 30 30" fill="none"><g transform="rotate(-32 15 15)"><path d="M15 3 L24 25 L15 22 L6 25 Z" fill="#fff"></path></g></svg></div>
+  <div class="cursor cursor-solid" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 30 30" fill="none"><g transform="rotate(-32 15 15)"><path d="M15 3 L24 25 L15 22 L6 25 Z" fill="transparent"></path></g></svg></div>
+  <div class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>

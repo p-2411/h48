@@ -1,0 +1,454 @@
+/* Duet waitlist — the Sirus page, black and white, with one kind of colour: the words. */
+/* Self-hosted latin subset of the Google Fonts build (covers á é í ó ú ñ ¿ ¡); the stack below stays the fallback. */
+@font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/inter-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:Inter;font-style:normal;font-weight:500;font-display:swap;src:url(./fonts/inter-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+:root{
+  color-scheme:dark;--bg:#000;--fg:#fff;--fg-2:#d6d6d6;--text-2:#a6a6a6;--text-3:#767676;--dim:#8e8e93;--line:#1f1f1f;--line-2:#2c2c2c;--frame:#0b0e11;--radius:8px;--ease:cubic-bezier(.16,1,.3,1);--sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  /* Word colours, one per job a word does. The same in both languages. From the extension's dark set. */
+  --c-n:#4da3ff;--c-v:#ff9f0a;--c-a:#32d74b;--c-p:#da8fff;--c-x:#ff6482;--c-g:#8a8a8e;
+  /* "A little" glow: how far each coloured word's halo spreads and how strong it is. */
+  --glow-size:14px;--glow-mix:60%;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:100px}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 16px/1.6 var(--sans);font-feature-settings:'ss01';font-optical-sizing:auto;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+h1,h2,h3,p,figure,ul{margin:0}
+h1,h2,h3{font-weight:400}
+a{color:inherit;text-decoration:none}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+button,a{-webkit-tap-highlight-color:transparent}
+::selection{background:#fff;color:#000}
+:focus-visible{outline:2px solid currentColor;outline-offset:4px;border-radius:2px}
+[hidden]{display:none!important}
+.container{max-width:1440px;margin-inline:auto;padding-inline:clamp(24px,5vw,64px)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip-link{position:fixed;top:12px;left:24px;z-index:100;background:#fff;color:#000;padding:10px 16px;border-radius:var(--radius);transform:translateY(-160%)}
+.skip-link:focus{transform:none}
+
+/* Header */
+.site-header{position:sticky;top:0;z-index:50;padding:14px clamp(16px,3vw,36px) 0}
+.nav{max-width:1360px;margin:auto;padding:11px 11px 11px clamp(22px,3vw,36px);display:flex;align-items:center;justify-content:space-between;gap:32px;background:rgba(38,38,38,.3);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.14);border-radius:999px}
+.brand{display:inline-flex;align-items:center;gap:10px;flex-shrink:0}
+.brand .mark{display:block;height:24px;width:auto}
+.brand span{font-size:20px;font-weight:500;letter-spacing:-.02em}
+.nav-links{display:flex;align-items:center;gap:clamp(20px,2.5vw,36px);font-size:15px}
+.nav-links a{color:var(--text-2)}
+.nav-secondary{position:relative}
+.nav-secondary::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:1px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .3s var(--ease)}
+.nav-secondary:hover::after{transform:scaleX(1)}
+.button{color:#000!important;background:#fff;border:1px solid #fff;border-radius:999px;padding:8px 18px;font-weight:500;line-height:1.5;white-space:nowrap;position:relative;overflow:hidden;transition:transform .2s var(--ease)}
+.button::before{content:"";position:absolute;left:var(--mx,50%);top:var(--my,50%);width:var(--fill-diameter,200%);aspect-ratio:1;border-radius:50%;background:#000;transform:translate(-50%,-50%) scale(0);transition:transform .3s var(--ease)}
+.button>span{position:relative;z-index:1;transition:color .3s var(--ease)}
+.button:active{transform:scale(.96)}
+@media(hover:hover){.button:hover::before{transform:translate(-50%,-50%) scale(1)}.button:hover>span{color:#fff}}
+
+/* Aura: faint pools of the mark's blue, indigo and orange, all the way down the page. The only glow that is not a word. */
+main{position:relative;isolation:isolate;overflow-x:clip}
+.aura{position:absolute;top:-120px;bottom:0;left:0;right:0;z-index:-1;pointer-events:none;overflow:hidden;
+  background:
+    radial-gradient(560px 420px at 16% 6%,rgba(10,132,255,.20),transparent 70%),
+    radial-gradient(500px 360px at 46% 3%,rgba(94,92,230,.16),transparent 70%),
+    radial-gradient(540px 420px at 82% 9%,rgba(255,159,10,.12),transparent 70%),
+    radial-gradient(620px 480px at 88% 22%,rgba(94,92,230,.14),transparent 70%),
+    radial-gradient(600px 460px at 8% 34%,rgba(10,132,255,.14),transparent 70%),
+    radial-gradient(580px 440px at 92% 47%,rgba(255,159,10,.10),transparent 70%),
+    radial-gradient(620px 460px at 12% 60%,rgba(94,92,230,.14),transparent 70%),
+    radial-gradient(600px 460px at 84% 73%,rgba(10,132,255,.13),transparent 70%),
+    radial-gradient(560px 420px at 18% 86%,rgba(255,159,10,.10),transparent 70%),
+    radial-gradient(640px 460px at 72% 97%,rgba(94,92,230,.15),transparent 70%)}
+
+/* Hero: headline across the top, the video and its panel anchoring the lower right. */
+.hero{padding-top:clamp(56px,11vh,128px);padding-bottom:clamp(56px,8vh,96px)}
+/* The hero heading is the first thing you see, and it is big. */
+h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text-wrap:balance}
+.hero-body{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,8fr);gap:clamp(32px,4vw,64px);align-items:start;margin-top:clamp(36px,5vh,56px)}
+.hero-copy>p{font-size:18px;line-height:1.55;color:var(--fg-2);max-width:32ch}
+
+/* The email bar: one rounded box, the field on top and the button across the bottom. */
+.join{display:flex;flex-direction:column;align-items:stretch;gap:6px;max-width:460px;margin-top:32px;padding:6px;background:rgba(255,255,255,.04);border:1px solid var(--line-2);border-radius:24px;transition:border-color .2s,box-shadow .3s var(--ease)}
+.join:hover{border-color:#5a5a5a}
+.join:focus-within{border-color:rgba(255,255,255,.4);box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 28px rgba(94,92,230,.22)}
+.join input{min-width:0;background:none;border:0;outline:0;padding:12px 16px;font-size:16px;color:var(--fg)}
+.join input::placeholder{color:var(--text-3)}
+.join .button{padding:11px 18px;font-size:16px;text-align:center}
+.join[data-invalid]{border-color:var(--c-x)}
+
+/* On wide screens the hero is one full screen: the heading in front, the video and its panel
+   behind it as a background that site.js drifts slower than the page (parallax) and fades as you scroll.
+   The frame's left side fades to black so the heading stays easy to read. */
+@media(min-width:901px){
+  .hero{position:relative;min-height:calc(100vh - 80px);min-height:calc(100svh - 80px);display:flex;flex-direction:column;justify-content:center;padding-top:clamp(24px,5vh,64px);padding-bottom:clamp(64px,12vh,140px)}
+  .hero h1,.hero-copy{position:relative;z-index:1}
+  .hero-body{display:block;margin-top:clamp(24px,4vh,40px)}
+  /* The video, in its whole browser frame, is a big backdrop: the heading and its line sit right on
+     top of it. site.js drifts it slower than the page as you scroll. */
+  .hero .hero-demo{position:absolute;z-index:0;left:-3vw;right:-3vw;top:max(48px,7vh);width:auto;opacity:.6;will-change:transform,opacity}
+}
+
+/* The sticky email bar: one glass pill, centred at the bottom of the screen on every page view.
+   It steps aside while the final sign-up section is on screen. */
+.join-dock{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));z-index:60;flex-direction:row;align-items:center;gap:8px;width:min(520px,calc(100% - 24px));max-width:none;margin:0;padding:5px 5px 5px 20px;border-radius:999px;border-color:rgba(255,255,255,.16);background:rgba(24,24,26,.55);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);box-shadow:0 10px 40px rgba(0,0,0,.5),0 0 32px rgba(94,92,230,.16);transform:translateX(-50%);transition:opacity .3s var(--ease),transform .3s var(--ease),border-color .2s,box-shadow .3s var(--ease)}
+.join-dock input{flex:1;padding:8px 0;font-size:15px}
+.join-dock .button{flex:none;padding:9px 18px;font-size:15px}
+.join-dock.is-hidden{opacity:0;transform:translate(-50%,24px);pointer-events:none}
+
+/* Frames: the browser window around the video, and the empty slots that wait for demos. */
+.demo-card{min-width:0;width:100%}
+.demo-frame{border:1px solid var(--line-2);border-radius:var(--radius);overflow:hidden;background:var(--frame)}
+.terminal-bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:5px 12px;min-height:28px;border-bottom:1px solid var(--line);color:var(--text-2);font-size:12px;line-height:1.5}
+.terminal-lights{display:inline-flex;gap:6px}
+.terminal-lights i{display:block;width:9px;height:9px;border-radius:50%;background:#3a3a3c}
+.terminal-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+/* The video in the hero is drawn, not recorded: a dusk scene under a paused player bar. */
+.video-still{position:relative;aspect-ratio:16/9;border-radius:6px;overflow:hidden;background:linear-gradient(180deg,#081226 0%,#18204a 34%,#4a3561 56%,#b8643c 72%,#2a1712 80%)}
+.still-sun{position:absolute;left:58%;top:48%;width:16%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#ffd9a0 0%,#ff9f0a 42%,rgba(255,159,10,0) 70%);filter:blur(1px)}
+.still-hills{position:absolute;inset:0}
+.still-hills.far{background:#1c1426;clip-path:polygon(0 68%,14% 58%,30% 65%,48% 55%,66% 63%,84% 56%,100% 61%,100% 100%,0 100%)}
+.still-hills.near{background:#07060a;clip-path:polygon(0 82%,18% 72%,40% 79%,60% 69%,80% 77%,100% 71%,100% 100%,0 100%)}
+.still-controls{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:10px;padding:18px 12px 9px;background:linear-gradient(to top,rgba(0,0,0,.7),transparent);font-size:11px;color:var(--fg-2);font-variant-numeric:tabular-nums}
+.still-pause{width:8px;height:10px;flex:none;border-inline:3px solid var(--fg-2)}
+.still-track{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.22)}
+.still-track i{display:block;width:12%;height:100%;border-radius:2px;background:#fff}
+
+/* The hero shows the product's own shape: the video, with the panel beside it. */
+.hero-demo{container-type:inline-size}
+/* The hero window is the real thing in miniature: a browser on a YouTube watch page, the video on
+   the left, and the Duet panel from the extension on the right, in its dark theme. */
+.browser-bar{display:flex;align-items:center;gap:14px;padding:8px 12px;border-bottom:1px solid var(--line);color:var(--text-3)}
+.browser-nav{display:flex;gap:8px}
+.browser-bar svg{display:block;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.browser-address{flex:1;display:flex;align-items:center;gap:8px;min-width:0;max-width:560px;margin-inline:auto;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.06);font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.browser-address svg{width:12px;height:12px;flex:none}
+.browser-extension{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;background:#0a84ff}
+.browser-extension svg{width:16px;height:13px;stroke:none}
+.hero-demo .watch{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;padding:16px;align-items:stretch}
+.watch-title{margin-top:12px;font-size:16px;line-height:1.4;letter-spacing:-.01em}
+.watch-meta{font-size:13px;color:var(--text-3)}
+/* The panel takes the height of the video column (height 0, min-height 100%) so the script list
+   below the line card fills what is left and clips, like the real panel's scrolling list. */
+.duet-panel{display:flex;flex-direction:column;gap:12px;height:0;min-height:100%;overflow:hidden;padding:12px;border-radius:14px;background:rgba(28,28,30,.86);border-color:rgba(255,255,255,.1)}
+.duet-bar{display:flex;align-items:center;gap:10px}
+.duet-logo{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#fff;flex:none}
+.duet-logo svg{width:17px;height:13px}
+.duet-logo svg rect{fill:#000;stroke:#fff}
+.duet-brand{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.duet-brand b{font-size:14px;font-weight:500}
+.duet-brand small{font-size:11px;color:rgba(235,235,245,.6)}
+.duet-icons{display:flex;gap:6px;margin-left:auto}
+.duet-icons i{width:24px;height:24px;border-radius:50%;background:rgba(118,118,128,.24)}
+.duet-controls{display:flex;align-items:center;gap:10px;font-size:12px;color:rgba(235,235,245,.6)}
+.duet-level{display:inline-flex;padding:2px;border-radius:8px;background:rgba(118,118,128,.24)}
+.duet-level b{min-width:24px;padding:3px 0;border-radius:6px;font-weight:400;text-align:center;font-size:12px;color:var(--fg-2)}
+.duet-level b.on{background:#636366;color:#fff;font-weight:500}
+.duet-controls .toggle{margin-left:auto;font-size:12px}
+.duet-now{padding:14px;border-radius:12px;background:rgba(118,118,128,.18)}
+.duet-now .eyebrow{margin-bottom:8px}
+.duet-now .mix{font-size:clamp(16px,1.45vw,22px);line-height:1.35}
+.duet-now .es-line{font-size:clamp(13px,1vw,15px);margin-top:8px}
+.duet-now .en-line{font-size:13px;margin-top:6px}
+.duet-legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;color:rgba(235,235,245,.6)}
+.duet-legend span{display:inline-flex;align-items:center;gap:5px}
+.duet-legend i{width:7px;height:7px;border-radius:2px;background:var(--c)}
+.duet-tabs{display:grid;grid-template-columns:1fr 1fr;padding:2px;border-radius:8px;background:rgba(118,118,128,.24);font-size:12px;text-align:center}
+.duet-tabs b{padding:4px 0;border-radius:6px;font-weight:400;color:var(--fg-2)}
+.duet-tabs b.on{background:#636366;color:#fff;font-weight:500}
+.duet-script{list-style:none;padding:0;margin:0;flex:1;min-height:0;overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,#000 70%,transparent);mask-image:linear-gradient(to bottom,#000 70%,transparent)}
+.duet-script li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px;padding:7px 8px;border-radius:10px;font-size:12px;line-height:1.35;transition:background .3s var(--ease)}
+.duet-script li.is-now{background:rgba(10,132,255,.16)}
+.duet-script time{color:rgba(235,235,245,.35);font-variant-numeric:tabular-nums}
+.duet-script li.is-now time{color:#0a84ff}
+.duet-script .w{text-shadow:none;padding:0}
+.duet-script .en{display:block;color:rgba(235,235,245,.6);margin-top:2px}
+/* On narrow screens the window keeps the video and the line card only. */
+@container (max-width:600px){
+  .hero-demo .watch{grid-template-columns:1fr}
+  .duet-panel{height:auto;min-height:0}
+  .duet-controls,.duet-legend,.duet-tabs,.duet-script,.watch-meta,.browser-nav,.browser-extension{display:none}
+}
+
+/* The real video plays over the drawn still, which stays as its poster. It is scenery: no clicks. */
+.video-still .hero-player{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;z-index:1}
+.watch.is-live .still-controls{display:none}
+.watch{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:12px;padding:12px;align-items:start}
+.panel{border:1px solid var(--line-2);border-radius:var(--radius);background:rgba(28,28,30,.55);padding:14px 16px 16px}
+.eyebrow{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);margin-bottom:10px;font-variant-numeric:tabular-nums}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#ff453a;box-shadow:0 0 8px #ff453a}
+
+/* Words. Each colour glows a little; glue words stay flat. */
+.w{--c:var(--fg);color:var(--c);border-radius:6px;padding:0 .06em;text-shadow:0 0 var(--glow-size) color-mix(in srgb,var(--c) var(--glow-mix),transparent);transition:opacity .16s,background .16s,box-shadow .16s,color .45s,text-shadow .45s}
+.w[data-t="n"],[data-t="n"]{--c:var(--c-n)}
+.w[data-t="v"],[data-t="v"]{--c:var(--c-v)}
+.w[data-t="a"],[data-t="a"]{--c:var(--c-a)}
+.w[data-t="p"],[data-t="p"]{--c:var(--c-p)}
+.w[data-t="x"],[data-t="x"]{--c:var(--c-x)}
+.w[data-t="g"],[data-t="g"]{--c:var(--c-g)}
+.w[data-t="g"]{text-shadow:none}
+/* A word swapped into the other language: a soft tint and a thin border in its colour. */
+.w.sw{font-weight:500;padding:0 .18em;background:color-mix(in srgb,var(--c) 15%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 50%,transparent)}
+/* Hover a word and its partner lights up; everything else steps back. */
+.is-linking .w{opacity:.28}
+.is-linking .w.is-lit{opacity:1;background:color-mix(in srgb,var(--c) 22%,transparent);box-shadow:0 0 0 1.5px color-mix(in srgb,var(--c) 70%,transparent),0 0 18px color-mix(in srgb,var(--c) 40%,transparent)}
+.w[tabindex]:focus-visible{outline:none;box-shadow:0 0 0 1.5px var(--c)}
+
+.line-card .mix{font-size:20px;line-height:1.38;letter-spacing:-.015em}
+.line-card .es-line{font-size:15px;line-height:1.45;margin-top:10px}
+.line-card .en-line{font-size:13px;line-height:1.45;color:var(--text-2);margin-top:8px}
+/* Guess first: the English waits, blurred, until you look. */
+.en-line.guess{filter:blur(6px);opacity:.7;transition:filter .22s var(--ease),opacity .22s var(--ease);cursor:help}
+.en-line.guess:hover,.en-line.guess:focus-visible,.is-linking .en-line.guess{filter:none;opacity:1}
+.en-line.guess:focus-visible{outline-offset:6px}
+
+/* Living illustrations: short scripted scenes that show each idea. They are not recordings of
+   the product; site.js plays them while they are on screen and shows a still under reduced motion. */
+.scene-stage{position:relative;overflow:hidden;min-height:clamp(340px,30vw,420px);padding:clamp(14px,2.4vw,28px);display:flex;flex-direction:column;justify-content:center;container-type:inline-size}
+.scene-panel{padding:16px 18px 18px}
+.scene .es-line{font-size:clamp(18px,2vw,24px);line-height:1.35;letter-spacing:-.015em}
+.scene .en-line{font-size:14px;line-height:1.45;color:var(--text-2);margin-top:6px}
+.w.is-arriving{color:var(--fg);text-shadow:none}
+.w.is-saved{background:color-mix(in srgb,var(--c) 22%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 70%,transparent),0 0 18px color-mix(in srgb,var(--c) 40%,transparent)}
+.scene-cursor{position:absolute;left:0;top:0;z-index:3;opacity:0;pointer-events:none;transition:transform .8s var(--ease),opacity .3s}
+.scene-cursor svg{display:block;margin:-3px 0 0 -5.5px;transition:transform .15s}
+.scene-cursor.is-pressing svg{transform:scale(.8)}
+
+/* Live subtitles: new lines arrive at the bottom and push older ones up. */
+.scene-rows{display:flex;flex-direction:column;justify-content:flex-end;gap:16px;height:clamp(230px,22vw,280px);overflow:hidden}
+.scene-row{flex:none;transition:opacity .5s var(--ease)}
+.scene-row.is-past{opacity:.35}
+.scene .en-line.is-waiting{opacity:0}
+.scene-row .en-line{transition:opacity .5s var(--ease)}
+
+/* Guess first */
+.scene-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.scene-top .eyebrow{margin:0}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2)}
+.switch{position:relative;width:30px;height:18px;border-radius:9px;background:#fff;flex:none}
+.switch i{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#000}
+.scene-line{min-height:7.5em;transition:opacity .35s var(--ease)}
+.scene-line.is-swapping{opacity:0}
+.scene[data-scene="guess"] .es-line{font-size:clamp(22px,2.6vw,30px)}
+.scene .en-line.guess{font-size:clamp(16px,1.6vw,19px);margin-top:12px}
+.scene .en-line.guess.is-peek{filter:none;opacity:1}
+
+/* Save a word: the line, your words, and tomorrow's review card. */
+.save-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px;align-items:start}
+.save-side{display:grid;gap:14px}
+.word-box{border:1px solid var(--line-2);border-radius:var(--radius);padding:12px 14px;min-height:132px}
+.word-head{display:flex;justify-content:space-between;font-size:12px;color:var(--text-3);margin-bottom:6px}
+.word-rows{list-style:none;padding:0}
+.word-rows li{display:grid;grid-template-columns:8px minmax(0,1fr) auto;align-items:center;gap:10px;padding:5px 0;font-size:14px;animation:row-in .5s var(--ease)}
+.word-rows li i{width:8px;height:8px;border-radius:3px;background:var(--c);box-shadow:0 0 8px color-mix(in srgb,var(--c) 70%,transparent)}
+.word-rows li span:last-child{color:var(--text-3);font-size:13px}
+@keyframes row-in{from{opacity:0;transform:translateY(-6px)}}
+.flashcard{perspective:800px;height:118px;transition:opacity .4s var(--ease)}
+.flashcard.is-empty{opacity:0}
+.flashcard-inner{position:relative;height:100%;transition:transform .7s var(--ease);transform-style:preserve-3d}
+.flashcard.is-flipped .flashcard-inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:12px 14px;border:1px solid var(--line-2);border-radius:var(--radius);background:#101216;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.face.back{transform:rotateY(180deg)}
+.face-label{font-size:11px;color:var(--text-3)}
+.face-word{font-size:24px;letter-spacing:-.02em;line-height:1.25;min-height:1.25em}
+.face-context{font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scene-ghost{position:absolute;z-index:2;margin:0;pointer-events:none;transition:transform .65s var(--ease),opacity .65s var(--ease)}
+@container (max-width:520px){
+  .save-grid{grid-template-columns:1fr}
+  .flashcard{display:none}
+}
+
+/* Sections */
+.section{border-top:1px solid var(--line);padding-top:clamp(48px,7vh,80px);padding-bottom:clamp(64px,9vh,112px)}
+h2{font-size:clamp(32px,3.4vw,46px);line-height:1.08;letter-spacing:-.02em}
+/* The quieter second line of a heading fades from white to silver. */
+h2 span{background:linear-gradient(180deg,#fff 10%,var(--dim) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+/* Sparks: specks in the word colours drift up around each heading (drawn by site.js). */
+h1,h2{position:relative}
+.sparks{position:absolute;left:-40px;top:-40px;width:calc(100% + 80px);height:calc(100% + 80px);pointer-events:none}
+.section-intro>p{color:var(--text-2);max-width:36ch;margin-top:22px}
+.split-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,clamp(430px,53vw,672px));gap:clamp(40px,6vw,80px)}
+
+/* Every word has a colour: one bigger line, and the key under it. */
+.colours-content{min-width:0}
+.line-card.big{padding:22px 24px 24px}
+.line-card.big .mix{font-size:clamp(24px,2.4vw,32px);line-height:1.3}
+.line-card.big .es-line{font-size:clamp(17px,1.5vw,20px);margin-top:14px}
+.line-card.big .en-line{font-size:15px;margin-top:10px}
+.legend{list-style:none;padding:0;margin-top:32px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:32px}
+.legend li{display:grid;grid-template-columns:10px minmax(0,1fr);gap:14px;padding:16px 0;border-top:1px solid var(--line)}
+.legend li:nth-child(-n+2){border-top:0;padding-top:0}
+.legend i{width:10px;height:10px;border-radius:3px;margin-top:8px;background:var(--c);box-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
+.legend [data-t="g"] i{box-shadow:none}
+.legend h3{font-size:17px;line-height:1.5;letter-spacing:-.01em}
+.legend p{font-size:15px;color:var(--c);margin-top:2px}
+
+/* Point lists: the problem, why shows, and where Duet works. Not a sequence, so no numbers. */
+.point-list{list-style:none;padding:0}
+.point-list li{padding:22px 0}
+.point-list li:first-child{padding-top:0}
+.point-list li+li{border-top:1px solid var(--line)}
+.point-list h3{font-size:18px;line-height:1.4;letter-spacing:-.01em}
+.point-list p{font-size:15px;color:var(--text-2);margin-top:6px;max-width:52ch}
+
+/* The problem section. On wide screens site.js pins the stage while you scroll through the track:
+   the heading slides up to the top, the problems rise in under it, then step 01 → 02 → 03. */
+.problem.section{padding:0;border-top:0}
+.problem-stage{padding-top:clamp(48px,7vh,80px);padding-bottom:clamp(64px,9vh,112px)}
+/* The section slides up under the bottom of the hero so its heading starts rising on the first scroll. */
+.problem.is-scrolly{margin-top:-20vh}
+.problem.is-scrolly .problem-track{position:relative;height:220vh}
+/* Snap points, one per step, placed by site.js: a normal flick lands on the next problem. */
+html:has(.problem.is-scrolly){scroll-snap-type:y proximity}
+.step-snap{position:absolute;left:0;width:1px;height:1px;scroll-snap-align:start;pointer-events:none}
+.problem.is-scrolly .problems{will-change:transform,opacity}
+.problem.is-scrolly .problem-stage{position:sticky;top:0;height:100vh;height:100svh;display:flex;flex-direction:column;justify-content:center;padding-top:96px;padding-bottom:104px;overflow:hidden}
+.problem.is-scrolly .wide-heading{will-change:transform}
+
+/* The problems: a numbered list beside one stage that shows the chosen problem large. Each problem
+   has its own visual. site.js steps through them as you scroll, or when you pick one. */
+.problems{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr);gap:clamp(24px,4vw,64px);align-items:stretch;margin-top:clamp(28px,5vh,48px)}
+.problem-steps{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;justify-content:center}
+.problem-step button{display:grid;grid-template-columns:40px minmax(0,1fr);gap:8px;width:100%;padding:20px 0;border-top:1px solid var(--line);text-align:left;color:var(--text-3);transition:color .3s var(--ease)}
+.problem-step:first-child button{border-top:0}
+.problem-step button:hover,.problem-step.is-on button{color:var(--fg)}
+.step-num{font-size:13px;padding-top:6px;font-variant-numeric:tabular-nums;color:var(--text-3)}
+.step-title{display:block;font-size:clamp(19px,1.7vw,24px);line-height:1.3;letter-spacing:-.015em}
+.step-line{display:block;font-size:15px;color:var(--text-2);max-height:0;opacity:0;overflow:hidden;transition:max-height .45s var(--ease),opacity .45s var(--ease),margin .45s var(--ease)}
+.problem-step.is-on .step-line{max-height:3em;opacity:1;margin-top:6px}
+/* Story-style bars: every step shows a faint track; the shown step's fills as you move through it. */
+.step-progress{display:block;height:2px;margin-top:14px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.step-progress i{display:block;height:100%;border-radius:2px;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.6);transform-origin:left;transform:scaleX(0);transition:transform .2s linear}
+.problem-step.is-on .step-progress i{transform:scaleX(var(--progress,1))}
+.problem-board{position:relative;min-height:clamp(360px,48vh,540px)}
+.problem-pane{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;opacity:0;transform:translateY(10px);transition:opacity .45s var(--ease),transform .45s var(--ease);pointer-events:none}
+.problem-pane.is-on{opacity:1;transform:none;pointer-events:auto}
+.pane-caption{display:none}
+
+/* 01 · Word for word: each Spanish word wired straight down to its literal English word. */
+.align-figure{width:min(100%,640px)}
+.align{display:grid;grid-template-columns:repeat(4,auto);justify-content:center;column-gap:clamp(20px,3vw,44px);font-size:clamp(30px,3.6vw,52px);letter-spacing:-.02em}
+.align .ln{justify-self:center;display:block;width:1px;height:44px;margin:10px 0;background:#5a5a5a;transform-origin:top;transition:transform .25s var(--ease) var(--d,0s)}
+.align .lit{text-align:center;font-size:clamp(17px,1.6vw,22px);color:var(--text-2);letter-spacing:0}
+.literal{text-align:center;margin:26px 0 18px;font-size:clamp(15px,1.3vw,18px);color:var(--text-3)}
+.literal span{position:relative}
+.literal span::after{content:"";position:absolute;left:-3px;right:-3px;top:55%;height:1.5px;border-radius:1px;background:var(--c-x);box-shadow:0 0 8px color-mix(in srgb,var(--c-x) 60%,transparent);transform-origin:left;transition:transform .3s var(--ease) var(--d,0s)}
+.bracket{position:relative;height:16px;border:1px solid var(--fg-2);border-top:0;border-radius:0 0 8px 8px}
+.bracket::after{content:"";position:absolute;left:50%;bottom:-14px;width:1px;height:13px;background:var(--fg-2)}
+.meaning{text-align:center;margin-top:26px;font-size:clamp(30px,3.2vw,46px);letter-spacing:-.02em;text-shadow:0 0 18px rgba(255,255,255,.35)}
+
+/* 02 · Textbook Spanish: a real chat where the lesson-perfect reply lands badly. */
+.chat-phone{display:flex;flex-direction:column;gap:10px;width:min(100%,420px);padding:20px;border:1px solid var(--line-2);border-radius:28px;background:#000;font-size:clamp(15px,1.3vw,18px)}
+.chat-name{text-align:center;font-size:12px;color:var(--text-3);margin-bottom:6px}
+.bubble{max-width:82%;padding:8px 13px;border-radius:18px;line-height:1.35}
+.bubble.them{align-self:flex-start;background:#2c2c2e;border-bottom-left-radius:5px}
+.bubble.you{align-self:flex-end;background:#0a84ff;border-bottom-right-radius:5px}
+.bubble-meta{align-self:flex-end;margin-top:-4px;font-size:11px;color:var(--text-3)}
+
+/* 03 · Pausing the show: the streak pop-up over a paused frame. */
+.paused-show{position:relative;width:100%;border-radius:8px;overflow:hidden}
+.still-play{width:0;height:0;flex:none;border-style:solid;border-width:5px 0 5px 8px;border-color:transparent transparent transparent var(--fg-2)}
+.pop-layer{position:absolute;inset:0;display:grid;place-items:center}
+.lesson-pop{display:flex;flex-direction:column;gap:2px;width:min(70%,360px);padding:16px 20px;border-radius:14px;background:#f5f5f7;color:#1d1d1f;font-size:clamp(14px,1.2vw,17px);line-height:1.4;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.lesson-pop strong{font-weight:500}
+.lesson-pop span{align-self:flex-start;margin-top:8px;padding:4px 12px;border-radius:999px;background:#1d1d1f;color:#fff;font-size:13px}
+
+/* Playing: with motion allowed, each part of a pane waits, then arrives on its own delay (--d) when
+   the pane plays. Without script or under reduced motion, everything simply shows. */
+.problems.is-animated .anim{transition:opacity .3s var(--ease) var(--d,0s),transform .3s var(--ease) var(--d,0s)}
+.problems.is-animated .problem-pane:not(.is-playing) .anim{opacity:0;transform:translateY(8px);transition:none}
+.problems.is-animated .problem-pane:not(.is-playing) .ln{transform:scaleY(0);transition:none}
+.problems.is-animated .problem-pane:not(.is-playing) .literal span::after{transform:scaleX(0);transition:none}
+
+/* Wide sections: one heading across the page and the line under it. */
+.wide-heading{max-width:24ch;text-wrap:balance}
+.wide-copy{color:var(--text-2);max-width:52ch;margin-top:22px;font-size:18px;line-height:1.55}
+
+
+/* FAQ */
+.faq-items details+details{border-top:1px solid var(--line)}
+.faq summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 0;font-size:17px;line-height:1.5}
+.faq-items details:first-child summary{padding-top:0}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary>span{font-size:22px;line-height:1;color:var(--text-3);flex:none;transition:transform .2s}
+.faq summary:hover>span{color:var(--fg)}
+.faq details[open]:not(.is-closing) summary>span{transform:rotate(45deg)}
+.faq details p{font-size:15px;line-height:1.7;color:var(--text-2);padding:0 40px 22px 0;max-width:64ch}
+
+/* Final call */
+.cta .join-large{align-self:center;margin-top:0;width:100%;max-width:520px}
+.cta .join-large input{font-size:17px;padding:14px 18px}
+.cta .join-large .button{padding:13px 22px;font-size:17px}
+
+/* Footer: room at the bottom so the sticky bar never covers it. */
+.site-footer{padding-bottom:84px}
+.footer-inner{border-top:1px solid var(--line);padding-block:28px 40px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px;font-size:14px;color:var(--text-3)}
+.footer-links{display:flex;gap:24px}
+.footer-links a:hover{color:#fff}
+.footer-inner>span:last-child{text-align:right}
+
+/* Scroll rail: replaces the native scrollbar on desktop */
+.scroll-rail{position:fixed;right:20px;top:50%;height:160px;width:3px;transform:translateY(-50%);border-radius:3px;background:#262626;z-index:40;display:none}
+.js .scroll-rail{display:block}
+.js{scrollbar-width:none}
+.js::-webkit-scrollbar{width:0;height:0;display:none}
+.scroll-thumb{position:absolute;top:0;left:0;width:3px;height:30px;border-radius:3px;background:#fff}
+
+/* Custom cursor: inverts over backgrounds and headings, solid over body copy and secondary controls. */
+.cursor{position:fixed;top:0;left:0;z-index:9999;pointer-events:none;transform:translate3d(-100px,-100px,0);will-change:transform;display:none}
+.cursor-blend{mix-blend-mode:difference}
+.cursor svg{display:block;width:19px;height:19px;margin:-3px 0 0 -5.5px;animation:reticle 4.5s ease-in-out infinite}
+@keyframes reticle{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.1) rotate(8deg)}}
+.cursor-hidden .cursor{display:block}
+.cursor-hidden,.cursor-hidden *{cursor:none!important}
+
+/* Toast */
+.toast{position:fixed;bottom:92px;left:50%;transform:translate(-50%,12px);opacity:0;pointer-events:none;border:1px solid var(--line-2);border-radius:var(--radius);background:#141414;color:#fff;padding:10px 16px;z-index:100;font-size:14px;text-align:center;max-width:calc(100% - 32px);transition:opacity .2s,transform .2s}
+.toast.is-visible{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:1100px){
+  h1{font-size:clamp(48px,8vw,96px)}
+  .hero-body{grid-template-columns:minmax(0,2fr) minmax(0,3fr)}
+  .split-grid{gap:36px;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
+}
+@media(max-width:900px){
+  .scroll-rail{display:none!important}
+  .js{scrollbar-width:auto}
+  .js::-webkit-scrollbar{width:auto;height:auto;display:initial}
+  .hero-body{grid-template-columns:1fr;gap:36px}
+  .hero-copy{max-width:640px}
+  .split-grid{grid-template-columns:1fr;gap:36px}
+  .problems{grid-template-columns:1fr}
+  .problem-steps{display:none}
+  .problem-board{display:grid;gap:24px;min-height:0;border:0;background:none;overflow:visible}
+  .problem-pane{position:static;opacity:1;transform:none;pointer-events:auto;align-items:stretch;padding:22px;border:1px solid var(--line-2);border-radius:var(--radius);background:var(--frame)}
+  .problem-pane>:not(.pane-caption){align-self:center}
+  .pane-caption{display:grid;grid-template-columns:36px minmax(0,1fr);gap:6px;margin-bottom:22px}
+  .pane-caption .step-line{max-height:none;opacity:1;margin-top:4px}
+  .pane-caption .step-progress{display:none}
+  .section-intro>p{max-width:48ch}
+  .faq h2 br{display:none}
+  .footer-inner{grid-template-columns:1fr auto;gap:20px}
+  .footer-inner>span:last-child{grid-column:1/-1;text-align:center}
+}
+@media(max-width:600px){
+  html{scroll-padding-top:88px}
+  .site-header{padding:10px 10px 0}
+  .nav{padding:9px 9px 9px 18px;gap:16px}
+  .brand .mark{height:22px}
+  .brand span{font-size:19px}
+  .nav-secondary{display:none}
+  .nav .button{padding:7px 14px;font-size:14px}
+  .hero{padding-top:40px}
+  h1{font-size:clamp(40px,11vw,56px)}
+  .hero-copy>p{font-size:17px}
+  .terminal-bar{padding:5px 10px;min-height:26px;font-size:11px}
+  .watch{padding:10px;gap:10px}
+  .section{padding-top:40px;padding-bottom:64px}
+  h2{font-size:34px}
+  .line-card.big{padding:18px}
+  .legend{grid-template-columns:1fr}
+  .legend li:nth-child(2){border-top:1px solid var(--line);padding-top:16px}
+  .faq summary{font-size:16px;padding:18px 0}
+  .faq details p{padding-right:16px}
+  .footer-inner{grid-template-columns:1fr;justify-items:center;text-align:center;gap:16px;padding-block:24px 32px}
+  .footer-inner>span:last-child{text-align:center;grid-column:auto}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
