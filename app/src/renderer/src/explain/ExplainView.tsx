@@ -6,12 +6,12 @@ import { clock } from '../components/time'
 import { Words } from '../components/Words'
 import { SaveCard } from './SaveCard'
 
-// Why the tone could not draw on the audio, when it couldn't.
+// Why the explanation could not draw on the audio, when it couldn't.
 const HEARING: Partial<Record<HearingNote, string>> = {
   asking: 'Allow System Audio Recording when macOS asks, and Duet will hear how the next lines are said.',
   'not-allowed': 'Duet can’t hear the video. Allow it in System Settings › Privacy & Security › Screen & System Audio Recording.',
-  'not-kept': 'This line played too long ago for Duet to hear it, so the tone comes from the words.',
-  unclear: 'Duet couldn’t make out the speech in this line, so the tone comes from the words.'
+  'not-kept': 'This line played too long ago for Duet to hear it, so the explanation goes by the words.',
+  unclear: 'Duet couldn’t make out the speech in this line, so the explanation goes by the words.'
 }
 
 export function ExplainView({
@@ -52,22 +52,16 @@ export function ExplainView({
       {explanation && (
         <>
           <section className="part">
-            <h2 className="label">Meaning here</h2>
+            <h2 className="label">
+              Explanation
+              {explanation.heard && (
+                <span className="heard" title={`Includes how it was said, from the audio (spoken in ${explanation.heard.spokenLanguage})`}>
+                  heard
+                </span>
+              )}
+            </h2>
             <p>{explanation.meaning}</p>
           </section>
-          {explanation.tone && (
-            <section className="part">
-              <h2 className="label">
-                Tone
-                {explanation.heard && (
-                  <span className="heard" title={`From the audio, spoken in ${explanation.heard.spokenLanguage}`}>
-                    heard
-                  </span>
-                )}
-              </h2>
-              <p>{explanation.tone}</p>
-            </section>
-          )}
           {hearing && HEARING[hearing] && <p className="faint">{HEARING[hearing]}</p>}
           {explanation.notice && (
             <section className="part">

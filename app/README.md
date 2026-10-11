@@ -123,7 +123,8 @@ from one, so they all see the same context. `watcher.moment(lineId?)` takes one.
 
 ## Hearing the video
 
-Explain listens to how a line was said, so Tone can come from the delivery, not only the words.
+Explain listens to how a line was said, so its explanation of how the line comes across can draw on
+the delivery, not only the words.
 
 - The **audio reader** (`native/macos/AudioReader`, macOS 14.2+) taps only the browser's sound with a
   Core Audio process tap while a video is being watched, and keeps the last minute in memory. Nothing

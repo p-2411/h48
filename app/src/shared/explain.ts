@@ -3,11 +3,10 @@ import type { Moment } from './moment'
 // An explanation of one line for the learner ("Explain that"): what it means here and the one thing
 // most worth noticing. Fields the line does not need are left out rather than filled.
 export type Explanation = {
-  /** What the line means here, in context. */
+  /** The explanation: what the line means here, what the speaker is doing with it, and how it comes
+   * across (register, attitude, and the delivery when the line was heard). */
   meaning: string
-  /** How it comes across (register, attitude) and what that says about the speakers. */
-  tone?: string
-  /** Set when the tone also draws on the line's audio: the language actually spoken in it. */
+  /** Set when the explanation also draws on the line's audio: the language actually spoken in it. */
   heard?: { spokenLanguage: string }
   /** The one thing most worth noticing; `quote` is the exact words of the line it is about, when they
    * could be found in the line. */

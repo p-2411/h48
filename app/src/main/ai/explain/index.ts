@@ -30,7 +30,6 @@ export class Explainer {
     const inLine = (text: string): boolean => !!text.trim() && line.includes(text.trim().toLocaleLowerCase())
     return {
       meaning: output.meaning,
-      tone: output.tone ?? undefined,
       heard: delivery ? { spokenLanguage: delivery.spokenLanguage } : undefined,
       notice: output.notice
         ? { text: output.notice.text, quote: inLine(output.notice.quote) ? output.notice.quote.trim() : undefined }
