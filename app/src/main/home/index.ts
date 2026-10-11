@@ -1,6 +1,6 @@
 // The home base, main-process side: its window (opened from the Dock, the menu bar and at launch)
-// and what its page asks for. Today, Watching, My cards (with Review) and Settings live in it; the
-// cards themselves are src/main/cards, the videos watched src/main/watchlog.
+// and what its page asks for. Today, Talk, Watching, Words and cards (with Review), and Settings live
+// in it; the cards themselves are src/main/cards, the videos watched src/main/watchlog.
 //
 // IPC (the page reaches these through window.duet.home in src/preload/home.ts):
 //   home:get-today     → HomeToday: the streak, this week's days and the cards to review now

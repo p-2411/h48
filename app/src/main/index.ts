@@ -212,6 +212,8 @@ app.whenReady().then(() => {
       home.send(channel, null)
     }
   })
+  // A card reviewed, saved or deleted moves its word too (its FSRS memory counts).
+  cards.on('changed', () => knowledge.emit('changed'))
   // The strip's page reloaded or crashed: a checkpoint it had open goes with it.
   overlay.webContents.on('did-start-loading', () => checkpoints.reset())
   overlay.webContents.on('render-process-gone', () => checkpoints.reset())

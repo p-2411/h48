@@ -43,6 +43,9 @@ type CardRow = {
   due: number
   created_at: number
   updated_at: number
+  /** The word it is for, on the knowledge ladder (shared/knowledge.ts wordKey); none in a backup from
+   * before the ladder. */
+  word_key?: string | null
 }
 
 type ReviewRow = {
@@ -235,7 +238,10 @@ export class CardStore {
   saveAsNew(id: string, content: CardContent, scheduler: Scheduler): Card {
     const card = this.get(id)
     if (!card) throw new Error('That card no longer exists.')
-    const result = this.save({ ...content, language: card.language, source: card.source, explanation: card.explanation }, scheduler, {
+    // Still the same expression: still the same word (its dictionary form, which the edit can't see).
+    const word = database().prepare('SELECT word_key FROM cards WHERE id = ?').get(id) as { word_key: string | null }
+    const wordKey = content.expression === card.expression ? (word.word_key ?? undefined) : undefined
+    const result = this.save({ ...content, language: card.language, source: card.source, explanation: card.explanation, wordKey }, scheduler, {
       again: true
     })
     return 'saved' in result ? result.saved : result.duplicate
@@ -286,8 +292,8 @@ export class CardStore {
       const insertCard = db.prepare(
         `INSERT INTO cards (id, revision, type, language, expression, reading, meaning, target, situation,
            alternative, note, source, explanation, dedupe_key, paused, deleted_at, fsrs, fsrs_version, state, due,
-           created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)
+           created_at, updated_at, word_key)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (id) DO NOTHING`
       )
       for (const row of backup.cards) {
@@ -295,7 +301,7 @@ export class CardStore {
         cards += Number(
           insertCard.run(row.id, row.revision, row.type, row.language, row.expression, row.reading, row.meaning, row.target,
             row.situation, row.alternative, row.note, row.source, row.explanation, row.dedupe_key, row.paused, row.fsrs,
-            row.fsrs_version, row.state, row.due, row.created_at, row.updated_at).changes
+            row.fsrs_version, row.state, row.due, row.created_at, row.updated_at, row.word_key ?? wordKey(row.language, row.expression)).changes
         )
       }
       const insertReview = db.prepare(
@@ -367,6 +373,7 @@ const CardRowSchema = z.object({
   situation: optionalText,
   alternative: optionalText,
   note: optionalText,
+  word_key: z.string().max(200).nullable().optional(),
   source: json((value) => {
     const source = value as CardSource
     if (source.kind === 'video' ? typeof source.moment?.line?.original !== 'string' || !source.moment.video?.site : source.kind !== 'tutor')

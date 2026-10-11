@@ -63,7 +63,7 @@
 }
 .actions .spacer { flex: 1; }
 /* The level on the hover row: its number in a round button like the others (.act); hovered, it
-   slides open into the five levels and is a slider, its white circle the handle (LevelSlider.tsx). */
+   slides open into the six levels (Auto, then 1 to 5) and is a slider, its white circle the handle (LevelSlider.tsx). */
 .level-slider { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; padding: 0; overflow: hidden; }
 .level-slider.open { padding: 0 2px; }
 .level-track { display: flex; align-items: center; gap: 2px; cursor: ew-resize; touch-action: none; }
@@ -94,13 +94,11 @@
 .popup::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 16px; }
 .popup b { font-size: 17px; font-weight: 600; }
 .popup .reading { font-size: 12.5px; font-style: italic; color: #555; }
-.popup .job { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: color-mix(in srgb, var(--c, #555) 70%, #111); }
+.popup .job { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #555; }
 /* The word card's header: what kind of word it is, then, quieter at the far end, its rung, in the
    rung's colour darkened to read on the white card (grey for new words). */
 .popup .card-labels { display: flex; gap: 12px; align-items: baseline; }
 .popup .rung { margin-left: auto; font-size: 11px; font-weight: 500; white-space: nowrap; color: color-mix(in srgb, var(--c, #6e6e73) 55%, #111); }
-.popup .rung[data-k='encountered'] { --c: var(--k-encountered); } .popup .rung[data-k='known'] { --c: var(--k-known); } .popup .rung[data-k='speakable'] { --c: var(--k-speakable); }
-.popup .rung[data-k='usable'] { --c: var(--k-usable); } .popup .rung[data-k='ignored'] { --c: var(--k-ignored); }
 .popup .row { display: flex; gap: 6px; margin-top: 6px; }
 .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; padding: 4px 9px; border-radius: 999px; background: #efeff2; color: #111; }
 .pill:hover { background: #e2e2e7; }

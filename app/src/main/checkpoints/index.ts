@@ -10,7 +10,8 @@
 //   checkpoint:closed         ← the open checkpoint was closed by Duet (another video): drop it
 //   checkpoint:open           → CheckpointView: the challenge (only while one is offered)
 //   checkpoint:speak, checkpoint:coach, checkpoint:check-recall, checkpoint:meaning-question,
-//   checkpoint:meaning-check  the challenge steps (src/main/challenges/ipc.ts)
+//   checkpoint:meaning-check  the challenge steps (src/main/challenges/ipc.ts); checkpoint:produce-check
+//                             is there too, but a checkpoint never asks for a sentence of one's own
 //   checkpoint:done           finished: keeps the day, and lets the video go
 //   checkpoint:close          closed without finishing: lets the video go
 import type { WebContents } from 'electron'
@@ -55,7 +56,7 @@ type Deps = {
   cards: { missed(draft: CardDraft): unknown }
   voice?: { tts: TextToSpeech; coach: PronunciationCoach }
   /** The knowledge ladder: what a checkpoint asks follows it, and what the learner does feeds it. */
-  knowledge?: Pick<Knowledge, 'noteAttempt' | 'statesFor'>
+  knowledge?: Pick<Knowledge, 'noteAttempts' | 'statesFor'>
   quiz?: Quiz
   /** Finds where scenes end; without it, checkpoints come at pauses only. */
   scenes?: SceneJudge

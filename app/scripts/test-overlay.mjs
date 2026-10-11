@@ -124,7 +124,7 @@ check(wheel.step(0, -60, 1400) === -1, 'later, a swipe back (sideways): one step
 check(wheel.step(0, 80, 1450) === 0, 'a swipe straight back the other way waits its turn')
 check(wheel.step(0, 80, 1700) === 1, 'then steps')
 // The level slider: the level under the pointer, by where it is along the row (26 px a level),
-// kept to 1–5 however far the drag goes.
+// kept to Auto–5 however far the drag goes.
 check(levelAt(0) === 0 && levelAt(25) === 0, 'the first place is Auto')
 check(levelAt(26) === 1 && levelAt(60) === 2 && levelAt(155) === 5, 'each 26 px is the next level')
 check(levelAt(-40) === 0 && levelAt(400) === 5, 'dragged past either end: the end level')

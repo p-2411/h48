@@ -7,13 +7,15 @@ import type { Level, ProcessedLine, Token, WordJob, WordScript } from './types'
 
 /** The level that follows the learner: level 1's words, and every word they know. */
 export const AUTO = 0
+/** The top level: the whole line in the language. */
+export const MAX_LEVEL = 5
 
 // The rungs at which Auto swaps a word in, whatever its job.
 const KNOWN: WordState[] = ['known', 'speakable', 'usable']
 
 /** Whether `value` is a level (what the strip may set). */
 export function isLevel(value: unknown): value is Level {
-  return typeof value === 'number' && Number.isInteger(value) && value >= AUTO && value <= 5
+  return typeof value === 'number' && Number.isInteger(value) && value >= AUTO && value <= MAX_LEVEL
 }
 
 const SWAPPED: Record<Exclude<Level, 0 | 5>, WordJob[]> = {
@@ -54,8 +56,8 @@ export function written(token: Token, script: WordScript): string {
 /** The line as the strip shows it at `level`. At Auto, `stateOf` gives each pair's rung (without it,
  * Auto is level 1); an ignored word stays in English. */
 export function mixedLine(line: ProcessedLine, level: Level, stateOf?: (pair: number) => WordState): MixedToken[] {
-  // Level 5 is the original line itself.
-  if (level === 5) return line.source.map((token) => ({ ...token, swapped: true }))
+  // The top level is the original line itself.
+  if (level === MAX_LEVEL) return line.source.map((token) => ({ ...token, swapped: true }))
   const jobs = SWAPPED[level === AUTO ? 1 : level]
   const swaps = (token: Token): boolean => {
     if (level !== AUTO || !stateOf || token.pair === null) return jobs.includes(token.job)

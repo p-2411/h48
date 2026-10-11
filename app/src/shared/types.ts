@@ -7,7 +7,8 @@ import type { Language } from './languages'
 /** Video sites Duet supports; each is one file in src/main/sources. */
 export type Site = 'youtube' | 'netflix'
 
-/** A word's job in its sentence; each has its own colour. */
+/** A word's job in its sentence: it chooses which words a level swaps in, and names and grammar
+ * words start ignored on the knowledge ladder (the colour is the word's rung). */
 export type WordJob =
   | 'n' // things (nouns)
   | 'v' // actions (verbs)
@@ -140,7 +141,7 @@ export type OverlaySettings = {
   version?: number
 }
 
-/** Settings before the learner changes any: Spanish, a few words swapped in. */
+/** Settings before the learner changes any: Spanish, at Auto (a few words, and every word known). */
 export const DEFAULT_SETTINGS: OverlaySettings = {
   language: 'es',
   level: 0,

@@ -1,6 +1,7 @@
 // Feeds the watch log: the video on screen and where it is, time spent watching with Duet (only
 // while the video plays and Duet is shown), lines as they come on screen translated, cards saved,
-// lines explained and words hovered on the strip. index.ts calls tick() from its main loop and
+// lines explained and words hovered on the strip; each new line's words are also seen once more on
+// the knowledge ladder. index.ts calls tick() from its main loop and
 // finish() when Duet quits.
 //
 // The log is a record, not a feature: every write here runs inside another feature's event or
@@ -10,7 +11,8 @@ import type { EventEmitter } from 'events'
 import type { Card } from '../../shared/cards'
 import { pairText } from '../../shared/levels'
 import type { Moment } from '../../shared/moment'
-import type { Language, OverlayLine, ProcessedLine } from '../../shared/types'
+import type { Language, OverlayLine } from '../../shared/types'
+import type { Knowledge } from '../knowledge'
 import { videoKey, type WatchedVideo, type WatchLog } from '.'
 
 // A gap between ticks longer than this (the Mac slept, the loop stalled) counts as this much.
@@ -64,7 +66,7 @@ export function connectWatchLog(
     settings: { current: { language: Language } }
     cards: EventEmitter
     /** The knowledge ladder: each word of a line met is seen once more (src/main/knowledge). */
-    knowledge?: { noteSeen(language: Language, line: ProcessedLine): void }
+    knowledge?: Pick<Knowledge, 'noteSeen'>
     /** Duet is on screen (the strip is shown): only then is watching "with Duet", and a line met. */
     shown: () => boolean
   }

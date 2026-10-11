@@ -300,8 +300,9 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
           window.clearTimeout(outputSettledTimer.current)
           setStatus('listening')
           appendTranscript('learner', event.delta ?? '', event.start_ms ?? 0, event.end_ms ?? 0)
-          // Tell main the learner just spoke, so the voice model can't confirm a save without them.
-          if (event.delta) window.duet.tutor.learnerTurn()
+          // Tell main the learner just spoke (and what), so the voice model can't confirm a save, or
+          // record a word used, without them.
+          if (event.delta) window.duet.tutor.learnerTurn(event.delta)
           window.clearTimeout(replyFallbackTimer.current)
           replyFallbackTimer.current = window.setTimeout(() => {
             setStatus('working')

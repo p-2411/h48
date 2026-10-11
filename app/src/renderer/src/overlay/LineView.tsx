@@ -5,7 +5,7 @@
 // the English.
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { pairKeys, STATE_LABELS, type WordState } from '../../../shared/knowledge'
+import { STATE_LABELS, type WordState } from '../../../shared/knowledge'
 import { joinTokens, mixedLine, pairReading, written } from '../../../shared/levels'
 import type { OverlayLine, OverlaySettings, Token, WordScript } from '../../../shared/types'
 import { hoverOn, JOBS, pairOf } from './words'
@@ -97,9 +97,9 @@ export function LineView({
   const hover = hoverOn(lineHover, line.id)
   const ready = line.state === 'ready' ? line.processed : undefined
   const readyLines = useMemo(() => [ready], [ready])
-  const stateOf = useWordStates(settings.language, readyLines)
+  const { stateOf, wordOf } = useWordStates(settings.language, readyLines)
   // The hovered word's key and rung, for its card.
-  const hoveredWord = hover && ready ? pairKeys(settings.language, ready).find((item) => item.pair === hover.pair) : undefined
+  const hoveredWord = hover && ready ? wordOf(ready, hover.pair) : undefined
   const hoveredState = hover && ready ? stateOf(ready, hover.pair) : undefined
   const word = hover && ready ? pairOf(ready, hover.pair) : undefined
   // How the hovered word is read, in Latin letters (Japanese, Korean), when the line has it.
@@ -163,7 +163,11 @@ export function LineView({
                 type="button"
                 className="pill"
                 title={hoveredState === 'ignored' ? 'Colour and practise this word again' : 'Leave this word out of colours and practice'}
-                onClick={() => void window.duet.knowledge.setIgnored(settings.language, hoveredWord.key, hoveredState !== 'ignored')}
+                onClick={() =>
+                  window.duet.knowledge
+                    .setIgnored(settings.language, hoveredWord.key, hoveredState !== 'ignored')
+                    .catch((error) => console.error('[duet] could not leave out or bring back that word', error))
+                }
               >
                 {hoveredState === 'ignored' ? 'Bring back' : 'Ignore'}
               </button>

@@ -53,7 +53,7 @@ export function contextText(context: TutorContext): string {
     mode: 'free conversation (no video on screen)',
     language: context.language,
     level: context.level,
-    levelMeaning: '1: a beginner who knows a few words; 5: follows whole lines of a show',
+    levelMeaning: '0: Auto, a few words plus every word the learner has learnt (pitch it as about 1 to 2); 1: a beginner who knows a few words; 5: follows whole lines of a show',
     conversationSoFar: context.conversation?.length ? context.conversation.map(({ from, text }) => ({ from, text })) : undefined,
     savedCardsOpenToDuet: context.exploreEnabled || undefined
   })
@@ -136,7 +136,7 @@ Correction workflow:
 ${bullets(tutor.corrections).replace(/^- /gm, '  - ')}
 - If recognition is uncertain, ask for clarification rather than treating the transcript as proof of an error.
 
-${cardWorkflows()}
+${toolWorkflows()}
 
 Keep tool output concise enough for speech. Never invent a card, source, timestamp, save, review or successful action.`
 }
@@ -162,8 +162,8 @@ export function lineContext({ moment, delivery, explanation, conversation, explo
   })
 }
 
-/** Recall and card writes, the same in voice and text. */
-function cardWorkflows(): string {
+/** Recall, card writes and practice words, the same in voice and text. */
+function toolWorkflows(): string {
   return `Recall workflow:
 - Saved learning history is private by default. Search or open it only after the learner opens their saved cards to Duet (the Use my cards button) in this conversation.
 - When asked about an earlier encounter, first ask the learner what they remember.
@@ -181,7 +181,7 @@ Write workflow:
 
 Practice words workflow:
 - In a free conversation, call get_practice_words once, early. Weave one or two of them into your questions so the learner has a reason to use them; never list them as a drill.
-- When the learner uses one of those words in a sentence of their own (not just repeating yours), call record_word_use with the word as given, their sentence, and whether they used it with the right meaning and grammar. Never for a sentence you wrote. Don't mention the recording.`
+- When the learner uses one of those words in a sentence of their own (not just repeating yours), call record_word_use with the word as given, their sentence exactly as they said or wrote it (not corrected), and whether they used it with the right meaning and grammar. Never for a sentence you wrote. Don't mention the recording.`
 }
 
 /** The text conversation's instructions: the same teaching and tools as voice, written for typing. */
@@ -221,7 +221,7 @@ ${bullets(tutor.corrections).replace(/^- /gm, '  - ')}
 - In text you can't hear the learner. For pronunciation, suggest switching to voice.
 - Set corrects_learner only when your reply points out a problem in ${name} the learner wrote; an answer, an explanation or practice that needed no fix is not a correction.
 
-${cardWorkflows()}
+${toolWorkflows()}
 
 Never invent a card, source, timestamp, save, review or successful action.`
 }

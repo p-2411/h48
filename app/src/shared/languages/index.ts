@@ -15,6 +15,11 @@ export type Language = keyof typeof LANGUAGE_MODULES
 
 export const LANGUAGE_CODES = Object.keys(LANGUAGE_MODULES) as [Language, ...Language[]]
 
+/** Whether `value` is a language Duet teaches (what a page may send). */
+export function isLanguage(value: unknown): value is Language {
+  return LANGUAGE_CODES.includes(value as Language)
+}
+
 export function languageModule(language: Language): LanguageModule {
   return LANGUAGE_MODULES[language]
 }

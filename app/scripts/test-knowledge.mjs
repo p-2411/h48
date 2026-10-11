@@ -9,7 +9,12 @@ import { createJiti } from 'jiti'
 
 const folder = mkdtempSync(join(tmpdir(), 'duet-knowledge-test-'))
 const fakeElectron = join(folder, 'fake-electron.cjs')
-writeFileSync(fakeElectron, `module.exports = { app: { getPath: () => ${JSON.stringify(folder)} }, is: { dev: false } }\n`)
+writeFileSync(
+  fakeElectron,
+  `const handlers = new Map()
+module.exports = { app: { getPath: () => ${JSON.stringify(folder)} }, is: { dev: false }, ipcMain: { handle: (channel, work) => handlers.set(channel, work) }, handlers }
+`
+)
 const jiti = createJiti(import.meta.url, { alias: { electron: fakeElectron, '@electron-toolkit/utils': fakeElectron }, moduleCache: true })
 const { wordKey, wordState, pairKeys } = await jiti.import(resolve('src/shared/knowledge.ts'))
 
@@ -33,9 +38,13 @@ const wrong = (daysAgo) => ({ at: now - daysAgo * day, good: false })
 assert.equal(wordState({ ...none, seen: 4, recalls: [right(3), right(3)] }), 'encountered', 'two right on one day is not yet known')
 assert.equal(wordState({ ...none, seen: 4, recalls: [right(3), right(1)] }), 'known')
 assert.equal(wordState({ ...none, seen: 4, recalls: [right(3), right(1), wrong(0)] }), 'encountered', 'missed it last time: back to encountered')
-assert.equal(wordState({ ...none, seen: 1, card: { reviewed: true, retrievability: 0.9 } }), 'known')
-assert.equal(wordState({ ...none, seen: 1, card: { reviewed: true, retrievability: 0.6 } }), 'encountered', 'a card being forgotten is not known')
-assert.equal(wordState({ ...none, seen: 1, card: { reviewed: false, retrievability: 0 } }), 'encountered', 'a card never reviewed is not known')
+assert.equal(wordState({ ...none, seen: 1, card: { inReview: true, retrievability: 0.9 } }), 'known')
+assert.equal(wordState({ ...none, seen: 1, card: { inReview: true, retrievability: 0.6 } }), 'encountered', 'a card being forgotten is not known')
+assert.equal(wordState({ ...none, seen: 1, card: { inReview: false, retrievability: 0 } }), 'encountered', 'a card never reviewed is not known')
+assert.equal(wordState({ ...none, seen: 1, card: { inReview: false, retrievability: 1 } }), 'encountered', 'a card still being learnt (just failed: FSRS says 1.0 all day) is not known')
+assert.equal(wordState({ ...none, seen: 1, recalls: [right(3), right(1)], card: { inReview: false, retrievability: 1 } }), 'known', 'while it is learnt, recalls decide')
+assert.equal(wordState({ ...none, seen: 1, recalls: [right(3), wrong(0)], card: { inReview: true, retrievability: 0.95 } }), 'encountered', 'missed in a recall last time: back down, card or not')
+assert.equal(wordState({ ...none, seen: 1, recalls: [wrong(3), right(0)], card: { inReview: true, retrievability: 0.95 } }), 'known', 'a miss that was put right')
 
 // Speakable: known, and said well on two different days (the last try good).
 const known = { ...none, seen: 5, recalls: [right(5), right(2)] }
@@ -52,7 +61,7 @@ assert.equal(wordState({ ...speakable, uses: [use('a'), use('b')] }), 'usable')
 assert.equal(wordState({ ...speakable, uses: [use('a'), use('b'), use('c', false)] }), 'speakable')
 
 // Forgetting reaches the top: a usable word whose card is fading is encountered again.
-assert.equal(wordState({ ...speakable, uses: [use('a'), use('b')], card: { reviewed: true, retrievability: 0.5 } }), 'encountered')
+assert.equal(wordState({ ...speakable, uses: [use('a'), use('b')], card: { inReview: true, retrievability: 0.5 } }), 'encountered')
 
 // --- A line's words, by key -------------------------------------------------------------------------
 const token = (text, job, pair, base) => ({ text, job, pair, space: true, ...(base && { base }) })
@@ -108,6 +117,15 @@ try {
   assert.equal(summary.counts.unknown + summary.counts.known + summary.counts.ignored, 0)
   assert.deepEqual(summary.words.map((word) => [word.word, word.seenAs, word.state]).sort(), [['ir', 'fue', 'usable'], ['mercado', 'mercado', 'speakable'], ['pedro', 'Pedro', 'encountered']])
   assert.equal(knowledge.summary('ja', now).words.length, 0, 'by language')
+  // The list keeps the newest of each rung, so an old rung isn't crowded out by a busy one.
+  const seenLater = (word, at) => knowledge.noteSeen('ko', { translation: '', english: [], source: [{ text: word, job: 'n', pair: 0, space: false }] }, at)
+  seenLater('오래된', now - 10 * day)
+  knowledge.setIgnored('ko', 'ko:오래된', true)
+  for (let index = 0; index < 510; index++) seenLater(`새${index}`, now - index)
+  const crowded = knowledge.summary('ko', now)
+  assert.equal(crowded.counts.encountered, 510)
+  assert.equal(crowded.words.filter((word) => word.state === 'encountered').length, 500, 'up to 500 of a rung')
+  assert.deepEqual(crowded.words.filter((word) => word.state === 'ignored').map((word) => word.word), ['오래된'], 'the old ignored word is still listed')
   // The rungs of lines met, as the daily session and checkpoints pick by them: every word of every
   // line, however many (a page asks about a few hundred at most; main asks in batches).
   const { ladderOf } = await jiti.import(resolve('src/main/challenges/ladder.ts'))
@@ -121,9 +139,42 @@ try {
   assert.equal(stateOf(pedro, 2), 'usable', 'by the dictionary form')
   const broken = ladderOf({ statesFor: () => { throw new Error('locked') } }, 'es', many)
   assert.equal(broken, undefined, 'no ladder when it can’t be read: practice picks as before')
+  // However many keys are asked about, each gets its rung (main asks in batches of what SQLite takes).
+  const asked = Array.from({ length: 250 }, (_, index) => `es:palabra${index}`)
+  assert.equal(Object.keys(knowledge.statesFor('es', asked, now)).length, 250, 'no key is dropped past 200')
+  // Several attempts at once (a line said back, a sentence judged) are written together and told once.
+  const before = changed.length
+  knowledge.noteAttempts('es', [{ key: 'es:gato', kind: 'say', good: true }, { key: 'es:perro', kind: 'say', good: false }], now)
+  assert.equal(changed.length, before + 1, 'one change for the batch')
+  assert.equal(database().prepare("SELECT COUNT(*) n FROM word_evidence WHERE key IN ('es:gato', 'es:perro') AND kind = 'say'").get().n, 2)
+  assert.throws(() => knowledge.noteAttempts('es', [{ key: 'es:gato', kind: 'say', good: true }, { key: 'ja:猫', kind: 'say', good: true }], now), /key/i)
+  assert.equal(database().prepare("SELECT COUNT(*) n FROM word_evidence WHERE key = 'es:gato' AND kind = 'say'").get().n, 1, 'a bad key in a batch writes none of it')
   // Bad keys are refused, not stored.
   assert.throws(() => knowledge.noteAttempt('es', 'ja:行く', 'recall', true), /key/i, 'a key from another language')
   assert.throws(() => knowledge.noteAttempt('es', 'es:ir', 'shout', true), /kind/i)
+  // The Words place reads the words newest first without sorting the table each time.
+  const plan = database().prepare("EXPLAIN QUERY PLAN SELECT key, text FROM words WHERE language = 'es' ORDER BY last_seen DESC").all().map((row) => row.detail).join(' | ')
+  assert.ok(plan.includes('words_recent') && !plan.includes('TEMP B-TREE'), `the words_recent index serves it: ${plan}`)
+  // The IPC: only Duet's pages, keys of the language as Duet makes them, a bounded list, and a burst of
+  // changes told once.
+  const { connectKnowledge } = await jiti.import(resolve('src/main/knowledge/ipc.ts'))
+  const electron = await jiti.import(fakeElectron)
+  const page = {}
+  const told = []
+  connectKnowledge(knowledge, { owns: (sender) => sender === page, send: (channel) => told.push(channel) })
+  const call = async (channel, sender, ...args) => electron.handlers.get(channel)({ sender }, ...args)
+  await assert.rejects(call('knowledge:states', {}, 'es', ['es:ir']), /not allowed/i, 'another page is refused')
+  assert.deepEqual(await call('knowledge:states', page, 'es', ['es:ir']), { 'es:ir': 'usable' })
+  await assert.rejects(call('knowledge:states', page, 'es', Array.from({ length: 5001 }, (_, index) => `es:w${index}`)), /too many/i, 'a bounded list')
+  await assert.rejects(call('knowledge:set-ignored', page, 'es', 'es: Ir', true), /word/i, 'a key as Duet makes it (trimmed, lower case)')
+  await assert.rejects(call('knowledge:set-ignored', page, 'es', `es:${'a'.repeat(300)}`, true), /word/i, 'not too long')
+  told.length = 0
+  knowledge.noteAttempt('es', 'es:gato', 'recall', true, undefined, now)
+  knowledge.noteAttempt('es', 'es:gato', 'recall', true, undefined, now)
+  knowledge.emit('changed')
+  assert.equal(told.length, 0, 'not told at once')
+  await new Promise((done) => setImmediate(done))
+  assert.deepEqual(told, ['knowledge:changed'], 'a burst of changes is told once')
   console.log('Knowledge ladder tests passed.')
 } finally {
   rmSync(folder, { recursive: true, force: true })

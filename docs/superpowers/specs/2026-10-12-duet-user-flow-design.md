@@ -9,12 +9,12 @@ This spec maps how a learner uses Duet, both while watching and over months, and
 
 ## What we agreed
 
-- **One flow for every learner.** It starts gentle for a near-beginner and opens up as the learner improves. The mix level is the control for now. Known and unknown words are a separate design (by a friend), not part of this spec.
+- **One flow for every learner.** It starts gentle for a near-beginner and opens up as the learner improves. The mix level is the control (Auto, the default since the knowledge ladder, follows the words the learner knows). *Superseded:* known and unknown words were to be a friend's design; the knowledge ladder replaced it (2026-10-12).
 - **Two outcomes.** Understand shows, and speak about them.
 - **Watching must not feel like studying.** The strip asks for nothing. Anything active happens only when the learner chooses, or at the two moments in "Checkpoints".
 - **Watch-first.** The strip and a local watch log are the centre. The daily session and the home base are built from what the learner watched.
 - **The main habit is a short daily session.** A full home base is there for learners who want more.
-- **Progress is the streak only, for now.** No word counts or comprehension scores yet.
+- **Progress is the streak, and the Words place's count per rung** (added with the knowledge ladder). No comprehension scores yet.
 
 ## 1. While watching: the strip
 
@@ -24,7 +24,7 @@ The learner goes one step deeper at a time. Each step is one gesture.
 
 | Depth | Gesture | Result | Video |
 |---|---|---|---|
-| Glance | none | The mixed line, target-language words coloured by kind | plays |
+| Glance | none | The mixed line, target-language words coloured by their rung on the knowledge ladder | plays |
 | Peek | hover the strip or a word | The original line and the English; a word's card (meaning, Save) just above the strip | plays |
 | Ask | Explain, the mascot button, or the shortcut | Explain opens the side panel (explanation and chat). The mascot button pops Duet up above the subtitles for voice | pauses; plays on close |
 
@@ -45,11 +45,11 @@ Duet offers at most one checkpoint every 5 minutes. After an offer is left alone
 
 ### The glow
 
-A soft glow in the logo gradient breathes around the strip's edge. There is no text and no sound. A click on the strip opens the checkpoint above the strip, where the word card opens. An offer stands 10 s unless clicked (playing on doesn't end it), then fades. While the checkpoint is open the glow stays; when it is done, it fades in 0.5 s.
+A soft glow breathes around the strip's edge (redesigned since: Apple Intelligence colours flowing behind the strip). There is no text and no sound. A click on the strip opens the checkpoint above the strip, where the word card opens. An offer stands 10 s unless clicked (playing on doesn't end it), then fades. While the checkpoint is open the glow stays; when it is done, it fades in 0.5 s.
 
 ### Content
 
-Each checkpoint uses lines from the last few minutes of the watch log. It prefers words the learner hovered or saved.
+Each checkpoint uses lines from the last few minutes of the watch log. It prefers words the learner hovered or saved; with the knowledge ladder it picks by rung (a line known word for word is said back, else a word only seen is recalled).
 
 - **Recall a word:** a line from the scene with one word blanked. The learner picks one of three.
 - **Say the line:** Duet says the line in its own voice, as in the daily session, and the learner says it back. Duet gives a short note on pronunciation and tone.
@@ -70,7 +70,7 @@ It lasts about 5 minutes and stops there, even if more is due:
 
 1. Due review cards, in the scheduler's order (learning, then due reviews, then new), at most 12.
 2. One "say the line" from the last video watched. Duet speaks the line in its own voice, because there is no video playing.
-3. One "recall a word" or "what did they mean?" from the same video.
+3. One "recall a word" or "what did they mean?" from the same video, or, when a line's words are all sayable, "use it": the line said back, then a sentence of the learner's own.
 
 - If nothing was watched lately, the session is due cards only.
 - If nothing is due either, it says "You're all caught up" and offers "Back to Today".
@@ -98,6 +98,7 @@ A normal app window with a Dock icon. It opens from the Dock, from the menu bar,
 | Watching | Videos used with Duet: title, thumbnail, where the learner left off. A click reopens the video in the browser at that point |
 | Cards | Today's My cards window, moved here: browse, search, edit, review |
 | Talk | Duet without a video: voice or text practice with saved words and recent videos, on the same tutor |
+| Words | Every word met, by its rung on the knowledge ladder, with a count per rung (added later) |
 | Settings | Language, level, checkpoints on/off, reminder time, shortcut, permissions. The strip's ⚙ keeps only quick toggles |
 
 ### Changes to existing screens
@@ -143,7 +144,7 @@ The friend's onboarding and visual pass can build on the home base after piece 2
 ## Backlog (not in this design)
 
 - Recommending videos by level (scored by known words; YouTube first).
-- Known and unknown words (the friend's design), and with it visible progress (word counts, "you understood 82%").
+- ~~Known and unknown words (the friend's design)~~ done as the knowledge ladder; still to come: comprehension scores ("you understood 82%").
 - Mascot reactions to moments.
 - The end-of-video recap card.
 - "Talk about it" as a checkpoint kind.

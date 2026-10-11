@@ -43,7 +43,7 @@ reduced motion see no movement.
   notices** each pop in from where they open (the word card from its word, the popover from ⚙, the
   bubble from the strip) and fade out when they leave, so nothing blinks off.
 - **The level row** opens out from its number and folds back into it.
-- **The checkpoint glow** stays as it is.
+- **The checkpoint glow** stays as it is. (Redesigned later, separately: a flowing Apple Intelligence light behind the strip.)
 
 ## 3. The side panel
 

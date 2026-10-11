@@ -1,5 +1,5 @@
 // Tokens written out as a line, each word coloured by its rung on the knowledge ladder (`state`;
-// without it, plain white). Swapped words (in the other language) get a tint as well.
+// without it, new: white, and glue grey). Swapped words (in the other language) get a tint as well.
 import type { WordState } from '../../../shared/knowledge'
 import type { Token } from '../../../shared/types'
 

@@ -36,10 +36,10 @@ export function Script({
       return next
     })
   const timed = script.source === 'transcript'
-  // Each word coloured by how well the learner knows it.
-  const language = useSettings()?.language ?? 'es'
+  // Each word coloured by how well the learner knows it (asked once the language is known).
+  const language = useSettings()?.language
   const processedLines = useMemo(() => script.lines.map((line) => (line.state === 'ready' ? line.processed : undefined)), [script.lines])
-  const stateOf = useWordStates(language, processedLines)
+  const { stateOf } = useWordStates(language, processedLines)
   const lines = timed ? script.lines : [...script.lines].reverse()
   const currentIndex = script.lines.findIndex((line) => line.id === current)
 

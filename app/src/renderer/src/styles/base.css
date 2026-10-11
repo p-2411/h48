@@ -38,12 +38,14 @@ button:disabled { cursor: default; opacity: 0.45; }
   --c: var(--fg); color: var(--c); border-radius: 6px; padding: 0 0.04em; text-shadow: 0 0 14px color-mix(in srgb, var(--c) 60%, transparent);
   transition: color 0.4s var(--ease), text-shadow 0.4s var(--ease);
 }
-.w[data-k='unknown'] { text-shadow: none; }
-.w[data-k='encountered'] { --c: var(--k-encountered); }
-.w[data-k='known'] { --c: var(--k-known); }
-.w[data-k='speakable'] { --c: var(--k-speakable); }
-.w[data-k='usable'] { --c: var(--k-usable); }
-.w[data-k='ignored'] { --c: var(--k-ignored); text-shadow: none; }
+/* Each rung's colour, as --c, for anything marked with one (data-k): words, the word card's label,
+   lists of words. */
+[data-k='encountered'] { --c: var(--k-encountered); }
+[data-k='known'] { --c: var(--k-known); }
+[data-k='speakable'] { --c: var(--k-speakable); }
+[data-k='usable'] { --c: var(--k-usable); }
+[data-k='ignored'] { --c: var(--k-ignored); }
+.w[data-k='unknown'], .w[data-k='ignored'] { text-shadow: none; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 /* Read by screen readers, not shown: used in every window. */

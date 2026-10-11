@@ -80,6 +80,9 @@ if (contextLanguage(free) !== 'ko') throw new Error('A free conversation names i
 if (freeText.includes('selectedLine') || !freeText.includes('free conversation') || !freeText.includes('savedCardsOpenToDuet') || !freeText.includes('안녕하세요'))
   throw new Error(`The free conversation's context is wrong: ${freeText}`)
 if (!freeText.includes('"level"')) throw new Error('A free conversation says the learner\'s level.')
+// Auto (level 0, the default) is on the scale the model is given.
+if (!/0[^"]*auto/i.test(JSON.parse(contextText({ ...free, level: 0 })).levelMeaning)) throw new Error('Auto (level 0) needs a meaning for the model.')
+if (!textInstructions('ko', 'free').includes('exactly as they said or wrote it')) throw new Error('A recorded use quotes the learner, uncorrected.')
 const lineCase = { moment: { language: 'ja', line: { id: 1, original: 'x', at: now, state: 'pending' }, earlier: [], video: { site: 'youtube', url: 'fixture:x' }, takenAt: now } }
 if (contextText(lineCase) !== lineContext(lineCase) || contextLanguage(lineCase) !== 'ja') throw new Error('A line conversation keeps its line context.')
 const freePrompt = textInstructions('ko', 'free')

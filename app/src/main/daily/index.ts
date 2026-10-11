@@ -1,12 +1,12 @@
 // The daily session, main-process side: today's plan (plan.ts) from the last video watched, and the
-// steps after the reviews: Duet says a line and hears the learner say it back, then recall a word or
-// what did they mean. The page only names a step; the plan, the line and the answers stay here, so
+// steps after the reviews: Duet says a line and hears the learner say it back, then recall a word,
+// what did they mean, or use it (a sentence of their own after the line). The page only names a step; the plan, the line and the answers stay here, so
 // the page can't have Duet speak or judge text of its choosing. Finishing keeps the day's streak.
 //
 // IPC (from the home page only; window.duet.daily in src/preload/daily.ts):
 //   daily:plan             → SessionView: today's plan (a new one each time it's asked for)
-//   daily:speak, daily:coach, daily:check-recall, daily:meaning-question, daily:meaning-check
-//                            the challenge steps (src/main/challenges/ipc.ts)
+//   daily:speak, daily:coach, daily:check-recall, daily:meaning-question, daily:meaning-check,
+//   daily:produce-check      the challenge steps (src/main/challenges/ipc.ts)
 //   daily:done             → { kept, streak }: today is kept only when something was done
 //                            (a card reviewed, the line said, the challenge answered)
 import type { WebContents } from 'electron'
@@ -29,7 +29,7 @@ type Deps = {
   cards: { counts(): DueCounts; missed(draft: CardDraft): unknown; reviewsSince(at: number): number }
   voice?: { tts: TextToSpeech; coach: PronunciationCoach }
   /** The knowledge ladder: what the session asks follows it, and what the learner does feeds it. */
-  knowledge?: Pick<Knowledge, 'noteAttempt' | 'statesFor'>
+  knowledge?: Pick<Knowledge, 'noteAttempts' | 'statesFor'>
   quiz?: Quiz
   /** Whether a message came from the home page. */
   owns: (sender: WebContents) => boolean

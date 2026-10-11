@@ -2,7 +2,7 @@
 // from the knowledge ladder (src/main/knowledge) once per pick.
 import { pairKeys, type WordState } from '../../shared/knowledge'
 import type { Language } from '../../shared/types'
-import { MAX_KEYS, type Knowledge } from '../knowledge'
+import type { Knowledge } from '../knowledge'
 import type { MetLine } from '../watchlog'
 import type { StateOf } from './pick'
 
@@ -12,9 +12,9 @@ export function ladderOf(knowledge: Pick<Knowledge, 'statesFor'> | undefined, la
   if (!knowledge) return undefined
   const keys = new Map(lines.map((line) => [line, new Map(pairKeys(language, line.processed).map((word) => [word.pair, word.key]))]))
   const all = [...new Set([...keys.values()].flatMap((pairs) => [...pairs.values()]))]
-  const states: Record<string, WordState> = {}
+  let states: Record<string, WordState>
   try {
-    for (let start = 0; start < all.length; start += MAX_KEYS) Object.assign(states, knowledge.statesFor(language, all.slice(start, start + MAX_KEYS)))
+    states = knowledge.statesFor(language, all)
   } catch (error) {
     console.error('[duet] could not read the knowledge ladder', error)
     return undefined

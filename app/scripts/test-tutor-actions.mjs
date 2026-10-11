@@ -97,10 +97,10 @@ const fromTutor = { sender: panelPage }
 const fromElsewhere = { sender: {} }
 
 const call = (channel, ...args) => electron.handlers.get(channel)(fromTutor, ...args)
-const learnerTurn = async (event = fromTutor) => {
+const learnerTurn = async (event = fromTutor, heard) => {
   // Times are in ms: wait so the turn is clearly after the preview.
   await sleep(3)
-  electron.listeners.get('tutor:learner-turn')?.(event)
+  electron.listeners.get('tutor:learner-turn')?.(event, heard)
 }
 async function tool(name, args = {}) {
   const result = await call('tutor:execute-tool', { callId: 'call', name, arguments: args })
@@ -382,7 +382,13 @@ await test('14: a word is recorded as used only when Duet offered it, once per l
   expect(offered.words?.[0]?.word === '行く', `the practice words: ${JSON.stringify(offered)}`)
   const alone = await tool('record_word_use', { word: '行く', sentence: '昨日、公園に行きました。', correct: true })
   expect(alone.error === 'LEARNER_TURN_REQUIRED', `no learner turn yet: ${JSON.stringify(alone)}`)
-  await learnerTurn()
+  // Only a sentence the learner said or wrote: the model can't make one up (a second "context").
+  await learnerTurn(fromTutor, '昨日、')
+  const madeUp = await tool('record_word_use', { word: '行く', sentence: '明日、海に行きます。', correct: true })
+  expect(madeUp.error === 'SENTENCE_NOT_HEARD', `a sentence the learner never said: ${JSON.stringify(madeUp)}`)
+  // Voice hears a turn in pieces; the sentence is checked against them together, spaces and
+  // punctuation aside.
+  await learnerTurn(fromTutor, '公園に 行きました')
   const used = await tool('record_word_use', { word: '行く', sentence: '昨日、公園に行きました。', correct: true })
   expect(used.ok !== false && used.status === 'recorded', `recorded: ${JSON.stringify(used)}`)
   expect(JSON.stringify(uses) === JSON.stringify([['ja', 'ja:行く', 'use', true, '昨日、公園に行きました。']]), `noted: ${JSON.stringify(uses)}`)
@@ -391,9 +397,38 @@ await test('14: a word is recorded as used only when Duet offered it, once per l
   const other = await tool('record_word_use', { word: '食べる', sentence: '食べた', correct: true })
   expect(other.error === 'WORD_NOT_OFFERED', 'a word not offered is refused')
   tutor.open({ kind: 'free', language: 'ja', level: 3 }, panel)
-  await learnerTurn()
+  await learnerTurn(fromTutor, '行こう')
   const fresh = await tool('record_word_use', { word: '行く', sentence: '行こう', correct: true })
   expect(fresh.error === 'WORD_NOT_OFFERED', 'a new conversation starts with no words offered')
+  await tool('get_practice_words')
+  const before = await tool('record_word_use', { word: '行く', sentence: '昨日、公園に行きました。', correct: true })
+  expect(before.error === 'SENTENCE_NOT_HEARD', 'what was heard in the last conversation is not this one’s')
+})
+
+await test('15: a card keeps its word (dictionary form) when saved as new or restored from a backup', async () => {
+  const { CardStore } = await jiti.import(join(root, 'cards/store.ts'))
+  const { Scheduler } = await jiti.import(join(root, 'cards/scheduler.ts'))
+  const store = new CardStore()
+  const scheduler = new Scheduler({ desiredRetention: 0.9, newPerDay: 10 })
+  const keyOf = (id) => database().prepare('SELECT word_key FROM cards WHERE id = ?').get(id)?.word_key
+  const draft = { type: 'understand', language: 'es', expression: 'fue', meaning: 'went', target: 'fue = went', source: { kind: 'tutor' }, wordKey: 'es:ir' }
+  const card = store.save(draft, scheduler).saved
+  expect(keyOf(card.id) === 'es:ir', `saved under its dictionary form: ${keyOf(card.id)}`)
+  const again = store.saveAsNew(card.id, { type: 'understand', expression: 'fue', meaning: 'went (to)', target: 'fue = went, of ir' }, scheduler)
+  expect(keyOf(again.id) === 'es:ir', `saved as new, same word: ${keyOf(again.id)}`)
+  const other = store.saveAsNew(card.id, { type: 'understand', expression: 'vino', meaning: 'came', target: 'vino = came' }, scheduler)
+  expect(keyOf(other.id) === 'es:vino', `a new expression is its own word: ${keyOf(other.id)}`)
+  const file = JSON.parse(JSON.stringify(store.backup(scheduler)))
+  for (const id of [card.id, again.id, other.id]) store.remove(id)
+  database().prepare('DELETE FROM cards WHERE id IN (?, ?, ?)').run(card.id, again.id, other.id)
+  store.restoreBackup(file)
+  expect(keyOf(card.id) === 'es:ir', `restored with its word: ${keyOf(card.id)}`)
+  const old = JSON.parse(JSON.stringify(file))
+  old.cards = old.cards.filter((row) => row.id === other.id).map((row) => ({ ...row, word_key: undefined }))
+  old.reviews = old.reviews.filter((row) => row.card_id === other.id)
+  database().prepare('DELETE FROM cards WHERE id = ?').run(other.id)
+  store.restoreBackup(old)
+  expect(keyOf(other.id) === 'es:vino', `a backup from before the ladder: its expression's word: ${keyOf(other.id)}`)
 })
 
 await test('13: a file that is not a backup is refused in plain words', async () => {

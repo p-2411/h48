@@ -8,7 +8,7 @@ import { STATE_LABELS, type WordState } from '../../../../shared/knowledge'
 import { BackupMenu, type Notice } from '../../cards/BackupMenu'
 import { say } from '../../components/errors'
 import { LoadState } from '../../components/LoadState'
-import { useSettings } from '../../components/useSettings'
+import { useSettingsState } from '../../components/useSettings'
 import { Review } from '../../review/Review'
 import { useLoaded } from '../useLoaded'
 import { filterWords, joinWords, type WordFilter } from './join'
@@ -73,8 +73,11 @@ export function YourWords({
   onReviewEnd?: () => void
   onPractise: (word: string) => void
 }): React.JSX.Element {
-  const language = useSettings()?.language
-  const { data, error, reload } = useWordsData(language)
+  const { settings, error: settingsError, reload: reloadSettings } = useSettingsState()
+  const language = settings?.language
+  const words = useWordsData(language)
+  // Settings that can't be read (so no language) say so, rather than leaving the page loading.
+  const { data, error, reload } = settings ? words : { data: undefined, error: settingsError, reload: reloadSettings }
   const due = useLoaded(loadToday, 'Could not count the cards to review.').value?.due
   const [reviewing, setReviewing] = useState(false)
   const [filter, setFilter] = useState<WordFilter>({ show: 'all' })

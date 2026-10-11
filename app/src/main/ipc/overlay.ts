@@ -21,8 +21,9 @@
 //   duet:fit           ← how wide the strip may be, to stay inside the video (none: as wide as it likes)
 import { app, ipcMain, Menu, type BrowserWindow } from 'electron'
 import type { SaveResult } from '../../shared/cards'
+import { isLanguage } from '../../shared/languages'
 import { isLevel } from '../../shared/levels'
-import type { Language, ShortcutKind } from '../../shared/types'
+import type { ShortcutKind } from '../../shared/types'
 import { parseReminder } from '../daily/reminder'
 import { settingsChange } from './settings-change'
 import type { Settings } from '../settings'
@@ -64,7 +65,9 @@ export function connectOverlay(
     status: watcher.status,
     fit: actions.fit() ?? null
   }))
-  ipcMain.on('duet:set-language', (_, language: Language) => settings.update({ language }))
+  ipcMain.on('duet:set-language', (_, language: unknown) => {
+    if (isLanguage(language)) settings.update({ language })
+  })
   ipcMain.on('duet:set-level', (_, level: unknown) => {
     if (isLevel(level)) settings.update({ level })
   })

@@ -139,6 +139,10 @@ const MIGRATIONS: string[] = [
   CREATE INDEX word_evidence_key ON word_evidence (language, key);
   ALTER TABLE cards ADD COLUMN word_key TEXT;
   CREATE INDEX cards_word ON cards (language, word_key);
+  `,
+  // 5: the Words place lists a language's words, the last seen first.
+  `
+  CREATE INDEX words_recent ON words (language, last_seen);
   `
 ]
 

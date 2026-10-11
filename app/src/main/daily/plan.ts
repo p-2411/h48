@@ -1,10 +1,11 @@
 // What goes in the daily session, from the last video watched: up to SESSION_CARDS due cards (about
-// 5 minutes), one line to say back, and one challenge: recall a word, or what a line meant (the
-// picking: src/main/challenges/pick.ts). With the knowledge ladder, lines whose words are all usable
-// are left out; a line whose words are all sayable is said back and then used, in a sentence of the
-// learner's own; else the line said back is one whose words are all known, and the word recalled one
-// only met. Pure, so it can be tested without the app.
-import { findRecall, lineNeed, pickSay, type Challenge, type StateOf } from '../challenges/pick'
+// 5 minutes), one line to say back, and one challenge: recall a word, what a line meant, or use it
+// (the picking: src/main/challenges/pick.ts). With the knowledge ladder, lines whose words are all
+// usable are left out; a line whose words are all sayable is said back and then used, in a sentence
+// of the learner's own; else the line said back is one whose words are all known (or, with none,
+// any line, as without the ladder), and the word recalled one only met. Pure, so it can be tested
+// without the app.
+import { findRecall, lineNeed, pairsOf, pickSay, type Challenge, type StateOf } from '../challenges/pick'
 import type { MetLine } from '../watchlog'
 
 // About 5 minutes of reviews, at 20 to 25 seconds a card.
@@ -32,7 +33,10 @@ export function planSession({
   if (!live.length) return { cards }
   const looked = new Set(words)
   const sayable = stateOf && pickSay(live.filter((line) => lineNeed(line, stateOf) === 'produce'), looked)
-  if (sayable) return { cards, say: sayable, challenge: { kind: 'produce', line: sayable } }
+  if (sayable) {
+    const pairs = pairsOf(sayable).filter((pair) => stateOf(sayable, pair) !== 'ignored')
+    return { cards, say: sayable, challenge: { kind: 'produce', line: sayable, pairs } }
+  }
   const known = stateOf && pickSay(live.filter((line) => lineNeed(line, stateOf) === 'say'), looked)
   const say = known ?? pickSay(live, looked)
   // The challenge uses another line when there is one, so it isn't the line just said back.

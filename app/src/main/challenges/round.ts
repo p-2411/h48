@@ -5,11 +5,12 @@
 // page only names a step and sends its answer. What the learner does feeds the knowledge ladder.
 import type { CardDraft } from '../../shared/cards'
 import type { LineAttempt, MeaningView, RecallResult, RecallView, SayView, SessionAudio, SessionView } from '../../shared/daily'
-import { IGNORED_JOBS, pairKeys } from '../../shared/knowledge'
+import { pairKeys } from '../../shared/knowledge'
 import type { Moment } from '../../shared/moment'
 import type { Language } from '../../shared/types'
 import type { PronunciationCoach, TextToSpeech } from '../ai/voice'
 import { draftFromMoment } from '../cards/drafts'
+import type { Knowledge, WordAttempt } from '../knowledge'
 import type { VideoLines, MetLine, WordEvent } from '../watchlog'
 import type { Challenge } from './pick'
 import type { Quiz } from './quiz'
@@ -26,7 +27,7 @@ type RoundDeps = {
   cards: { missed(draft: CardDraft): unknown }
   log: { noteWord(event: WordEvent): unknown }
   /** The knowledge ladder: what the learner did with each word (src/main/knowledge). */
-  knowledge?: { noteAttempt(language: Language, key: string, kind: 'recall' | 'say' | 'use', good: boolean, context?: string): void }
+  knowledge?: Pick<Knowledge, 'noteAttempts'>
   tts?: TextToSpeech
   coach?: PronunciationCoach
   quiz?: Quiz
@@ -48,9 +49,11 @@ export function sayView(line: MetLine): SayView {
   return { original: line.original, translation: line.translation }
 }
 
-/** The words of a line a sentence of the learner's own can use: names and grammar words aside. */
-function usableWords(line: MetLine, language: Language): { key: string; text: string }[] {
-  return pairKeys(language, line.processed).filter((word) => !IGNORED_JOBS.includes(word.job))
+/** The words a sentence of the learner's own may use: those of the plan's pairs (the words not
+ * ignored), once each. */
+function usableWords(challenge: Extract<Challenge, { kind: 'produce' }>, language: Language): { key: string; text: string }[] {
+  const words = pairKeys(language, challenge.line.processed).filter((word) => challenge.pairs.includes(word.pair))
+  return words.filter((word, index) => words.findIndex((other) => other.key === word.key) === index)
 }
 
 /** What the page is shown of a challenge: no answers. */
@@ -63,7 +66,7 @@ export function challengeView(challenge: Challenge | undefined, language: Langua
   }
   if (challenge?.kind === 'produce') {
     const { original, translation } = challenge.line
-    return { kind: 'produce', original, translation, words: usableWords(challenge.line, language).map((word) => word.text) }
+    return { kind: 'produce', original, translation, words: usableWords(challenge, language).map((word) => word.text) }
   }
   return challenge && { kind: 'meaning', original: challenge.line.original }
 }
@@ -75,6 +78,8 @@ export class Round {
   private recalled = false
   // The missed word is in the cards now (its card made or brought forward).
   private carded = false
+  // The learner's sentence has been judged: one per line, or a second would be a second context at once.
+  private produced = false
   /** The learner finished a step: said the line, picked a word, answered the question or wrote a
    * sentence. */
   finished = false
@@ -109,10 +114,8 @@ export class Round {
     )
     this.finished = true
     // Each word of the line was said, well or not (nothing heard is no evidence).
-    if (attempt.heard) {
-      for (const word of pairKeys(this.video.language, line.processed))
-        this.deps.knowledge?.noteAttempt(this.video.language, word.key, 'say', attempt.good)
-    }
+    if (attempt.heard)
+      this.note(pairKeys(this.video.language, line.processed).map((word) => ({ key: word.key, kind: 'say', good: attempt.good })))
     return attempt
   }
 
@@ -154,7 +157,7 @@ export class Round {
     if (!this.recalled && this.video) {
       this.recalled = true
       const word = pairKeys(this.video.language, challenge.line.processed).find((item) => item.pair === pair)
-      if (word) this.deps.knowledge?.noteAttempt(this.video.language, word.key, 'recall', correct)
+      if (word) this.note([{ key: word.key, kind: 'recall', good: correct }])
     }
     return { correct, answer, carded: !correct && this.carded }
   }
@@ -164,21 +167,32 @@ export class Round {
   async produceCheck(sentence: unknown): Promise<{ note: string; used: string[] }> {
     const challenge = this.challenge
     if (challenge?.kind !== 'produce' || !this.video) throw new Error('There is no line to follow.')
+    if (this.produced) throw new Error('You have already written your sentence for this line.')
     if (typeof sentence !== 'string' || !sentence.trim()) throw new Error('Write a sentence first.')
     if (!this.deps.quiz) throw new Error(NO_KEY)
     const own = sentence.trim().slice(0, MAX_ANSWER)
-    const language = this.video.language
-    const words = usableWords(challenge.line, language)
-    const judged = await this.deps.quiz.use(challenge.line, own, words.map((word) => word.text), language)
+    const words = usableWords(challenge, this.video.language)
+    const judged = await this.deps.quiz.use(challenge.line, own, words.map((word) => word.text), this.video.language)
+    this.produced = true
     this.finished = true
-    const used: string[] = []
-    for (const verdict of judged.words) {
-      const word = words.find((item) => item.text === verdict.word)
-      if (!word || !verdict.used) continue
-      this.deps.knowledge?.noteAttempt(language, word.key, 'use', verdict.correct, own)
-      if (verdict.correct) used.push(word.text)
+    // One try per word: used if the model says so anywhere, good only if every use was right.
+    const tries = words.flatMap((word) => {
+      const said = judged.words.filter((verdict) => verdict.word === word.text && verdict.used)
+      return said.length ? [{ key: word.key, text: word.text, good: said.every((verdict) => verdict.correct) }] : []
+    })
+    this.note(tries.map(({ key, good }) => ({ key, kind: 'use', good, context: own })))
+    return { note: judged.note, used: tries.filter((item) => item.good).map((item) => item.text) }
+  }
+
+  /** What the learner did, on the knowledge ladder; a write that fails is reported, and the step's
+   * answer (paid for already) still reaches the learner. */
+  private note(attempts: WordAttempt[]): void {
+    if (!this.video) return
+    try {
+      this.deps.knowledge?.noteAttempts(this.video.language, attempts)
+    } catch (error) {
+      console.error('[duet] could not note what the learner did on the knowledge ladder', error)
     }
-    return { note: judged.note, used }
   }
 
   /** The question about what the line meant. */

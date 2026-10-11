@@ -7,7 +7,7 @@
 import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { languageName } from '../../../shared/languages'
-import { AUTO } from '../../../shared/levels'
+import { AUTO, MAX_LEVEL } from '../../../shared/levels'
 import type { Level, OverlaySettings } from '../../../shared/types'
 import { GLIDE, GLIDING, SPRING } from '../components/motion'
 import { levelAt } from './levels'
@@ -34,7 +34,7 @@ export function LevelSlider({ settings }: { settings: OverlaySettings }): React.
     if (level !== settings.level) window.duet.setLevel(level)
   }
   const go = (steps: number): void => {
-    if (steps) set(Math.min(5, Math.max(AUTO, settings.level + steps)) as Level)
+    if (steps) set(Math.min(MAX_LEVEL, Math.max(AUTO, settings.level + steps)) as Level)
   }
 
   // Dragging the handle: the level under the pointer, as it moves.
@@ -55,7 +55,7 @@ export function LevelSlider({ settings }: { settings: OverlaySettings }): React.
       tabIndex={0}
       aria-label={`How much ${language} in each line`}
       aria-valuemin={AUTO}
-      aria-valuemax={5}
+      aria-valuemax={MAX_LEVEL}
       aria-valuenow={settings.level}
       aria-valuetext={describe(current)}
       title={open ? undefined : describe(current)}

@@ -2,7 +2,7 @@
 // say back, a word to recall, and what a line meant. With the knowledge ladder (`stateOf`), a line's
 // words say what it needs (lineNeed); without it, recall is of a word the learner looked at (hovered
 // or saved). Pure, so it can be tested without the app.
-import type { WordState } from '../../shared/knowledge'
+import { rank, type WordState } from '../../shared/knowledge'
 import { pairText } from '../../shared/levels'
 import type { MetLine } from '../watchlog'
 import { recallChallenge, type RecallChallenge } from './recall'
@@ -13,29 +13,32 @@ const SAY_MAX_WORDS = 16
 export type Challenge =
   | { kind: 'recall'; line: MetLine; recall: RecallChallenge }
   | { kind: 'meaning'; line: MetLine }
-  | { kind: 'produce'; line: MetLine }
+  /** Use it: the line, and the pairs whose words the learner's sentence may use (none ignored). */
+  | { kind: 'produce'; line: MetLine; pairs: number[] }
 
 /** A word's rung on the knowledge ladder, by its line and pair (src/shared/knowledge.ts). */
 export type StateOf = (line: MetLine, pair: number) => WordState
 
 /** What a line needs next: recall a word only met, say the line (every word known), use its words
  * in a sentence of one's own (every word sayable), or nothing (every word usable). */
-export type LineNeed = 'recall' | 'say' | 'produce' | 'done'
+type LineNeed = 'recall' | 'say' | 'produce' | 'done'
 
-// Each rung's step; ignored words never hold a line back.
-const STEP: Record<WordState, number> = { unknown: 0, encountered: 0, known: 1, speakable: 2, usable: 3, ignored: 3 }
-const NEEDS: LineNeed[] = ['recall', 'say', 'produce', 'done']
+// What a line needs when its lowest word is on each rung, in the ladder's order (unknown, encountered,
+// known, speakable, usable); ignored words, off the ladder, never hold a line back.
+const NEEDS: LineNeed[] = ['recall', 'recall', 'say', 'produce', 'done']
+const DONE = NEEDS.length - 1
+const KNOWN = rank('known')
 
 type Word = { line: MetLine; pair: number }
 
 /** A line's pairs, once each. */
-function pairsOf(line: MetLine): number[] {
+export function pairsOf(line: MetLine): number[] {
   return [...new Set(line.processed.source.flatMap((token) => (token.pair === null ? [] : [token.pair])))]
 }
 
 /** What the line needs, by its lowest word. */
 export function lineNeed(line: MetLine, stateOf: StateOf): LineNeed {
-  return NEEDS[Math.min(3, ...pairsOf(line).map((pair) => STEP[stateOf(line, pair)]))]
+  return NEEDS[Math.min(DONE, ...pairsOf(line).map((pair) => rank(stateOf(line, pair))))]
 }
 
 /** The pairs of a line whose words the learner looked at. */
@@ -48,7 +51,7 @@ function lookedAt(line: MetLine, words: Set<string>): number[] {
 function recallCandidates(pool: MetLine[], looked: Set<string>, stateOf?: StateOf): Word[] {
   const seen = pool.flatMap((line) => lookedAt(line, looked).map((pair) => ({ line, pair })))
   if (!stateOf) return seen
-  const onlyMet = ({ line, pair }: Word): boolean => STEP[stateOf(line, pair)] === 0
+  const onlyMet = ({ line, pair }: Word): boolean => rank(stateOf(line, pair)) < KNOWN
   const first = seen.filter(onlyMet)
   const rest = pool
     .flatMap((line) => pairsOf(line).map((pair) => ({ line, pair })))

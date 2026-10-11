@@ -1,5 +1,5 @@
 // Use it: after saying a line back, the learner writes a sentence of their own that could come next,
-// using words from the line. Duet says what worked; each word used well climbs the knowledge ladder.
+// using words from the line. Duet says what worked; each word used counts toward its next rung on the knowledge ladder.
 import { useState } from 'react'
 import type { ProduceView } from '../../../../shared/daily'
 import { say } from '../errors'

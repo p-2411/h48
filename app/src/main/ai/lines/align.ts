@@ -88,7 +88,8 @@ export function alignLine(line: string, translation: string, phrases: Phrase[]):
     englishAt.set(item.pair, at)
     englishSpans.push({ start: at, end: at + english.length, job: item.phrase.job, pair: null })
   }
-  // A pair needs both sides; a phrase found on one side only is still coloured, just never swapped.
+  // A pair needs both sides; a phrase found on one side only is kept as a token (grey, like glue),
+  // never swapped.
   for (const item of found) {
     if (item.sourceAt < 0 || !englishAt.has(item.pair)) continue
     sourceSpans.find((span) => span.start === item.sourceAt)!.pair = item.pair
