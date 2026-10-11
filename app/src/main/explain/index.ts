@@ -72,7 +72,7 @@ export class Explain {
     this.options.panel.show('explain')
     this.request?.abort()
     this.thread.reset()
-    this.context = { moment }
+    this.context = { moment, exploreEnabled: true }
     this.options.tutor.open(this.context, this.options.panel)
     this.explain(moment)
   }

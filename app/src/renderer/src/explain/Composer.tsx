@@ -1,5 +1,6 @@
-// The message box, with common questions, "Use my cards" and the mic that switches to voice. The
-// draft lives in Conversation, so it survives a spell in voice.
+// The message bar, as Talk and Explain both show it: common questions above it, then one pill with
+// the message box, the mic (it switches to voice) and Send inside. The draft lives in Conversation,
+// so it survives a spell in voice.
 import type { RefObject } from 'react'
 import type { Language } from '../../../shared/languages'
 import { focusMessageBox } from './focus'
@@ -24,8 +25,6 @@ export function Composer({
   onDraft,
   language,
   replying,
-  explore,
-  onOpenCards,
   onStartVoice,
   onSend,
   free = false
@@ -35,8 +34,6 @@ export function Composer({
   onDraft: (text: string) => void
   language: Language
   replying: boolean
-  explore: boolean
-  onOpenCards: () => void
   onStartVoice: () => void
   /** Sends the learner's message to Duet. */
   onSend: (text: string) => void
@@ -58,24 +55,14 @@ export function Composer({
 
   return (
     <>
-      <div className="row">
+      <div className="chips">
         {PILLS[free ? 'free' : 'line'].map((pill) => (
           <button key={pill.label} type="button" className="pill" onClick={() => fill(pill.text)}>
             {pill.label}
           </button>
         ))}
-        <span className="spacer" />
-        <button
-          type="button"
-          className={`pill${explore ? ' on' : ''}`}
-          disabled={explore}
-          title="Lets Duet look at your saved cards and earlier lines"
-          onClick={onOpenCards}
-        >
-          {explore ? 'Cards open to Duet' : 'Use my cards'}
-        </button>
       </div>
-      <div className="input-row">
+      <div className="message-bar">
         <textarea
           ref={box}
           id="conversation-message"
@@ -93,20 +80,23 @@ export function Composer({
         />
         <button
           type="button"
-          className="btn primary"
-          disabled={!draft.trim() || replying}
-          onClick={send}
-        >
-          Send
-        </button>
-        <button
-          type="button"
-          className="btn mic"
+          className="bar-mic"
           title="Talk instead: Duet hears you, and how you say it"
           aria-label="Talk to Duet"
           onClick={onStartVoice}
         >
-          <Icon name="mic" />
+          <Icon name="mic" size={15} />
+        </button>
+        <button
+          type="button"
+          className="bar-send"
+          aria-label="Send"
+          disabled={!draft.trim() || replying}
+          onClick={send}
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
       </div>
     </>

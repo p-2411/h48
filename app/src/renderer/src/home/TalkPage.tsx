@@ -4,9 +4,10 @@
 // Opened from the hub's Talk tile, it sends the message typed there, or starts voice.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ThreadState } from '../../../shared/explain'
-import type { Language } from '../../../shared/languages'
+import { languageName, type Language } from '../../../shared/languages'
 import { say } from '../components/errors'
 import { ErrorBoundary } from '../components/ErrorBoundary'
+import { ChatSurface, DuetBubble } from '../explain/ChatSurface'
 import { Conversation } from '../explain/Conversation'
 import type { ThreadBridge } from '../explain/thread'
 import { LoadState } from '../components/LoadState'
@@ -21,7 +22,6 @@ export function TalkPage({ start }: { start?: TalkStart }): React.JSX.Element {
   // Opening Talk failed (LoadState shows it, with Try again), or a message or New conversation did.
   const [error, setError] = useState<string>()
   const [actionError, setActionError] = useState<string>()
-  const [dock, setDock] = useState<HTMLElement | null>(null)
   const [mascotSlot, setMascotSlot] = useState<HTMLElement | null>(null)
   // A new conversation (New conversation) is a new Conversation, with its own voice session.
   const [round, setRound] = useState(0)
@@ -89,16 +89,22 @@ export function TalkPage({ start }: { start?: TalkStart }): React.JSX.Element {
           {actionError}
         </p>
       )}
-      <div className="explain-scroll">
-        <LoadState loaded={!!thread && !!language} error={error} reload={open} />
-        {thread && language && (
-          <>
-            {thread.chat.length === 0 && (
-              <p className="muted home-talk-intro">
-                Duet answers at your level, can look at the cards you saved, and helps you say it better. Type, or press the mic to
-                talk.
-              </p>
-            )}
+      <LoadState loaded={!!thread && !!language} error={error} reload={open} />
+      {thread && language && (
+        // The conversation surface Explain uses too; Duet's greeting is its first message.
+        <ChatSurface
+          top={
+            thread.chat.length === 0 && (
+              <DuetBubble label="Duet">
+                <p className="turn-text">
+                  Say anything in {languageName(language)}, or in English if you get stuck. I answer at your level, can look at the cards you saved,
+                  and help you say it better. Type, or press the mic to talk.
+                </p>
+              </DuetBubble>
+            )
+          }
+        >
+          {(dock) => (
             <ErrorBoundary key={round} what="The conversation">
               <Conversation
                 state={thread}
@@ -111,10 +117,9 @@ export function TalkPage({ start }: { start?: TalkStart }): React.JSX.Element {
                 startVoice={start?.voice}
               />
             </ErrorBoundary>
-          </>
-        )}
-      </div>
-      <div className="explain-dock" ref={setDock} />
+          )}
+        </ChatSurface>
+      )}
     </main>
   )
 }

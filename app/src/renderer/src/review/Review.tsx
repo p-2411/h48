@@ -3,8 +3,9 @@
 // that rating will do.
 import { useEffect, useRef, useState } from 'react'
 import { RATING_LABELS, RATINGS, type Card, type Rating } from '../../../shared/cards'
-import { wordKey, type WordState } from '../../../shared/knowledge'
+import { wordKey } from '../../../shared/knowledge'
 import { say } from '../components/errors'
+import { useRung } from '../components/useRung'
 import { clock, when } from '../components/time'
 import { ReviewSettings } from './ReviewSettings'
 import { useReviewSession } from './useReviewSession'
@@ -27,23 +28,6 @@ function UndoRating({ busy, onUndo }: { busy: boolean; onUndo: () => void }): Re
   )
 }
 
-/** The rung of the word a card is for, on the knowledge ladder: its glow's colour. */
-function useCardRung(card: Card): WordState | undefined {
-  const key = card.wordKey ?? wordKey(card.language, card.expression)
-  const [rung, setRung] = useState<{ key: string; state: WordState }>()
-  useEffect(() => {
-    let current = true
-    window.duet.knowledge.states(card.language, [key]).then(
-      (states) => current && states[key] && setRung({ key, state: states[key] }),
-      () => undefined
-    )
-    return () => {
-      current = false
-    }
-  }, [card.language, key])
-  return rung?.key === key ? rung.state : undefined
-}
-
 /** The card on its stage: what it asks, large, the word glowing in its rung's colour; its answer
  * blurred under it until shown, so the learner guesses first; once shown, what the card tests and
  * where it came from. */
@@ -58,7 +42,7 @@ function CardStage({
   revealed: boolean
   onReplay: () => void
 }): React.JSX.Element {
-  const rung = useCardRung(card)
+  const rung = useRung(card.language, card.wordKey ?? wordKey(card.language, card.expression))
   const use = card.type === 'use'
   return (
     <div className="card-stage">
