@@ -2,7 +2,7 @@
 // Every feature that helps with a line (Explain that, the voice tutor, pronunciation practice,
 // saving a card) starts from a moment, so they all see the same context. It is a copy: lines that
 // change later (a translation finishing, the video moving on) never change a moment already taken.
-import type { Language, OverlayLine } from './types'
+import type { Language, OverlayLine, Site } from './types'
 
 export type MomentLine = { original: string; translation?: string }
 
@@ -14,9 +14,9 @@ export type Moment = {
    * lines are never included, so nothing is spoiled. */
   earlier: MomentLine[]
   video: {
-    site: 'youtube' | 'netflix' | 'other'
+    site: Site
     url?: string
-    /** The site's own id for the video, when known (YouTube's v= parameter). */
+    /** The site's own id for the video (YouTube's v= parameter, Netflix's watch id). */
     id?: string
     /** Seconds into the video where the line starts, when known. */
     position?: number

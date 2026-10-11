@@ -2,6 +2,9 @@
 
 export type Language = 'es' | 'ja' | 'ko'
 
+/** Video sites Duet supports; each is one file in src/main/sources. */
+export type Site = 'youtube' | 'netflix'
+
 export const LANGUAGES: Record<Language, string> = { es: 'Spanish', ja: 'Japanese', ko: 'Korean' }
 
 /** A word's job in its sentence; each has its own colour. */
@@ -53,6 +56,10 @@ export type OverlayStatus = {
   browser?: string
   url?: string
   captions?: boolean
+  /** The site of the page being read, and what Duet can do with its player. */
+  site?: Site
+  siteName?: string
+  controls?: { playPause: boolean; seek: boolean }
   /** Where lines come from: the video's transcript, or the captions on screen. */
   source?: 'transcript' | 'captions'
   /** False when the player says this video has no captions at all. */

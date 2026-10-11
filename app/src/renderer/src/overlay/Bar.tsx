@@ -12,8 +12,7 @@ function statusText(status: OverlayStatus, language: Language): string {
   if (status.source === 'transcript') return `Following the transcript in ${browser}`
   if (status.available === false) return 'This video has no captions. Try another video'
   if (!status.captions) return 'Turn on captions in the player'
-  const site = status.url.includes('netflix.com') ? 'Netflix' : 'YouTube'
-  return `Reading ${site} in ${browser}`
+  return `Reading ${status.siteName ?? 'the video'} in ${browser}`
 }
 
 function Toggle({ on, label, title, onChange }: { on: boolean; label: string; title?: string; onChange: (on: boolean) => void }): React.JSX.Element {

@@ -1,14 +1,13 @@
 // YouTube transcripts: the whole caption track of a video, with timings, fetched without the
-// captions being turned on.
+// captions being turned on. Used by the YouTube source (youtube.ts).
 //
 // Ported from youtube-transcript-api (MIT, https://github.com/jdepoix/youtube-transcript-api,
 // v1.2.4): load the watch page for its API key, ask the player API as the Android app for the caption
 // tracks, then download the chosen track as XML. When YouTube changes this, that project usually
 // ships the fix first; copy it here. Runs on the viewer's own machine and connection: YouTube blocks
 // cloud servers, so this must not move to a backend.
-import type { Language } from '../shared/types'
-
-export type TranscriptLine = { text: string; start: number; end: number }
+import type { Language } from '../../shared/types'
+import type { TranscriptLine } from './types'
 
 const WATCH_URL = 'https://www.youtube.com/watch?v='
 const PLAYER_URL = 'https://www.youtube.com/youtubei/v1/player?key='
@@ -20,19 +19,6 @@ const HEADERS = {
 }
 
 type CaptionTrack = { baseUrl: string; languageCode: string; kind?: string }
-
-/** The video id in a YouTube watch or Shorts address, if it is one. */
-export function youtubeVideoId(address: string | undefined): string | undefined {
-  if (!address) return undefined
-  try {
-    const url = new URL(address)
-    if (!url.hostname.endsWith('youtube.com')) return undefined
-    if (url.pathname === '/watch') return url.searchParams.get('v') ?? undefined
-    return url.pathname.match(/^\/shorts\/([\w-]+)/)?.[1]
-  } catch {
-    return undefined
-  }
-}
 
 function decodeEntities(text: string): string {
   return text

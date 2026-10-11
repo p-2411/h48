@@ -26,6 +26,8 @@ export type CaptionStatus = {
 
 export type CaptionLine = { text: string; url?: string; at: number }
 
+export type PlayerCommand = { type: 'pause' } | { type: 'play' } | { type: 'seek'; seconds: number }
+
 // A caption counts as finished when it has stopped changing for this long, or when the next
 // caption is not just a longer version of it (YouTube's auto captions grow word by word).
 const SETTLE_MS = 900
@@ -66,9 +68,9 @@ export class CaptionSource extends EventEmitter {
     })
   }
 
-  /** Asks the reader to pause or play the video (YouTube only). */
-  command(type: 'pause' | 'play'): void {
-    this.child?.stdin?.write(`${JSON.stringify({ type })}\n`)
+  /** Asks the reader to pause, play or seek the video, on sites whose controls allow it (see sources). */
+  command(command: PlayerCommand): void {
+    this.child?.stdin?.write(`${JSON.stringify(command)}\n`)
   }
 
   stop(): void {

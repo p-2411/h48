@@ -12,7 +12,7 @@ import { EventEmitter } from 'events'
 import type { MomentLine } from '../shared/moment'
 import type { Language, OverlayLine } from '../shared/types'
 import { ModelError, type HistoryEntry, type LineModel } from './ai'
-import type { TranscriptLine } from './transcript'
+import type { TranscriptLine } from './sources'
 
 // The context is the last CONTEXT_KEEP processed lines before the line, with its start moved in
 // steps of CONTEXT_STEP: every move changes the start of the cached context, so it should be rare.

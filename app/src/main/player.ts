@@ -7,6 +7,7 @@
 // while the video is held drops every hold (each holder hears "overridden"), and pausing it
 // themselves means nothing plays it again on release.
 import { EventEmitter } from 'events'
+import type { PlayerCommand } from './captions'
 import { PlayerClock, type PlayerTime } from './clock'
 
 export type Holder = 'wait' | 'tutor'
@@ -20,8 +21,8 @@ export class Player extends EventEmitter {
   private resumeOnRelease = false
   private expected?: { playing: boolean; timer: NodeJS.Timeout }
 
-  /** `command` asks the page to pause or play (see CaptionSource.command). */
-  constructor(private command: (type: 'pause' | 'play') => void) {
+  /** `command` asks the page to pause, play or seek (see CaptionSource.command). */
+  constructor(private command: (command: PlayerCommand) => void) {
     super()
   }
 
@@ -69,6 +70,11 @@ export class Player extends EventEmitter {
     this.send('play')
   }
 
+  /** Moves the video to a point, in seconds. The clock follows once the reader sees the jump. */
+  seek(seconds: number): void {
+    this.command({ type: 'seek', seconds: Math.max(0, seconds) })
+  }
+
   isHeldBy(holder: Holder): boolean {
     return this.holders.has(holder)
   }
@@ -83,7 +89,7 @@ export class Player extends EventEmitter {
       if (!playing && this.clock.playing) this.dropHolds()
     }, COMMAND_MS)
     this.expected = { playing, timer }
-    this.command(type)
+    this.command({ type })
   }
 
   private dropHolds(): void {

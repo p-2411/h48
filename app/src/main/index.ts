@@ -52,7 +52,7 @@ app.whenReady().then(() => {
 
   const settings = new Settings()
   const captions = new CaptionSource()
-  const player = new Player((type) => captions.command(type))
+  const player = new Player((command) => captions.command(command))
   const watcher = new Watcher(captions, player, settings, model, modelError)
   const wait = new WaitForTranslation(player, settings, () => watcher.currentLine)
   const tutor = new Tutor(player)

@@ -16,7 +16,9 @@
 //
 // Input: one JSON object per line on stdin, from the app:
 //   {"type":"pause"} / {"type":"play"}   presses the player's play button if the video is not
-//                                        already in that state (YouTube only)
+//                                        already in that state
+//   {"type":"seek","seconds":107.25}     moves the video to that point, through the seek bar
+// Only on sites whose entry below names the elements needed (YouTube so far).
 //
 // Build: swiftc -O native/macos/CaptionReader.swift -o resources/bin/caption-reader-macos
 
@@ -252,6 +254,21 @@ Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
   }
 }
 
+// Seeking: set the seek bar's value; if the page ignores that, step with the bar's own decrement
+// and increment actions (5 seconds each on YouTube, like the arrow keys), landing just before.
+let stepSeconds = 5.0
+func seek(to seconds: Double) {
+  guard let bar = progress, let before = number(bar, kAXValueAttribute) else { return }
+  AXUIElementSetAttributeValue(bar, kAXValueAttribute as CFString, NSNumber(value: seconds))
+  DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+    guard let now = number(bar, kAXValueAttribute), abs(now - seconds) > 1.5, abs(now - before) < 1.5 else { return }
+    let distance = seconds - now
+    let steps = Int((abs(distance) / stepSeconds).rounded(distance < 0 ? .up : .down))
+    let action = (distance < 0 ? kAXDecrementAction : kAXIncrementAction) as CFString
+    for _ in 0..<steps { AXUIElementPerformAction(bar, action) }
+  }
+}
+
 // Commands from the app. The play button toggles, so it is pressed only when the video is not
 // already in the state asked for.
 FileHandle.standardInput.readabilityHandler = { handle in
@@ -259,10 +276,17 @@ FileHandle.standardInput.readabilityHandler = { handle in
   guard !data.isEmpty, let text = String(data: data, encoding: .utf8) else { return }
   for line in text.split(separator: "\n") {
     guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
-          let type = object["type"] as? String, type == "pause" || type == "play" else { continue }
+          let type = object["type"] as? String else { continue }
     DispatchQueue.main.async {
-      guard let button = playButton, let modes = player.map(classes) else { return }
-      if modes.contains("playing-mode") == (type == "pause") { AXUIElementPerformAction(button, kAXPressAction as CFString) }
+      switch type {
+      case "pause", "play":
+        guard let button = playButton, let modes = player.map(classes) else { return }
+        if modes.contains("playing-mode") == (type == "pause") { AXUIElementPerformAction(button, kAXPressAction as CFString) }
+      case "seek":
+        if let seconds = object["seconds"] as? Double { seek(to: seconds) }
+      default:
+        break
+      }
     }
   }
 }

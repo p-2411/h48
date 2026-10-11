@@ -1,8 +1,9 @@
 // Watching: the path from the video in the browser to processed lines.
 //
-// The caption reader says which video is open, what its captions say and where it is. On YouTube
-// the video's own transcript is fetched, so the captions need not be on and lines are processed
-// before they are spoken; without one (or on Netflix) lines come from the captions on screen.
+// The caption reader says which video is open, what its captions say and where it is. The page's
+// source (src/main/sources) says which video it is and whether the site offers a transcript; with
+// one, the captions need not be on and lines are processed before they are spoken; without one,
+// lines come from the captions on screen.
 //
 // One session per video and language is kept after switching away, so switching back (to a
 // language or a video) shows what was already processed and carries on from there. Only the
@@ -20,22 +21,19 @@ import type { PlayerTime } from './clock'
 import type { Player } from './player'
 import { LineSession } from './session'
 import type { Settings } from './settings'
-import { fetchTranscript, youtubeVideoId } from './transcript'
+import { sourceFor, type Source } from './sources'
 
 // Videos and languages whose lines are kept after switching away.
 const SESSIONS_KEPT = 12
 
-function siteOf(url: string | undefined): Moment['video']['site'] {
-  if (url?.includes('youtube.com')) return 'youtube'
-  if (url?.includes('netflix.com')) return 'netflix'
-  return 'other'
-}
+/** The video open in the browser. */
+type Video = { source: Source; id: string; url: string }
 
 export class Watcher extends EventEmitter {
   private _status: OverlayStatus = { trusted: false }
   private sessions = new Map<string, LineSession>()
   private session?: LineSession
-  private video?: string
+  private video?: Video
   private fetching?: AbortController
 
   constructor(
@@ -48,10 +46,11 @@ export class Watcher extends EventEmitter {
     super()
     this._status = { trusted: false, model: model?.name, modelError }
     captions.on('status', (change: CaptionStatus) => {
-      this.setStatus({ ...change, error: change.error })
-      const key = youtubeVideoId(change.url) ?? change.url
-      if (key && key !== this.video) {
-        this.video = key
+      const source = sourceFor(change.url)
+      this.setStatus({ ...change, error: change.error, site: source?.site, siteName: source?.name, controls: source?.controls })
+      const id = change.url ? source?.videoId(change.url) : undefined
+      if (source && id && change.url && (id !== this.video?.id || source !== this.video.source)) {
+        this.video = { source, id, url: change.url }
         player.reset()
         this.open()
       }
@@ -83,12 +82,12 @@ export class Watcher extends EventEmitter {
   /** A moment for a line (the one on screen by default), or undefined when there is no such line. */
   moment(lineId?: number): Moment | undefined {
     const taken = this.session?.moment(lineId)
-    if (!taken) return undefined
-    const url = this._status.url
+    const video = this.video
+    if (!taken || !video) return undefined
     return {
       language: this.settings.current.language,
       ...taken,
-      video: { site: siteOf(url), url, id: youtubeVideoId(url), position: taken.line.start ?? this.player.now() },
+      video: { site: video.source.site, url: video.url, id: video.id, position: taken.line.start ?? this.player.now() },
       takenAt: Date.now()
     }
   }
@@ -127,16 +126,18 @@ export class Watcher extends EventEmitter {
     this.fetching?.abort()
     this.session?.pause()
     const language = this.settings.current.language
-    const target = this.video ? this.sessionFor(`${this.video}|${language}`) : undefined
+    const video = this.video
+    const target = video ? this.sessionFor(`${video.source.site}:${video.id}|${language}`) : undefined
     this.session = target
     this.emit('current', null)
-    if (!target) return
+    if (!target || !video) return
     target.resume()
     this.setStatus({ source: target.hasTranscript ? 'transcript' : 'captions' })
-    const id = youtubeVideoId(this._status.url)
-    if (!id || target.hasTranscript) return
+    const { id, source } = video
+    if (!source.fetchTranscript || target.hasTranscript) return
     const abort = (this.fetching = new AbortController())
-    fetchTranscript(id, language, abort.signal)
+    source
+      .fetchTranscript(id, language, abort.signal)
       .then((lines) => {
         if (abort.signal.aborted || !lines) return
         target.loadTranscript(lines)
