@@ -3,6 +3,7 @@
 // that rating will do.
 import { useEffect, useRef, useState } from 'react'
 import { RATING_LABELS, RATINGS, type Card, type Rating } from '../../../shared/cards'
+import { wordKey, type WordState } from '../../../shared/knowledge'
 import { say } from '../components/errors'
 import { clock, when } from '../components/time'
 import { ReviewSettings } from './ReviewSettings'
@@ -26,36 +27,68 @@ function UndoRating({ busy, onUndo }: { busy: boolean; onUndo: () => void }): Re
   )
 }
 
-function Prompt({ card }: { card: Card }): React.JSX.Element {
-  if (card.type === 'use')
-    return (
-      <div className="glass prompt">
-        <span className="label">What would you say?</span>
-        {card.situation && <p>{card.situation}</p>}
-        <p className="big">{card.meaning}</p>
-      </div>
+/** The rung of the word a card is for, on the knowledge ladder: its glow's colour. */
+function useCardRung(card: Card): WordState | undefined {
+  const key = card.wordKey ?? wordKey(card.language, card.expression)
+  const [rung, setRung] = useState<{ key: string; state: WordState }>()
+  useEffect(() => {
+    let current = true
+    window.duet.knowledge.states(card.language, [key]).then(
+      (states) => current && states[key] && setRung({ key, state: states[key] }),
+      () => undefined
     )
+    return () => {
+      current = false
+    }
+  }, [card.language, key])
+  return rung?.key === key ? rung.state : undefined
+}
+
+/** The card on its stage: what it asks, large, the word glowing in its rung's colour; its answer
+ * blurred under it until shown, so the learner guesses first; once shown, what the card tests and
+ * where it came from. */
+function CardStage({
+  card,
+  label,
+  revealed,
+  onReplay
+}: {
+  card: Card
+  label: string
+  revealed: boolean
+  onReplay: () => void
+}): React.JSX.Element {
+  const rung = useCardRung(card)
+  const use = card.type === 'use'
   return (
-    <div className="glass prompt">
-      <span className="label">What does it mean here?</span>
-      <p className="big" lang={card.language}>
-        {card.expression}
+    <div className="card-stage">
+      <span className="label">{label}</span>
+      {use && card.situation && <p className="muted">{card.situation}</p>}
+      <p className="stage-front" lang={use ? undefined : card.language}>
+        <span className="w" data-k={use ? undefined : rung}>
+          {use ? card.meaning : card.expression}
+        </span>
       </p>
-      {card.situation && <p className="muted">{card.situation}</p>}
+      {!use && card.situation && <p className="muted">{card.situation}</p>}
+      {/* The answer, blurred until shown; hidden from screen readers until then too. */}
+      <p className={revealed ? 'stage-back' : 'stage-back is-hidden'} lang={use ? card.language : undefined} aria-hidden={!revealed}>
+        {use ? (
+          <span className="w" data-k={rung}>
+            {card.expression}
+          </span>
+        ) : (
+          card.meaning
+        )}
+      </p>
+      {revealed && <Answer card={card} onReplay={onReplay} />}
     </div>
   )
 }
 
+/** What the card tests, and the rest of it, under the answer. */
 function Answer({ card, onReplay }: { card: Card; onReplay: () => void }): React.JSX.Element {
   return (
-    <div className="glass">
-      {card.type === 'use' ? (
-        <p className="big" lang={card.language}>
-          {card.expression}
-        </p>
-      ) : (
-        <p className="big">{card.meaning}</p>
-      )}
+    <div className="glass stage-answer">
       <p className="muted">What it tests: {card.target}</p>
       {card.explanation?.notice && <p>{card.explanation.notice.text}</p>}
       {card.alternative && <p className="muted">Alternative: {card.alternative}</p>}
@@ -105,18 +138,20 @@ export function Review({ onEnd, limit }: { onEnd: () => void; limit?: number }):
   const session = useReviewSession()
   const { queue, revealed, busy, error, act, settings } = session
   const inSession = limit !== undefined
-  // Ratings that went through, to stop at the daily session's cap.
-  const rated = useRef(0)
+  // Ratings that went through, to stop at the daily session's cap (and to say which card this is).
+  const [rated, setRated] = useState(0)
   const rate = async (card: Card, rating: Rating): Promise<void> => {
+    let count = rated
     await act(async () => {
       const next = await window.duet.cards.rate(card.id, card.revision, rating)
-      rated.current++
+      count = rated + 1
+      setRated(count)
       return next
     })
-    if (inSession && rated.current >= limit) onEnd()
+    if (inSession && count >= limit) onEnd()
   }
-  // Reveal answer goes away once pressed, so focus moves on to the first rating; once rated, the
-  // ratings go, so it comes back to the next card's Reveal answer.
+  // The Show button goes away once pressed, so focus moves on to the first rating; once rated, the
+  // ratings go, so it comes back to the next card's Show button.
   const [replayError, setReplayError] = useState<string>()
   const firstRating = useRef<HTMLButtonElement>(null)
   const revealButton = useRef<HTMLButtonElement>(null)
@@ -152,17 +187,22 @@ export function Review({ onEnd, limit }: { onEnd: () => void; limit?: number }):
       </p>
     )
   const { counts, next } = queue
+  // In the daily session: which card of how many (as many as the cap, or as are left).
+  const total = inSession ? Math.min(limit, rated + counts.due + counts.newAvailable) : 0
+  const asks = next?.card.type === 'use' ? 'how would you say it?' : 'do you know it?'
   return (
-    <section className="review">
-      <p className="counts">
-        <span>
-          <b>{counts.due}</b> due now
-        </span>
-        <span>
-          <b>{counts.newAvailable}</b> new
-        </span>
-        <span className="faint">{counts.laterToday} later today</span>
-      </p>
+    <section className={inSession ? 'review in-session' : 'review'}>
+      {!inSession && (
+        <p className="counts">
+          <span>
+            <b>{counts.due}</b> due now
+          </span>
+          <span>
+            <b>{counts.newAvailable}</b> new
+          </span>
+          <span className="faint">{counts.laterToday} later today</span>
+        </p>
+      )}
       {(error || replayError) && (
         <p className="notice error" role="alert">
           {error ?? replayError}
@@ -171,10 +211,14 @@ export function Review({ onEnd, limit }: { onEnd: () => void; limit?: number }):
 
       {next ? (
         <>
-          <Prompt card={next.card} />
+          <CardStage
+            card={next.card}
+            label={inSession ? `Card ${Math.min(rated + 1, total)} of ${total} · ${asks}` : asks.charAt(0).toUpperCase() + asks.slice(1)}
+            revealed={revealed}
+            onReplay={() => window.duet.cards.replay(next.card.id).catch((cause) => setReplayError(say(cause, 'Could not go back to that moment.')))}
+          />
           {revealed ? (
             <>
-              <Answer card={next.card} onReplay={() => window.duet.cards.replay(next.card.id).catch((cause) => setReplayError(say(cause, 'Could not go back to that moment.')))} />
               <div className="ratings">
                 {RATING_ROWS.map(({ rating, label, meaning }, index) => (
                   <button
@@ -191,23 +235,24 @@ export function Review({ onEnd, limit }: { onEnd: () => void; limit?: number }):
                   </button>
                 ))}
               </div>
-              <ul className="legend">
-                {RATING_ROWS.map(({ rating, label, meaning }) => (
-                  <li key={rating}>
-                    <b>{label}</b> {meaning}
-                  </li>
-                ))}
-              </ul>
+              {!inSession && (
+                <ul className="legend">
+                  {RATING_ROWS.map(({ rating, label, meaning }) => (
+                    <li key={rating}>
+                      <b>{label}</b> {meaning}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </>
           ) : (
-            <p className="faint">Try to recall it first, silently or aloud.</p>
-          )}
-          <div className="row">
-            {!revealed && (
+            <div className="stage-show">
               <button ref={revealButton} type="button" className="btn primary" onClick={session.reveal}>
-                Reveal answer
+                {next.card.type === 'use' ? 'Show how to say it' : 'Show the English'}
               </button>
-            )}
+            </div>
+          )}
+          <div className="row stage-more">
             <button
               type="button"
               className="btn quiet"
@@ -249,7 +294,7 @@ export function Review({ onEnd, limit }: { onEnd: () => void; limit?: number }):
         </div>
       )}
 
-      {settings && (
+      {settings && !inSession && (
         <ReviewSettings
           settings={settings}
           onChange={session.setSettings}

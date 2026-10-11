@@ -79,10 +79,18 @@ export function DailySession({ onClose }: { onClose: () => void }): React.JSX.El
     )
   return (
     <div className="daily" ref={stepBox} tabIndex={-1}>
-      <p className="faint daily-progress" role="status">
-        {step === 'done' ? 'Done' : `Step ${at + 1} of ${steps.length - 1}`}
-        {plan.video && step !== 'cards' && step !== 'done' && ` · from ${plan.video}`}
-      </p>
+      {/* A bar for each step: done, this one, still to come (said in words for screen readers). */}
+      <div className="daily-head">
+        <ol className="daily-steps" aria-hidden="true">
+          {steps.slice(0, -1).map((name, index) => (
+            <li key={name} className={index < at ? 'is-done' : index === at ? 'is-now' : undefined} />
+          ))}
+        </ol>
+        <p className="sr-only" role="status">
+          {step === 'done' ? 'Done' : `Step ${at + 1} of ${steps.length - 1}`}
+        </p>
+        {plan.video && step !== 'cards' && step !== 'done' && <p className="faint">From {plan.video}</p>}
+      </div>
       {/* Each step slides in from the right as the last leaves to the left; one that breaks takes
           only itself down, and Skip goes on with the session. */}
       <AnimatePresence mode="wait" custom={1} initial={false}>
