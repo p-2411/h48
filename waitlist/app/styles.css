@@ -93,6 +93,11 @@ h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text
   /* The video, in its whole browser frame, is a big backdrop: the heading and its line sit right on
      top of it. Its edges line up with the header pill (the same gutter from the screen edge on both
      sides, at every width). site.js drifts it slower than the page as you scroll. */
+  /* The window keeps its height on narrower screens and gets less wide instead: the video fills
+     the height and crops its sides, so the panel never gets squeezed. */
+  .hero .hero-demo .watch{height:clamp(420px,58vh,560px);grid-template-columns:minmax(0,1.7fr) minmax(340px,1fr)}
+  .hero .hero-demo .watch-main{display:flex;flex-direction:column;min-height:0}
+  .hero .hero-demo .video-still{flex:1;min-height:0;aspect-ratio:auto}
   .hero .hero-demo{--gutter:clamp(16px,3vw,36px);position:absolute;z-index:0;left:50%;right:auto;width:calc(100vw - 2 * var(--gutter));margin-left:calc(var(--gutter) - 50vw);top:max(48px,7vh);opacity:.6;will-change:transform,opacity}
 }
 
@@ -134,8 +139,6 @@ h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text
 .browser-extension{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;background:#0a84ff}
 .browser-extension svg{width:16px;height:13px;stroke:none}
 .hero-demo .watch{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;padding:16px;align-items:stretch}
-.watch-title{margin-top:12px;font-size:16px;line-height:1.4;letter-spacing:-.01em}
-.watch-meta{font-size:13px;color:var(--text-3)}
 /* The panel takes the height of the video column (height 0, min-height 100%) so the script list
    below the line card fills what is left and clips, like the real panel's scrolling list. */
 .duet-panel{display:flex;flex-direction:column;gap:12px;height:0;min-height:100%;overflow:hidden;padding:12px;border-radius:14px;background:rgba(28,28,30,.86);border-color:rgba(255,255,255,.1)}
@@ -152,7 +155,7 @@ h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text
 .duet-level{display:inline-flex;padding:2px;border-radius:8px;background:rgba(118,118,128,.24)}
 .duet-level b{min-width:24px;padding:3px 0;border-radius:6px;font-weight:400;text-align:center;font-size:12px;color:var(--fg-2)}
 .duet-level b.on{background:#636366;color:#fff;font-weight:500}
-.duet-controls .toggle{margin-left:auto;font-size:12px}
+.duet-controls .toggle{margin-left:auto;font-size:12px;white-space:nowrap}
 .duet-now{padding:14px;border-radius:12px;background:rgba(118,118,128,.18)}
 .duet-now .eyebrow{margin-bottom:8px}
 .duet-now .mix{font-size:clamp(16px,1.45vw,22px);line-height:1.35}
@@ -175,7 +178,7 @@ h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text
 @container (max-width:600px){
   .hero-demo .watch{grid-template-columns:1fr}
   .duet-panel{height:auto;min-height:0}
-  .duet-controls,.duet-legend,.duet-tabs,.duet-script,.watch-meta,.browser-nav,.browser-extension{display:none}
+  .duet-controls,.duet-legend,.duet-tabs,.duet-script,.browser-nav,.browser-extension{display:none}
 }
 
 /* The real video sits over the drawn still and starts on its own poster frame. It is scenery: no clicks. */
