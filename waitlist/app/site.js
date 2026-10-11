@@ -184,257 +184,6 @@
     requestFocus();
   }
 
-  // Living illustrations. Each scene is a short script over the same three lines. A scene plays
-  // while it is on screen and the tab is visible; under reduced motion it shows a still instead.
-  // Lines are written as "{word|type}", where type is the word's job (n, v, a, p, x or g).
-  const SCENE_LINES = [
-    { time: '0:12', es: '¿{Dónde|p} {dejaste|v} {las|g} {llaves|n}?', en: '{Where|p} {did|g} {you|p} {leave|v} {the|g} {keys|n}?', save: 'llaves', meaning: 'keys' },
-    { time: '0:15', es: '{Mi|p} {hermana|n} {vive|v} {en|g} {Madrid|x}.', en: '{My|p} {sister|n} {lives|v} {in|g} {Madrid|x}.', save: 'hermana', meaning: 'sister' },
-    { time: '0:19', es: '{La|g} {noche|n} {está|v} {muy|g} {tranquila|a}.', en: '{The|g} {night|n} {is|v} {very|g} {quiet|a}.', save: 'tranquila', meaning: 'quiet' }
-  ];
-  const WORD = /\{([^|}]+)\|(\w)\}/g;
-  const tokensOf = line => {
-    const tokens = [];
-    let last = 0;
-    for (const match of line.matchAll(WORD)) {
-      if (match.index > last) tokens.push(line.slice(last, match.index));
-      tokens.push({ text: match[1], type: match[2] });
-      last = match.index + match[0].length;
-    }
-    if (last < line.length) tokens.push(line.slice(last));
-    return tokens;
-  };
-  const wordNode = ({ text, type }) => {
-    const word = document.createElement('span');
-    word.className = 'w';
-    word.dataset.t = type;
-    word.textContent = text;
-    return word;
-  };
-  const fill = (element, line) => element.replaceChildren(...tokensOf(line).map(token =>
-    typeof token === 'string' ? document.createTextNode(token) : wordNode(token)));
-  const make = (tag, className) => Object.assign(document.createElement(tag), { className });
-  const STOPPED = Symbol('stopped');
-  const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-  // The cursor's tip lands at a point inside `target`, given as fractions of its box.
-  const pointAt = (stage, cursor, target, fx = .5, fy = .7) => {
-    const area = stage.getBoundingClientRect();
-    const box = target.getBoundingClientRect();
-    cursor.style.transform = `translate(${box.left - area.left + box.width * fx}px,${box.top - area.top + box.height * fy}px)`;
-  };
-  const restCursor = (stage, cursor) => {
-    cursor.style.transform = `translate(${stage.clientWidth - 40}px,${stage.clientHeight - 30}px)`;
-  };
-  const subtitleRow = (line, waiting) => {
-    const row = make('div', 'scene-row');
-    const es = make('p', 'es-line');
-    es.lang = 'es';
-    const en = make('p', waiting ? 'en-line is-waiting' : 'en-line');
-    fill(en, line.en);
-    row.append(es, en);
-    return { row, es, en };
-  };
-  const wordRow = line => {
-    const word = tokensOf(line.es).find(token => token.text === line.save);
-    const row = document.createElement('li');
-    row.dataset.t = word.type;
-    const name = wordNode(word);
-    row.append(make('i', ''), name, Object.assign(make('span', ''), { textContent: line.meaning }));
-    return row;
-  };
-  const showCard = (stage, line) => {
-    const word = tokensOf(line.es).find(token => token.text === line.save);
-    stage.querySelector('[data-front]').replaceChildren(wordNode(word));
-    stage.querySelector('[data-back]').textContent = line.meaning;
-    fill(stage.querySelector('[data-context]'), line.es);
-  };
-
-  const SCENES = {
-    subtitles: {
-      still(stage) {
-        const rows = stage.querySelector('.scene-rows');
-        rows.replaceChildren(...SCENE_LINES.map((line, index) => {
-          const { row, es } = subtitleRow(line, false);
-          fill(es, line.es);
-          if (index < SCENE_LINES.length - 1) row.classList.add('is-past');
-          return row;
-        }));
-        stage.querySelector('[data-clock]').textContent = SCENE_LINES.at(-1).time;
-      },
-      async play(stage, pause) {
-        const rows = stage.querySelector('.scene-rows');
-        const clock = stage.querySelector('[data-clock]');
-        rows.replaceChildren();
-        for (let index = 0; ; index = (index + 1) % SCENE_LINES.length) {
-          const line = SCENE_LINES[index];
-          clock.textContent = line.time;
-          rows.querySelectorAll('.scene-row').forEach(row => row.classList.add('is-past'));
-          while (rows.children.length >= 3) rows.firstElementChild.remove();
-          const { row, es, en } = subtitleRow(line, true);
-          rows.append(row);
-          // Words arrive one at a time, white, then settle into their colour.
-          for (const token of tokensOf(line.es)) {
-            if (typeof token === 'string') { es.append(token); continue; }
-            const word = wordNode(token);
-            word.classList.add('is-arriving');
-            es.append(word);
-            requestAnimationFrame(() => requestAnimationFrame(() => word.classList.remove('is-arriving')));
-            await pause(180);
-          }
-          await pause(350);
-          en.classList.remove('is-waiting');
-          await pause(2400);
-        }
-      }
-    },
-    guess: {
-      still(stage) {
-        fill(stage.querySelector('[data-es]'), SCENE_LINES[0].es);
-        fill(stage.querySelector('[data-en]'), SCENE_LINES[0].en);
-        stage.querySelector('[data-clock]').textContent = SCENE_LINES[0].time;
-      },
-      async play(stage, pause) {
-        const body = stage.querySelector('.scene-line');
-        const es = stage.querySelector('[data-es]');
-        const en = stage.querySelector('[data-en]');
-        const clock = stage.querySelector('[data-clock]');
-        const cursor = stage.querySelector('.scene-cursor');
-        restCursor(stage, cursor);
-        for (let index = 0; ; index = (index + 1) % SCENE_LINES.length) {
-          const line = SCENE_LINES[index];
-          body.classList.add('is-swapping');
-          await pause(350);
-          fill(es, line.es);
-          fill(en, line.en);
-          clock.textContent = line.time;
-          en.classList.remove('is-peek');
-          body.classList.remove('is-swapping');
-          // Time to guess, then the pointer checks the English.
-          await pause(1800);
-          cursor.style.opacity = 1;
-          pointAt(stage, cursor, en, .45, .6);
-          await pause(900);
-          en.classList.add('is-peek');
-          await pause(2000);
-          restCursor(stage, cursor);
-          cursor.style.opacity = 0;
-          en.classList.remove('is-peek');
-          await pause(900);
-        }
-      }
-    },
-    save: {
-      still(stage) {
-        const line = SCENE_LINES.at(-1);
-        fill(stage.querySelector('[data-es]'), line.es);
-        fill(stage.querySelector('[data-en]'), line.en);
-        stage.querySelector('[data-clock]').textContent = line.time;
-        stage.querySelector('[data-words]').replaceChildren(...[...SCENE_LINES].reverse().map(wordRow));
-        stage.querySelector('[data-count]').textContent = SCENE_LINES.length;
-        showCard(stage, line);
-      },
-      async play(stage, pause) {
-        const es = stage.querySelector('[data-es]');
-        const en = stage.querySelector('[data-en]');
-        const clock = stage.querySelector('[data-clock]');
-        const list = stage.querySelector('[data-words]');
-        const count = stage.querySelector('[data-count]');
-        const card = stage.querySelector('[data-card]');
-        const cursor = stage.querySelector('.scene-cursor');
-        list.replaceChildren();
-        count.textContent = 0;
-        card.classList.add('is-empty');
-        restCursor(stage, cursor);
-        for (let index = 0; ; index = (index + 1) % SCENE_LINES.length) {
-          const line = SCENE_LINES[index];
-          if (index === 0) { list.replaceChildren(); count.textContent = 0; card.classList.add('is-empty'); }
-          fill(es, line.es);
-          fill(en, line.en);
-          clock.textContent = line.time;
-          await pause(1000);
-          // Click the word.
-          const target = [...es.querySelectorAll('.w')].find(word => word.textContent === line.save);
-          cursor.style.opacity = 1;
-          pointAt(stage, cursor, target);
-          await pause(900);
-          cursor.classList.add('is-pressing');
-          target.classList.add('is-saved');
-          await pause(180);
-          cursor.classList.remove('is-pressing');
-          // A copy of the word flies into My words.
-          const area = stage.getBoundingClientRect();
-          const from = target.getBoundingClientRect();
-          const to = list.getBoundingClientRect();
-          const ghost = target.cloneNode(true);
-          ghost.classList.add('scene-ghost');
-          ghost.style.left = `${from.left - area.left}px`;
-          ghost.style.top = `${from.top - area.top}px`;
-          ghost.style.fontSize = getComputedStyle(target).fontSize;
-          stage.append(ghost);
-          ghost.getBoundingClientRect();
-          ghost.style.transform = `translate(${to.left - from.left + 14}px,${to.top - from.top}px) scale(.6)`;
-          ghost.style.opacity = '.2';
-          restCursor(stage, cursor);
-          cursor.style.opacity = 0;
-          await pause(650);
-          ghost.remove();
-          list.prepend(wordRow(line));
-          while (list.children.length > 3) list.lastElementChild.remove();
-          count.textContent = list.children.length;
-          // Tomorrow's review card: the word and its line, then the meaning.
-          card.classList.remove('is-flipped');
-          showCard(stage, line);
-          card.classList.remove('is-empty');
-          await pause(1300);
-          card.classList.add('is-flipped');
-          await pause(1700);
-          card.classList.remove('is-flipped');
-          target.classList.remove('is-saved');
-          await pause(800);
-        }
-      }
-    }
-  };
-
-  document.querySelectorAll('.scene[data-scene]').forEach(figure => {
-    const stage = figure.querySelector('.scene-stage');
-    const scene = SCENES[figure.dataset.scene];
-    if (!stage || !scene) return;
-    const blank = stage.innerHTML;
-    let run = 0;
-    let playing = false;
-    let inView = false;
-    const reset = () => {
-      stage.innerHTML = blank;
-      scene.still(stage);
-    };
-    const start = () => {
-      const id = ++run;
-      playing = true;
-      reset();
-      const pause = ms => wait(ms).then(() => { if (run !== id) throw STOPPED; });
-      scene.play(stage, pause).catch(error => { if (error !== STOPPED) throw error; });
-    };
-    const sync = () => {
-      const wanted = inView && !document.hidden && !motion.matches;
-      if (wanted && !playing) start();
-      else if (!wanted && playing) {
-        run++;
-        playing = false;
-        if (motion.matches) reset();
-      }
-    };
-    reset();
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(entries => {
-        inView = entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= .2);
-        sync();
-      }, { threshold: [0, .2] }).observe(stage);
-    }
-    document.addEventListener('visibilitychange', sync);
-    motion.addEventListener('change', sync);
-  });
-
   // The hero's video: a muted scene from Sintel (an open film, CC BY) plays inside the frame, and
   // the Duet panel beside it follows the film line by line. The player reports its time over
   // postMessage; the scene loops between SINTEL.from and SINTEL.to. Without the player (blocked,
@@ -573,33 +322,45 @@
     updateHero();
   }
 
-  // The problems: a numbered list and one stage. Picking a step, or scrolling through the pinned
-  // scene, shows that problem's pane; a pane plays (its parts arrive on their delays) once it is
-  // on screen. On narrow screens the panes stack and each plays as it comes into view. Under
-  // reduced motion everything shows at once.
-  const problem = document.querySelector('.problem');
-  const problemsBox = document.querySelector('[data-problems]');
-  const isScrolly = () => problem?.classList.contains('is-scrolly');
-  const narrowProblems = matchMedia('(max-width: 900px)');
-  let showStep = () => {};
-  if (problemsBox) {
-    const steps = [...problemsBox.querySelectorAll('.problem-step')];
-    const panes = [...problemsBox.querySelectorAll('.problem-pane')];
+  // Steppers (the problems, then the fixes): a numbered list beside one stage. Picking an item shows
+  // its pane; a pane plays (its parts arrive on their delays) once it is on screen. On narrow screens
+  // the panes stack and each plays as it comes into view. Under reduced motion everything shows.
+  //
+  // On wide screens with motion allowed the section pins: its track is taller than the screen and
+  // the stage sticks while you scroll through it. The heading slides up from the bottom of the screen
+  // to the centre, then on up to the top while the list and stage rise in under it (the intro). The
+  // rest of the track is one equal stretch per item: the shown item's bar fills across its stretch,
+  // and a snap point in the middle of each lets a flick land on the next item. Picking an item by hand
+  // holds until the scroll crosses into another stretch.
+  const narrowSteppers = matchMedia('(max-width: 900px)');
+  const roomySteppers = matchMedia('(min-width: 901px) and (min-height: 600px)');
+  const ease = t => t * t * (3 - 2 * t);
+  const span = (p, from, to) => Math.min(1, Math.max(0, (p - from) / (to - from)));
+  document.querySelectorAll('.stepper').forEach(section => {
+    const box = section.querySelector('[data-stepper]');
+    const track = section.querySelector('.stepper-track');
+    const stage = section.querySelector('.stepper-stage');
+    const heading = section.querySelector('h2');
+    if (!box || !track || !stage || !heading) return;
+    const items = [...box.querySelectorAll('.stepper-item')];
+    const panes = [...box.querySelectorAll('.stepper-pane')];
+    const bars = items.map(item => item.querySelector('.step-progress'));
     const seen = panes.map(() => false);
     let active = 0;
+
     const play = index => {
       const pane = panes[index];
       if (!pane || pane.classList.contains('is-playing')) return;
       requestAnimationFrame(() => requestAnimationFrame(() => pane.classList.add('is-playing')));
     };
-    const shouldPlay = index => seen[index] && (narrowProblems.matches || index === active);
-    showStep = index => {
+    const shouldPlay = index => seen[index] && (narrowSteppers.matches || index === active);
+    const showStep = index => {
       if (index === active || !panes[index]) return;
       const previous = panes[active];
       active = index;
-      steps.forEach((step, at) => {
-        step.classList.toggle('is-on', at === index);
-        step.querySelector('button')?.setAttribute('aria-pressed', String(at === index));
+      items.forEach((item, at) => {
+        item.classList.toggle('is-on', at === index);
+        item.querySelector('button')?.setAttribute('aria-pressed', String(at === index));
       });
       panes.forEach((pane, at) => {
         pane.classList.toggle('is-on', at === index);
@@ -609,18 +370,18 @@
       setTimeout(() => { if (!previous.classList.contains('is-on')) previous.classList.remove('is-playing'); }, 450);
       if (shouldPlay(index)) play(index);
     };
-    steps.forEach((step, index) => step.querySelector('button')?.addEventListener('click', () => showStep(index)));
+    items.forEach((item, index) => item.querySelector('button')?.addEventListener('click', () => showStep(index)));
     const setLayout = () => {
-      problemsBox.classList.toggle('is-animated', !motion.matches);
+      box.classList.toggle('is-animated', !motion.matches);
       // Stacked panes are all readable; side by side, only the shown one is.
-      panes.forEach((pane, at) => pane.setAttribute('aria-hidden', String(!narrowProblems.matches && at !== active)));
+      panes.forEach((pane, at) => pane.setAttribute('aria-hidden', String(!narrowSteppers.matches && at !== active)));
       panes.forEach((pane, at) => { if (shouldPlay(at)) play(at); });
     };
     if ('IntersectionObserver' in window) {
       const watcher = new IntersectionObserver(entries => {
         entries.forEach(entry => {
-          const index = panes.indexOf(entry.target);
           if (!entry.isIntersecting) return;
+          const index = panes.indexOf(entry.target);
           seen[index] = true;
           if (shouldPlay(index)) play(index);
         });
@@ -629,31 +390,17 @@
     } else {
       seen.fill(true);
     }
-    narrowProblems.addEventListener('change', setLayout);
+    narrowSteppers.addEventListener('change', setLayout);
     motion.addEventListener('change', setLayout);
     setLayout();
-  }
 
-  // The pinned problem scene, on wide screens with motion allowed. The track is taller than the
-  // screen and the stage sticks while you scroll through it. The heading slides up from the bottom
-  // of the screen to the centre, at its own size. Then progress through the track drives:
-  //   0 – .28   the heading slides on up to the top while the problems rise in under it;
-  //   .28 – 1   three equal stretches, one per problem; the shown step's bar fills across its stretch.
-  // A snap point sits in the middle of each stretch, so a flick lands on the next problem. Picking a
-  // step by hand holds until the scroll crosses into another stretch.
-  const track = problem?.querySelector('.problem-track');
-  const stage = problem?.querySelector('.problem-stage');
-  const problemHeading = problem?.querySelector('h2');
-  if (problem && track && stage && problemHeading && problemsBox) {
-    const roomy = matchMedia('(min-width: 901px) and (min-height: 600px)');
-    const ease = t => t * t * (3 - 2 * t);
-    const span = (p, from, to) => Math.min(1, Math.max(0, (p - from) / (to - from)));
-    const moving = [problemHeading, problemsBox];
-    let shift = 0;
-    let sceneFrame = null;
-    let scrolledStep = 0;
-    const STEPS = [[.28, .52], [.52, .76], [.76, 1]];
-    const bars = [...problemsBox.querySelectorAll('.step-progress')];
+    // The pinned scene. The intro takes a fixed share of the scroll; each item gets its own stretch.
+    track.style.setProperty('--steps', panes.length);
+    const INTRO_VH = 34;
+    const ITEM_VH = 29;
+    const intro = INTRO_VH / (INTRO_VH + ITEM_VH * panes.length);
+    const stretch = (1 - intro) / panes.length;
+    const STEPS = panes.map((_, index) => [intro + index * stretch, intro + (index + 1) * stretch]);
     const snaps = STEPS.map(() => {
       const point = document.createElement('span');
       point.className = 'step-snap';
@@ -661,47 +408,52 @@
       track.append(point);
       return point;
     });
-    const clear = () => moving.forEach(element => { element.style.transform = ''; element.style.opacity = ''; });
-    // How far the heading's resting place sits above the stage's centre.
+    let shift = 0;
+    let frame = null;
+    let scrolledStep = 0;
+    const isScrolly = () => section.classList.contains('is-scrolly');
+    const clear = () => [heading, box].forEach(element => { element.style.transform = ''; element.style.opacity = ''; });
+    // How far the heading's resting place sits above the stage's centre, and where the snap points go.
     const measure = () => {
       clear();
-      const box = stage.getBoundingClientRect();
-      const heading = problemHeading.getBoundingClientRect();
-      shift = box.top + box.height / 2 - (heading.top + heading.height / 2);
+      const area = stage.getBoundingClientRect();
+      const title = heading.getBoundingClientRect();
+      shift = area.top + area.height / 2 - (title.top + title.height / 2);
       // The page snaps a point to the scroll padding at the top, so offset each by that padding.
       const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
       const distance = track.offsetHeight - innerHeight;
       snaps.forEach((point, index) => { point.style.top = `${(STEPS[index][0] + STEPS[index][1]) / 2 * distance + padding}px`; });
     };
     const update = () => {
-      sceneFrame = null;
+      frame = null;
       if (!isScrolly()) return;
       const rect = track.getBoundingClientRect();
       const p = Math.min(1, Math.max(0, -rect.top / Math.max(1, rect.height - innerHeight)));
-      const settling = ease(span(p, 0, .3));
-      const rise = ease(span(p, .05, .28));
-      problemHeading.style.transform = `translateY(${shift * (1 - settling)}px)`;
-      problemsBox.style.transform = `translateY(${(1 - rise) * 60}vh)`;
-      problemsBox.style.opacity = rise;
-      const step = p < STEPS[1][0] ? 0 : p < STEPS[2][0] ? 1 : 2;
-      if (step !== scrolledStep) { scrolledStep = step; showStep(step); }
-      bars.forEach((bar, index) => bar.style.setProperty('--progress', index === step ? span(p, ...STEPS[index]).toFixed(3) : 0));
+      const settling = ease(span(p, 0, intro));
+      const rise = ease(span(p, intro * .18, intro));
+      heading.style.transform = `translateY(${shift * (1 - settling)}px)`;
+      box.style.transform = `translateY(${(1 - rise) * 60}vh)`;
+      box.style.opacity = rise;
+      const step = Math.max(0, STEPS.findIndex(([, end]) => p < end));
+      const current = p >= 1 ? panes.length - 1 : step;
+      if (current !== scrolledStep) { scrolledStep = current; showStep(current); }
+      bars.forEach((bar, index) => bar?.style.setProperty('--progress', index === current ? span(p, ...STEPS[index]).toFixed(3) : 0));
     };
-    const requestScene = () => { if (!sceneFrame) sceneFrame = requestAnimationFrame(update); };
+    const requestScene = () => { if (!frame) frame = requestAnimationFrame(update); };
     const setMode = () => {
-      const on = roomy.matches && !motion.matches;
-      problem.classList.toggle('is-scrolly', on);
-      if (!on) { clear(); bars.forEach(bar => bar.style.removeProperty('--progress')); return; }
+      const on = roomySteppers.matches && !motion.matches;
+      section.classList.toggle('is-scrolly', on);
+      if (!on) { clear(); bars.forEach(bar => bar?.style.removeProperty('--progress')); return; }
       measure();
       update();
     };
     window.addEventListener('scroll', requestScene, { passive: true });
     window.addEventListener('resize', setMode);
-    roomy.addEventListener('change', setMode);
+    roomySteppers.addEventListener('change', setMode);
     motion.addEventListener('change', setMode);
     document.fonts?.ready.then(setMode);
     setMode();
-  }
+  });
 
   // The sticky email bar steps aside while the final sign-up section is on screen. The header's
   // Join button puts you in whichever email field is showing.

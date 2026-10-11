@@ -199,64 +199,27 @@ h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text
 .en-line.guess:hover,.en-line.guess:focus-visible,.is-linking .en-line.guess{filter:none;opacity:1}
 .en-line.guess:focus-visible{outline-offset:6px}
 
-/* Living illustrations: short scripted scenes that show each idea. They are not recordings of
-   the product; site.js plays them while they are on screen and shows a still under reduced motion. */
-.scene-stage{position:relative;overflow:hidden;min-height:clamp(340px,30vw,420px);padding:clamp(14px,2.4vw,28px);display:flex;flex-direction:column;justify-content:center;container-type:inline-size}
-.scene-panel{padding:16px 18px 18px}
-.scene .es-line{font-size:clamp(18px,2vw,24px);line-height:1.35;letter-spacing:-.015em}
-.scene .en-line{font-size:14px;line-height:1.45;color:var(--text-2);margin-top:6px}
-.w.is-arriving{color:var(--fg);text-shadow:none}
-.w.is-saved{background:color-mix(in srgb,var(--c) 22%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 70%,transparent),0 0 18px color-mix(in srgb,var(--c) 40%,transparent)}
-.scene-cursor{position:absolute;left:0;top:0;z-index:3;opacity:0;pointer-events:none;transition:transform .8s var(--ease),opacity .3s}
-.scene-cursor svg{display:block;margin:-3px 0 0 -5.5px;transition:transform .15s}
-.scene-cursor.is-pressing svg{transform:scale(.8)}
-
-/* Live subtitles: new lines arrive at the bottom and push older ones up. */
-.scene-rows{display:flex;flex-direction:column;justify-content:flex-end;gap:16px;height:clamp(230px,22vw,280px);overflow:hidden}
-.scene-row{flex:none;transition:opacity .5s var(--ease)}
-.scene-row.is-past{opacity:.35}
-.scene .en-line.is-waiting{opacity:0}
-.scene-row .en-line{transition:opacity .5s var(--ease)}
-
-/* Guess first */
-.scene-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
-.scene-top .eyebrow{margin:0}
+/* The Guess first switch, in the hero panel and fix 03. */
 .toggle{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2)}
 .switch{position:relative;width:30px;height:18px;border-radius:9px;background:#fff;flex:none}
 .switch i{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#000}
-.scene-line{min-height:7.5em;transition:opacity .35s var(--ease)}
-.scene-line.is-swapping{opacity:0}
-.scene[data-scene="guess"] .es-line{font-size:clamp(22px,2.6vw,30px)}
-.scene .en-line.guess{font-size:clamp(16px,1.6vw,19px);margin-top:12px}
-.scene .en-line.guess.is-peek{filter:none;opacity:1}
 
-/* Save a word: the line, your words, and tomorrow's review card. */
-.save-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px;align-items:start}
-.save-side{display:grid;gap:14px}
-.word-box{border:1px solid var(--line-2);border-radius:var(--radius);padding:12px 14px;min-height:132px}
-.word-head{display:flex;justify-content:space-between;font-size:12px;color:var(--text-3);margin-bottom:6px}
+/* Word rows and the review card, used by fix 04. */
 .word-rows{list-style:none;padding:0}
 .word-rows li{display:grid;grid-template-columns:8px minmax(0,1fr) auto;align-items:center;gap:10px;padding:5px 0;font-size:14px;animation:row-in .5s var(--ease)}
 .word-rows li i{width:8px;height:8px;border-radius:3px;background:var(--c);box-shadow:0 0 8px color-mix(in srgb,var(--c) 70%,transparent)}
 .word-rows li span:last-child{color:var(--text-3);font-size:13px}
 @keyframes row-in{from{opacity:0;transform:translateY(-6px)}}
-.flashcard{perspective:800px;height:118px;transition:opacity .4s var(--ease)}
-.flashcard.is-empty{opacity:0}
+.flashcard{perspective:800px;height:118px}
 .flashcard-inner{position:relative;height:100%;transition:transform .7s var(--ease);transform-style:preserve-3d}
-.flashcard.is-flipped .flashcard-inner{transform:rotateY(180deg)}
 .face{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:12px 14px;border:1px solid var(--line-2);border-radius:var(--radius);background:#101216;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .face.back{transform:rotateY(180deg)}
 .face-label{font-size:11px;color:var(--text-3)}
 .face-word{font-size:24px;letter-spacing:-.02em;line-height:1.25;min-height:1.25em}
 .face-context{font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.scene-ghost{position:absolute;z-index:2;margin:0;pointer-events:none;transition:transform .65s var(--ease),opacity .65s var(--ease)}
-@container (max-width:520px){
-  .save-grid{grid-template-columns:1fr}
-  .flashcard{display:none}
-}
 
-/* Sections */
-.section{border-top:1px solid var(--line);padding-top:clamp(48px,7vh,80px);padding-bottom:clamp(64px,9vh,112px)}
+/* Sections flow into each other: no dividers, just space. */
+.section{padding-top:clamp(56px,9vh,112px);padding-bottom:clamp(64px,10vh,128px)}
 h2{font-size:clamp(32px,3.4vw,46px);line-height:1.08;letter-spacing:-.02em}
 /* The quieter second line of a heading fades from white to silver. */
 h2 span{background:linear-gradient(180deg,#fff 10%,var(--dim) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-box-decoration-break:clone;box-decoration-break:clone}
@@ -280,46 +243,39 @@ h1,h2{position:relative}
 .legend h3{font-size:17px;line-height:1.5;letter-spacing:-.01em}
 .legend p{font-size:15px;color:var(--c);margin-top:2px}
 
-/* Point lists: the problem, why shows, and where Duet works. Not a sequence, so no numbers. */
-.point-list{list-style:none;padding:0}
-.point-list li{padding:22px 0}
-.point-list li:first-child{padding-top:0}
-.point-list li+li{border-top:1px solid var(--line)}
-.point-list h3{font-size:18px;line-height:1.4;letter-spacing:-.01em}
-.point-list p{font-size:15px;color:var(--text-2);margin-top:6px;max-width:52ch}
-
-/* The problem section. On wide screens site.js pins the stage while you scroll through the track:
-   the heading slides up to the top, the problems rise in under it, then step 01 → 02 → 03. */
-.problem.section{padding:0;border-top:0}
-.problem-stage{padding-top:clamp(48px,7vh,80px);padding-bottom:clamp(64px,9vh,112px)}
+/* Steppers (the problems, then the fixes). On wide screens site.js pins the stage while you scroll
+   through the track: the heading slides up to the top, the list and stage rise in under it, then the
+   stage steps through each item. The problem section slides up under the bottom of the hero. */
+.stepper.section{padding:0;border-top:0}
+.stepper-stage{padding-top:clamp(48px,7vh,80px);padding-bottom:clamp(64px,9vh,112px)}
 /* The section slides up under the bottom of the hero so its heading starts rising on the first scroll. */
 .problem.is-scrolly{margin-top:-20vh}
-.problem.is-scrolly .problem-track{position:relative;height:220vh}
-/* Snap points, one per step, placed by site.js: a normal flick lands on the next problem. */
-html:has(.problem.is-scrolly){scroll-snap-type:y proximity}
+.stepper.is-scrolly .stepper-track{position:relative;height:calc(134vh + var(--steps,3) * 29vh)}
+/* Snap points, one per step, placed by site.js: a normal flick lands on the next item. */
+html:has(.stepper.is-scrolly){scroll-snap-type:y proximity}
 .step-snap{position:absolute;left:0;width:1px;height:1px;scroll-snap-align:start;pointer-events:none}
-.problem.is-scrolly .problems{will-change:transform,opacity}
-.problem.is-scrolly .problem-stage{position:sticky;top:0;height:100vh;height:100svh;display:flex;flex-direction:column;justify-content:center;padding-top:96px;padding-bottom:104px;overflow:hidden}
-.problem.is-scrolly .wide-heading{will-change:transform}
+.stepper.is-scrolly .stepper-box{will-change:transform,opacity}
+.stepper.is-scrolly .stepper-stage{position:sticky;top:0;height:100vh;height:100svh;display:flex;flex-direction:column;justify-content:center;padding-top:96px;padding-bottom:104px;overflow:hidden}
+.stepper.is-scrolly .wide-heading{will-change:transform}
 
-/* The problems: a numbered list beside one stage that shows the chosen problem large. Each problem
-   has its own visual. site.js steps through them as you scroll, or when you pick one. */
-.problems{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr);gap:clamp(24px,4vw,64px);align-items:stretch;margin-top:clamp(28px,5vh,48px)}
-.problem-steps{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;justify-content:center}
-.problem-step button{display:grid;grid-template-columns:40px minmax(0,1fr);gap:8px;width:100%;padding:20px 0;border-top:1px solid var(--line);text-align:left;color:var(--text-3);transition:color .3s var(--ease)}
-.problem-step:first-child button{border-top:0}
-.problem-step button:hover,.problem-step.is-on button{color:var(--fg)}
+/* A stepper: a numbered list beside one stage that shows the chosen item large. Each item has its
+   own visual. site.js steps through them as you scroll, or when you pick one. */
+.stepper-box{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr);gap:clamp(24px,4vw,64px);align-items:stretch;margin-top:clamp(28px,5vh,48px)}
+.stepper-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;justify-content:center}
+.stepper-item button{display:grid;grid-template-columns:40px minmax(0,1fr);gap:8px;width:100%;padding:20px 0;border-top:1px solid var(--line);text-align:left;color:var(--text-3);transition:color .3s var(--ease)}
+.stepper-item:first-child button{border-top:0}
+.stepper-item button:hover,.stepper-item.is-on button{color:var(--fg)}
 .step-num{font-size:13px;padding-top:6px;font-variant-numeric:tabular-nums;color:var(--text-3)}
 .step-title{display:block;font-size:clamp(19px,1.7vw,24px);line-height:1.3;letter-spacing:-.015em}
 .step-line{display:block;font-size:15px;color:var(--text-2);max-height:0;opacity:0;overflow:hidden;transition:max-height .45s var(--ease),opacity .45s var(--ease),margin .45s var(--ease)}
-.problem-step.is-on .step-line{max-height:3em;opacity:1;margin-top:6px}
+.stepper-item.is-on .step-line{max-height:3em;opacity:1;margin-top:6px}
 /* Story-style bars: every step shows a faint track; the shown step's fills as you move through it. */
 .step-progress{display:block;height:2px;margin-top:14px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
 .step-progress i{display:block;height:100%;border-radius:2px;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.6);transform-origin:left;transform:scaleX(0);transition:transform .2s linear}
-.problem-step.is-on .step-progress i{transform:scaleX(var(--progress,1))}
-.problem-board{position:relative;min-height:clamp(360px,48vh,540px)}
-.problem-pane{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;opacity:0;transform:translateY(10px);transition:opacity .45s var(--ease),transform .45s var(--ease);pointer-events:none}
-.problem-pane.is-on{opacity:1;transform:none;pointer-events:auto}
+.stepper-item.is-on .step-progress i{transform:scaleX(var(--progress,1))}
+.stepper-board{position:relative;min-height:clamp(360px,48vh,540px)}
+.stepper-pane{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;opacity:0;transform:translateY(10px);transition:opacity .45s var(--ease),transform .45s var(--ease);pointer-events:none}
+.stepper-pane.is-on{opacity:1;transform:none;pointer-events:auto}
 .pane-caption{display:none}
 
 /* 01 · Word for word: each Spanish word wired straight down to its literal English word. */
@@ -350,36 +306,78 @@ html:has(.problem.is-scrolly){scroll-snap-type:y proximity}
 .lesson-pop strong{font-weight:500}
 .lesson-pop span{align-self:flex-start;margin-top:8px;padding:4px 12px;border-radius:999px;background:#1d1d1f;color:#fff;font-size:13px}
 
+/* The fixes are the Duet panel itself, larger, doing each thing. */
+.duet-card{display:flex;flex-direction:column;gap:12px;width:min(100%,560px);padding:22px;border:1px solid rgba(255,255,255,.1);border-radius:16px;background:rgba(28,28,30,.86)}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card-top .eyebrow,.duet-card>.eyebrow{margin:0}
+.card-mix{font-size:clamp(24px,2.5vw,36px);line-height:1.3;letter-spacing:-.015em}
+.card-es{font-size:clamp(18px,1.6vw,22px);line-height:1.4}
+.card-en{font-size:clamp(15px,1.25vw,18px);line-height:1.45;color:var(--text-2)}
+/* 01 · The idiom lights up as one piece, with its meaning beside it. */
+.idiom{transition:background .3s var(--ease) .15s,box-shadow .3s var(--ease) .15s}
+.stepper-pane.is-playing .idiom,.stepper-box:not(.is-animated) .idiom{background:color-mix(in srgb,var(--c) 22%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 70%,transparent),0 0 18px color-mix(in srgb,var(--c) 40%,transparent)}
+.card-tip{align-self:flex-start;display:flex;flex-direction:column;gap:2px;margin-top:4px;padding:12px 16px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#2c2c2e;box-shadow:0 12px 32px rgba(0,0,0,.45);font-size:15px}
+.card-tip b{font-weight:500;color:var(--c-a);text-shadow:0 0 12px color-mix(in srgb,var(--c-a) 55%,transparent)}
+.card-tip span{color:var(--text-2)}
+/* 02 · The script tab, lines from a real film. */
+.card-script{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px}
+.card-script li{display:grid;grid-template-columns:46px minmax(0,1fr);gap:10px;padding:10px 12px;border-radius:12px;font-size:clamp(15px,1.25vw,17px);line-height:1.4}
+.card-script li.is-now{background:rgba(10,132,255,.16)}
+.card-script time{color:rgba(235,235,245,.35);font-variant-numeric:tabular-nums}
+.card-script li.is-now time{color:#0a84ff}
+.card-script .es{display:block}
+.card-script .en{display:block;margin-top:2px;font-size:.88em;color:rgba(235,235,245,.6)}
+/* 03 · The video keeps playing beside the panel; the English waits, blurred, then clears. */
+.fix-watch{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:center;width:100%}
+.fix-watch .video-still{border-radius:8px}
+.fix-watch .duet-card{width:auto;padding:18px}
+.card-en.guess{filter:blur(6px);opacity:.7;transition:filter .3s var(--ease),opacity .3s var(--ease)}
+.card-en.guess:hover,.stepper-pane.is-playing .card-en.guess{filter:none;opacity:1}
+.stepper-pane.is-playing .card-en.guess{transition-delay:1.1s}
+@keyframes playhead{from{width:15%}to{width:24%}}
+.stepper-pane.is-playing .video-still.is-playing .still-track i{animation:playhead 9s linear forwards}
+/* 04 · Your words, and tomorrow's card turning over. */
+.fix-save{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:center;width:100%}
+.fix-save .duet-card{width:auto}
+.fix-save .word-rows li{font-size:16px;padding:8px 0}
+.fix-flash{height:clamp(170px,18vw,220px)}
+.fix-flash .face{padding:20px 22px}
+.fix-flash .face-word{font-size:clamp(28px,2.6vw,38px)}
+.fix-flash .face-context{font-size:14px}
+@keyframes card-turn{to{transform:rotateY(180deg)}}
+.stepper-pane.is-playing .fix-flash .flashcard-inner{animation:card-turn .6s var(--ease) .9s forwards}
+
 /* Playing: with motion allowed, each part of a pane waits, then arrives on its own delay (--d) when
    the pane plays. Without script or under reduced motion, everything simply shows. */
-.problems.is-animated .anim{transition:opacity .3s var(--ease) var(--d,0s),transform .3s var(--ease) var(--d,0s)}
-.problems.is-animated .problem-pane:not(.is-playing) .anim{opacity:0;transform:translateY(8px);transition:none}
-.problems.is-animated .problem-pane:not(.is-playing) .ln{transform:scaleY(0);transition:none}
-.problems.is-animated .problem-pane:not(.is-playing) .literal span::after{transform:scaleX(0);transition:none}
+.stepper-box.is-animated .anim{transition:opacity .3s var(--ease) var(--d,0s),transform .3s var(--ease) var(--d,0s)}
+.stepper-box.is-animated .stepper-pane:not(.is-playing) .anim{opacity:0;transform:translateY(8px);transition:none}
+.stepper-box.is-animated .stepper-pane:not(.is-playing) .ln{transform:scaleY(0);transition:none}
+.stepper-box.is-animated .stepper-pane:not(.is-playing) .literal span::after{transform:scaleX(0);transition:none}
 
-/* Wide sections: one heading across the page and the line under it. */
+/* Wide sections: one heading across the page. */
 .wide-heading{max-width:24ch;text-wrap:balance}
-.wide-copy{color:var(--text-2);max-width:52ch;margin-top:22px;font-size:18px;line-height:1.55}
-
 
 /* FAQ */
 .faq-items details+details{border-top:1px solid var(--line)}
-.faq summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 0;font-size:17px;line-height:1.5}
+.faq summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:22px 0;font-size:clamp(17px,1.5vw,20px);line-height:1.45}
 .faq-items details:first-child summary{padding-top:0}
 .faq summary::-webkit-details-marker{display:none}
 .faq summary>span{font-size:22px;line-height:1;color:var(--text-3);flex:none;transition:transform .2s}
 .faq summary:hover>span{color:var(--fg)}
 .faq details[open]:not(.is-closing) summary>span{transform:rotate(45deg)}
-.faq details p{font-size:15px;line-height:1.7;color:var(--text-2);padding:0 40px 22px 0;max-width:64ch}
+.faq details p{font-size:16px;line-height:1.7;color:var(--text-2);padding:0 40px 22px 0;max-width:64ch}
 
-/* Final call */
-.cta .join-large{align-self:center;margin-top:0;width:100%;max-width:520px}
-.cta .join-large input{font-size:17px;padding:14px 18px}
-.cta .join-large .button{padding:13px 22px;font-size:17px}
+/* The closing moment: one full screen, like the hero. The sticky bar steps aside here. */
+.closing{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-block:clamp(64px,12vh,140px)}
+.closing-heading{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text-wrap:balance}
+.closing-copy{margin-top:22px;font-size:18px;line-height:1.55;color:var(--fg-2)}
+.closing .join-large{width:min(100%,460px);margin-top:36px}
+.closing .join-large input{font-size:17px;padding:14px 18px}
+.closing .join-large .button{padding:13px 22px;font-size:17px}
 
 /* Footer: room at the bottom so the sticky bar never covers it. */
 .site-footer{padding-bottom:84px}
-.footer-inner{border-top:1px solid var(--line);padding-block:28px 40px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px;font-size:14px;color:var(--text-3)}
+.footer-inner{padding-block:28px 40px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px;font-size:14px;color:var(--text-3)}
 .footer-links{display:flex;gap:24px}
 .footer-links a:hover{color:#fff}
 .footer-inner>span:last-child{text-align:right}
@@ -415,14 +413,15 @@ html:has(.problem.is-scrolly){scroll-snap-type:y proximity}
   .hero-body{grid-template-columns:1fr;gap:36px}
   .hero-copy{max-width:640px}
   .split-grid{grid-template-columns:1fr;gap:36px}
-  .problems{grid-template-columns:1fr}
-  .problem-steps{display:none}
-  .problem-board{display:grid;gap:24px;min-height:0;border:0;background:none;overflow:visible}
-  .problem-pane{position:static;opacity:1;transform:none;pointer-events:auto;align-items:stretch;padding:22px;border:1px solid var(--line-2);border-radius:var(--radius);background:var(--frame)}
-  .problem-pane>:not(.pane-caption){align-self:center}
+  .stepper-box{grid-template-columns:1fr}
+  .stepper-list{display:none}
+  .stepper-board{display:grid;gap:24px;min-height:0;border:0;background:none;overflow:visible}
+  .stepper-pane{position:static;opacity:1;transform:none;pointer-events:auto;align-items:stretch;padding:22px;border:1px solid var(--line-2);border-radius:var(--radius);background:var(--frame)}
+  .stepper-pane>:not(.pane-caption){align-self:center}
   .pane-caption{display:grid;grid-template-columns:36px minmax(0,1fr);gap:6px;margin-bottom:22px}
   .pane-caption .step-line{max-height:none;opacity:1;margin-top:4px}
   .pane-caption .step-progress{display:none}
+  .fix-watch,.fix-save{grid-template-columns:1fr}
   .section-intro>p{max-width:48ch}
   .faq h2 br{display:none}
   .footer-inner{grid-template-columns:1fr auto;gap:20px}
