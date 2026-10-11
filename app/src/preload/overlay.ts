@@ -1,11 +1,15 @@
 // The overlay page's bridge to the main process (src/main/ipc/overlay.ts): read state, follow
 // updates, change settings.
 import { ipcRenderer } from 'electron'
-import type { Language, Level, OverlayLine, OverlaySettings, OverlayStatus } from '../shared/types'
+import type { SaveResult } from '../shared/cards'
+import type { DueCounts, Language, Level, OverlayLine, OverlaySettings, OverlayStatus } from '../shared/types'
+import { invoke } from './invoke'
 import { subscribe } from './subscribe'
 
 export const overlayApi = {
-  getState: (): Promise<{ settings: OverlaySettings; status: OverlayStatus }> => ipcRenderer.invoke('duet:get-state'),
+  getState: () => invoke<{ settings: OverlaySettings; status: OverlayStatus; due: DueCounts }>('duet:get-state'),
+  /** Cards ready to review, whenever that changes. */
+  onDue: (listener: (due: DueCounts) => void) => subscribe('duet:due', listener),
   onStatus: (listener: (status: OverlayStatus) => void) => subscribe('duet:status', listener),
   onSettings: (listener: (settings: OverlaySettings) => void) => subscribe('duet:settings', listener),
   /** The caption text on screen right now, before the line has finished. */
@@ -17,6 +21,19 @@ export const overlayApi = {
   setLevel: (level: Level) => ipcRenderer.send('duet:set-level', level),
   setGuessFirst: (on: boolean) => ipcRenderer.send('duet:set-guess-first', on),
   setWaitForTranslation: (on: boolean) => ipcRenderer.send('duet:set-wait', on),
+  setPauseForHelp: (on: boolean) => ipcRenderer.send('duet:set', { pauseForHelp: on }),
+  /** Stars a line (the one on screen when no id is given), or one of its words by pair number. */
+  save: (lineId?: number, pair?: number) => invoke<SaveResult | undefined>('duet:save', lineId, pair),
+  /** Takes a star back: deletes the card it made. */
+  unsave: (cardId: string) => ipcRenderer.send('duet:unsave', cardId),
+  /** Goes back to a line in the video (the one on screen when no id is given). */
+  replay: (lineId?: number) => ipcRenderer.send('duet:replay', lineId),
+  /** Opens Review in the side panel. */
+  openReview: () => ipcRenderer.send('duet:review'),
+  /** Plays the video Wait is holding for a line. */
+  playOn: () => ipcRenderer.send('duet:play-on'),
+  /** Whether the pointer is over something of Duet's (take clicks) or not (let them through). */
+  setSolid: (solid: boolean) => ipcRenderer.send('duet:solid', solid),
   /** Opens the side panel on the Script tab. */
   showScript: () => ipcRenderer.send('duet:script'),
   /** Explains a line; the line on screen when no id is given. */

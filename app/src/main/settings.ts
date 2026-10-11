@@ -7,7 +7,7 @@ import { database } from './store/db'
 
 const KEY = 'overlay'
 
-const DEFAULTS: OverlaySettings = { language: 'es', level: 2, guessFirst: true, waitForTranslation: true, pauseForHelp: false }
+const DEFAULTS: OverlaySettings = { language: 'es', level: 2, guessFirst: true, waitForTranslation: true, pauseForHelp: false, onboarded: false }
 
 export class Settings extends EventEmitter {
   private value: OverlaySettings = { ...DEFAULTS, ...load() }

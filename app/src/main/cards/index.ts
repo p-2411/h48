@@ -6,15 +6,18 @@
 //   review-start, review-queue, rate, skip, undo                     reviewing
 //   get-settings, set-settings                                       review settings
 //   export-backup, export-text, restore-backup                       files
-//   open, replay, practise                                           going elsewhere
+//   open, replay, practise, review                                   going elsewhere
 //   cards:changed  ← sent to the My cards window when cards change
+// The class also emits "changed" (with the due counts) for the overlay's badge.
+import { EventEmitter } from 'events'
 import { dialog, ipcMain, type BrowserWindow } from 'electron'
 import { readFile, writeFile } from 'fs/promises'
-import type { CardContent, CardDraft, CardQuery, Rating, ReviewSettings } from '../../shared/cards'
+import type { CardContent, CardDraft, CardQuery, Rating, ReviewSettings, SaveResult } from '../../shared/cards'
+import type { DueCounts } from '../../shared/types'
 import type { Moment } from '../../shared/moment'
 import { database } from '../store/db'
 import { createCardsWindow } from '../windows/cards'
-import { ReviewSession } from './review'
+import { reviewCounts, ReviewSession } from './review'
 import { Scheduler } from './scheduler'
 import { CardStore, UNDO_DELETE_MS } from './store'
 
@@ -30,14 +33,23 @@ function loadSettings(): ReviewSettings {
   }
 }
 
-export class Cards {
+export class Cards extends EventEmitter {
   private window?: BrowserWindow
   private store = new CardStore()
   private settings = loadSettings()
   private scheduler = new Scheduler(this.settings)
   private review = new ReviewSession(this.store, () => this.scheduler, () => this.settings)
 
-  constructor({ replay, practise }: { replay: (moment: Moment) => void; practise: (moment: Moment) => void }) {
+  constructor({
+    replay,
+    practise,
+    openReview
+  }: {
+    replay: (moment: Moment) => void
+    practise: (moment: Moment) => void
+    openReview: () => void
+  }) {
+    super()
     this.store.purge()
     const handle = (channel: string, work: (...args: never[]) => unknown): void => {
       ipcMain.handle(`cards:${channel}`, (_, ...args) => work(...(args as never[])))
@@ -94,6 +106,7 @@ export class Cards {
     }))
 
     handle('open', (id?: string) => this.open(id))
+    handle('review', () => openReview())
     const momentOf = (id: string): Moment | undefined => {
       const card = this.store.get(id)
       return card?.source.kind === 'video' ? card.source.moment : undefined
@@ -121,8 +134,28 @@ export class Cards {
     }
   }
 
+  /** Cards ready to review now. */
+  counts(): DueCounts {
+    const { due, newAvailable } = reviewCounts(this.settings.newPerDay)
+    return { due, newAvailable }
+  }
+
+  /** Saves a card made elsewhere (from the strip); the same card already saved is found instead. */
+  saveDraft(draft: CardDraft): SaveResult {
+    const result = this.store.save(draft, this.scheduler)
+    this.changed()
+    return result
+  }
+
+  /** Deletes a card (undoable for a while, see CardStore.remove). */
+  remove(id: string): void {
+    this.store.remove(id)
+    this.changed()
+  }
+
   private changed(): void {
     if (this.window && !this.window.isDestroyed()) this.window.webContents.send('cards:changed')
+    this.emit('changed', this.counts())
   }
 
   private async saveFile(name: string, contents: string, extension: string): Promise<string | undefined> {

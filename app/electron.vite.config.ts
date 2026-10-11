@@ -6,11 +6,12 @@ export default defineConfig({
   main: {},
   preload: {},
   renderer: {
-    // One page per window: the overlay (index.html), the tutor, the side panel and My cards.
+    // One page per window: the overlay (index.html), the tutor, the side panel, My cards and the
+    // first-run welcome.
     build: {
       rollupOptions: {
         input: Object.fromEntries(
-          ['index', 'tutor', 'panel', 'cards'].map((page) => [page, resolve(`src/renderer/${page}.html`)])
+          ['index', 'tutor', 'panel', 'cards', 'welcome'].map((page) => [page, resolve(`src/renderer/${page}.html`)])
         )
       }
     },

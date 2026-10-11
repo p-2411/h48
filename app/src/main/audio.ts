@@ -8,9 +8,10 @@ import { spawn, type ChildProcess } from 'child_process'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
+import type { AudioPermission } from '../shared/types'
 import type { AudioClip } from './ai/voice'
 
-export type AudioPermission = 'granted' | 'denied' | 'not-asked' | 'unknown' | 'unavailable'
+export type { AudioPermission }
 
 const READERS: Partial<Record<NodeJS.Platform, string>> = { darwin: 'audio-reader-macos' }
 // How long a clip request may take before giving up.

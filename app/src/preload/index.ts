@@ -6,8 +6,9 @@ import { explainApi } from './explain'
 import { overlayApi } from './overlay'
 import { panelApi } from './panel'
 import { tutorApi } from './tutor'
+import { welcomeApi } from './welcome'
 
-const duet = { ...overlayApi, tutor: tutorApi, panel: panelApi, explain: explainApi, cards: cardsApi }
+const duet = { ...overlayApi, tutor: tutorApi, panel: panelApi, explain: explainApi, cards: cardsApi, welcome: welcomeApi }
 
 export type DuetApi = typeof duet
 

@@ -8,6 +8,7 @@ import { EventEmitter } from 'events'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
+import { is } from '@electron-toolkit/utils'
 import type { PlayerTime } from './clock'
 
 export type CaptionStatus = {
@@ -51,9 +52,12 @@ export class CaptionSource extends EventEmitter {
 
   start(): void {
     const name = READERS[process.platform]
+    // In development, DUET_READER can name a stand-in reader (a script that plays a video's part),
+    // to work on the overlay without driving a real browser (see dev/stand-in-reader.mjs).
+    const standIn = is.dev ? process.env.DUET_READER : undefined
     const path =
-      name &&
-      join(app.getAppPath(), 'resources', 'bin', name).replace('app.asar', 'app.asar.unpacked')
+      standIn ||
+      (name && join(app.getAppPath(), 'resources', 'bin', name).replace('app.asar', 'app.asar.unpacked'))
     if (!path || !existsSync(path)) {
       this.emit('status', {
         trusted: false,

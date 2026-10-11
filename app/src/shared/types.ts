@@ -52,7 +52,7 @@ export type OverlayLine = {
 }
 
 /** The side panel's tabs. */
-export type PanelTab = 'script' | 'explain'
+export type PanelTab = 'script' | 'explain' | 'review'
 
 /** Every line of the video so far (or the whole transcript), for the Script tab. */
 export type Script = {
@@ -62,6 +62,10 @@ export type Script = {
 }
 
 export type OverlayStatus = {
+  /** The video is playing (as far as Duet can see), and whether Wait is holding it for a line. */
+  playing?: boolean
+  waiting?: boolean
+  audio?: AudioPermission
   /** The caption reader is running with the permission it needs. */
   trusted: boolean
   browser?: string
@@ -99,4 +103,13 @@ export type OverlaySettings = {
   waitForTranslation: boolean
   /** Pause the video while Explain is open (off by default: Duet never pauses the show unasked). */
   pauseForHelp: boolean
+  /** The first-run screens have been seen. */
+  onboarded: boolean
 }
+
+/** Whether Duet may hear the browser's sound (macOS System Audio Recording); 'unavailable' when
+ * this computer has no audio reader. */
+export type AudioPermission = 'granted' | 'denied' | 'not-asked' | 'unknown' | 'unavailable'
+
+/** Cards ready to review now: due ones, and new ones still allowed today. */
+export type DueCounts = { due: number; newAvailable: number }

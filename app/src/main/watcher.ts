@@ -133,6 +133,12 @@ export class Watcher extends EventEmitter {
     this.setStatus({ spokenLanguage: spoken.language === this.settings.current.language ? undefined : spoken })
   }
 
+  /** Whether the video plays, whether Wait holds it, and the audio permission, for the overlay. */
+  setPlayback(change: Pick<OverlayStatus, 'playing' | 'waiting' | 'audio'>): void {
+    const s = this._status
+    if (change.playing !== s.playing || change.waiting !== s.waiting || change.audio !== s.audio) this.setStatus(change)
+  }
+
   /** Lines come from the video's transcript (translated ahead of the video). */
   get followingTranscript(): boolean {
     return !!this.session?.hasTranscript

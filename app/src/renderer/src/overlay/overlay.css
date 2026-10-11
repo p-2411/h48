@@ -1,61 +1,90 @@
-/* The overlay: a dark glass panel floating over video. */
-.panel {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--panel);
-  color: var(--fg);
-  overflow: hidden;
-}
+/* The overlay: a subtitle-sized strip at the bottom of a transparent window. The window's empty
+   space lets clicks through to the video (see useSolid); the strip, its actions, the word popup
+   and the settings sit above it when reached for. */
+.stage { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 20px 6px; }
+.dock { position: relative; max-width: 100%; display: flex; flex-direction: column; align-items: center; }
 
-/* The bar is the handle for moving the window; its controls stay clickable. */
-.bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px 10px 16px;
-  border-bottom: 1px solid var(--line);
-  -webkit-app-region: drag;
-  user-select: none;
+/* The strip: as small as the line it carries. */
+.strip {
+  position: relative; max-width: 860px; min-width: 260px; padding: 9px 46px 11px 18px; border-radius: 14px;
+  background: var(--panel); border: 1px solid var(--line); color: var(--fg);
+  display: flex; flex-direction: column; gap: 6px; box-shadow: 0 6px 30px rgba(0, 0, 0, 0.35);
 }
-.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.brand svg { flex: none; }
-.status { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.status i { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); flex: none; }
-.status.is-on i { background: #ff453a; box-shadow: 0 0 8px #ff453a; }
-.controls { display: flex; align-items: center; gap: 8px; -webkit-app-region: no-drag; }
-.segment { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--fill); }
-.segment button { min-width: 26px; padding: 3px 6px; border-radius: 6px; font-size: 12px; color: var(--fg-2); }
-.segment button[aria-pressed='true'] { background: #636366; color: #fff; font-weight: 500; }
-.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
-.switch { position: relative; width: 26px; height: 16px; border-radius: 8px; background: var(--fill); transition: background 0.2s; }
-.switch i { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: transform 0.25s var(--ease); }
-.toggle.is-on .switch { background: #fff; }
-.toggle.is-on .switch i { background: #121214; transform: translateX(10px); }
-.action { padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 500; background: #fff; color: #111; }
-.action:hover { background: #e6e6e6; }
-.action:disabled { opacity: 0.4; cursor: default; }
-/* The status area is part of the drag handle; a button in it must still take clicks. */
-.brand .action { flex: none; -webkit-app-region: no-drag; }
-.close { width: 22px; height: 22px; border-radius: 50%; font-size: 16px; line-height: 1; color: var(--text-2); }
-.close:hover { background: var(--fill); color: #fff; }
-
-/* The line. */
-.now { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 14px 20px 18px; min-height: 0; }
-.now p { margin: 0; }
-.mix { font-size: clamp(20px, 3.2vw, 30px); line-height: 1.3; letter-spacing: -0.015em; text-wrap: balance; }
+.strip p { margin: 0; }
+.line { display: flex; flex-direction: column; gap: 4px; }
+.mix { font-size: 24px; line-height: 1.3; letter-spacing: -0.012em; text-wrap: balance; }
 .mix.plain { color: var(--fg-2); }
-.source { font-size: clamp(15px, 2.1vw, 19px); line-height: 1.4; }
-.english { font-size: 14px; line-height: 1.45; color: var(--text-2); transition: filter 0.22s var(--ease), opacity 0.22s var(--ease); }
-.english.guess { filter: blur(6px); opacity: 0.7; cursor: help; }
+.more { display: none; flex-direction: column; gap: 2px; }
+.dock:hover .more, .dock.pinned .more { display: flex; }
+.source { font-size: 16px; line-height: 1.4; }
+.english { font-size: 13.5px; line-height: 1.45; color: var(--text-2); transition: filter 0.2s var(--ease), opacity 0.2s var(--ease); }
+.english.guess { filter: blur(5px); opacity: 0.7; cursor: help; }
 .english.guess:hover, .english.guess:focus-visible { filter: none; opacity: 1; }
-.pending { font-size: 13px; color: var(--text-3); }
-.building { font-size: 13px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.empty { font-size: 14px; color: var(--text-2); text-align: center; }
-.error { font-size: 12px; color: var(--c-x); }
+.hint { font-size: 12.5px; color: var(--text-3); }
+.idle { font-size: 13px; color: var(--text-2); }
 
-/* A word swapped into the other language: a soft tint and a thin border in its colour. */
-.mix .w.sw { padding: 0 0.18em; font-weight: 500; background: color-mix(in srgb, var(--c) 15%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent); }
+/* Words: swapped ones tinted; a hovered pair lit up in every line it appears in. */
+.mix .w.sw { padding: 0 0.16em; font-weight: 500; background: color-mix(in srgb, var(--c) 15%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent); }
+.w.live { cursor: pointer; }
+.w.lit { background: color-mix(in srgb, var(--c) 30%, transparent); box-shadow: inset 0 0 0 1px var(--c); }
+
+/* Top-right corner: cards due, and the quiet status dot (its words on hover). */
+.corner { position: absolute; top: 9px; right: 10px; display: flex; align-items: center; gap: 7px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
+.dot.on { background: #32d74b; box-shadow: 0 0 6px #32d74b; }
+.due { font-size: 10.5px; font-weight: 600; color: #111; background: #fff; border-radius: 999px; padding: 2px 7px; }
+
+/* Actions: above the strip, only while the pointer is on Duet (or the settings are open). */
+.actions {
+  position: absolute; bottom: calc(100% + 6px); right: 0; display: flex; gap: 5px; align-items: center;
+  opacity: 0; visibility: hidden; transition: opacity 0.15s var(--ease);
+}
+.dock:hover .actions, .dock:focus-within .actions, .dock.pinned .actions { opacity: 1; visibility: visible; }
+.act { font-size: 12px; font-weight: 500; padding: 5px 10px; border-radius: 999px; background: #2b2b30; border: 1px solid var(--line); color: var(--fg); white-space: nowrap; }
+.act:hover { background: #3a3a40; }
+.act.primary { background: #fff; color: #111; border-color: #fff; }
+.act.primary:hover { background: #e6e6e6; }
+.act.on { background: #fff; color: #111; }
+.act:disabled { opacity: 0.4; cursor: default; }
+.grip { -webkit-app-region: drag; cursor: grab; color: var(--text-3); padding: 4px 6px; letter-spacing: -2px; user-select: none; }
+
+/* A word's popup, above it and above the actions row. */
+.popup {
+  position: absolute; z-index: 3; bottom: calc(100% + 46px); transform: translateX(-50%); width: max-content; max-width: 280px;
+  background: #fff; color: #111; border-radius: 12px; padding: 9px 12px; display: flex; flex-direction: column; gap: 2px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.4); font-size: 13px;
+}
+.popup b { font-size: 17px; font-weight: 600; }
+.popup .job { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: color-mix(in srgb, var(--c, #555) 70%, #111); }
+.popup .job[data-t='n'] { --c: var(--c-n); } .popup .job[data-t='v'] { --c: var(--c-v); } .popup .job[data-t='a'] { --c: var(--c-a); }
+.popup .job[data-t='p'] { --c: var(--c-p); } .popup .job[data-t='x'] { --c: var(--c-x); } .popup .job[data-t='g'] { --c: var(--c-g); }
+.popup .row { display: flex; gap: 6px; margin-top: 6px; }
+.pill { font-size: 11.5px; font-weight: 500; padding: 4px 9px; border-radius: 999px; background: #efeff2; color: #111; }
+.pill:hover { background: #e2e2e7; }
+.pill.on { background: #111; color: #fff; }
+
+/* The settings, above the strip on the right. */
+.settings {
+  position: absolute; z-index: 4; bottom: calc(100% + 44px); right: 0; width: 330px; padding: 14px; border-radius: 14px;
+  background: #1c1c20; border: 1px solid var(--line); color: var(--fg); display: flex; flex-direction: column; gap: 9px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
+}
+.settings .label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.segment { display: flex; padding: 2px; border-radius: 8px; background: var(--fill); }
+.segment button { flex: 1; padding: 4px 6px; border-radius: 6px; font-size: 12px; color: var(--fg-2); }
+.segment button[aria-pressed='true'] { background: #636366; color: #fff; font-weight: 500; }
+.preview { font-size: 14px; line-height: 1.4; padding: 8px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.04); }
+.preview .w.sw { padding: 0 0.14em; background: color-mix(in srgb, var(--c) 15%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent); border-radius: 5px; }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; font-size: 13px; }
+.toggle small { display: block; font-size: 11px; color: var(--text-3); }
+.switch { flex: none; position: relative; width: 28px; height: 17px; border-radius: 9px; background: var(--fill); transition: background 0.2s; }
+.switch i { position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; transition: transform 0.2s var(--ease); }
+.toggle.is-on .switch { background: #fff; }
+.toggle.is-on .switch i { background: #121214; transform: translateX(11px); }
+.quiet { align-self: flex-start; font-size: 12px; color: var(--text-2); }
+.quiet kbd { font: inherit; color: var(--text-3); margin-left: 4px; }
+
+/* Words that need the learner: a notice, the review nudge, a saved toast. */
+.notice, .toast { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--fg-2); }
+.notice { padding-top: 6px; border-top: 1px solid var(--line); }
+.toast { color: var(--fg); }

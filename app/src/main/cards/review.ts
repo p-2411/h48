@@ -53,6 +53,18 @@ export function interval(ms: number): string {
 
 export class StaleReviewError extends Error {}
 
+/** How many cards are due now, coming due later today, and new ones still allowed today. */
+export function reviewCounts(newPerDay: number, now = Date.now()): ReviewQueue['counts'] {
+  const db = database()
+  const count = (sql: string, ...values: (string | number)[]): number => (db.prepare(sql).get(...values) as { n: number }).n
+  const live = 'deleted_at IS NULL AND paused = 0'
+  const due = count(`SELECT COUNT(*) n FROM cards WHERE ${live} AND state != 0 AND due <= ?`, now)
+  const laterToday = count(`SELECT COUNT(*) n FROM cards WHERE ${live} AND state != 0 AND due > ? AND due < ?`, now, studyDayEnd(now))
+  const newCards = count(`SELECT COUNT(*) n FROM cards WHERE ${live} AND state = 0`)
+  const introducedToday = count('SELECT COUNT(*) n FROM reviews WHERE was_new = 1 AND undone_at IS NULL AND study_day = ?', studyDay(now))
+  return { due, laterToday, newAvailable: Math.min(newCards, Math.max(0, newPerDay - introducedToday)) }
+}
+
 export class ReviewSession {
   private skipped = new Set<string>()
   private introduced = new Set<string>()
@@ -75,14 +87,8 @@ export class ReviewSession {
 
   queue(now = Date.now()): ReviewQueue {
     const db = database()
-    const count = (sql: string, ...values: (string | number)[]): number =>
-      (db.prepare(sql).get(...values) as { n: number }).n
     const live = 'deleted_at IS NULL AND paused = 0'
-    const due = count(`SELECT COUNT(*) n FROM cards WHERE ${live} AND state != 0 AND due <= ?`, now)
-    const laterToday = count(`SELECT COUNT(*) n FROM cards WHERE ${live} AND state != 0 AND due > ? AND due < ?`, now, studyDayEnd(now))
-    const newCards = count(`SELECT COUNT(*) n FROM cards WHERE ${live} AND state = 0`)
-    const introducedToday = count('SELECT COUNT(*) n FROM reviews WHERE was_new = 1 AND undone_at IS NULL AND study_day = ?', studyDay(now))
-    const newAvailable = Math.min(newCards, Math.max(0, this.settings().newPerDay - introducedToday))
+    const { due, laterToday, newAvailable } = reviewCounts(this.settings().newPerDay, now)
 
     const candidates = [
       ...(db.prepare(`SELECT * FROM cards WHERE ${live} AND state IN (1, 3) AND due <= ? ORDER BY due`).all(now) as CardRow[]),

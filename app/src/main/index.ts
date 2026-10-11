@@ -19,6 +19,7 @@ import { createVoiceModels, type VoiceModels } from './ai/voice'
 import { AudioSource } from './audio'
 import { CaptionSource } from './captions'
 import { Cards } from './cards'
+import { draftFromMoment } from './cards/drafts'
 import { Explain } from './explain'
 import { Hearing } from './hearing'
 import { hearLine } from './listen'
@@ -30,6 +31,7 @@ import { replay } from './replay'
 import { Settings } from './settings'
 import { createTray } from './tray'
 import { Tutor } from './tutor'
+import { Welcome } from './welcome'
 import { WaitForTranslation } from './wait'
 import { Watcher } from './watcher'
 import { createOverlay, toggleOverlay } from './windows/overlay'
@@ -96,7 +98,7 @@ app.whenReady().then(() => {
   )
   // Listen to the browser only while a video is being watched in it.
   watcher.on('status', (status) => audio.listen(watcher.currentVideo ? status.bundle : undefined))
-  const cards = new Cards({ replay: replayMoment, practise: (moment) => tutor.open(moment) })
+  const cards = new Cards({ replay: replayMoment, practise: (moment) => tutor.open(moment), openReview: () => panel.show('review') })
   // Each opens on a line: the one on screen when no id is given.
   const openTutor = (lineId?: number): void => {
     const moment = watcher.moment(lineId)
@@ -116,7 +118,33 @@ app.whenReady().then(() => {
 
   const overlay = createOverlay()
   const showScript = (): void => panel.show('script')
-  connectOverlay(overlay, { watcher, settings, openTutor, explainLine, showScript })
+  const { sendDue } = connectOverlay(overlay, {
+    watcher,
+    settings,
+    due: () => cards.counts(),
+    openTutor,
+    explainLine,
+    showScript,
+    // A star on the strip: the whole line, or one of its words.
+    saveLine: (lineId, pair) => {
+      const moment = watcher.moment(lineId)
+      const draft = moment && draftFromMoment(moment, pair)
+      return draft ? cards.saveDraft(draft) : undefined
+    },
+    unsave: (cardId) => cards.remove(cardId),
+    replayLine: (lineId) => {
+      const moment = watcher.moment(lineId)
+      if (moment) replayMoment(moment)
+    },
+    openReview: () => panel.show('review'),
+    // Pressing play for the learner counts as their own play, so Wait lets this line go.
+    playOn: () => captions.command({ type: 'play' })
+  })
+  cards.on('changed', sendDue)
+  // Due counts change with the clock too (a card comes due), so refresh them now and then.
+  setInterval(() => sendDue(cards.counts()), 60_000)
+  const welcome = new Welcome(settings, audio)
+  welcome.open()
   tray = createTray({
     shortcut: SHORTCUT,
     toggleOverlay: () => toggleOverlay(overlay),
@@ -124,7 +152,7 @@ app.whenReady().then(() => {
     explainLine: () => explainLine(),
     openTutor: () => openTutor(),
     openCards: () => cards.open(),
-    settings
+    openWelcome: () => welcome.open(true)
   })
   if (!globalShortcut.register(SHORTCUT, () => toggleOverlay(overlay)))
     console.error(`[duet] could not register ${SHORTCUT}; another app may be using it`)
@@ -136,6 +164,7 @@ app.whenReady().then(() => {
     watcher.tick()
     wait.tick()
     player.sample()
+    watcher.setPlayback({ playing: player.playing, waiting: player.isHeldBy('wait'), audio: audio.permission })
   }, TICK_MS)
   setInterval(() => hearing.tick(), HEARING_TICK_MS)
   // Once per video: is it spoken in the language being learnt, or are its subtitles a translation?
