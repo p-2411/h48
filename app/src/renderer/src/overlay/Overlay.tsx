@@ -10,22 +10,22 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'rea
 import type { SaveResult } from '../../../shared/cards'
 import { AnimatePresence, motion } from 'motion/react'
 import { ErrorBoundary } from '../components/ErrorBoundary'
-import { EASE_IN, EASE_OUT, fadeUp, GLIDE, pop } from '../components/motion'
+import { fadeUp, GLIDE, pop } from '../components/motion'
 import { Icon } from '../components/Icon'
 import { say } from '../components/errors'
-import { LevelSlider } from './LevelSlider'
-import { useLevelStep } from './useLevelStep'
-import { WheelSteps } from './wheel'
+import { LevelNumber } from './LevelNumber'
 import { LineView } from './LineView'
 import { actionable, quiet, statusDot } from './notice'
 import type { CheckpointView, Offer } from '../../../shared/checkpoints'
 import { Checkpoint } from './Checkpoint'
+import { CheckpointGlow } from './CheckpointGlow'
 import { SettingsPopover } from './SettingsPopover'
 import { TalkBubble } from './TalkBubble'
 import { useOverlay } from './useOverlay'
 import { useSolid } from './useSolid'
 import { useRoomAbove } from './useRoomAbove'
 import { useStripTalk } from './useStripTalk'
+import { useLevelSwipe } from './useLevelSwipe'
 
 const TOAST_MS = 5000
 
@@ -60,14 +60,13 @@ export function Overlay(): React.JSX.Element {
   const dock = useRef<HTMLDivElement>(null)
   useRoomAbove(dock)
   const { settings, status, current, building, translating, fit, loaded } = useOverlay()
-  // Two fingers dragged right or left on the strip move the level one step (the level circle shows it).
-  const level = useLevelStep(settings.level)
-  const stripSwipes = useRef(new WheelSteps({ sideways: true }))
   const [settingsOpen, setSettingsOpen] = useState(false)
   // The pointer is on Duet: the strip shows more of the line (in React, so its size change glides).
   const [hovered, setHovered] = useState(false)
   const [toast, setToast] = useState<Toast>()
   const talk = useStripTalk(settings.language, useCallback((text: string) => setToast({ text }), []))
+  const talkButton = useRef<HTMLButtonElement>(null)
+  const levelSwipe = useLevelSwipe(settings.level, dock)
   // Stars given in this run, by line and word ("12:3", or "12:line"), so they show as saved.
   const [stars, setStars] = useState<Record<string, string>>({})
   // A checkpoint offered (the strip glows; a click opens it) and the one open.
@@ -178,7 +177,7 @@ export function Overlay(): React.JSX.Element {
     >
       <div
         ref={dock}
-        className={`dock${settingsOpen ? ' pinned' : ''}`}
+        className={`dock${settingsOpen ? ' pinned' : ''}${levelSwipe.visible ? ' level-gesture' : ''}`}
         data-solid
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -192,7 +191,7 @@ export function Overlay(): React.JSX.Element {
       >
         <AnimatePresence>{settingsOpen && <SettingsPopover key="settings" settings={settings} />}</AnimatePresence>
         <div className="actions" role="toolbar" aria-label="Line actions">
-          <LevelSlider settings={settings} tug={level.tug} onStep={level.step} />
+          <LevelNumber settings={settings} swipe={levelSwipe} />
           <span className="spacer" />
           <button
             type="button"
@@ -244,16 +243,13 @@ export function Overlay(): React.JSX.Element {
               </ErrorBoundary>
             </motion.div>
           )}
-          {talk.talking && talk.about && (
-            <motion.div key="talk" className="talk-bubble" data-solid role="dialog" aria-label="Talking with Duet" style={{ x: '-50%' }} {...pop()}>
-              <ErrorBoundary what="Talking with Duet" frame={popped}>
-                <TalkBubble live={talk.live} language={talk.about.language} onText={talk.toText} onEnd={talk.end} />
-              </ErrorBoundary>
-            </motion.div>
-          )}
         </AnimatePresence>
+        <ErrorBoundary what="Talking with Duet" frame={popped}>
+          <TalkBubble active={talk.talking} live={talk.live} language={talk.about?.language ?? settings.language} origin={talkButton} onText={talk.toText} />
+        </ErrorBoundary>
         <div className="strip-row">
         <button
+          ref={talkButton}
           type="button"
           className={`talk-button${talk.talking ? ' on' : ''}`}
           title={talk.talking ? 'End talking with Duet' : 'Talk to Duet'}
@@ -264,28 +260,6 @@ export function Overlay(): React.JSX.Element {
         >
           <Icon name="mascot" filled />
         </button>
-        {/* Glowing behind the strip while a checkpoint is offered, and on while it's being done;
-            it glides with the strip. */}
-        <AnimatePresence>
-          {(offer || checkpoint) && (
-            <motion.div
-              key="glow"
-              className="strip-glow"
-              aria-hidden="true"
-              layout
-              transition={GLIDE}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, transition: { duration: 0.3, ease: EASE_OUT } }}
-              exit={{ opacity: 0, transition: { duration: 0.5, ease: EASE_IN } }}
-            >
-              {/* Its four layers: the stroke on the edge, then three glows, wider and softer (overlay.css). */}
-              <span className="glow-layer" />
-              <span className="glow-layer" />
-              <span className="glow-layer" />
-              <span className="glow-layer" />
-            </motion.div>
-          )}
-        </AnimatePresence>
         <motion.div
           // Its size glides to each line's (the radius is given here so it stays round while it does).
           layout
@@ -298,8 +272,8 @@ export function Overlay(): React.JSX.Element {
             startDrag(event)
           }}
           onClick={openCheckpoint}
-          onWheel={(event) => level.step(stripSwipes.current.step(event.deltaY, event.deltaX, event.timeStamp))}
         >
+          <CheckpointGlow />
           <i
             className={`dot ${dot.tone}`}
             title={dot.text}
