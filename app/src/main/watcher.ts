@@ -22,12 +22,15 @@ import type { PlayerTime } from './clock'
 import type { Player } from './player'
 import { LineSession } from './session'
 import type { Settings } from './settings'
+import { detectLanguage } from './detect'
 import { sourceFor, type Source } from './sources'
 
 // Videos and languages whose lines are kept after switching away.
 const SESSIONS_KEPT = 12
 // With no transcript and no captions on screen for this long, the video needs hearing.
 const NO_CAPTIONS_MS = 6000
+// How many recent caption lines decide the language of a line too short to tell.
+const RECENT_VERDICTS = 4
 
 /** The video open in the browser. */
 type Video = { source: Source; id: string; url: string; title?: string }
@@ -40,6 +43,8 @@ export class Watcher extends EventEmitter {
   private fetching?: AbortController
   private captionSeenAt = 0
   private hearing = false
+  // Whether recent caption lines were in the language being learnt, newest last.
+  private verdicts: boolean[] = []
 
   constructor(
     captions: CaptionSource,
@@ -69,11 +74,15 @@ export class Watcher extends EventEmitter {
         this.open()
       }
     })
+    // Captions in another language than the one being learnt (English captions on a Spanish video)
+    // are ignored, and don't count as captions: the video may then be heard instead.
     captions.on('live', (line: { text: string }) => {
+      if (line.text && !this.inLanguage(line.text, false)) return
       if (line.text) this.captionSeenAt = Date.now()
       if (!this.session?.hasTranscript) this.emit('live', line.text)
     })
     captions.on('line', (line: { text: string; at: number }) => {
+      if (!this.inLanguage(line.text, true)) return
       // Where the video was when the caption appeared, so Replay can go back to it.
       const now = player.now()
       this.session?.add(line.text, line.at, now === undefined ? undefined : Math.max(0, now - (Date.now() - line.at) / 1000))
@@ -91,6 +100,19 @@ export class Watcher extends EventEmitter {
   /** The video open in the browser, if any. */
   get currentVideo(): { site: Source['site']; id: string } | undefined {
     return this.video && { site: this.video.source.site, id: this.video.id }
+  }
+
+  /** Whether a caption is in the language being learnt. A line too short to tell goes with the
+   * recent lines; `remember` records the verdict (for finished lines, not text still growing). */
+  private inLanguage(text: string, remember: boolean): boolean {
+    const detected = detectLanguage(text)
+    const recent = this.verdicts.filter(Boolean).length * 2 >= this.verdicts.length
+    const matches = detected === undefined ? recent : detected === this.settings.current.language
+    if (remember && detected !== undefined) {
+      this.verdicts = [...this.verdicts, matches].slice(-RECENT_VERDICTS)
+      if (this._status.captionsMatch !== matches) this.setStatus({ captionsMatch: matches })
+    }
+    return matches
   }
 
   /** A video is open with neither a transcript nor captions on screen: Duet should hear it. */
@@ -173,8 +195,11 @@ export class Watcher extends EventEmitter {
   /** Shows the session for the open video in the current language, fetching its transcript if needed. */
   private open(): void {
     this.fetching?.abort()
-    // Give a new video (or language) time to show captions or find a transcript before hearing it.
+    // Give a new video (or language) time to show captions or find a transcript before hearing it,
+    // and judge its captions afresh.
     this.captionSeenAt = Date.now()
+    this.verdicts = []
+    if (this._status.captionsMatch !== undefined) this.setStatus({ captionsMatch: undefined })
     this.session?.pause()
     const language = this.settings.current.language
     const video = this.video

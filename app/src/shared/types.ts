@@ -78,6 +78,9 @@ export type OverlayStatus = {
   source?: 'transcript' | 'captions' | 'audio'
   /** False when the player says this video has no captions at all. */
   available?: boolean
+  /** False when the captions on screen are in another language than the one being learnt; they are
+   * then ignored. */
+  captionsMatch?: boolean
   error?: string
   /** Which AI model processes lines, e.g. "anthropic/claude-opus-5-5". */
   model?: string
