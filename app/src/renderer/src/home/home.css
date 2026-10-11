@@ -23,7 +23,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 16px 0 84px;
+  padding: 0 16px 0 96px;
   -webkit-app-region: drag;
 }
 .home-bar button { -webkit-app-region: no-drag; }
@@ -176,7 +176,7 @@
 /* An open page, over the hub: ‹ Home beside the window buttons; the page's top drags the window. */
 .home-open { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; min-height: 0; }
 .home-open::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 52px; -webkit-app-region: drag; }
-.home-back { position: absolute; z-index: 1; top: 11px; left: 84px; -webkit-app-region: no-drag; }
+.home-back { position: absolute; z-index: 1; top: 11px; left: 96px; -webkit-app-region: no-drag; }
 .home-open > .notice { margin: 64px 26px 0; }
 
 /* A page: a column under the top bar that scrolls on its own. */
