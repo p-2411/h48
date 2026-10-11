@@ -257,6 +257,7 @@ export function Conversation({
             <Mascot
               state={mascotState(live.status, !!state.replying || !!state.loading, cards.cheering, correcting)}
               scale={mascotScale}
+              speechAudio={live.playback}
             />
           </div>,
           mascotSlot

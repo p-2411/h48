@@ -1,6 +1,6 @@
 // Browser-side GPT-Live transport. WebRTC carries microphone/model audio while the data channel
 // carries transcripts and delegated tool calls. The API key remains in Electron's main process.
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { languageName, type Language } from '../../../../shared/languages'
 import { say } from '../../components/errors'
 import { voiceGreeting, type VoiceTopic } from './prompts'
@@ -91,6 +91,8 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
   tutorMuted: boolean
   speakerBlocked: boolean
   usageSeconds: number
+  /** Existing tutor playback, available to the optional visual mouth meter. */
+  playback: RefObject<HTMLAudioElement | null>
   start: (preserveConversation?: boolean) => Promise<void>
   end: () => void
   toggleMicrophone: () => void
@@ -113,6 +115,8 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
   const [error, setError] = useState<string>()
   const [microphoneBlocked, setMicrophoneBlocked] = useState(false)
   const [muted, setMuted] = useState(false)
+  // Local intent applies immediately, including while the microphone is opening or reconnecting.
+  const mutedRef = useRef(false)
   const [tutorMuted, setTutorMuted] = useState(false)
   const [speakerBlocked, setSpeakerBlocked] = useState(false)
   const [usageSeconds, setUsageSeconds] = useState(0)
@@ -161,7 +165,10 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
     peer?.close()
     if (speaker.current) speaker.current.srcObject = null
     speaker.current = null
-    setMuted(false)
+    if (next !== 'reconnecting') {
+      mutedRef.current = false
+      setMuted(false)
+    }
     setStatus(next)
   }, [])
 
@@ -280,6 +287,9 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
     (event: LiveEvent): void => {
       switch (event.type) {
         case 'session.started': {
+          if (mutedRef.current) {
+            send({ type: 'session.input_audio.mute', event_id: `microphone-${crypto.randomUUID()}` })
+          }
           healthySince.current = Date.now()
           setError(undefined)
           setStatus('listening')
@@ -341,10 +351,8 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
           setStatus('listening')
           break
         case 'session.input_audio.muted':
-          setMuted(true)
-          break
         case 'session.input_audio.unmuted':
-          setMuted(false)
+          // Acknowledgements can arrive after another click; local track state is authoritative.
           break
         case 'session.usage.updated':
           setUsageSeconds(event.usage?.seconds ?? 0)
@@ -407,6 +415,7 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
         })
         if (stale()) return abandon()
         microphone.current = stream
+        stream.getAudioTracks().forEach((track) => { track.enabled = !mutedRef.current })
         setStatus('connecting')
         learnerSpeaking.current = false
         peer = new RTCPeerConnection()
@@ -501,7 +510,9 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
   }, [release, send])
 
   const toggleMicrophone = useCallback((): void => {
-    const next = !muted
+    const next = !mutedRef.current
+    mutedRef.current = next
+    setMuted(next)
     microphone.current?.getAudioTracks().forEach((track) => {
       track.enabled = !next
     })
@@ -509,7 +520,7 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
       type: next ? 'session.input_audio.mute' : 'session.input_audio.unmute',
       event_id: `microphone-${crypto.randomUUID()}`
     })
-  }, [muted, send])
+  }, [send])
 
   const toggleTutorAudio = useCallback((): void => {
     // Touch the audio element here, not in the state updater: React may run updaters twice.
@@ -563,6 +574,7 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
     tutorMuted,
     speakerBlocked,
     usageSeconds,
+    playback: speaker,
     start,
     end,
     toggleMicrophone,

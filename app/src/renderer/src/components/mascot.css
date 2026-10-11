@@ -54,6 +54,7 @@
 }
 
 .duet-mascot .socket {
+  scale: 0.84;
   position: relative;
   width: 160px;
   height: 76px;
@@ -119,6 +120,7 @@
 }
 
 .duet-mascot .brow {
+  scale: 1.65;
   --brow-shift: 0px;
   --brow-tilt: 0deg;
   position: absolute;
@@ -126,7 +128,7 @@
   top: 38px;
   width: 29px;
   height: 9px;
-  border-top: 3px solid rgba(255, 255, 255, 0.82);
+  border-top: 3px solid rgba(255, 255, 255, 1);
   border-radius: 50% 50% 0 0;
   background: transparent;
   box-shadow: 0 0 9px rgba(255, 255, 255, 0.2);
@@ -143,6 +145,7 @@
 .duet-mascot .brow-right { left: 71.2%; }
 
 .duet-mascot .mouth {
+  z-index: 3;
   position: absolute;
   left: 50%;
   bottom: 8px;
@@ -150,12 +153,13 @@
   height: 24px;
   display: grid;
   place-items: center;
-  opacity: 0;
-  transform: translateX(-50%) translateY(3px) scale(0.76);
+  opacity: 0.82;
+  transform: translateX(-50%) translateY(0) scale(1);
   transform-origin: center;
   transition: opacity 240ms ease, transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .duet-mascot .mouth-core {
+  scale: 1.8;
   width: 18px;
   height: 5px;
   border-radius: 999px;
@@ -175,26 +179,72 @@
   position: absolute;
   z-index: 1;
   inset: 14% 9%;
+  opacity: .2;
+  filter: saturate(135%);
   pointer-events: none;
+  transition: opacity 700ms ease;
 }
+
 .duet-mascot .particle {
   position: absolute;
-  width: var(--particle-size, 3px);
-  height: var(--particle-size, 3px);
+  width: var(--particle-size, 4px);
+  height: var(--particle-size, 4px);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.68);
-  box-shadow: 0 0 9px rgba(255, 255, 255, 0.44);
+  background: var(--particle-color, rgba(255, 255, 255, .68));
+  box-shadow: 0 0 13px 1px var(--particle-glow, rgba(255, 255, 255, .44));
   opacity: 0;
   animation: duet-particle-drift var(--particle-speed, 6.8s) ease-in-out var(--particle-delay, 0s) infinite;
+  transition: background 700ms ease, box-shadow 700ms ease;
 }
+
 .duet-mascot .particle:nth-child(1) { left: 7%; top: 56%; --particle-delay: -1.1s; }
-.duet-mascot .particle:nth-child(2) { left: 18%; top: 18%; --particle-size: 2px; --particle-speed: 8s; --particle-delay: -4.4s; }
-.duet-mascot .particle:nth-child(3) { left: 31%; top: 79%; --particle-size: 2px; --particle-delay: -3.2s; }
-.duet-mascot .particle:nth-child(4) { left: 44%; top: 10%; --particle-size: 2px; --particle-speed: 7.6s; --particle-delay: -5.5s; }
+.duet-mascot .particle:nth-child(2) { left: 18%; top: 18%; --particle-size: 3px; --particle-speed: 8s; --particle-delay: -4.4s; }
+.duet-mascot .particle:nth-child(3) { left: 31%; top: 79%; --particle-size: 3px; --particle-delay: -3.2s; }
+.duet-mascot .particle:nth-child(4) { left: 44%; top: 10%; --particle-size: 3px; --particle-speed: 7.6s; --particle-delay: -5.5s; }
 .duet-mascot .particle:nth-child(5) { left: 57%; top: 83%; --particle-delay: -2.6s; }
-.duet-mascot .particle:nth-child(6) { left: 70%; top: 16%; --particle-size: 2px; --particle-speed: 7.9s; --particle-delay: -6.1s; }
-.duet-mascot .particle:nth-child(7) { left: 83%; top: 72%; --particle-size: 2px; --particle-delay: -0.5s; }
+.duet-mascot .particle:nth-child(6) { left: 70%; top: 16%; --particle-size: 3px; --particle-speed: 7.9s; --particle-delay: -6.1s; }
+.duet-mascot .particle:nth-child(7) { left: 83%; top: 72%; --particle-size: 3px; --particle-delay: -.5s; }
 .duet-mascot .particle:nth-child(8) { left: 94%; top: 39%; --particle-speed: 8.4s; --particle-delay: -3.8s; }
+
+.duet-mascot[data-state='opening'] .particle-field { opacity: .42; }
+.duet-mascot[data-state='idle'] .particle-field { opacity: .28; }
+.duet-mascot[data-state='listening'] .particle-field { opacity: .48; }
+.duet-mascot[data-state='thinking'] .particle-field { opacity: .64; }
+.duet-mascot[data-state='speaking'] .particle-field { opacity: .56; }
+.duet-mascot[data-state='success'] .particle-field { opacity: .78; }
+.duet-mascot[data-state='correction'] .particle-field { opacity: .38; }
+
+.duet-mascot[data-state='opening'] .particle:nth-child(odd) {
+  --particle-color: rgba(255, 232, 210, .94);
+  --particle-glow: rgba(255, 193, 146, .68);
+}
+
+.duet-mascot[data-state='idle'] .particle:nth-child(4n + 2) {
+  --particle-color: rgba(232, 218, 255, .9);
+  --particle-glow: rgba(202, 173, 244, .58);
+}
+
+.duet-mascot[data-state='listening'] .particle:nth-child(3n),
+.duet-mascot[data-state='correction'] .particle:nth-child(3n) {
+  --particle-color: rgba(214, 249, 198, .94);
+  --particle-glow: rgba(184, 239, 158, .72);
+}
+
+.duet-mascot[data-state='thinking'] .particle:nth-child(odd) {
+  --particle-color: rgba(225, 199, 255, .96);
+  --particle-glow: rgba(203, 157, 252, .74);
+}
+
+.duet-mascot[data-state='speaking'] .particle:nth-child(3n + 1) {
+  --particle-color: rgba(255, 205, 181, .96);
+  --particle-glow: rgba(255, 165, 126, .7);
+}
+
+.duet-mascot[data-state='success'] .particle:nth-child(odd) {
+  --particle-color: rgba(255, 225, 145, .98);
+  --particle-glow: rgba(255, 198, 73, .76);
+  animation-name: duet-particle-success;
+}
 
 .duet-mascot .sound-ring {
   position: absolute;
@@ -215,16 +265,16 @@
 }
 .duet-mascot[data-state='opening'] .socket:first-of-type {
   z-index: 1;
-  animation: duet-open-left 2.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: duet-open-left var(--opening-duration, 2350ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 .duet-mascot[data-state='opening'] .socket:nth-of-type(2) {
   z-index: 2;
-  animation: duet-open-right 2.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: duet-open-right var(--opening-duration, 2350ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-.duet-mascot[data-state='opening'] .eye { animation: duet-open-eyes 2.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-.duet-mascot[data-state='opening'] .mouth { animation: duet-open-mouth 2.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.duet-mascot[data-state='opening'] .eye { animation: duet-open-eyes var(--opening-duration, 2350ms) cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.duet-mascot[data-state='opening'] .mouth { animation: duet-open-mouth var(--opening-duration, 2350ms) cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 .duet-mascot[data-state='opening'] .socket::before,
-.duet-mascot[data-state='opening'] .socket::after { animation: duet-open-sheen 2.35s ease forwards; }
+.duet-mascot[data-state='opening'] .socket::after { animation: duet-open-sheen var(--opening-duration, 2350ms) ease forwards; }
 
 /* Idle: each socket drifts on its own around calm line-eyes and a flat mouth. */
 .duet-mascot[data-state='idle'] .eye { animation: duet-idle-blink 5.4s ease-in-out infinite; }
@@ -258,13 +308,13 @@
   width: 22px;
   height: 9px;
   border: solid var(--duet-white);
-  border-width: 0 0 3px;
+  border-width: 2px 2px 3px;
   border-radius: 0 0 999px 999px;
   background: transparent;
   box-shadow: 0 4px 9px rgba(255, 255, 255, 0.1);
   animation: duet-listen-smile 1.9s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
-.duet-mascot[data-state='listening'] .brow { opacity: 0.3; animation: duet-listen-brow 1.9s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='listening'] .brow { opacity: 0.40; animation: duet-listen-brow 1.9s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
 .duet-mascot[data-state='listening'] .eye { animation: duet-listen-nod-eyes 1.9s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
 .duet-mascot[data-state='listening'] .socket:first-of-type,
 .duet-mascot[data-state='listening'] .socket:nth-of-type(2) { animation: duet-socket-listen-nod 1.9s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
@@ -272,7 +322,7 @@
 
 /* Thinking: the pupils glance up together; the sockets stay balanced and curious. */
 .duet-mascot[data-state='thinking'] .eye { animation: duet-thinking-look 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
-.duet-mascot[data-state='thinking'] .brow { opacity: 0.44; animation: duet-thinking-brow 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='thinking'] .brow { opacity: 0.54; animation: duet-thinking-brow 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
 .duet-mascot[data-state='thinking'] .brow-left { --brow-shift: -3px; --brow-tilt: -3deg; }
 .duet-mascot[data-state='thinking'] .brow-right { --brow-shift: 2px; --brow-tilt: 2deg; }
 .duet-mascot[data-state='thinking'] .socket:first-of-type { animation: duet-socket-think-left 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
@@ -288,20 +338,90 @@
   animation: duet-thought-mouth 2.4s ease-in-out infinite;
 }
 
-/* Speaking: small pupil movements, a natural blink, restrained glass motion. */
+/* Speaking: bouncing glass, gently lifted brows and a bright talking smile. */
 .duet-mascot[data-state='speaking'] .eye {
-  width: 18px;
-  height: 18px;
-  animation: duet-speak-eye-natural 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  width: 19px;
+  height: 19px;
+  animation: duet-speak-eye-natural 3.2s cubic-bezier(.45, 0, .55, 1) infinite;
 }
-.duet-mascot[data-state='speaking'] .socket:first-of-type { animation: duet-socket-speak-left 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
-.duet-mascot[data-state='speaking'] .socket:nth-of-type(2) { animation: duet-socket-speak-right 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
-.duet-mascot[data-state='speaking'] .mouth { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+
+.duet-mascot[data-state='speaking'] .socket {
+  border-color: rgba(255, 255, 255, .82);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .92),
+    inset 10px 0 24px rgba(255, 255, 255, .045),
+    inset 0 -14px 28px rgba(255, 255, 255, .045),
+    0 1px 0 rgba(255, 255, 255, .16),
+    0 0 32px rgba(255, 255, 255, .17);
+}
+
+.duet-mascot[data-state='speaking'] .socket:first-of-type {
+  animation: duet-socket-speak-left 2.15s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+
+.duet-mascot[data-state='speaking'] .socket:nth-of-type(2) {
+  animation: duet-socket-speak-right 2.15s cubic-bezier(.45, 0, .55, 1) -90ms infinite;
+}
+
+.duet-mascot[data-state='speaking'] .brow {
+  opacity: 0.44;
+  animation: duet-speak-brow 2.15s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+
+.duet-mascot[data-state='speaking'] .brow-left {
+  --brow-tilt: -4deg;
+}
+
+.duet-mascot[data-state='speaking'] .brow-right {
+  --brow-tilt: 4deg;
+}
+
+.duet-mascot[data-state='speaking'] .mouth {
+  bottom: 5px;
+  width: 44px;
+  height: 30px;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
 .duet-mascot[data-state='speaking'] .mouth-core {
-  width: 20px;
-  height: 6px;
-  border-radius: 999px;
-  animation: duet-talk-soft 840ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  transition-property: width, height, border-radius, transform;
+  width: 30px;
+  height: 13px;
+  border: solid var(--duet-white);
+  border-width: 2px 2px 4px;
+  border-radius: 0 0 999px 999px;
+  background: transparent;
+  box-shadow: none;
+  transform-origin: center;
+  animation: duet-talk-smile 1000ms cubic-bezier(.45, 0, .55, 1) infinite;
+}
+
+/* Anchor the upper lip; only the lower curve opens. Absolute positioning keeps this local
+   to the mouth, and the minimum height leaves a visible smile even between syllables. */
+.duet-mascot[data-state][data-audio-mouth='true'] .mouth {
+  bottom: 5px;
+  width: 44px;
+  height: 30px;
+  animation: none;
+  transform: translateX(-50%);
+}
+.duet-mascot[data-state][data-audio-mouth='true'] .mouth-core {
+  animation: none;
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  margin-left: -15px;
+  width: 30px;
+  height: 10px;
+  border: solid var(--duet-white);
+  border-width: 2px 2px 3px;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  transform-origin: center top;
+  transition: none;
 }
 
 /* Success: balanced sockets rise with bright celebratory line-eyes. */
@@ -330,7 +450,7 @@
   width: 26px;
   height: 12px;
   border: solid var(--duet-white);
-  border-width: 0 0 4px;
+  border-width: 2px 2px 4px;
   border-radius: 0 0 999px 999px;
   background: transparent;
   box-shadow: 0 5px 10px rgba(255, 255, 255, 0.13);
@@ -352,13 +472,13 @@
   height: 9px;
   animation: duet-correction-eyes 3.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
-.duet-mascot[data-state='correction'] .brow { opacity: 0.22; transform: translateX(-50%) translateY(1px) scaleX(0.9) scaleY(0.82); }
+.duet-mascot[data-state='correction'] .brow { opacity: 0.32; transform: translateX(-50%) translateY(1px) scaleX(0.9) scaleY(0.82); }
 .duet-mascot[data-state='correction'] .mouth { opacity: 0.76; transform: translateX(-50%) translateY(0) scale(1); }
 .duet-mascot[data-state='correction'] .mouth-core {
   width: 21px;
   height: 8px;
   border: solid var(--duet-white);
-  border-width: 0 0 3px;
+  border-width: 2px 2px 3px;
   border-radius: 0 0 999px 999px;
   background: transparent;
   box-shadow: 0 4px 9px rgba(255, 255, 255, 0.1);
@@ -368,12 +488,16 @@
   50% { transform: scale(1.1); opacity: 0.62; }
 }
 @keyframes duet-open-left {
+  0%, 18% { scale: 1; }
+  100% { scale: 0.84; }
   0%, 18% { height: 94px; border-radius: 31px; background-color: var(--duet-white); border-color: var(--duet-white); transform: translate(34px, -25px) scaleX(0.98); }
   52% { height: 88px; border-radius: 31px; background-color: rgba(255, 255, 255, 0.78); border-color: rgba(255, 255, 255, 0.94); transform: translate(17px, -11px) scaleX(0.99); }
   80% { height: 78px; border-radius: 30px; background-color: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.82); transform: translate(-1px, 1px) scaleX(1.018); }
   100% { height: 76px; border-radius: 29px; background-color: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.72); transform: none; }
 }
 @keyframes duet-open-right {
+  0%, 18% { scale: 1; }
+  100% { scale: 0.84; }
   0%, 18% { height: 94px; border-radius: 31px; background-color: var(--duet-white); border-color: var(--duet-white); transform: translate(-34px, 25px) scaleX(0.98); }
   52% { height: 88px; border-radius: 31px; background-color: rgba(255, 255, 255, 0.78); border-color: rgba(255, 255, 255, 0.94); transform: translate(-17px, 11px) scaleX(0.99); }
   80% { height: 78px; border-radius: 30px; background-color: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.82); transform: translate(1px, -1px) scaleX(1.018); }
@@ -385,7 +509,7 @@
   90%, 100% { opacity: 1; transform: scaleX(1); }
 }
 @keyframes duet-open-mouth {
-  0%, 78% { opacity: 0; transform: translateX(-50%) translateY(4px) scaleX(0.32); }
+  0% { opacity: 0.82; transform: translateX(-50%) translateY(2px) scaleX(0.92); }
   92%, 100% { opacity: 0.82; transform: translateX(-50%) translateY(0) scaleX(1); }
 }
 @keyframes duet-open-sheen {
@@ -416,12 +540,18 @@
   50% { height: 78px; border-radius: 32px 34px 34px 31px; transform: translateY(-2px) rotate(-0.3deg) scaleX(1.01); }
 }
 @keyframes duet-socket-speak-left {
-  0%, 100% { height: 75px; border-radius: 31px 29px 30px 28px; transform: translateY(0) rotate(-0.2deg) scaleX(0.998); }
-  48% { height: 78px; border-radius: 29px 33px 28px 32px; transform: translateY(-2px) rotate(-0.45deg) scaleX(1.012); }
+  0%, 100% { width: 158px; height: 76px; border-radius: 32px 29px 31px 28px; transform: translateY(0) rotate(-.25deg); }
+  22% { width: 166px; height: 82px; border-radius: 36px 33px 35px 31px; transform: translateY(-5px) rotate(-.65deg); }
+  46% { width: 155px; height: 72px; border-radius: 29px 32px 28px 34px; transform: translateY(2px) rotate(.15deg); }
+  70% { width: 164px; height: 80px; border-radius: 35px 30px 34px 29px; transform: translateY(-3px) rotate(-.45deg); }
+  86% { width: 159px; height: 75px; border-radius: 31px 33px 30px 32px; transform: translateY(0) rotate(-.1deg); }
 }
 @keyframes duet-socket-speak-right {
-  0%, 100% { height: 76px; border-radius: 29px 31px 28px 30px; transform: translateY(-1px) rotate(0.2deg) scaleX(1.002); }
-  48% { height: 78px; border-radius: 33px 29px 32px 28px; transform: translateY(-2px) rotate(0.45deg) scaleX(1.012); }
+  0%, 100% { width: 158px; height: 76px; border-radius: 29px 32px 28px 31px; transform: translateY(0) rotate(.25deg); }
+  22% { width: 166px; height: 82px; border-radius: 33px 36px 31px 35px; transform: translateY(-5px) rotate(.65deg); }
+  46% { width: 155px; height: 72px; border-radius: 32px 29px 34px 28px; transform: translateY(2px) rotate(-.15deg); }
+  70% { width: 164px; height: 80px; border-radius: 30px 35px 29px 34px; transform: translateY(-3px) rotate(.45deg); }
+  86% { width: 159px; height: 75px; border-radius: 33px 31px 32px 30px; transform: translateY(0) rotate(.1deg); }
 }
 @keyframes duet-socket-success-left {
   0%, 100% { height: 74px; border-radius: 36px 31px 34px 30px; transform: translateY(-2px) rotate(-0.7deg) scaleX(1.015); }
@@ -442,10 +572,10 @@
   50% { height: 77px; border-radius: 31px 35px 30px 33px; transform: translateY(-1px) rotate(-0.2deg) scaleX(1.01); }
 }
 @keyframes duet-particle-drift {
-  0%, 100% { opacity: 0; transform: translate3d(0, 6px, 0) scale(0.72); }
-  28% { opacity: 0.18; }
-  55% { opacity: 0.42; transform: translate3d(4px, -5px, 0) scale(1); }
-  78% { opacity: 0.12; }
+  0%, 100% { opacity: 0; transform: translate3d(0, 6px, 0) scale(.72); }
+  28% { opacity: .24; }
+  55% { opacity: .62; transform: translate3d(4px, -5px, 0) scale(1); }
+  78% { opacity: .16; }
 }
 @keyframes duet-idle-blink {
   0%, 42%, 48%, 100% { transform: scaleX(1); }
@@ -468,10 +598,10 @@
   82% { transform: translateY(0) scaleX(1); }
 }
 @keyframes duet-listen-brow {
-  0%, 18%, 100% { width: 27px; height: 8px; transform: translateX(-50%) translateY(1px) scaleX(0.88) scaleY(0.78); opacity: 0.24; }
-  42% { width: 26px; height: 7px; transform: translateX(-50%) translateY(4px) scaleX(0.9) scaleY(0.72); opacity: 0.2; }
-  67% { width: 31px; height: 11px; transform: translateX(-50%) translateY(-3px) scaleX(0.98) scaleY(1); opacity: 0.36; }
-  82% { width: 29px; height: 9px; transform: translateX(-50%) translateY(0) scaleX(0.92) scaleY(0.86); opacity: 0.3; }
+  0%, 18%, 100% { width: 27px; height: 8px; transform: translateX(-50%) translateY(1px) scaleX(0.88) scaleY(0.78); opacity: 0.34; }
+  42% { width: 26px; height: 7px; transform: translateX(-50%) translateY(4px) scaleX(0.9) scaleY(0.72); opacity: 0.30; }
+  67% { width: 31px; height: 11px; transform: translateX(-50%) translateY(-3px) scaleX(0.98) scaleY(1); opacity: 0.46; }
+  82% { width: 29px; height: 9px; transform: translateX(-50%) translateY(0) scaleX(0.92) scaleY(0.86); opacity: 0.40; }
 }
 @keyframes duet-thinking-brow {
   0%, 100% { width: 27px; height: 8px; transform: translateX(-50%) translateX(var(--brow-shift)) translateY(1px) rotate(var(--brow-tilt)) scaleX(0.9) scaleY(0.8); }
@@ -489,20 +619,36 @@
   78% { transform: translate(7px, -5px) scale(0.98); }
 }
 @keyframes duet-speak-eye-natural {
-  0%, 20%, 100% { transform: translate(0, 0) scale(1); }
-  38%, 58% { transform: translate(4px, -1px) scale(1); }
-  68% { transform: translate(2px, 0) scaleY(0.42); }
-  74% { transform: translate(1px, 0) scale(1); }
+  0%, 24%, 100% { transform: translate(0, -1px) scale(1); }
+  42%, 61% { transform: translate(2px, -2px) scale(1); }
+  72% { transform: translate(1px, -1px) scaleY(.38); }
+  78% { transform: translate(0, -1px) scale(1); }
 }
 @keyframes duet-thought-mouth {
   0%, 100% { transform: scale(0.82) translateY(2px); }
   50% { transform: scale(1.08) translateY(-1px); }
 }
-@keyframes duet-talk-soft {
-  0%, 100% { width: 18px; height: 5px; border-radius: 999px; transform: translateY(1px) scaleX(1); }
-  35% { width: 21px; height: 8px; border-radius: 50%; transform: translateY(0) scaleX(1.02); }
-  68% { width: 16px; height: 6px; border-radius: 999px; transform: translateY(1px) scaleX(0.96); }
+@keyframes duet-particle-success {
+  0%, 100% { opacity: 0; transform: translate3d(0, 5px, 0) scale(.7); }
+  34% { opacity: .28; }
+  54% { opacity: .7; transform: translate3d(3px, -7px, 0) scale(1.06); }
+  76% { opacity: .14; transform: translate3d(5px, -11px, 0) scale(.88); }
 }
+@keyframes duet-speak-brow {
+  0%, 100% { width: 28px; height: 9px; opacity: 0.38; transform: translateX(-50%) translateY(1px) rotate(var(--brow-tilt)) scaleX(.92); }
+  22% { width: 31px; height: 11px; opacity: 0.50; transform: translateX(-50%) translateY(-4px) rotate(var(--brow-tilt)) scaleX(1); }
+  46% { width: 27px; height: 8px; opacity: 0.37; transform: translateX(-50%) translateY(2px) rotate(var(--brow-tilt)) scaleX(.9); }
+  70% { width: 30px; height: 10px; opacity: 0.46; transform: translateX(-50%) translateY(-2px) rotate(var(--brow-tilt)) scaleX(.97); }
+}
+@keyframes duet-talk-smile {
+  0%, 100% { width: 30px; height: 13px; border-width: 2px 2px 4px; border-radius: 0 0 999px 999px; background: transparent; transform: translateY(-0.75px) scaleX(1); }
+  24% { width: 34px; height: 15px; border-width: 2px 2px 4px; border-radius: 0 0 999px 999px; background: transparent; transform: translateY(-1.5px) scaleX(1.04); }
+  43% { width: 24px; height: 17px; border-width: 3px; border-radius: 48% 48% 52% 52%; background: transparent; transform: translateY(0.75px) scaleX(.92); }
+  63% { width: 31px; height: 14px; border-width: 2px 2px 4px; border-radius: 0 0 999px 999px; background: transparent; transform: translateY(-0.75px) scaleX(1.02); }
+  79% { width: 20px; height: 12px; border-width: 3px; border-radius: 48% 48% 52% 52%; background: transparent; transform: translateY(1.5px) scaleX(.9); }
+}
+
+
 @keyframes duet-correction-eyes {
   0%, 38%, 100% { transform: scaleX(1); opacity: 0.96; }
   44% { transform: scaleX(0.45); opacity: 0.9; }

@@ -1,14 +1,12 @@
 // Duet, the mascot (styles in mascot.css). It first plays the opening, the Duet mark separating and
 // turning to glass, then shows the state it is given. For people who ask for reduced motion it skips
 // the opening and keeps still.
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import './mascot.css'
 import { reducedMotion } from './motion'
+import { useSpeechMouth } from './useSpeechMouth'
 
 export type MascotState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'success' | 'correction'
-
-// How long the opening runs (its animation is 2.35 s), before the given state shows.
-const OPENING_MS = 2_450
 
 const LABEL: Record<MascotState | 'opening', string> = {
   opening: 'waking up',
@@ -25,24 +23,32 @@ const LABEL: Record<MascotState | 'opening', string> = {
 export function Mascot({
   state,
   scale = 1,
-  opening: opens = true
+  opening: opens = true,
+  openingDuration = 2350,
+  speechAudio
 }: {
   state: MascotState
   scale?: number
   opening?: boolean
+  /** Duration of the mark-to-glass morph, in milliseconds. */
+  openingDuration?: number
+  speechAudio?: RefObject<HTMLAudioElement | null>
 }): React.JSX.Element {
   const [opening, setOpening] = useState(() => opens && !reducedMotion())
   useEffect(() => {
     if (!opening) return
-    const timer = window.setTimeout(() => setOpening(false), OPENING_MS)
+    const timer = window.setTimeout(() => setOpening(false), openingDuration + 100)
     return () => window.clearTimeout(timer)
-  }, [opening])
+  }, [opening, openingDuration])
   const shown = opening ? 'opening' : state
+  const mascot = useRef<HTMLDivElement>(null)
+  useSpeechMouth(mascot, shown === 'speaking', speechAudio)
   return (
     <div
+      ref={mascot}
       className="duet-mascot"
       data-state={shown}
-      style={{ '--scale': scale } as React.CSSProperties}
+      style={{ '--scale': scale, '--opening-duration': `${openingDuration}ms` } as React.CSSProperties}
       role="img"
       aria-label={`Duet, ${LABEL[shown]}`}
     >
