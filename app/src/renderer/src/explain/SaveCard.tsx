@@ -1,5 +1,5 @@
 // Save: one click saves the card Duet wrote from the explanation; nothing to fill in. It can be
-// edited later in My cards. Saved shows a short-lived Undo; the same card saved twice is found
+// edited later in Your words. Saved shows a short-lived Undo; the same card saved twice is found
 // instead of saved again. Shown with a key per moment, so another line starts over.
 import { useEffect, useState } from 'react'
 import type { Card, CardDraft } from '../../../shared/cards'
@@ -75,7 +75,7 @@ export function SaveCard({
           className="btn quiet"
           onClick={() => window.duet.cards.open(step.card.id)}
         >
-          Open in My cards
+          Open in Your words
         </button>
         {step.name === 'saved' && step.undo && (
           <button
@@ -88,7 +88,7 @@ export function SaveCard({
                   await window.duet.cards.remove(step.card.id)
                   setStep({ name: 'ready' })
                 } catch (failure) {
-                  setError(say(failure, 'Could not take the card back. Remove it in My cards.'))
+                  setError(say(failure, 'Could not take the card back. Remove it in Your words.'))
                 }
               })
             }

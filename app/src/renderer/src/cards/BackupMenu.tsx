@@ -39,6 +39,8 @@ export function BackupMenu({
     if (!open) return
     const onKey = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return
+      // Esc was for the menu, not for the page behind it.
+      event.preventDefault()
       setOpen(false)
       toggle.current?.focus()
     }

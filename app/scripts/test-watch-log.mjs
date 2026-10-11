@@ -32,7 +32,7 @@ try {
   assert.equal(studyDayEnd(at(2026, 10, 12, 23, 0)), at(2026, 10, 13, 4, 0))
 
   // --- The streak ----------------------------------------------------------------------------
-  const { streak, kept, weekOf, addDays } = await jiti.import(join(root, 'watchlog/streak.ts'))
+  const { streak, week, kept, weekOf, addDays } = await jiti.import(join(root, 'watchlog/streak.ts'))
   const day = (date, change = {}) => ({
     day: date,
     watchedMs: 0,
@@ -104,6 +104,36 @@ try {
     ).days,
     2
   )
+
+  // --- This week, as the hub's day dots -----------------------------------------------------
+  const states = (records, today) => week(records, today).map((d) => d.state).join(' ')
+  // Mon 10-12 kept, Tue kept, Wed missed (a freeze), Thu kept; today Fri, not kept yet.
+  assert.deepEqual(
+    week([done('2026-10-12'), done('2026-10-13'), done('2026-10-15')], '2026-10-16').map((d) => d.day),
+    ['2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16', '2026-10-17', '2026-10-18'],
+    'the week runs Monday to Sunday'
+  )
+  assert.equal(
+    states([done('2026-10-12'), done('2026-10-13'), done('2026-10-15')], '2026-10-16'),
+    'kept kept frozen kept today ahead ahead'
+  )
+  assert.equal(
+    states([done('2026-10-12'), done('2026-10-16')], '2026-10-16'),
+    'kept missed missed missed kept ahead ahead',
+    'today kept shows kept; three misses in a week broke the streak, so none was frozen'
+  )
+  assert.equal(
+    states([done('2026-10-14')], '2026-10-14'),
+    'missed missed kept ahead ahead ahead ahead',
+    'misses before the streak began are missed, not frozen'
+  )
+  assert.equal(
+    states([done('2026-10-10'), done('2026-10-14')], '2026-10-14'),
+    'frozen frozen kept ahead ahead ahead ahead',
+    'freezes that bridge from last week show in this week'
+  )
+  assert.equal(states([], '2026-10-18'), 'missed missed missed missed missed missed today', 'Sunday')
+  assert.equal(states([done('2026-10-12')], '2026-10-12'), 'kept ahead ahead ahead ahead ahead ahead', 'Monday')
 
   // --- Videos, lines and words ----------------------------------------------------------------
   const { WatchLog, videoKey, VIDEOS_WITH_LINES } = await jiti.import(

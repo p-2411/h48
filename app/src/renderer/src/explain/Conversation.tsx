@@ -64,7 +64,8 @@ export function Conversation({
   thread: bridge,
   dock,
   mascotSlot,
-  free = false
+  free = false,
+  startVoice = false
 }: {
   state: ConversationState
   language: Language
@@ -74,6 +75,8 @@ export function Conversation({
   mascotSlot: HTMLElement | null
   /** A free conversation (Talk): no line, and the cards open to Duet from the start. */
   free?: boolean
+  /** Starts voice as it opens (Talk opened from the hub's mic). */
+  startVoice?: boolean
 }): React.JSX.Element {
   const live = useLiveTutor(language, free ? 'free' : 'line')
   const [draft, setDraft] = useState('')
@@ -84,6 +87,13 @@ export function Conversation({
   const cards = useCardActions(free)
   const endButton = useVoiceHandoff(live, box, bridge.voiceTurns)
   const voiceOn = isVoiceOn(live.status)
+  // Voice asked for on opening starts once (not again when StrictMode runs effects twice).
+  const voiceStarted = useRef(false)
+  useEffect(() => {
+    if (!startVoice || voiceStarted.current) return
+    voiceStarted.current = true
+    void bridge.claim().catch(() => undefined).then(() => live.start())
+  }, [startVoice, bridge, live])
 
   // The thread: what main keeps, then the voice conversation under way.
   const thread: TurnData[] = [

@@ -4,6 +4,7 @@ import '../cards/cards.css'
 import '../review/review.css'
 import '../explain/explain.css'
 import './home.css'
+import './words/words.css'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'

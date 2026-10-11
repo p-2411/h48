@@ -73,7 +73,7 @@ export function ExplainView({
     <motion.div className="explain-tab" {...fade(DURATION.fast)}>
       <div className="explain-scroll">
         <div className="explain">
-          <section className="card-box" aria-label="The line">
+          <section className="glass" aria-label="The line">
             <p className="line" lang={moment.language}>
               <LineWithQuote text={moment.line.original} quote={explanation?.notice?.quote} />
             </p>

@@ -93,7 +93,7 @@ export function OpenedCard({
         next review {new Date(card.due).toLocaleDateString()}
       </p>
       <button type="button" className="btn quiet" onClick={() => window.duet.cards.open(card.id)}>
-        Open in My cards
+        Open in Your words
       </button>
     </section>
   )

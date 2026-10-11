@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <title>Duet</title>
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP ; media-src allows playing recorded and generated audio -->
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP ; media-src allows playing recorded and generated audio; img-src allows YouTube's video thumbnails (Watching) -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob: data:"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://i.ytimg.com; media-src 'self' blob: data:"
     />
   </head>
 

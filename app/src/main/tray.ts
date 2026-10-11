@@ -29,7 +29,7 @@ export function createTray({
       { label: 'Show or hide Duet', click: toggleOverlay },
       { label: 'Script', click: showScript },
       { label: 'Explain this line', click: explainLine },
-      { label: 'My cards', click: openCards },
+      { label: 'Your words', click: openCards },
       { type: 'separator' },
       { label: 'Welcome and permissions…', click: openWelcome },
       { type: 'separator' },

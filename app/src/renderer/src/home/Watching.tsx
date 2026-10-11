@@ -5,6 +5,7 @@ import type { WatchingVideo } from '../../../shared/home'
 import { say } from '../components/errors'
 import { clock, when } from '../components/time'
 import { LoadState } from '../components/LoadState'
+import { Thumbnail } from './Thumbnail'
 import { useLoaded } from './useLoaded'
 
 const loadWatching = (): Promise<WatchingVideo[]> => window.duet.home.getWatching()
@@ -41,19 +42,13 @@ export function Watching(): React.JSX.Element {
             const title = video.title ?? `${video.siteName} video`
             return (
               <li key={video.key}>
-                <span className="home-video-title">{title}</span>
-                <span className="faint">
-                  {video.siteName}
-                  {video.position !== undefined && ` · left off at ${clock(video.position)}`} ·{' '}
-                  {when(video.lastWatched)}
-                </span>
-                <button
-                  type="button"
-                  className="btn"
-                  aria-label={`Continue ${title}`}
-                  onClick={() => open(video.key)}
-                >
-                  Continue
+                <button type="button" className="glass home-video" aria-label={`Continue ${title}`} onClick={() => open(video.key)}>
+                  <Thumbnail video={video} />
+                  <span className="home-video-title">{title}</span>
+                  <span className="faint">
+                    {video.siteName}
+                    {video.position !== undefined && ` · left off at ${clock(video.position)}`} · {when(video.lastWatched)}
+                  </span>
                 </button>
               </li>
             )

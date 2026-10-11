@@ -166,10 +166,10 @@ try {
   window.close()
   home.open()
   assert.equal(electron.windows.length, 2, 'a closed window is made again')
-  assert.deepEqual(
-    electron.windows[1].webContents.sent.at(-1),
-    ['home:place', { place: 'today' }],
-    'Today is the default'
+  assert.equal(
+    electron.windows[1].webContents.sent.find(([channel]) => channel === 'home:place'),
+    undefined,
+    'opened with no place asked for, it shows the hub'
   )
 
   // Opened again before the page has loaded (a notification clicked as Duet starts): the page is

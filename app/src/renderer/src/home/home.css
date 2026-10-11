@@ -1,172 +1,212 @@
-/* The home base: a sidebar of places on the left, the place on the right. My cards brings its own
-   layout (cards.css); the other places are a column of glass panels. */
+/* The home base: a hub of glass tiles under a top bar; a tile grows into its page (Home.tsx,
+   useSurface.ts). The window is macOS sidebar material; this dark tint over it keeps it the strip's
+   and the side panel's dark glass (on Windows and Linux the window itself is dark). */
+/* Over the tint, the faint aura of the logo's colours (as on useduet.io): blue from the top left,
+   indigo across the top, orange from the bottom right. */
 .home {
+  position: relative;
   height: 100%;
-  display: grid;
-  grid-template-columns: 188px minmax(0, 1fr);
-  background: #000;
-}
-/* The place shown, beside the sidebar. */
-.home-place {
-  min-width: 0;
-  min-height: 0;
-  height: 100%;
-}
-.home-place-page {
-  height: 100%;
-  min-height: 0;
-}
-/* A place that broke (ErrorBoundary): its message at the top, not stretched down the page. */
-.home-place-page > .notice {
-  margin: 44px 26px 0;
-}
-/* A page's title takes the focus after an in-page switch (Home.tsx); no ring for that. */
-.home-place h1:focus {
-  outline: none;
-}
-.home-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 44px 12px 16px;
-  border-right: 1px solid var(--line);
-  background: rgba(22, 22, 24, 0.68);
-  -webkit-app-region: drag;
-}
-.home-nav button {
-  -webkit-app-region: no-drag;
-  text-align: left;
-  padding: 7px 10px;
-  border-radius: 8px;
-  font-size: 14px;
-  color: var(--fg-2);
-}
-.home-nav button:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--fg);
-}
-.home-nav button[aria-current='page'] {
-  background: var(--fill);
-  color: #fff;
-  font-weight: 500;
-}
-.home-brand {
-  padding: 0 10px 12px;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  overflow: hidden;
+  background:
+    radial-gradient(60% 55% at 8% -5%, rgba(10, 132, 255, 0.2), transparent 70%),
+    radial-gradient(45% 40% at 58% -8%, rgba(94, 92, 230, 0.16), transparent 70%),
+    radial-gradient(55% 50% at 102% 105%, rgba(255, 159, 10, 0.12), transparent 70%),
+    rgba(14, 14, 16, 0.8);
 }
 
+/* The top bar: Duet, the language learnt, the gear. It sits beside the window buttons and drags
+   the window. */
+.home-bar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 0 84px;
+  -webkit-app-region: drag;
+}
+.home-bar button { -webkit-app-region: no-drag; }
+.home-brand { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.home-gear {
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  background: var(--fill);
+  color: var(--fg-2);
+}
+.home-gear:hover { color: #fff; background: rgba(118, 118, 128, 0.36); }
+
+/* The hub: Today down the left, Continue watching across the top right, Your words and Talk below. */
+.hub {
+  position: absolute;
+  inset: 52px 0 0 0;
+  padding: 0 20px 20px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.stage-open .hub, .stage-open .home-bar { visibility: hidden; }
+.tile-today { grid-row: 1 / 3; }
+.tile-watching { grid-column: 2 / 4; }
+/* Narrower windows: two columns, Today across the top. */
+@media (max-width: 900px) {
+  .hub { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: auto; align-content: start; overflow-y: auto; }
+  /* Each tile as tall as what it shows (the hub scrolls instead); Your words and Talk a little
+     taller, for their message box and Review. */
+  .hub .tile { overflow: visible; min-height: auto; }
+  .hub .tile-words, .hub .tile-talk { min-height: 240px; }
+  .tile-today { grid-row: auto; grid-column: 1 / 3; }
+  .tile-watching { grid-column: 1 / 3; }
+}
+
+/* A tile: its title (the button that opens it), then what it shows. It stays still under the
+   pointer; the whole of it opens its page. */
+.tile {
+  position: relative;
+  isolation: isolate;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+  cursor: pointer;
+  /* A step lighter than the window, lit a little more at the top, so each tile stands off it. */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035));
+  border-color: rgba(255, 255, 255, 0.11);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.06), 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+/* Each tile's own faint glow, in a corner, in a colour of its own: Today indigo, Continue watching
+   blue, Your words the orange of what needs you, Talk the logo's blue to indigo. */
+.tile::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  width: 70%;
+  height: 70%;
+  border-radius: 50%;
+  filter: blur(48px);
+  opacity: 0.35;
+  pointer-events: none;
+}
+.tile-today::before { left: -20%; top: -25%; background: #5e5ce6; opacity: 0.45; }
+.tile-watching::before { right: -25%; top: -40%; background: #0a84ff; opacity: 0.25; }
+.tile-words::before { left: -25%; bottom: -35%; background: #ff9f0a; opacity: 0.2; }
+.tile-talk::before { right: -20%; bottom: -30%; background: linear-gradient(135deg, #0a84ff, #5e5ce6); opacity: 0.35; }
+.tile-head { display: flex; align-items: center; gap: 8px; }
+.tile-title { padding: 0; text-align: left; }
+.tile-title:hover { color: var(--fg-2); }
+.tile p { margin: 0; line-height: 1.45; }
+.tile-foot { margin-top: auto; }
+.tile-error { margin-top: auto; }
+/* While its data loads: the tile's shape, softly lit. */
+.tile-waiting { flex: 1; border-radius: 12px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03)); }
+
+/* Today: a big greeting, the session, then the streak at the bottom. */
+.today-hello { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+.today-streak { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+.week { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.week-day {
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-3);
+  background: rgba(255, 255, 255, 0.08);
+}
+.week-day.kept { background: #fff; color: #111; box-shadow: 0 0 12px rgba(255, 255, 255, 0.45); }
+.week-day.frozen { background: color-mix(in srgb, var(--k-speakable) 40%, transparent); color: #fff; }
+.week-day.today { outline: 1.5px dashed rgba(255, 255, 255, 0.55); outline-offset: 2px; color: var(--fg-2); }
+.week-day.ahead { background: rgba(255, 255, 255, 0.04); }
+
+/* Continue watching: three videos side by side. */
+.tile-videos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tile-video { width: 100%; display: flex; flex-direction: column; gap: 4px; text-align: left; border-radius: 12px; }
+.tile-video:hover .thumb { filter: brightness(1.15); }
+.tile-video-title { font-size: 12px; color: var(--fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.thumb { position: relative; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; display: grid; place-items: center; background: linear-gradient(135deg, #24324a, #3d2f2a); }
+.thumb-netflix { background: linear-gradient(135deg, #2a1416, #16161a); }
+.thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.thumb-site { font-size: 12px; font-weight: 600; color: var(--text-2); }
+
+/* Your words: the three counts that matter, a bar of them, Review. */
+.badge-due { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; color: var(--k-known); background: color-mix(in srgb, var(--k-known) 18%, transparent); }
+.rungs { margin: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.rung { display: flex; flex-direction: column; }
+.rung dd { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.rung dt { font-size: 12px; color: var(--text-2); }
+.ladder-bar { display: flex; gap: 2px; height: 8px; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, 0.06); }
+.ladder-bar span { display: block; min-width: 0; background: var(--fg); }
+.ladder-bar span[data-k='known'] { background: var(--k-known); }
+.ladder-bar span[data-k='speakable'] { background: var(--k-speakable); }
+.ladder-bar span[data-k='usable'] { background: var(--k-usable); }
+.tile-recent { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 16px; overflow: hidden; max-height: 4.6em; }
+.tile-recent .w { overflow-wrap: anywhere; }
+
+/* Talk to Duet: who, a nudge, and a message box at the bottom. */
+.talk-tile-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.talk-tile-who .duet-mascot { flex: none; }
+.tile-composer { margin-top: auto; display: flex; align-items: center; gap: 6px; padding: 4px 4px 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); cursor: text; }
+.tile-composer input { flex: 1; min-width: 0; padding: 4px 0; border: 0; background: none; color: var(--fg); font: inherit; font-size: 13px; outline: none; }
+.tile-composer input::placeholder { color: var(--text-3); }
+.tile-mic, .tile-send { flex: none; height: 28px; border-radius: 14px; display: grid; place-items: center; font-size: 12px; font-weight: 500; }
+.tile-mic { width: 28px; background: var(--fill); }
+.tile-send { padding: 0 11px; background: #fff; color: #111; }
+.tile-composer:focus-within { border-color: rgba(255, 255, 255, 0.4); }
+
+/* The surface a tile grows into and shrinks back from: solid, so the tiles never show through it
+   on the way (useSurface moves and scales it onto its tile, and sets when it shows). */
+.home-surface { position: absolute; inset: 0; z-index: 5; background: #1d1d20; opacity: 0; pointer-events: none; transform-origin: 0 0; will-change: transform, opacity; }
+
+/* An open page, over the hub: ‹ Home beside the window buttons; the page's top drags the window. */
+.home-open { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; min-height: 0; }
+.home-open::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 52px; -webkit-app-region: drag; }
+.home-back { position: absolute; z-index: 1; top: 11px; left: 84px; -webkit-app-region: no-drag; }
+.home-open > .notice { margin: 64px 26px 0; }
+
+/* A page: a column under the top bar that scrolls on its own. */
 .home-page {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 22px 26px 26px;
+  padding: 58px 26px 26px;
 }
-.home-page h1 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-.home-page .card-box {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-start;
-}
-.home-page .card-box > p {
-  margin: 0;
-}
-.home-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
-}
-.home-number {
-  font-size: 34px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
+.home-page h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
+.home-page h1:focus { outline: none; }
+.home-page .glass > p { margin: 0; }
+.home-number { font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
 
-.home-videos {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.home-videos li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto auto;
-  column-gap: 14px;
-  align-items: center;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: rgba(22, 22, 24, 0.68);
-}
-.home-videos .btn {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-}
-.home-video-title {
-  font-weight: 500;
-  min-width: 0;
-}
-
-.home-settings {
-  max-width: 640px;
-}
-.home-settings .card-box {
-  align-items: stretch;
-}
-.home-settings .label {
-  margin: 0;
-}
-.home-settings .btn {
-  align-self: flex-start;
-}
-
-/* The daily session (daily/): one step at a time, in a column (the steps: components/challenges). */
-.daily { display: flex; flex-direction: column; gap: 12px; max-width: 640px; }
+/* Today's session: one step at a time, in a centred column (the steps: components/challenges). */
+.today-page { align-items: center; }
+.today-page > * { width: 100%; max-width: 640px; }
+.daily { display: flex; flex-direction: column; gap: 12px; }
 /* It takes the focus at each new step (for the keyboard and screen readers); no ring around it all. */
 .daily:focus { outline: none; }
 .daily .review { align-self: stretch; max-width: none; }
-/* Talk: the conversation scrolls, the message box stays at the bottom (explain.css draws both). */
-.home-talk {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-.home-talk-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-/* Talk's title, then the mascot beside it; New conversation at the far end. */
-.home-talk-head .btn {
-  margin-left: auto;
-}
 
-/* Words: a tab for each rung, with its count in the rung's colour, then that rung's words. */
-.words-rungs { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
-.words-rung { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); color: var(--text-2); font-size: 13px; text-align: left; }
-.words-rung[aria-selected='true'] { border-color: var(--fg); color: var(--fg); }
-.words-rung .words-count { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; --c: var(--fg); color: var(--c); }
-.words-rung[data-k='encountered'] .words-count { --c: var(--k-encountered); }
-.words-rung[data-k='known'] .words-count { --c: var(--k-known); }
-.words-rung[data-k='speakable'] .words-count { --c: var(--k-speakable); }
-.words-rung[data-k='usable'] .words-count { --c: var(--k-usable); }
-.words-rung[data-k='ignored'] .words-count { --c: var(--k-ignored); }
-.home-words { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.home-words li { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto; align-items: baseline; column-gap: 12px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); }
-.home-words .w { font-size: 17px; overflow-wrap: anywhere; }
-.home-words .faint { overflow-wrap: anywhere; }
-.home-words .btn { grid-column: 3; }
+/* Watching: a grid of videos. */
+.home-videos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.home-video { width: 100%; padding: 10px; gap: 6px; text-align: left; }
+.home-video-title { font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+
+/* Settings: grouped lists, each group's name above it, like System Settings. */
+.home-settings { align-items: center; }
+.home-settings > * { width: 100%; max-width: 600px; }
+.settings-group { display: flex; flex-direction: column; gap: 6px; }
+.settings-group > .label { padding-left: 16px; }
+.settings-group .glass { align-items: stretch; gap: 12px; }
+.settings-group .btn { align-self: flex-start; }
+
+/* Talk: the conversation in a centred column, the message box at the bottom (explain.css draws
+   both); the mascot and New conversation at the top. */
+.home-talk { align-items: center; padding-bottom: 0; overflow: hidden; }
+.home-talk > * { width: 100%; max-width: 640px; }
+.home-talk-head { display: flex; align-items: center; gap: 12px; }
+.home-talk-head .btn { margin-left: auto; }

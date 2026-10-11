@@ -29,14 +29,14 @@ function UndoRating({ busy, onUndo }: { busy: boolean; onUndo: () => void }): Re
 function Prompt({ card }: { card: Card }): React.JSX.Element {
   if (card.type === 'use')
     return (
-      <div className="card-box prompt">
+      <div className="glass prompt">
         <span className="label">What would you say?</span>
         {card.situation && <p>{card.situation}</p>}
         <p className="big">{card.meaning}</p>
       </div>
     )
   return (
-    <div className="card-box prompt">
+    <div className="glass prompt">
       <span className="label">What does it mean here?</span>
       <p className="big" lang={card.language}>
         {card.expression}
@@ -48,7 +48,7 @@ function Prompt({ card }: { card: Card }): React.JSX.Element {
 
 function Answer({ card, onReplay }: { card: Card; onReplay: () => void }): React.JSX.Element {
   return (
-    <div className="card-box">
+    <div className="glass">
       {card.type === 'use' ? (
         <p className="big" lang={card.language}>
           {card.expression}
@@ -98,7 +98,7 @@ function Scene({ card, onReplay }: { card: Card; onReplay: () => void }): React.
   )
 }
 
-/** Review, until the learner ends it (`onEnd`: back to My cards, or on with the daily session). In
+/** Review, until the learner ends it (`onEnd`: back to Your words, or on with the daily session). In
  * the daily session, `limit` caps it: after that many ratings it moves on with `onEnd`; once nothing
  * is left, it shows Continue. */
 export function Review({ onEnd, limit }: { onEnd: () => void; limit?: number }): React.JSX.Element {
@@ -223,7 +223,7 @@ export function Review({ onEnd, limit }: { onEnd: () => void; limit?: number }):
           </div>
         </>
       ) : (
-        <div className="card-box">
+        <div className="glass">
           {session.noCards ? (
             <p>No cards yet. Save a line from the strip or from Explain.</p>
           ) : (
@@ -242,7 +242,7 @@ export function Review({ onEnd, limit }: { onEnd: () => void; limit?: number }):
               </button>
             ) : (
               <button type="button" className="btn" onClick={onEnd}>
-                Open My cards
+                Back to your words
               </button>
             )}
           </div>

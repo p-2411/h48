@@ -1,7 +1,8 @@
 # The home base, redesigned
 
 Status: agreed in chat on 2026-10-12 (layout, tiles, pages and motion chosen from mockups); the
-choices marked **(proposed)** were made while writing and are for review.
+choices made while writing and building were taken on the owner's "go for it" and are listed in the
+report.
 
 ## Intent
 
@@ -40,11 +41,11 @@ Four glass tiles in a grid (three columns: 1.2fr 1fr 1fr; two rows):
 | Tile | Where | Shows | Grows into |
 |---|---|---|---|
 | **Today** | left column, both rows | A greeting by time of day; what today's session holds ("Your 6 cards, a line to say back, and one challenge"); **Start today's session** (or **Go again** when kept); the streak: days, and this week as seven day dots (kept white, frozen blue, missed dim, today ringed), freezes left | Today |
-| **Continue watching** | top row, two right columns | The last three videos: thumbnail, a bar for where the learner left off, title | Watching |
-| **Your words** | bottom middle | The counts on the ladder (Known, You can say it, You can use it) in the rung colours, a bar with one segment per rung, cards due (orange badge), **Review N** | Your words |
+| **Continue watching** | top row, two right columns | The last three videos: thumbnail, title, where the learner left off (no progress bar: Duet doesn't know a video's length) | Watching |
+| **Your words** | bottom middle | The counts on the ladder (Known, You can say it, You can use it) in the rung colours, a bar with one segment per rung, the words met most recently glowing in their rung colours, cards due (orange badge), **Review N** | Your words |
 | **Talk to Duet** | bottom right | The mascot, one nudge from Duet, a message box with the microphone | Talk |
 
-- **The nudge (proposed):** "Want to try *word* in a sentence?" for a word the learner can say but
+- **The nudge:** "Want to try *word* in a sentence?" for a word the learner can say but
   not use yet (the most recently seen one); otherwise "Ask anything, or just chat".
 - **Sending from the Talk tile** grows it into Talk with the message sent; the microphone grows it
   into Talk with voice on.
@@ -61,9 +62,14 @@ Four glass tiles in a grid (three columns: 1.2fr 1fr 1fr; two rows):
 
 ## 3. The pages
 
-Every page has **‹ Home** at the top left (beside the window buttons) and closes with Esc.
+Every page has **‹ Home** at the top left (beside the window buttons) and closes with Esc, unless
+the Esc was for something else (a menu, the shortcut recorder, a box with words in it). Opening the
+window from the Dock, the menu bar or at launch shows the hub; a place asked for (the strip's ⚙, a
+card's "Open in Your words", the daily reminder) grows out of its tile. A page that opens another
+(Practise with Duet opens Talk) takes its place, and then shrinks back into its own tile.
 
-- **Today:** the daily session, one step at a time, with step bars at the top (as built in
+- **Today:** the page *is* the daily session (Start on the tile and a click on the tile both open
+  it), one step at a time, with step bars at the top (as built in
   `home/daily`, restyled); the end screen shows "done for today" and the streak.
 - **Watching:** a grid of videos (thumbnail, title, site, where you left off, when). A click reopens
   the video at that point, as today.
@@ -76,6 +82,9 @@ Every page has **‹ Home** at the top left (beside the window buttons) and clos
     review history (what CardView shows today); **Ignore** / **Bring back**; **Practise with Duet**
     (opens Talk about this word).
   - A card whose word isn't on the ladder (a phrase card) is listed as its own row, by its card.
+  - A card in another language than the one learnt now stays in the list, as a card row labelled
+    with its language ("Spanish card"); it still comes up in Review, and has no Practise with Duet
+    (Talk is in the language learnt now).
   - **Review** at the top runs the review session in the page; its end comes back to the list.
 - **Talk:** the conversation in one centred column (up to 640 px), the mascot at the top, the
   composer at the bottom (as built in `TalkPage` and `explain/`, restyled).
@@ -93,13 +102,13 @@ Every page has **‹ Home** at the top left (beside the window buttons) and clos
 - Durations and easing come from `components/motion` (`slow` for the surface, `fast` for the
   content fades); the surface uses one spring with no visible overshoot.
 - The gear grows into Settings the same way.
-- Tiles lift by 1 px on hover.
+- Tiles stay still under the pointer: no lift, no lit border (the pointer cursor says they open).
 - **Reduced motion:** the page and the hub cross-fade; nothing grows or shrinks.
 - Opening a page puts the focus on its title; closing puts it back on the tile it came from.
 
 ## 5. The look, shared by every window
 
-- **Pill buttons everywhere (proposed):** `.btn` becomes fully round (`999px`) in the home base, the
+- **Pill buttons everywhere:** `.btn` becomes fully round (`999px`) in the home base, the
   side panel and welcome, as on the strip; sizes stay.
 - **The glass panel** (`.glass`): the panel style My cards uses today (18 px corners, 1 px line,
   `rgba(22,22,24,0.68)`, blur) moves to `styles/ui.css` and is used by the tiles and by every panel on
@@ -114,7 +123,7 @@ Every page has **‹ Home** at the top left (beside the window buttons) and clos
 - **Today:** `HomeToday` gains `week`: this study week's seven days, each `kept`, `frozen`,
   `missed`, `today` or `ahead` (worked out from the days store with the streak's own rules).
 - **Continue watching:** the last three `WatchingVideo`s (already there).
-  - **Thumbnails (proposed):** YouTube's (`https://i.ytimg.com/vi/<id>/mqdefault.jpg`); the home
+  - **Thumbnails:** YouTube's (`https://i.ytimg.com/vi/<id>/mqdefault.jpg`); the home
     window's CSP allows that one host for images. Netflix has no public thumbnail: its videos show
     a dark tile with the title and "Netflix".
 - **Your words:** `knowledge.summary(language)` for the counts and the words, joined with the cards

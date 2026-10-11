@@ -79,7 +79,7 @@ export function CardView({
 
   return (
     <section className="detail">
-      <div className="card-box">
+      <div className="glass">
         <p className="faint">
           {card.type === 'understand' ? 'Understand' : 'Use it'} · {languageName(card.language)} ·{' '}
           {stateLabel(card)}

@@ -3,12 +3,12 @@
 // cards themselves are src/main/cards, the videos watched src/main/watchlog.
 //
 // IPC (the page reaches these through window.duet.home in src/preload/home.ts):
-//   home:get-today     → HomeToday: the streak and the cards to review now
+//   home:get-today     → HomeToday: the streak, this week's days and the cards to review now
 //   home:get-watching  → WatchingVideo[]: videos watched, the last first
 //   home:open-video    opens a video from Watching in the browser where the learner left off (or
 //                      says why it can't)
 //   home:open-welcome  opens the welcome window again (Settings › permissions)
-//   home:place         ← which place to show (opening Home on Cards, Settings…)
+//   home:place         ← which place to show (opening Home on Your words, Settings…)
 //   cards:show         ← a card to show in My cards
 //   cards:changed      ← cards changed (saved, edited, reviewed), so the page reloads them
 //   duet:settings      ← the settings changed (from anywhere), so Settings shows them
@@ -27,7 +27,7 @@ const VIDEOS_SHOWN = 50
 export class Home {
   private window?: BrowserWindow
   // The place to show once the page has loaded (it can't hear one before).
-  private pending?: { place: HomePlace; cardId?: string }
+  private pending?: { place?: HomePlace; cardId?: string }
 
   constructor({
     log,
@@ -47,7 +47,12 @@ export class Home {
       })
     }
     handle('home:get-today', (): HomeToday => {
-      return { streak: log.streak(), due: reviewableNow(cards.counts()) }
+      return {
+        streak: log.streak(),
+        week: log.week(),
+        hasWatched: log.recentVideos(1).length > 0,
+        due: reviewableNow(cards.counts())
+      }
     })
     handle('home:get-watching', (): WatchingVideo[] =>
       log
@@ -69,8 +74,9 @@ export class Home {
     settings.on('change', (current: OverlaySettings) => this.send('duet:settings', current))
   }
 
-  /** Shows the home base on a place (Today by default), and on one card when given. */
-  open(place: HomePlace = 'today', cardId?: string): void {
+  /** Shows the home base: on the hub as it was left, or on a place when given (it grows out of its
+   * tile), and on one card when given. */
+  open(place?: HomePlace, cardId?: string): void {
     if (!this.window || this.window.isDestroyed()) {
       const window = (this.window = createHomeWindow())
       this.pending = { place, cardId }
@@ -87,7 +93,7 @@ export class Home {
     }
     this.window.show()
     this.window.focus()
-    if (this.pending) this.pending = { place, cardId }
+    if (this.pending) this.pending = { place: place ?? this.pending.place, cardId: cardId ?? this.pending.cardId }
     else this.show(place, cardId)
   }
 
@@ -96,8 +102,8 @@ export class Home {
     return isFrom(this.window, sender)
   }
 
-  private show(place: HomePlace, cardId?: string): void {
-    this.send('home:place', { place })
+  private show(place?: HomePlace, cardId?: string): void {
+    if (place) this.send('home:place', { place })
     if (cardId) this.send('cards:show', cardId)
   }
 

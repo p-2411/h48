@@ -95,7 +95,7 @@ export function DailySession({ onClose }: { onClose: () => void }): React.JSX.El
         {step === 'challenge' && plan.challenge?.kind === 'produce' && <Produce challenge={plan.challenge} api={window.duet.daily} onNext={next} />}
       </ErrorBoundary>
       {step === 'done' && (
-        <section className="card-box" aria-label="End of today’s session">
+        <section className="glass" aria-label="End of today’s session">
           <span className="label">{!result ? 'Today’s session' : result.kept ? 'Done for today' : 'Session over'}</span>
           {result && (
             <p className="home-number">
@@ -122,7 +122,7 @@ export function DailySession({ onClose }: { onClose: () => void }): React.JSX.El
             </p>
           )}
           <button type="button" className="btn primary" onClick={onClose}>
-            Back to Today
+            Back to Home
           </button>
         </section>
       )}

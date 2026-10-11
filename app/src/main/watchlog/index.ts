@@ -6,7 +6,7 @@ import type { WatchedVideoSummary } from '../../shared/home'
 import type { Language, OverlayLine, ProcessedLine, Site } from '../../shared/types'
 import { database, transaction } from '../store/db'
 import { studyDay } from '../study-day'
-import { streak, type DayRecord, type Streak } from './streak'
+import { streak, week, type DayRecord, type Streak, type WeekDay } from './streak'
 
 // Lines are kept for this many of the most recently watched videos.
 export const VIDEOS_WITH_LINES = 30
@@ -305,6 +305,16 @@ export class WatchLog {
   /** The streak as of `now`, counting watch time not yet written. Reads the last 400 days on
    * record, so a streak counts up to about 400 days at most. */
   streak(now = Date.now()): Streak {
+    return streak(this.days(now), studyDay(now))
+  }
+
+  /** This week's days as of `now`, for the day dots (kept, frozen, missed, today, ahead). */
+  week(now = Date.now()): WeekDay[] {
+    return week(this.days(now), studyDay(now))
+  }
+
+  /** The last 400 days on record, counting watch time not yet written. */
+  private days(now: number): DayRecord[] {
     this.flush(now)
     const rows = database()
       .prepare(
@@ -316,13 +326,12 @@ export class WatchLog {
       session_done: number
       checkpoints_done: number
     }[]
-    const records: DayRecord[] = rows.map((row) => ({
+    return rows.map((row) => ({
       day: row.day,
       watchedMs: row.watched_ms,
       sessionDone: row.session_done === 1,
       checkpoints: row.checkpoints_done
     }))
-    return streak(records, studyDay(now))
   }
 
   private ensureDay(day: string): void {

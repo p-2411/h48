@@ -103,7 +103,7 @@ export function Overlay(): React.JSX.Element {
         Object.fromEntries(Object.entries(now).filter(([name]) => name !== key(pair)))
       )
       setToast({
-        text: 'Removed from My cards',
+        text: 'Removed from Your words',
         undo: { kind: 'restore', cardId: existing, key: key(pair) }
       })
       return

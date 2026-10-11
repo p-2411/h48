@@ -7,9 +7,16 @@ export type HomePlace = 'today' | 'talk' | 'watching' | 'words' | 'cards' | 'rev
 /** The streak: days kept in a row, whether today is kept yet, and the freezes left this week. */
 export type Streak = { days: number; keptToday: boolean; freezesLeft: number }
 
-/** Today: the streak and how many cards can be reviewed now. */
+/** A day of this week, for the day dots: kept, frozen (a miss a freeze covered), missed, today (not
+ * kept yet) or ahead. */
+export type WeekDay = { day: string; state: 'kept' | 'frozen' | 'missed' | 'today' | 'ahead' }
+
+/** Today: the streak, this week's days, and how many cards can be reviewed now. */
 export type HomeToday = {
   streak: Streak
+  week: WeekDay[]
+  /** Whether anything was watched with Duet yet (the session builds itself from what was). */
+  hasWatched: boolean
   /** Cards due now, plus new ones still allowed today. */
   due: number
 }

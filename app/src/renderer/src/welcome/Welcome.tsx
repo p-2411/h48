@@ -34,7 +34,7 @@ const AUDIO: Record<AudioPermission, string> = {
 
 function Check({ on, title, hint, state, children }: { on: boolean; title: string; hint: string; state: string; children?: React.ReactNode }): React.JSX.Element {
   return (
-    <div className="check card-box">
+    <div className="check glass">
       <div className="row">
         <i className={`tick${on ? ' on' : ''}`} aria-hidden="true">
           {on && <Icon name="check" size={12} />}
@@ -164,7 +164,7 @@ export function Welcome(): React.JSX.Element {
                 </button>
               ))}
             </div>
-            <div className="sample card-box">
+            <div className="sample glass">
               <p className="mix" lang={settings.level === 5 ? language : undefined}>
                 <Words tokens={mixedLine(sample, settings.level)} />
               </p>
@@ -214,7 +214,7 @@ export function Welcome(): React.JSX.Element {
         {STEPS[step] === 'Colours' && (
           <>
             <h2>Each colour is how well you know the word</h2>
-            <div className="sample card-box">
+            <div className="sample glass">
               <p className="mix">
                 <Words tokens={mixedLine(sample, 4)} state={demoState} />
               </p>

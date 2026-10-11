@@ -69,43 +69,53 @@ export function SettingsPage(): React.JSX.Element {
         <LoadState loaded={false} error={error} reload={load} />
       ) : (
         <>
-          <section className="card-box" aria-labelledby="settings-learning">
+          <section className="settings-group" aria-labelledby="settings-learning">
             <h2 className="label" id="settings-learning">
               Learning
             </h2>
-            <LanguagePicker settings={settings} />
-            <span className="muted">How much {languageName(settings.language)} in each line</span>
-            <LevelPicker settings={settings} />
+            <div className="glass">
+              <LanguagePicker settings={settings} />
+              <span className="muted">How much {languageName(settings.language)} in each line</span>
+              <LevelPicker settings={settings} />
+            </div>
           </section>
-          <section className="card-box" aria-labelledby="settings-watching">
+          <section className="settings-group" aria-labelledby="settings-watching">
             <h2 className="label" id="settings-watching">
               While watching
             </h2>
-            <QuickToggles settings={settings} />
+            <div className="glass">
+              <QuickToggles settings={settings} />
+            </div>
           </section>
-          <section className="card-box" aria-labelledby="settings-reminder">
+          <section className="settings-group" aria-labelledby="settings-reminder">
             <h2 className="label" id="settings-reminder">
               Daily reminder
             </h2>
-            <ReminderSetting time={settings.reminder} />
+            <div className="glass">
+              <ReminderSetting time={settings.reminder} />
+            </div>
           </section>
-          <section className="card-box" aria-labelledby="settings-keys">
+          <section className="settings-group" aria-labelledby="settings-keys">
             <h2 className="label" id="settings-keys">
               Keys
             </h2>
-            <ShortcutRecorder keys={settings.shortcut} />
-            <ShortcutRecorder keys={settings.talkShortcut} kind="talk" />
+            <div className="glass">
+              <ShortcutRecorder keys={settings.shortcut} />
+              <ShortcutRecorder keys={settings.talkShortcut} kind="talk" />
+            </div>
           </section>
-          <section className="card-box" aria-labelledby="settings-permissions">
+          <section className="settings-group" aria-labelledby="settings-permissions">
             <h2 className="label" id="settings-permissions">
               Permissions
             </h2>
-            <p className="muted">
-              Duet needs Accessibility to read captions, and System Audio Recording to hear videos.
-            </p>
-            <button type="button" className="btn" onClick={() => window.duet.home.openWelcome()}>
-              Welcome and permissions…
-            </button>
+            <div className="glass">
+              <p className="muted">
+                Duet needs Accessibility to read captions, and System Audio Recording to hear videos.
+              </p>
+              <button type="button" className="btn" onClick={() => window.duet.home.openWelcome()}>
+                Welcome and permissions…
+              </button>
+            </div>
           </section>
         </>
       )}

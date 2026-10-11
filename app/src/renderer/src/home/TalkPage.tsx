@@ -1,7 +1,8 @@
 // Talk: a free conversation with Duet in the language being learnt, typed or spoken, with no video
 // line; the learner's saved cards are open to Duet. Coming back to Talk goes on with the conversation;
 // New conversation starts over. The conversation itself is Explain's (explain/Conversation.tsx).
-import { useCallback, useEffect, useMemo, useState } from 'react'
+// Opened from the hub's Talk tile, it sends the message typed there, or starts voice.
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ThreadState } from '../../../shared/explain'
 import { languageName, type Language } from '../../../shared/languages'
 import { say } from '../components/errors'
@@ -9,8 +10,9 @@ import { ErrorBoundary } from '../components/ErrorBoundary'
 import { Conversation } from '../explain/Conversation'
 import type { ThreadBridge } from '../explain/thread'
 import { LoadState } from '../components/LoadState'
+import type { TalkStart } from './tiles/TalkTile'
 
-export function TalkPage(): React.JSX.Element {
+export function TalkPage({ start }: { start?: TalkStart }): React.JSX.Element {
   const [thread, setThread] = useState<ThreadState>()
   const [language, setLanguage] = useState<Language>()
   // Opening Talk failed (LoadState shows it, with Try again), or a message or New conversation did.
@@ -33,14 +35,19 @@ export function TalkPage(): React.JSX.Element {
     }),
     [actionFailed]
   )
+  // The message typed on the hub's tile, sent once Talk is open (once, though StrictMode opens twice).
+  const first = useRef(start?.first)
   // Talk on show: the conversation is this window's again, in the language now set.
   const open = useCallback(() => {
     Promise.all([window.duet.talk.open(), window.duet.getState()]).then(([next, state]) => {
       setThread(next)
       setLanguage(state.settings.language)
       setError(undefined)
+      const text = first.current
+      first.current = undefined
+      if (text) bridge.ask(text)
     }, failed)
-  }, [failed])
+  }, [failed, bridge])
   useEffect(() => {
     open()
     return window.duet.talk.onState(setThread)
@@ -88,7 +95,7 @@ export function TalkPage(): React.JSX.Element {
               </p>
             )}
             <ErrorBoundary key={round} what="The conversation">
-              <Conversation state={thread} language={language} thread={bridge} dock={dock} mascotSlot={mascotSlot} free />
+              <Conversation state={thread} language={language} thread={bridge} dock={dock} mascotSlot={mascotSlot} free startVoice={start?.voice} />
             </ErrorBoundary>
           </>
         )}

@@ -1,87 +1,170 @@
-// The home base: a sidebar of places and the place shown (Talk is a free conversation with Duet). Main can ask for a place (Home opened from
-// the Dock, the menu bar, the strip's ⚙, a card's "Open in My cards"); Review shows inside Cards.
-import { motion } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
+// The home base: a hub of glass tiles (Today, Continue watching, Your words, Talk to Duet) under a
+// top bar with the gear. A tile grows into its page and shrinks back into it (useSurface); ‹ Home or
+// Esc goes back. Main can ask for a place (Home opened from the Dock, the menu bar, the strip's ⚙,
+// a card's "Open in Your words"): it grows out of its tile the same way. Spec:
+// docs/superpowers/specs/2026-10-12-home-redesign-design.md.
+import { AnimatePresence, motion } from 'motion/react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { HomePlace } from '../../../shared/home'
-import { MyCards } from '../cards/MyCards'
+import { languageName } from '../../../shared/languages'
 import { ErrorBoundary } from '../components/ErrorBoundary'
+import { Icon } from '../components/Icon'
 import { DURATION, fadeUp } from '../components/motion'
-import { Review } from '../review/Review'
+import { useSettings } from '../components/useSettings'
 import { SettingsPage } from './SettingsPage'
 import { TalkPage } from './TalkPage'
+import { TalkTile, type TalkStart } from './tiles/TalkTile'
+import { TodayTile } from './tiles/TodayTile'
+import { WatchingTile } from './tiles/WatchingTile'
+import { WordsTile } from './tiles/WordsTile'
 import { Today } from './Today'
+import { useSurface } from './useSurface'
 import { Watching } from './Watching'
-import { Words } from './Words'
+import { YourWords } from './words/YourWords'
 
-const PLACES: { place: Exclude<HomePlace, 'review'>; label: string }[] = [
-  { place: 'today', label: 'Today' },
-  { place: 'talk', label: 'Talk' },
-  { place: 'watching', label: 'Watching' },
-  { place: 'words', label: 'Words' },
-  { place: 'cards', label: 'Cards' },
-  { place: 'settings', label: 'Settings' }
-]
+type Page = 'today' | 'watching' | 'words' | 'talk' | 'settings'
+/** A page open over the hub: Your words can open straight into Review, Talk with a first message or
+ * with voice on. */
+type Opened = { page: Page; review?: boolean; talk?: TalkStart }
 
-function Place({
-  place,
-  onPlace
+/** The page main asks for, by its older place names (Cards and Words are both Your words now). */
+function pageFor(place: HomePlace): Opened {
+  if (place === 'cards' || place === 'words') return { page: 'words' }
+  if (place === 'review') return { page: 'words', review: true }
+  return { page: place }
+}
+
+/** The element a page grows out of: its tile, or the gear for Settings. */
+function originOf(root: HTMLElement, page: Page): HTMLElement | null {
+  return root.querySelector<HTMLElement>(page === 'settings' ? '.home-gear' : `[data-tile="${page}"]`)
+}
+
+// Esc goes back to the hub, unless it's for something else: a popover, or a box with words in it.
+function escapeIsFree(event: KeyboardEvent): boolean {
+  if (event.defaultPrevented) return false
+  const target = event.target as HTMLElement | null
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return !target.value
+  return true
+}
+
+function OpenPage({
+  opened,
+  onClose,
+  onOpen
 }: {
-  place: HomePlace
-  onPlace: (place: HomePlace) => void
+  opened: Opened
+  onClose: () => void
+  onOpen: (opened: Opened) => void
 }): React.JSX.Element {
-  if (place === 'today') return <Today onReview={() => onPlace('review')} />
-  if (place === 'talk') return <TalkPage />
-  if (place === 'watching') return <Watching />
-  if (place === 'words') return <Words />
-  if (place === 'cards') return <MyCards onReview={() => onPlace('review')} />
-  if (place === 'settings') return <SettingsPage />
-  return (
-    <main className="home-page">
-      <h1>Review</h1>
-      <Review onEnd={() => onPlace('cards')} />
-    </main>
-  )
+  switch (opened.page) {
+    case 'today':
+      return <Today onClose={onClose} />
+    case 'watching':
+      return <Watching />
+    case 'words':
+      return (
+        <YourWords
+          review={opened.review}
+          onReviewEnd={() => onOpen({ page: 'words' })}
+          onPractise={(word) => onOpen({ page: 'talk', talk: { first: `Help me practise “${word}”.` } })}
+        />
+      )
+    case 'talk':
+      return <TalkPage start={opened.talk} />
+    case 'settings':
+      return <SettingsPage />
+  }
 }
 
 export function Home(): React.JSX.Element {
-  const [place, setPlace] = useState<HomePlace>('today')
-  useEffect(() => window.duet.home.onPlace((message) => setPlace(message.place)), [])
-  // A button inside a page that switched places (Review on Today, End session) is gone, and the focus
-  // with it: the new page's title takes it, so the keyboard and a screen reader carry on from there.
-  const content = useRef<HTMLDivElement>(null)
+  const root = useRef<HTMLDivElement>(null)
+  const surface = useRef<HTMLDivElement>(null)
+  const page = useRef<HTMLDivElement>(null)
+  const { stage, grow, shrink, from, retarget } = useSurface(root, surface, page)
+  const [opened, setOpened] = useState<Opened>()
+  const language = useSettings()?.language
+  // What's open, for the listeners below (they're set up once).
+  const openedNow = useRef(opened)
   useEffect(() => {
-    if (document.activeElement && document.activeElement !== document.body) return
-    const title = content.current?.querySelector<HTMLElement>('h1')
+    openedNow.current = opened
+  }, [opened])
+
+  /** Opens a page: grown out of `origin` (its tile, by default), or, with a page already open, in its
+   * place (it then shrinks back into its own tile). */
+  const open = useCallback(
+    (next: Opened, origin?: HTMLElement | null) => {
+      const element = origin ?? (root.current && originOf(root.current, next.page))
+      if (openedNow.current) {
+        if (element) retarget(element)
+        return setOpened(next)
+      }
+      if (element) void grow(element, () => setOpened(next))
+      else setOpened(next)
+    },
+    [grow, retarget]
+  )
+  const close = useCallback(() => {
+    void shrink(() => setOpened(undefined)).then(() => {
+      // Back to where the page came from, for the keyboard and screen readers.
+      const origin = from.current
+      ;(origin?.querySelector<HTMLElement>('.tile-title') ?? origin)?.focus()
+    })
+  }, [shrink, from])
+
+  useEffect(() => window.duet.home.onPlace((message) => open(pageFor(message.place))), [open])
+  useEffect(() => {
+    // Decided once every other key handler has had its turn (the shortcut recorder, a menu), so Esc
+    // that one of them used isn't also taken as Back.
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return
+      window.setTimeout(() => {
+        if (openedNow.current && escapeIsFree(event)) close()
+      })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [close])
+  // The page's title takes the focus when it opens, or when another page takes its place.
+  const openPage = opened?.page
+  useEffect(() => {
+    if (stage !== 'open' || !openPage) return
+    const title = page.current?.querySelector<HTMLElement>('h1')
     if (!title) return
     title.tabIndex = -1
     title.focus()
-  }, [place])
-  // Review is part of Cards in the sidebar.
-  const section = place === 'review' ? 'cards' : place
+  }, [stage, openPage])
+
+  const hidden = stage === 'open'
   return (
-    <div className="home">
-      <nav className="home-nav" aria-label="Duet">
+    <div className={`home stage-${stage}`} ref={root}>
+      <header className="home-bar" inert={hidden}>
         <span className="home-brand">Duet</span>
-        {PLACES.map((item) => (
-          <button
-            key={item.place}
-            type="button"
-            aria-current={section === item.place ? 'page' : undefined}
-            onClick={() => setPlace(item.place)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
-      {/* Keyed by place, so a place that broke can be left and come back fresh. */}
-      <div className="home-place" ref={content}>
-        {/* Each place fades and rises in as it's switched to. */}
-        <motion.div key={place} className="home-place-page" {...fadeUp(8, DURATION.slow)}>
-          <ErrorBoundary what="This page">
-            <Place place={place} onPlace={setPlace} />
-          </ErrorBoundary>
-        </motion.div>
+        {language && <span className="faint">{languageName(language)}</span>}
+        <span className="spacer" />
+        <button type="button" className="home-gear" aria-label="Settings" onClick={(event) => open({ page: 'settings' }, event.currentTarget)}>
+          <Icon name="settings" size={15} />
+        </button>
+      </header>
+      <div className="hub" inert={hidden}>
+        <TodayTile onOpen={(tile) => open({ page: 'today' }, tile)} />
+        <WatchingTile onOpen={(tile) => open({ page: 'watching' }, tile)} />
+        <WordsTile onOpen={(tile) => open({ page: 'words' }, tile)} onReview={(tile) => open({ page: 'words', review: true }, tile)} />
+        <TalkTile onOpen={(tile, start) => open({ page: 'talk', talk: start }, tile)} />
       </div>
+      {stage !== 'closed' && <div className="home-surface" ref={surface} aria-hidden="true" />}
+      <AnimatePresence>
+        {opened && (
+          // Keyed by page, so a page that broke can be left and come back fresh.
+          <motion.div key={opened.page} className="home-open" ref={page} {...fadeUp(8, DURATION.slow)}>
+            <button type="button" className="btn home-back" onClick={close}>
+              ‹ Home
+            </button>
+            <ErrorBoundary what="This page">
+              <OpenPage opened={opened} onClose={close} onOpen={open} />
+            </ErrorBoundary>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
