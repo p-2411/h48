@@ -2,7 +2,8 @@
 // menu). A place in the home base; its Review button opens Review there.
 import { useState } from 'react'
 import { say } from '../components/errors'
-import { useDue } from '../components/useDue'
+import type { HomeToday } from '../../../shared/home'
+import { useLoaded } from '../home/useLoaded'
 import { BackupMenu, type Notice } from './BackupMenu'
 import { CardList } from './CardList'
 import { CardView } from './CardView'
@@ -10,8 +11,11 @@ import { useCardLibrary } from './useCardLibrary'
 
 const UNDO_MS = 8000
 
-export function MyCards(): React.JSX.Element {
-  const due = useDue()
+const loadToday = (): Promise<HomeToday> => window.duet.home.getToday()
+
+/** `onReview` opens Review (in the home base, inside Cards). */
+export function MyCards({ onReview }: { onReview: () => void }): React.JSX.Element {
+  const due = useLoaded(loadToday, 'Could not count the cards to review.').value?.due
   const library = useCardLibrary()
   const { cards, detail, setSelected } = library
   const [deleted, setDeleted] = useState<string[]>([])
@@ -43,7 +47,7 @@ export function MyCards(): React.JSX.Element {
             type="button"
             className="btn primary"
             disabled={due === 0}
-            onClick={() => window.duet.cards.openReview()}
+            onClick={onReview}
           >
             {due === undefined ? 'Review' : due > 0 ? `Review ${due}` : 'Nothing to review'}
           </button>

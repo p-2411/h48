@@ -14,9 +14,10 @@
 import type { EventEmitter } from 'events'
 import { ipcMain, shell, type BrowserWindow, type WebContents } from 'electron'
 import type { HomePlace, HomeToday, WatchingVideo } from '../../shared/home'
-import type { DueCounts, OverlaySettings } from '../../shared/types'
+import { reviewableNow, type DueCounts, type OverlaySettings } from '../../shared/types'
 import { sourceForSite } from '../sources'
 import type { WatchLog } from '../watchlog'
+import { isFrom } from '../windows/from'
 import { createHomeWindow } from '../windows/home'
 
 // Watching shows this many videos.
@@ -24,6 +25,8 @@ const VIDEOS_SHOWN = 50
 
 export class Home {
   private window?: BrowserWindow
+  // The place to show once the page has loaded (it can't hear one before).
+  private pending?: { place: HomePlace; cardId?: string }
 
   constructor({
     log,
@@ -36,11 +39,16 @@ export class Home {
     settings: EventEmitter
     openWelcome: () => void
   }) {
-    ipcMain.handle('home:get-today', (): HomeToday => {
-      const { due, newAvailable } = cards.counts()
-      return { streak: log.streak(), due: due + newAvailable }
+    const handle = (channel: string, work: () => unknown): void => {
+      ipcMain.handle(channel, (event) => {
+        if (!this.owns(event.sender)) throw new Error('Not allowed: this is the home page’s.')
+        return work()
+      })
+    }
+    handle('home:get-today', (): HomeToday => {
+      return { streak: log.streak(), due: reviewableNow(cards.counts()) }
     })
-    ipcMain.handle('home:get-watching', (): WatchingVideo[] =>
+    handle('home:get-watching', (): WatchingVideo[] =>
       log
         .recentVideos(VIDEOS_SHOWN)
         .map((video) => ({ ...video, siteName: sourceForSite(video.site)?.name ?? video.site }))
@@ -65,18 +73,27 @@ export class Home {
   open(place: HomePlace = 'today', cardId?: string): void {
     if (!this.window || this.window.isDestroyed()) {
       const window = (this.window = createHomeWindow())
-      window.on('closed', () => (this.window = undefined))
-      window.webContents.once('did-finish-load', () => this.show(place, cardId))
+      this.pending = { place, cardId }
+      window.on('closed', () => {
+        this.window = undefined
+        this.pending = undefined
+      })
+      window.webContents.once('did-finish-load', () => {
+        const pending = this.pending
+        this.pending = undefined
+        if (pending) this.show(pending.place, pending.cardId)
+      })
       return
     }
     this.window.show()
     this.window.focus()
-    this.show(place, cardId)
+    if (this.pending) this.pending = { place, cardId }
+    else this.show(place, cardId)
   }
 
   /** Whether a message came from the home page. */
   owns(sender: WebContents): boolean {
-    return !!this.window && !this.window.isDestroyed() && sender === this.window.webContents
+    return isFrom(this.window, sender)
   }
 
   private show(place: HomePlace, cardId?: string): void {
@@ -87,4 +104,11 @@ export class Home {
   private send(channel: string, value?: unknown): void {
     if (this.window && !this.window.isDestroyed()) this.window.webContents.send(channel, value)
   }
+}
+
+/** What opens when Duet starts or its Dock icon is clicked: the welcome window until the learner
+ * has been through it, then the home base. */
+export function openDuet({ onboarded, home, welcome }: { onboarded: boolean; home: { open(): void }; welcome: { open(): void } }): void {
+  if (onboarded) home.open()
+  else welcome.open()
 }

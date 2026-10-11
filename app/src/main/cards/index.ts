@@ -7,7 +7,7 @@
 //   review-start, review-queue, rate, skip, undo                     reviewing
 //   get-settings, set-settings                                       review settings
 //   export-backup, export-text, restore-backup                       files
-//   open, replay, practise, review                                   going elsewhere
+//   open, replay, practise                                           going elsewhere
 // The class emits "changed" (with the due counts) when cards change (the home base reloads them),
 // and "saved" (the new card) when a card is saved, for the watch log.
 import { EventEmitter } from 'events'
@@ -27,7 +27,7 @@ import type {
 import type { DueCounts } from '../../shared/types'
 import type { Moment } from '../../shared/moment'
 import { readSetting, writeSetting } from '../store/db'
-import { reviewCounts, ReviewSession } from './review'
+import { reviewCounts, reviewsSince, ReviewSession } from './review'
 import { Scheduler } from './scheduler'
 import { CardStore, UNDO_DELETE_MS } from './store'
 
@@ -56,14 +56,12 @@ export class Cards extends EventEmitter {
   constructor({
     replay,
     practise,
-    open,
-    openReview
+    open
   }: {
     replay: (moment: Moment) => void
     practise: (moment: Moment) => void
     /** Opens My cards, on one card when given. */
     open: (cardId?: string) => void
-    openReview: () => void
   }) {
     super()
     this.store.purge()
@@ -170,7 +168,6 @@ export class Cards extends EventEmitter {
     )
 
     handle('open', (id?: string) => open(id))
-    handle('review', () => openReview())
     const momentOf = (id: string): Moment | undefined => {
       const card = this.store.get(id)
       return card?.source.kind === 'video' ? card.source.moment : undefined
@@ -200,11 +197,20 @@ export class Cards extends EventEmitter {
     return result
   }
 
+  /** How many ratings (not undone) were made since `at`: the daily session counts them as done. */
+  reviewsSince(at: number): number {
+    return reviewsSince(at)
+  }
+
   /** A word the learner missed in a challenge (the daily session, a checkpoint): a new card for it,
-   * or, when it has one, that card due now. `made` says which. */
+   * or, when it has one, that card due now. `made` says which. Not a save: the watch log keeps it as
+   * missed (src/main/challenges/round.ts), not as a word the learner looked at. */
   missed(draft: CardDraft, now = Date.now()): { card: Card; made: boolean } {
-    const result = this.saveDraft(draft)
-    if ('saved' in result) return { card: result.saved, made: true }
+    const result = this.store.save(draft, this.scheduler)
+    if ('saved' in result) {
+      this.changed()
+      return { card: result.saved, made: true }
+    }
     const card = this.store.bringForward(result.duplicate.id, now)
     this.changed()
     return { card, made: false }

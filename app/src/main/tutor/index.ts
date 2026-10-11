@@ -1,20 +1,21 @@
-// The conversation about a line, main-process side: the side panel's Explain tab talks to Duet in
-// text or voice. It holds the line context (the line, how it was said, the explanation, the
+// The conversation with Duet, main-process side: in the side panel's Explain tab (about a line), on
+// the strip (about the line on screen) or in the home base's Talk (free), in text or voice. The window
+// that opens a conversation owns it: only its page may talk to the tutor, and it hears back. It holds the line context (the line, how it was said, the explanation, the
 // conversation so far), answers text messages (text.ts), starts voice sessions (live.ts), and runs
 // the learning tools both use. All card changes pass through this class, so neither model can get
 // round confirmation or FSRS rules.
 //
 // A save or a rating is two steps: prepare (a visible preview) and commit. The learner commits by
-// clicking in the panel. A model can commit only when the learner spoke or wrote after the preview
-// appeared: each text message, and each spoken turn the panel reports ("tutor:learner-turn"),
+// clicking in the window. A model can commit only when the learner spoke or wrote after the preview
+// appeared: each text message, and each spoken turn the window reports ("tutor:learner-turn"),
 // counts; a commit tool call with none since the preview is refused. So a model can not confirm its
 // own preview.
 //
-// IPC (all "tutor:*", from the side panel only; window.duet.tutor in src/preload/tutor.ts):
+// IPC (all "tutor:*", from the window that owns the conversation; window.duet.tutor in src/preload/tutor.ts):
 //   tutor:start-session / tutor:voice-ended   voice starts (holding the video) and ends
 //   tutor:set-explore, tutor:translate, tutor:romanise, tutor:execute-tool, tutor:confirm-action,
 //   tutor:undo, tutor:learner-turn
-//   tutor:pending-action / tutor:action-result / tutor:card   ← sent to the panel
+//   tutor:pending-action / tutor:action-result / tutor:card   ← sent to that window
 import { randomUUID } from 'node:crypto'
 import { ipcMain, type WebContents } from 'electron'
 import { RATINGS, type CardDraft } from '../../shared/cards'
@@ -28,10 +29,9 @@ import type {
 } from '../../shared/tutor'
 import type { Cards } from '../cards'
 import { StaleReviewError } from '../cards/review'
-import type { Panel } from '../panel'
 import type { Player } from '../player'
 import { createLiveSession, romaniseForLearner, translateForLearner } from './live'
-import type { LineContext } from './prompts'
+import { contextLanguage, type LineContext, type TutorContext } from './prompts'
 import { replyInText, type TextReply } from './text'
 
 type PendingAction =
@@ -94,8 +94,12 @@ function safeError(error: unknown): string {
   return 'TOOL_FAILED'
 }
 
+/** The window a conversation lives in: whether a message came from its page, and sending to it. */
+export type TutorWindow = { owns(sender: WebContents): boolean; send(channel: string, value: unknown): void }
+
 export class Tutor {
-  private context?: LineContext
+  private context?: TutorContext
+  private window?: TutorWindow
   private exploreEnabled = false
   private readonly pending = new Map<string, PendingAction>()
   private lastAction?: LastAction
@@ -104,11 +108,8 @@ export class Tutor {
 
   constructor(
     private readonly player: Player,
-    private readonly cards: Cards,
-    private readonly panel: Panel
+    private readonly cards: Cards
   ) {
-    // Closing the panel ends the conversation: its previews, its undo and any hold on the video.
-    panel.on('closed', () => this.reset())
     ipcMain.handle('tutor:set-explore', (event, enabled: boolean) => {
       this.assertTutor(event)
       this.exploreEnabled = enabled === true
@@ -128,11 +129,11 @@ export class Tutor {
     })
     ipcMain.handle('tutor:translate', (event, text: string) => {
       this.assertTutor(event)
-      return translateForLearner(string(text, 'translation_text', 2_000), this.requireContext().moment.language)
+      return translateForLearner(string(text, 'translation_text', 2_000), contextLanguage(this.requireContext()))
     })
     ipcMain.handle('tutor:romanise', (event, text: string) => {
       this.assertTutor(event)
-      return romaniseForLearner(string(text, 'reading_text', 2_000), this.requireContext().moment.language)
+      return romaniseForLearner(string(text, 'reading_text', 2_000), contextLanguage(this.requireContext()))
     })
     ipcMain.handle('tutor:execute-tool', (event, request: TutorToolRequest) => {
       this.assertTutor(event)
@@ -153,15 +154,27 @@ export class Tutor {
     })
   }
 
-  /** A new conversation, on the line Explain opened: earlier previews, undo and Explore end. */
-  open(context: LineContext): void {
+  /** A new conversation, owned by `window`: earlier previews, undo and Explore end. */
+  open(context: TutorContext, window: TutorWindow): void {
     this.reset()
     this.context = context
+    this.window = window
+  }
+
+  /** `window`'s conversation is over (its window closed): its previews, undo and any hold on the
+   * video end. Another window's conversation goes on. */
+  end(window: TutorWindow): void {
+    if (this.window === window) this.reset()
   }
 
   /** What Explain learnt about the line since (how it was said, the explanation, new messages). */
   update(change: Partial<Omit<LineContext, 'moment'>>): void {
-    if (this.context) this.context = { ...this.context, ...change }
+    if (!this.context) return
+    // A free conversation only keeps the conversation and Explore; the rest is about a line.
+    this.context =
+      'moment' in this.context
+        ? { ...this.context, ...change }
+        : { ...this.context, conversation: change.conversation ?? this.context.conversation, exploreEnabled: change.exploreEnabled ?? this.context.exploreEnabled }
   }
 
   /** Duet's text reply to the learner's message. Writing counts as the learner's turn. */
@@ -173,6 +186,7 @@ export class Tutor {
 
   private reset(): void {
     this.context = undefined
+    this.window = undefined
     this.exploreEnabled = false
     this.pending.clear()
     this.lastAction = undefined
@@ -181,20 +195,20 @@ export class Tutor {
   }
 
   private isTutor(sender: WebContents): boolean {
-    return this.panel.owns(sender)
+    return !!this.window?.owns(sender)
   }
 
   private assertTutor(event: { sender: WebContents }): void {
     if (!this.isTutor(event.sender)) throw new Error('UNTRUSTED_TUTOR_CALLER')
   }
 
-  private requireContext(): LineContext {
+  private requireContext(): TutorContext {
     if (!this.context) throw new Error('MOMENT_NOT_FOUND')
     return this.context
   }
 
   private send(channel: string, value: unknown): void {
-    this.panel.send(channel, value)
+    this.window?.send(channel, value)
   }
 
   private output(value: unknown): TutorToolResult {
@@ -208,7 +222,9 @@ export class Tutor {
       const args = object(request.arguments ?? {})
       switch (request.name) {
         case 'get_current_moment': {
-          const { moment } = this.requireContext()
+          const context = this.requireContext()
+          if (!('moment' in context)) return this.output({ freeConversation: true, language: context.language, note: 'No video line: this is a free conversation.' })
+          const { moment } = context
           return this.output({
             selectedLine: moment.line.original,
             translation: moment.line.processed?.translation,
@@ -240,15 +256,17 @@ export class Tutor {
           const sourceKind =
             args.source === 'video' ? 'video' : args.source === 'tutor' ? 'tutor' : undefined
           if (!sourceKind) throw new Error('INVALID_SOURCE')
-          const { moment } = this.requireContext()
+          const about = this.requireContext()
+          // A free conversation has no video line: its cards come from Duet.
+          const moment = 'moment' in about ? about.moment : undefined
           const draft: CardDraft = {
             type: 'understand',
             expression: string(args.expression, 'expression', 500),
             meaning: string(args.meaning, 'meaning', 800),
             target: string(args.target, 'target', 500),
             situation: context.length ? context.join('\n') : undefined,
-            language: moment.language,
-            source: sourceKind === 'video' ? { kind: 'video', moment } : { kind: 'tutor' }
+            language: contextLanguage(about),
+            source: sourceKind === 'video' && moment ? { kind: 'video', moment } : { kind: 'tutor' }
           }
           const action = this.prepareSave(draft)
           return this.output({ status: 'confirmation_required', action })

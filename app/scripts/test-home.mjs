@@ -20,7 +20,7 @@ const opened = []
 class WebContents extends EventEmitter {
   constructor() { super(); this.sent = [] }
   send(channel, value) { this.sent.push([channel, value]) }
-  once(event, work) { if (event === 'did-finish-load') work(); return this }
+  once(event, work) { if (event === 'did-finish-load') { if (module.exports.loading.slow) this.load = work; else work() } return this }
 }
 class BrowserWindow extends EventEmitter {
   constructor(options) { super(); this.options = options; this.webContents = new WebContents(); this.destroyed = false; this.shown = 0; this.focused = 0; windows.push(this) }
@@ -38,7 +38,7 @@ module.exports = {
   shell: { openExternal: (url) => { opened.push(url); return Promise.resolve() } },
   BrowserWindow,
   is: { dev: false },
-  handlers, listeners, windows, opened
+  handlers, listeners, windows, opened, loading: { slow: false }
 }
 `
 )
@@ -129,6 +129,8 @@ try {
   const today = await electron.handlers.get('home:get-today')(fromHome)
   assert.equal(today.due, 5, 'due now plus new allowed today')
   assert.deepEqual(Object.keys(today.streak).sort(), ['days', 'freezesLeft', 'keptToday'])
+  await assert.rejects(async () => electron.handlers.get('home:get-today')(fromElsewhere), /not allowed/i, 'only the home page reads Today')
+  await assert.rejects(async () => electron.handlers.get('home:get-watching')(fromElsewhere), /not allowed/i, 'only the home page reads Watching')
   const watching = await electron.handlers.get('home:get-watching')(fromHome)
   assert.equal(watching[0].key, 'netflix:81234')
   assert.equal(
@@ -168,6 +170,46 @@ try {
     ['home:place', { place: 'today' }],
     'Today is the default'
   )
+
+  // Opened again before the page has loaded (a notification clicked as Duet starts): the page is
+  // shown the place asked for last, once it can hear it.
+  electron.windows[1].close()
+  electron.loading.slow = true
+  home.open('today')
+  home.open('cards', 'card-2')
+  const slow = electron.windows[2]
+  assert.deepEqual(slow.webContents.sent, [], 'nothing is sent before the page has loaded')
+  slow.webContents.load()
+  assert.deepEqual(
+    slow.webContents.sent,
+    [
+      ['home:place', { place: 'cards' }],
+      ['cards:show', 'card-2']
+    ],
+    'the last place asked for, once loaded'
+  )
+  electron.loading.slow = false
+
+  // The reminder's time is a setting, set from Settings like the others: a time, or none (off);
+  // anything else is refused.
+  const { connectOverlay } = await jiti.import(join(root, 'ipc/overlay.ts'))
+  const changes = []
+  const overlaySettings = Object.assign(new EventEmitter(), { current: {}, update: (change) => changes.push(change) })
+  connectOverlay({ isDestroyed: () => false, webContents: { send: () => {} } }, { watcher: new EventEmitter(), settings: overlaySettings, fit: () => undefined })
+  const setReminder = electron.handlers.get('duet:set-reminder')
+  await setReminder({}, '19:30')
+  await setReminder({}, null)
+  await assert.rejects(async () => setReminder({}, '7pm'), /time/i)
+  assert.deepEqual(changes, [{ reminder: '19:30' }, { reminder: undefined }])
+
+  // What opens at launch and from the Dock: the welcome window until it's been through, then home.
+  const { openDuet } = await jiti.import(join(root, 'home/index.ts'))
+  const opened = []
+  const homeSpy = { open: () => opened.push('home') }
+  const welcomeSpy = { open: () => opened.push('welcome') }
+  openDuet({ onboarded: false, home: homeSpy, welcome: welcomeSpy })
+  openDuet({ onboarded: true, home: homeSpy, welcome: welcomeSpy })
+  assert.deepEqual(opened, ['welcome', 'home'], 'first run: the welcome window, not the home base over it')
 
   console.log('Home tests passed.')
 } finally {

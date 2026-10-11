@@ -4,7 +4,7 @@
 // rating.
 import type { ResponseInput } from 'openai/resources/responses/responses'
 import { backendModel, openai, safeLiveError, tools } from './live'
-import { lineContext, textInstructions, type LineContext } from './prompts'
+import { contextLanguage, contextText, textInstructions, type TutorContext } from './prompts'
 
 // A reply may need a few tool calls (search, then open a card); more than this is a loop.
 const MAX_TOOL_ROUNDS = 4
@@ -64,7 +64,7 @@ function parse(text: string): unknown {
 
 /** Duet's reply to the learner's message; `context` holds the line and the conversation so far. */
 export async function replyInText(
-  context: LineContext,
+  context: TutorContext,
   message: string,
   runTool: ToolRunner,
   env: NodeJS.ProcessEnv = process.env
@@ -73,7 +73,7 @@ export async function replyInText(
     throw new Error('Add OPENAI_API_KEY to app/.env.local to talk with Duet.')
   const client = openai(env.OPENAI_API_KEY)
   const input: ResponseInput = [
-    { role: 'developer', content: `Line context: ${lineContext(context)}` },
+    { role: 'developer', content: `Context: ${contextText(context)}` },
     { role: 'user', content: message }
   ]
   try {
@@ -81,7 +81,7 @@ export async function replyInText(
       const response = await client.responses.create({
         model: backendModel(env),
         store: false,
-        instructions: textInstructions(context.moment.language),
+        instructions: textInstructions(contextLanguage(context), 'moment' in context ? 'line' : 'free'),
         input,
         tools: textTools,
         text: { format: replyFormat },

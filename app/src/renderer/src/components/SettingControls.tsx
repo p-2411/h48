@@ -1,5 +1,5 @@
-// The controls for Duet's settings, shared by the strip's ⚙ (the quick ones) and the home base's
-// Settings (all of them), so each setting looks and works the same in both. Styles: settings.css.
+// The controls for Duet's settings, in the home base's Settings; the quick toggles are on the strip's
+// ⚙ too, so they look and work the same in both. Styles: settings.css.
 import { useEffect, useState } from 'react'
 import { LANGUAGE_CODES, languageName } from '../../../shared/languages'
 import type { OverlaySettings } from '../../../shared/types'
@@ -103,15 +103,8 @@ export function LevelPicker({ settings }: { settings: OverlaySettings }): React.
   )
 }
 
-/** The show/hide keys: click, then press the new ones (Esc keeps the old). `takeKeyboard` is for a
- * window that doesn't normally have the keyboard (the strip leaves it to the video). */
-export function ShortcutRecorder({
-  keys,
-  takeKeyboard
-}: {
-  keys: string
-  takeKeyboard?: () => void
-}): React.JSX.Element {
+/** The show/hide keys: click, then press the new ones (Esc keeps the old). */
+export function ShortcutRecorder({ keys }: { keys: string }): React.JSX.Element {
   const [recording, setRecording] = useState(false)
   const [error, setError] = useState<string>()
   useEffect(() => {
@@ -144,7 +137,6 @@ export function ShortcutRecorder({
           onClick={() => {
             setError(undefined)
             setRecording(!recording)
-            if (!recording) takeKeyboard?.()
           }}
         >
           {recording ? '…' : symbols(keys)}

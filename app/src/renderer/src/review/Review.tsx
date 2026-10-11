@@ -86,9 +86,8 @@ function Scene({ card }: { card: Card }): React.JSX.Element | null {
   )
 }
 
-/** `onEnd` leaves the review (back to where it was opened from). */
-/** Review, until the learner ends it. In the daily session, `limit` caps it: after that many ratings
- * (or once nothing is left) it moves on with `onEnd`. */
+/** Review, until the learner ends it (`onEnd`). In the daily session, `limit` caps it: after that
+ * many ratings it moves on with `onEnd`; once nothing is left, it shows Continue. */
 export function Review({ onEnd, limit }: { onEnd: () => void; limit?: number }): React.JSX.Element {
   const session = useReviewSession()
   const { queue, revealed, busy, error, act, settings } = session

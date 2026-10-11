@@ -1,7 +1,7 @@
 # Duet user flow: design
 
 Date: 2026-10-12
-Status: draft for review
+Status: agreed, built in pieces 1–4 (2026-10-12)
 
 ## Purpose
 
@@ -11,7 +11,7 @@ This spec maps how a learner uses Duet, both while watching and over months, and
 
 - **One flow for every learner.** It starts gentle for a near-beginner and opens up as the learner improves. The mix level is the control for now. Known and unknown words are a separate design (by a friend), not part of this spec.
 - **Two outcomes.** Understand shows, and speak about them.
-- **Watching must not feel like studying.** The strip asks for nothing. Anything active happens only when the learner chooses, or at the three moments in "Checkpoints".
+- **Watching must not feel like studying.** The strip asks for nothing. Anything active happens only when the learner chooses, or at the two moments in "Checkpoints".
 - **Watch-first.** The strip and a local watch log are the centre. The daily session and the home base are built from what the learner watched.
 - **The main habit is a short daily session.** A full home base is there for learners who want more.
 - **Progress is the streak only, for now.** No word counts or comprehension scores yet.
@@ -34,29 +34,28 @@ While the learner watches, Duet records the watch log (section 5) with nothing o
 
 ## 2. Checkpoints and the glow
 
-Checkpoints are short challenges built from what the learner just watched. They are **off by default**. After the learner's third video with Duet, Duet suggests turning them on (one switch in Settings).
+Checkpoints are short challenges built from what the learner just watched. They are **off by default**. After the learner's third video with Duet, Duet turns them on by itself, unless the learner has already chosen (one switch in Settings).
 
 ### When Duet offers one
 
 - **The learner pauses.** After about 2 s, and only for a pause the learner made. Pauses made by Explain, Wait or the talk-to-Duet button do not count.
-- **A natural break.** About 20 s with no dialogue.
-- **The end.** The last minute of the video, or the credits.
+- **A natural break.** The end of a scene or conversation, judged from the dialogue by the text model: a video's whole transcript is split once, or, without a transcript, the last few lines are judged when the dialogue pauses.
 
-Duet offers at most one checkpoint every ~10 minutes. If the learner ignores two in a row, Duet makes no more offers for the rest of that video.
+Duet offers at most one checkpoint every 5 minutes. After an offer is left alone, at most one every 10 minutes. Offers never stop, and taking one brings back the normal pace. There is no end-of-video checkpoint.
 
 ### The glow
 
-A soft glow in the logo gradient breathes around the strip's edge. There is no text and no sound. A click on the strip opens the checkpoint above the strip, where the word card opens. If the learner plays on or ignores it, the glow fades.
+A soft glow in the logo gradient breathes around the strip's edge. There is no text and no sound. A click on the strip opens the checkpoint above the strip, where the word card opens. An offer stands 10 s unless clicked (playing on doesn't end it), then fades. While the checkpoint is open the glow stays; when it is done, it fades in 0.5 s.
 
 ### Content
 
 Each checkpoint uses lines from the last few minutes of the watch log. It prefers words the learner hovered or saved.
 
-- **Recall a word:** a line from the scene with one word blanked. The learner types the word or picks one of three.
-- **Say the line:** Duet replays the moment in the video and the learner says it back. The mascot pops up for voice and gives a short note on pronunciation and tone.
+- **Recall a word:** a line from the scene with one word blanked. The learner picks one of three.
+- **Say the line:** Duet says the line in its own voice, as in the daily session, and the learner says it back. Duet gives a short note on pronunciation and tone.
 - **What did they mean?:** one comprehension question about the scene.
 
-A pause or a break offers one challenge (under a minute). The end offers three, one of each kind.
+A pause or a break offers one challenge (under a minute). A word missed becomes a card.
 
 ### Results
 
@@ -65,19 +64,19 @@ A pause or a break offers one challenge (under a minute). The end offers three, 
 
 ## 3. The daily session
 
-The daily session is the first thing on the home base ("Today"). The Dock icon and the menu bar's "Today" open it. It never shows while the learner watches.
+The daily session is the first thing on the home base ("Today"). The Dock icon and the menu bar's "Open Duet" open it. It never shows while the learner watches.
 
 It lasts about 5 minutes and stops there, even if more is due:
 
-1. Due review cards. Cards from recently watched videos come first.
+1. Due review cards, in the scheduler's order (learning, then due reviews, then new), at most 12.
 2. One "say the line" from the last video watched. Duet speaks the line in its own voice, because there is no video playing.
 3. One "recall a word" or "what did they mean?" from the same video.
 
 - If nothing was watched lately, the session is due cards only.
-- If nothing is due either, it says "You're all caught up" and points to Watching.
-- The end shows "done for today" and the streak. It shows no scores.
+- If nothing is due either, it says "You're all caught up" and offers "Back to Today".
+- The end shows "done for today" and the streak. It shows no scores. Today is kept only when something was done: a card reviewed, the line said, or the challenge answered.
 
-**Reminder:** optional, off by default. One macOS notification a day at a time the learner chooses, set in onboarding or Settings.
+**Reminder:** optional, off by default. One macOS notification a day at a time the learner chooses, set in Settings.
 
 ### The streak
 
@@ -103,7 +102,7 @@ A normal app window with a Dock icon. It opens from the Dock, from the menu bar,
 
 ### Changes to existing screens
 
-- **The side panel** keeps two tabs: Recent lines and Explain. **Review moves to the home base** (Cards and the daily session). The mascot is not shown on Review.
+- **The side panel** keeps two tabs: Script and Explain. **Review moves to the home base** (Cards and the daily session). The mascot is not shown on Review.
 - **Tutor and cards link:** in Explain, Duet still offers to save a card. In Cards, each card has "Practise with Duet". It opens Explain on the card's scene if the card came from a video, or Talk on the card if it did not.
 - **The My cards window** becomes the home base's Cards place.
 
@@ -118,7 +117,7 @@ All data stays on the learner's Mac, in the existing local database. Duet never 
 | word events | hovered (after ~300 ms), saved, explained, missed in a checkpoint | strip, cards, Explain, checkpoints | choosing words for checkpoints |
 | days | per day: minutes watched, session done, checkpoints done | all of the above | the streak (two freezes a week) |
 
-"Say the line" in a checkpoint uses the existing replay to play the real moment. In the daily session, Duet speaks the line.
+In "Say the line", in a checkpoint and in the daily session, Duet speaks the line.
 
 ## Build order
 

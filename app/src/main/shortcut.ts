@@ -1,5 +1,5 @@
-// The global shortcut that shows and hides Duet from anywhere. The learner can change it (⚙ on the
-// strip); a new one is only kept if the system lets Duet have it.
+// The global shortcut that shows and hides Duet from anywhere. The learner can change it (Settings,
+// in the home base); a new one is only kept if the system lets Duet have it.
 import { globalShortcut } from 'electron'
 
 export class Shortcut {

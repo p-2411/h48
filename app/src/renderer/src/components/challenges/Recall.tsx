@@ -1,14 +1,13 @@
 // Recall a word: a line the learner met with one word blanked, and three to choose from.
 import { useState } from 'react'
-import type { SessionView } from '../../../../shared/daily'
+import type { RecallResult, RecallView } from '../../../../shared/daily'
 import { say } from '../errors'
 import type { ChallengeApi } from './api'
 import './challenges.css'
 
-type RecallView = Extract<NonNullable<SessionView['challenge']>, { kind: 'recall' }>
 
 export function Recall({ challenge, api, onNext }: { challenge: RecallView; api: ChallengeApi; onNext: (answered: boolean) => void }): React.JSX.Element {
-  const [result, setResult] = useState<{ picked: string; correct: boolean; answer: string }>()
+  const [result, setResult] = useState<RecallResult & { picked: string }>()
   const [error, setError] = useState<string>()
   const pick = async (choice: string): Promise<void> => {
     setError(undefined)
@@ -45,7 +44,7 @@ export function Recall({ challenge, api, onNext }: { challenge: RecallView; api:
         ))}
       </div>
       <div role="status" className="challenge-feedback">
-        {result && <p>{result.correct ? 'Yes, that’s the one.' : `Not quite: it’s ${result.answer}. It’s in your cards now.`}</p>}
+        {result && <p>{result.correct ? 'Yes, that’s the one.' : `Not quite: it’s ${result.answer}.${result.carded ? ' It’s in your cards now.' : ''}`}</p>}
       </div>
       {error && (
         <p className="challenge-error" role="alert">

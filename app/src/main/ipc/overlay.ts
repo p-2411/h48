@@ -1,7 +1,7 @@
 // The overlay's IPC: what the overlay page can ask for, and what it is sent as things change.
 // The page reaches these through window.duet in src/preload/overlay.ts.
 //
-//   duet:get-state     → { settings, status, due, fit }
+//   duet:get-state     → { settings, status, fit }
 //   duet:set-*         settings changes
 //   duet:script        opens the side panel on the Script tab
 //   duet:open-settings opens the home base's Settings
@@ -13,20 +13,21 @@
 //   duet:play-on       plays the video that Wait is holding
 //   duet:solid         the pointer is over Duet (take clicks) or not (let them through to the video)
 //   duet:drag          the learner drags the subtitles: start, end (placement.ts moves the window)
-//   duet:focus         takes the keyboard, while the learner presses new show/hide keys
+//   duet:focus         takes the keyboard, while the learner types an answer in a checkpoint
 //   duet:set-shortcut  new show/hide keys → why not, if they can't be had
-//   duet:status / duet:settings / duet:line / duet:current / duet:live / duet:due   ← updates
+//   duet:set-reminder  the daily reminder's time ("19:30"), or null for none; anything else is refused
+//   duet:status / duet:settings / duet:line / duet:current / duet:live   ← updates
 //   duet:fit           ← how wide the strip may be, to stay inside the video (none: as wide as it likes)
 import { ipcMain, type BrowserWindow } from 'electron'
 import type { SaveResult } from '../../shared/cards'
-import type { DueCounts, Language, Level, OverlaySettings } from '../../shared/types'
+import type { Language, Level, OverlaySettings } from '../../shared/types'
+import { parseReminder } from '../daily/reminder'
 import type { Settings } from '../settings'
 import type { Watcher } from '../watcher'
 
 type Actions = {
   watcher: Watcher
   settings: Settings
-  due: () => DueCounts
   explainLine: (lineId?: number) => void
   showScript: () => void
   saveLine: (lineId?: number, pair?: number) => SaveResult | undefined
@@ -44,7 +45,7 @@ type Actions = {
 export function connectOverlay(
   overlay: BrowserWindow,
   actions: Actions
-): { sendDue: (due: DueCounts) => void; sendFit: (maxWidth?: number) => void } {
+): { sendFit: (maxWidth?: number) => void } {
   const { watcher, settings } = actions
   const send = (channel: string, payload: unknown): void => {
     if (!overlay.isDestroyed()) overlay.webContents.send(channel, payload)
@@ -58,7 +59,6 @@ export function connectOverlay(
   ipcMain.handle('duet:get-state', () => ({
     settings: settings.current,
     status: watcher.status,
-    due: actions.due(),
     fit: actions.fit() ?? null
   }))
   ipcMain.on('duet:set-language', (_, language: Language) => settings.update({ language }))
@@ -69,6 +69,11 @@ export function connectOverlay(
   )
   ipcMain.on('duet:set-checkpoints', (_, checkpoints: unknown) => {
     if (typeof checkpoints === 'boolean') settings.update({ checkpoints })
+  })
+  ipcMain.handle('duet:set-reminder', (_, time: unknown) => {
+    const reminder = parseReminder(time)
+    if (time !== null && !reminder) throw new Error('Pick a time for the reminder, like 19:30.')
+    settings.update({ reminder })
   })
   ipcMain.on('duet:set', (_, change: Partial<Pick<OverlaySettings, 'pauseForHelp'>>) =>
     settings.update({ pauseForHelp: change.pauseForHelp })
@@ -94,7 +99,6 @@ export function connectOverlay(
     actions.drag(phase === 'start' ? 'start' : 'end')
   )
   return {
-    sendDue: (due) => send('duet:due', due),
     sendFit: (maxWidth) => send('duet:fit', maxWidth ?? null)
   }
 }

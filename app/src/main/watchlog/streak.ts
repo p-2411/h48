@@ -4,6 +4,7 @@
 // in one week ends the streak (misses before the streak began use none). Today never breaks it: until today is kept, it runs to yesterday.
 // Days are study days (YYYY-MM-DD, see study-day.ts); date steps are done in UTC so clock changes
 // don't skip or repeat a day.
+import type { Streak } from '../../shared/home'
 
 export const WATCH_MS_FOR_A_DAY = 10 * 60_000
 export const FREEZES_PER_WEEK = 2
@@ -14,7 +15,7 @@ export type DayRecord = {
   sessionDone: boolean
   checkpoints: number
 }
-export type Streak = { days: number; keptToday: boolean; freezesLeft: number }
+export type { Streak } from '../../shared/home'
 
 /** Whether the learner kept this day. */
 export function kept(record: DayRecord): boolean {

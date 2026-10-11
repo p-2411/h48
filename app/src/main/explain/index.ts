@@ -70,7 +70,11 @@ export class Explain {
       const added = voiceTurns(turns)
       if (added.length) this.setChat([...this.state.chat, ...added])
     })
-    panel.on('closed', () => this.request?.abort())
+    // Closing the panel ends the conversation: the requests, and the tutor's previews and hold.
+    panel.on('closed', () => {
+      this.request?.abort()
+      options.tutor.end(panel)
+    })
   }
 
   open(moment: Moment): void {
@@ -81,7 +85,7 @@ export class Explain {
   private ask(moment: Moment): void {
     const { explainer, tutor, hear } = this.options
     this.request?.abort()
-    tutor.open({ moment })
+    tutor.open({ moment }, this.options.panel)
     if (!explainer)
       return this.set({ moment, loading: false, chat: [], error: 'Add an API key to use Explain.' })
     const request = (this.request = new AbortController())

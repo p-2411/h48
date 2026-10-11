@@ -1,19 +1,17 @@
 // The strip's bridge to checkpoints (src/main/checkpoints).
 import { ipcRenderer } from 'electron'
-import type { CheckpointView } from '../shared/checkpoints'
-import type { LineAttempt, SessionAudio } from '../shared/daily'
+import type { CheckpointView, Offer } from '../shared/checkpoints'
+import { challengeBridge } from './challenges'
 import { invoke } from './invoke'
 import { subscribe } from './subscribe'
 
 export const checkpointApi = {
   /** A checkpoint is offered ('pause' or 'break': the strip glows), or not (null). */
-  onOffer: (listener: (offer: 'pause' | 'break' | null) => void) => subscribe('checkpoint:offer', listener),
+  onOffer: (listener: (offer: Offer | null) => void) => subscribe('checkpoint:offer', listener),
+  /** Duet closed the open checkpoint (another video came on): the strip drops its card. */
+  onClosed: (listener: () => void) => subscribe('checkpoint:closed', listener),
   open: () => invoke<CheckpointView>('checkpoint:open'),
-  speak: () => invoke<SessionAudio>('checkpoint:speak'),
-  coach: (clip: SessionAudio) => invoke<LineAttempt>('checkpoint:coach', clip),
-  checkRecall: (choice: string) => invoke<{ correct: boolean; answer: string }>('checkpoint:check-recall', choice),
-  meaningQuestion: () => invoke<{ question: string }>('checkpoint:meaning-question'),
-  meaningCheck: (answer: string) => invoke<{ note: string }>('checkpoint:meaning-check', answer),
+  ...challengeBridge('checkpoint'),
   done: () => invoke<void>('checkpoint:done'),
   close: () => invoke<void>('checkpoint:close'),
   /** The strip takes the keyboard (it normally leaves it to the video), to type an answer. */

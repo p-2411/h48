@@ -2,7 +2,7 @@
 import { createEmptyCard, fsrs, Rating } from 'ts-fsrs'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { backendInstructions, lineContext, liveInstructions, textInstructions } from '../src/main/tutor/prompts.ts'
+import { backendInstructions, contextLanguage, contextText, lineContext, liveInstructions, textInstructions } from '../src/main/tutor/prompts.ts'
 import { ENGLISH_HELP_DELAY_MS, LIVE_REPLY_FALLBACK_MS } from '../src/renderer/src/explain/voice/timing.ts'
 import { LANGUAGE_CODES, languageModule, speaks } from '../src/shared/languages/index.ts'
 import { joinTokens } from '../src/shared/levels.ts'
@@ -72,6 +72,20 @@ for (const language of LANGUAGE_CODES) {
   if (others.some((code) => live.includes(languageModule(code).name)))
     throw new Error(`${name}: its prompt names another language.`)
 }
+
+// A free conversation (home Talk): no video line, the language and level, saved cards open to Duet.
+const free = { kind: 'free', language: 'ko', level: 2, exploreEnabled: true, conversation: [{ from: 'learner', text: '안녕하세요' }] }
+const freeText = contextText(free)
+if (contextLanguage(free) !== 'ko') throw new Error('A free conversation names its own language.')
+if (freeText.includes('selectedLine') || !freeText.includes('free conversation') || !freeText.includes('savedCardsOpenToDuet') || !freeText.includes('안녕하세요'))
+  throw new Error(`The free conversation's context is wrong: ${freeText}`)
+if (!freeText.includes('"level"')) throw new Error('A free conversation says the learner\'s level.')
+const lineCase = { moment: { language: 'ja', line: { id: 1, original: 'x', at: now, state: 'pending' }, earlier: [], video: { site: 'youtube', url: 'fixture:x' }, takenAt: now } }
+if (contextText(lineCase) !== lineContext(lineCase) || contextLanguage(lineCase) !== 'ja') throw new Error('A line conversation keeps its line context.')
+const freePrompt = textInstructions('ko', 'free')
+if (freePrompt.includes('the line in the context') || !freePrompt.includes('free conversation') || !freePrompt.includes('explicit confirmation'))
+  throw new Error('The free text prompt should drop the line and keep the card rules.')
+if (!textInstructions('ko', 'line').includes('the line in the context')) throw new Error('A line conversation keeps to its line.')
 
 // The Meaning button shows for turns in the language, not for English ones.
 for (const language of LANGUAGE_CODES) {

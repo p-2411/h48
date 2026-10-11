@@ -1,8 +1,8 @@
 // "What did they mean?": one comprehension question about a line the learner met, and a short,
-// kind note on their answer. Asked and marked by the tutor's text model (src/main/tutor/live.ts).
+// kind note on their answer. Asked and marked by the tutor's text model (src/main/ai/text.ts).
 import { languageName } from '../../shared/languages'
 import type { Language } from '../../shared/types'
-import { backendModel, openai, safeLiveError } from '../tutor/live'
+import { textModel } from '../ai/text'
 import type { MetLine } from '../watchlog'
 
 export interface Quiz {
@@ -14,25 +14,10 @@ export interface Quiz {
 
 /** The quiz on the tutor's OpenAI text model, or undefined without an API key. */
 export function openAIQuiz(env: NodeJS.ProcessEnv = process.env): Quiz | undefined {
-  const key = env.OPENAI_API_KEY
-  if (!key) return undefined
-  const respond = async (instructions: string, input: string, context: string): Promise<string> => {
-    try {
-      const response = await openai(key).responses.create({
-        model: backendModel(env),
-        store: false,
-        instructions,
-        input,
-        max_output_tokens: 600,
-        reasoning: { effort: 'low' }
-      })
-      const text = response.output_text.trim()
-      if (!text) throw new Error('EMPTY_ANSWER')
-      return text
-    } catch (error) {
-      throw safeLiveError(error, context)
-    }
-  }
+  const model = textModel(env)
+  if (!model) return undefined
+  const respond = (instructions: string, input: string, context: string): Promise<string> =>
+    model({ instructions, input, maxTokens: 600, context })
   return {
     ask: (line, language) =>
       respond(

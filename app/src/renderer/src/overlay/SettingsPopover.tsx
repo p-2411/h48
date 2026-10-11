@@ -9,7 +9,7 @@ export function SettingsPopover({ settings }: { settings: OverlaySettings }): Re
       <span className="label">While watching</span>
       <QuickToggles settings={settings} />
       <button type="button" className="quiet" onClick={() => window.duet.openSettings()}>
-        All settings…
+        More settings
       </button>
       <button type="button" className="quiet" onClick={() => window.duet.showScript()}>
         Open the whole script

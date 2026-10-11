@@ -23,9 +23,9 @@ function Place({
   place: HomePlace
   onPlace: (place: HomePlace) => void
 }): React.JSX.Element {
-  if (place === 'today') return <Today />
+  if (place === 'today') return <Today onReview={() => onPlace('review')} />
   if (place === 'watching') return <Watching />
-  if (place === 'cards') return <MyCards />
+  if (place === 'cards') return <MyCards onReview={() => onPlace('review')} />
   if (place === 'settings') return <SettingsPage />
   return (
     <main className="home-page">

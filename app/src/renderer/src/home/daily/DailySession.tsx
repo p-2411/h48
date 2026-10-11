@@ -1,5 +1,6 @@
 // The daily session: the due cards (capped at about 5 minutes), then a line said back, then one
-// challenge, then "done for today" with the streak. Each step can be skipped; what's in it comes
+// challenge, then "done for today" with the streak (kept only when something was done). Each step
+// can be skipped; what's in it comes
 // from main (src/main/daily) and the last video watched.
 import { useEffect, useState } from 'react'
 import type { HomeToday } from '../../../../shared/home'
@@ -20,7 +21,7 @@ export function DailySession({ onClose }: { onClose: () => void }): React.JSX.El
   const [plan, setPlan] = useState<SessionView>()
   const [error, setError] = useState<string>()
   const [at, setAt] = useState(0)
-  const [streak, setStreak] = useState<HomeToday['streak']>()
+  const [result, setResult] = useState<{ kept: boolean; streak: HomeToday['streak'] }>()
   useEffect(() => {
     window.duet.daily.plan().then(setPlan, (cause) => setError(say(cause, 'Today’s session could not start.')))
   }, [])
@@ -29,7 +30,7 @@ export function DailySession({ onClose }: { onClose: () => void }): React.JSX.El
   // Reaching the end keeps the day; once, however the page re-renders.
   useEffect(() => {
     if (step !== 'done') return
-    window.duet.daily.done().then(setStreak, (cause) => setError(say(cause, 'Could not record today.')))
+    window.duet.daily.done().then(setResult, (cause) => setError(say(cause, 'Could not record today.')))
   }, [step])
   const next = (): void => setAt((index) => index + 1)
 
@@ -59,10 +60,16 @@ export function DailySession({ onClose }: { onClose: () => void }): React.JSX.El
       {step === 'challenge' && plan.challenge?.kind === 'recall' && <Recall challenge={plan.challenge} api={window.duet.daily} onNext={next} />}
       {step === 'challenge' && plan.challenge?.kind === 'meaning' && <Meaning challenge={plan.challenge} api={window.duet.daily} onNext={next} />}
       {step === 'done' && (
-        <section className="card-box" aria-label="Done for today">
-          <span className="label">Done for today</span>
-          <p className="home-number">{streak ? `${streak.days} ${streak.days === 1 ? 'day' : 'days'}` : '…'}</p>
-          <p className="muted">{steps.length === 1 ? 'You’re all caught up: nothing due, and nothing watched lately.' : 'That’s today. See you tomorrow.'}</p>
+        <section className="card-box" aria-label="End of today’s session">
+          <span className="label">{result && !result.kept ? 'Session over' : 'Done for today'}</span>
+          <p className="home-number">{result ? `${result.streak.days} ${result.streak.days === 1 ? 'day' : 'days'}` : '…'}</p>
+          <p className="muted">
+            {steps.length === 1
+              ? 'You’re all caught up: nothing due, and nothing watched lately.'
+              : result && !result.kept
+                ? 'Nothing done this time, so today isn’t kept yet. Do one step, or watch 10 minutes.'
+                : 'That’s today. See you tomorrow.'}
+          </p>
           {error && (
             <p className="notice error" role="alert">
               {error}

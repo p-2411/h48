@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { HomeToday } from '../../../shared/home'
 import { DailySession } from './daily/DailySession'
+import { LoadState } from './LoadState'
 import { useLoaded } from './useLoaded'
 
 const loadToday = (): Promise<HomeToday> => window.duet.home.getToday()
@@ -15,7 +16,8 @@ function streakNote({ days, keptToday, freezesLeft }: HomeToday['streak']): stri
   return `Watch 10 minutes with Duet today to keep it. ${freezes}`
 }
 
-export function Today(): React.JSX.Element {
+/** `onReview` opens Review (inside Cards). */
+export function Today({ onReview }: { onReview: () => void }): React.JSX.Element {
   const { value: today, error, reload } = useLoaded(loadToday, 'Could not load today.')
   const [inSession, setInSession] = useState(false)
   if (inSession)
@@ -33,21 +35,8 @@ export function Today(): React.JSX.Element {
   return (
     <main className="home-page">
       <h1>Today</h1>
-      {error && (
-        <p className="notice error row" role="alert">
-          <span>{error}</span>
-          <button type="button" className="btn quiet" onClick={reload}>
-            Try again
-          </button>
-        </p>
-      )}
-      {!today ? (
-        !error && (
-          <p className="faint" role="status">
-            Loading…
-          </p>
-        )
-      ) : (
+      <LoadState loaded={!!today} error={error} reload={reload} />
+      {!today ? null : (
         <div className="home-cards">
           <section className="card-box home-session" aria-label="Today’s session">
             <span className="label">Today’s session</span>
@@ -77,7 +66,7 @@ export function Today(): React.JSX.Element {
               type="button"
               className="btn primary"
               disabled={today.due === 0}
-              onClick={() => window.duet.cards.openReview()}
+              onClick={onReview}
             >
               Review
             </button>

@@ -4,9 +4,12 @@ import type { Site } from './types'
 /** The places in the home base's sidebar; Review is shown inside Cards. */
 export type HomePlace = 'today' | 'watching' | 'cards' | 'review' | 'settings'
 
+/** The streak: days kept in a row, whether today is kept yet, and the freezes left this week. */
+export type Streak = { days: number; keptToday: boolean; freezesLeft: number }
+
 /** Today: the streak and how many cards can be reviewed now. */
 export type HomeToday = {
-  streak: { days: number; keptToday: boolean; freezesLeft: number }
+  streak: Streak
   /** Cards due now, plus new ones still allowed today. */
   due: number
 }

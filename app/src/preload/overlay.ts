@@ -3,7 +3,6 @@
 import { ipcRenderer } from 'electron'
 import type { SaveResult } from '../shared/cards'
 import type {
-  DueCounts,
   Language,
   Level,
   OverlayLine,
@@ -18,11 +17,8 @@ export const overlayApi = {
     invoke<{
       settings: OverlaySettings
       status: OverlayStatus
-      due: DueCounts
       fit: number | null
     }>('duet:get-state'),
-  /** Cards ready to review, whenever that changes. */
-  onDue: (listener: (due: DueCounts) => void) => subscribe('duet:due', listener),
   onStatus: (listener: (status: OverlayStatus) => void) => subscribe('duet:status', listener),
   /** How wide the strip may be to stay inside the video; null when it can be as wide as it likes. */
   onFit: (listener: (maxWidth: number | null) => void) => subscribe('duet:fit', listener),
@@ -56,9 +52,10 @@ export const overlayApi = {
   /** Dragging the subtitles: the window follows the pointer between start and end. */
   drag: (phase: 'start' | 'end') => ipcRenderer.send('duet:drag', phase),
   /** Takes the keyboard (the overlay normally leaves it to the video), to record new keys. */
-  focus: () => ipcRenderer.send('duet:focus'),
   /** New show/hide keys (an Electron accelerator); resolves with why not, if they can't be had. */
   setShortcut: (keys: string) => invoke<string | undefined>('duet:set-shortcut', keys),
+  /** The daily reminder's time ("19:30"), or null for none. */
+  setReminder: (time: string | null) => invoke<void>('duet:set-reminder', time),
   /** Opens the home base's Settings. */
   openSettings: () => ipcRenderer.send('duet:open-settings'),
   /** Opens the side panel on the Script tab. */

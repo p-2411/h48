@@ -7,7 +7,7 @@ import type { FunctionTool } from 'openai/resources/live/live'
 import { RATINGS } from '../../shared/cards'
 import type { TutorSessionAnswer } from '../../shared/tutor'
 import { languageModule, languageName, type Language } from '../../shared/languages'
-import { backendInstructions, lineContext, liveInstructions, type LineContext } from './prompts'
+import { backendInstructions, contextLanguage, contextText, liveInstructions, type TutorContext } from './prompts'
 
 const readingCache = new Map<string, string>()
 
@@ -157,7 +157,7 @@ export function safeLiveError(error: unknown, context: string): Error {
 
 export async function createLiveSession(
   sdp: string,
-  context: LineContext,
+  context: TutorContext,
   env: NodeJS.ProcessEnv = process.env
 ): Promise<TutorSessionAnswer> {
   if (!env.OPENAI_API_KEY)
@@ -165,7 +165,7 @@ export async function createLiveSession(
   if (!sdp.trim() || sdp.length > 100_000) throw new Error('INVALID_SDP_OFFER')
 
   const client = openai(env.OPENAI_API_KEY)
-  const { language } = context.moment
+  const language = contextLanguage(context)
   try {
     const result = await client.live.create({
       session: {
@@ -177,7 +177,7 @@ export async function createLiveSession(
           {
             type: 'message',
             role: 'developer',
-            content: [{ type: 'input_text', text: `Line context: ${lineContext(context)}` }]
+            content: [{ type: 'input_text', text: `Context: ${contextText(context)}` }]
           }
         ],
         client: {

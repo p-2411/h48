@@ -80,16 +80,15 @@ function moment(original = `テスト${++lineId}`) {
 }
 
 const nothing = () => undefined
-const cards = new Cards({ replay: nothing, practise: nothing, openReview: nothing })
-// The side panel the conversation lives in: only its page may talk to the tutor.
-const { EventEmitter } = await import('node:events')
+const cards = new Cards({ replay: nothing, practise: nothing, open: nothing })
+// The window the conversation lives in (here the side panel): only its page may talk to the tutor.
 const panelPage = { sent: [] }
-const panel = Object.assign(new EventEmitter(), {
+const panel = {
   owns: (sender) => sender === panelPage,
   send: (channel, value) => panelPage.sent.push([channel, value])
-})
-const tutor = new Tutor({ hold: nothing, release: nothing }, cards, panel)
-tutor.open({ moment: moment() })
+}
+const tutor = new Tutor({ hold: nothing, release: nothing }, cards)
+tutor.open({ moment: moment() }, panel)
 const fromTutor = { sender: panelPage }
 const fromElsewhere = { sender: {} }
 
@@ -125,7 +124,7 @@ async function savedCard(overrides) {
 }
 /** Opens the tutor on a moment with Explore further on (opening turns it off). */
 async function openOn(line = moment()) {
-  tutor.open({ moment: line })
+  tutor.open({ moment: line }, panel)
   await call('tutor:set-explore', true)
 }
 const cardCount = () => database().prepare('SELECT COUNT(*) n FROM cards WHERE deleted_at IS NULL').get().n
@@ -295,8 +294,13 @@ await test('9: a missed word becomes a card, or its card comes due now', () => {
     meaning: 'best friend',
     target: '親友 = best friend'
   }
+  const saved = []
+  const listen = (card) => saved.push(card)
+  cards.on('saved', listen)
   const first = cards.missed(draft)
+  cards.off('saved', listen)
   expect(first.made === true, 'a word with no card gets one')
+  expect(saved.length === 0, 'a missed word is not a saved one (the watch log keeps it as missed)')
   // Its card was reviewed and is due in ten days; missing the word again brings it forward.
   const later = Date.now() + 10 * 86_400_000
   database().prepare('UPDATE cards SET due = ? WHERE id = ?').run(later, first.card.id)
@@ -307,7 +311,34 @@ await test('9: a missed word becomes a card, or its card comes due now', () => {
   expect(stored.due <= Date.now() && new Date(JSON.parse(stored.fsrs).due).getTime() <= Date.now(), 'the scheduler state is due now too')
 })
 
-panel.emit('closed')
+await test('10: a conversation belongs to the window that opened it', async () => {
+  // The strip opens one: now only the strip's page may talk to the tutor, and it hears from it.
+  const stripPage = { sent: [] }
+  const strip = { owns: (sender) => sender === stripPage, send: (channel, value) => stripPage.sent.push([channel, value]) }
+  tutor.open({ moment: moment() }, strip)
+  let refused
+  try {
+    await electron.handlers.get('tutor:set-explore')(fromTutor, true)
+  } catch (error) {
+    refused = error
+  }
+  expect(refused?.message === 'UNTRUSTED_TUTOR_CALLER', 'the panel may not talk to the strip\'s conversation')
+  expect((await electron.handlers.get('tutor:set-explore')({ sender: stripPage }, true)) === true, 'the strip may')
+  // Ending the strip's conversation doesn't end another window's.
+  tutor.open({ moment: moment() }, panel)
+  tutor.end(strip)
+  expect((await electron.handlers.get('tutor:set-explore')(fromTutor, false)) === false, 'the panel\'s conversation goes on')
+  tutor.end(panel)
+  let ended
+  try {
+    await electron.handlers.get('tutor:set-explore')(fromTutor, true)
+  } catch (error) {
+    ended = error
+  }
+  expect(ended?.message === 'UNTRUSTED_TUTOR_CALLER', 'an ended conversation has no window')
+})
+
+tutor.end(panel)
 database().close()
 rmSync(folder, { recursive: true, force: true })
 if (failures) {

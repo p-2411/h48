@@ -5,84 +5,55 @@
 //
 // IPC (from the home page only; window.duet.daily in src/preload/daily.ts):
 //   daily:plan             → SessionView: today's plan (a new one each time it's asked for)
-//   daily:speak            → SessionAudio: Duet saying the line
-//   daily:coach            the learner's recording (WAV) → LineAttempt: what was heard, a note
-//   daily:check-recall     the word picked → { correct, answer }; a miss becomes a card (Cards.missed)
-//   daily:meaning-question → { question }
-//   daily:meaning-check    the learner's answer → { note }
-//   daily:done             → the streak, with today kept
-//   daily:set-reminder     the daily reminder's time ("19:30"), or null for none
-import { ipcMain, type WebContents } from 'electron'
+//   daily:speak, daily:coach, daily:check-recall, daily:meaning-question, daily:meaning-check
+//                            the challenge steps (src/main/challenges/ipc.ts)
+//   daily:done             → { kept, streak }: today is kept only when something was done
+//                            (a card reviewed, the line said, the challenge answered)
+import type { WebContents } from 'electron'
 import type { CardDraft } from '../../shared/cards'
-import type { SessionAudio, SessionView } from '../../shared/daily'
-import type { DueCounts } from '../../shared/types'
+import type { SessionView } from '../../shared/daily'
+import { reviewableNow, type DueCounts } from '../../shared/types'
 import type { PronunciationCoach, TextToSpeech } from '../ai/voice'
-import type { LastVideo, WordEvent } from '../watchlog'
+import { connectRound, ownedHandler } from '../challenges/ipc'
+import type { Quiz } from '../challenges/quiz'
+import { challengeView, Round, sayView } from '../challenges/round'
+import type { VideoLines, WordEvent } from '../watchlog'
 import type { Streak } from '../watchlog/streak'
 import { planSession } from './plan'
-import type { Quiz } from './quiz'
-import { parseReminder } from './reminder'
-import { challengeView, NO_KEY, Round } from './round'
 
 type Deps = {
-  log: { lastVideo(): LastVideo | undefined; markSessionDone(): void; streak(): Streak; noteWord(event: WordEvent): unknown }
-  cards: { counts(): DueCounts; missed(draft: CardDraft): unknown }
+  log: { lastVideo(): VideoLines | undefined; markSessionDone(): void; streak(): Streak; noteWord(event: WordEvent): unknown }
+  cards: { counts(): DueCounts; missed(draft: CardDraft): unknown; reviewsSince(at: number): number }
   voice?: { tts: TextToSpeech; coach: PronunciationCoach }
   quiz?: Quiz
   /** Whether a message came from the home page. */
   owns: (sender: WebContents) => boolean
-  /** Saves the daily reminder's time (none: off). */
-  setReminder: (time: string | undefined) => void
   random?: () => number
 }
 
 export class DailySession {
   private round?: Round
-  private video?: LastVideo
+  // When this session's plan was made: reviews since count as done in it.
+  private plannedAt = 0
 
-  constructor({ log, cards, voice, quiz, owns, setReminder, random = Math.random }: Deps) {
+  constructor({ log, cards, voice, quiz, owns, random = Math.random }: Deps) {
     // Every step is the home page's, and works on the plan made for it.
-    const handle = (channel: string, work: (...args: unknown[]) => unknown): void => {
-      ipcMain.handle(`daily:${channel}`, (event, ...args) => {
-        if (!owns(event.sender)) throw new Error('Not allowed: the daily session runs in the home base.')
-        return work(...args)
-      })
-    }
-    const round = (): Round => {
+    const handle = ownedHandler('daily', owns, 'Not allowed: the daily session runs in the home base.')
+    connectRound(handle, () => {
       if (!this.round) throw new Error('Start today’s session first.')
       return this.round
-    }
-
+    })
     handle('plan', (): SessionView => {
-      const video = (this.video = log.lastVideo())
-      const { due, newAvailable } = cards.counts()
-      const plan = planSession({ due: due + newAvailable, lines: video?.lines ?? [], words: video?.words ?? [], random })
-      this.round = new Round({ cards, log, coach: voice?.coach, quiz }, video, plan.say, plan.challenge)
-      return {
-        cards: plan.cards,
-        video: video?.title,
-        say: plan.say && { original: plan.say.original, translation: plan.say.translation },
-        challenge: challengeView(plan.challenge)
-      }
-    })
-    handle('speak', async (): Promise<SessionAudio> => {
-      const line = round().say
-      if (!line || !this.video) throw new Error('Today’s session has no line to say.')
-      if (!voice) throw new Error(NO_KEY)
-      return voice.tts.speak(line.original, this.video.language)
-    })
-    handle('coach', (clip) => round().coach(clip))
-    handle('check-recall', (choice) => round().checkRecall(choice))
-    handle('meaning-question', () => round().meaningQuestion())
-    handle('meaning-check', (answer) => round().meaningCheck(answer))
-    handle('set-reminder', (time) => {
-      const parsed = parseReminder(time)
-      if (time !== null && !parsed) throw new Error('Pick a time for the reminder, like 19:30.')
-      setReminder(parsed)
+      const video = log.lastVideo()
+      const plan = planSession({ due: reviewableNow(cards.counts()), lines: video?.lines ?? [], words: video?.words ?? [], random })
+      this.round = new Round({ cards, log, tts: voice?.tts, coach: voice?.coach, quiz }, video, plan.say, plan.challenge)
+      this.plannedAt = Date.now()
+      return { cards: plan.cards, video: video?.title, say: plan.say && sayView(plan.say), challenge: challengeView(plan.challenge) }
     })
     handle('done', () => {
-      log.markSessionDone()
-      return log.streak()
+      const kept = !!this.round?.finished || cards.reviewsSince(this.plannedAt) > 0
+      if (kept) log.markSessionDone()
+      return { kept, streak: log.streak() }
     })
   }
 }

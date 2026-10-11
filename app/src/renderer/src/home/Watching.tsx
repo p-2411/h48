@@ -2,6 +2,7 @@
 // learner left off.
 import type { WatchingVideo } from '../../../shared/home'
 import { clock, when } from '../components/time'
+import { LoadState } from './LoadState'
 import { useLoaded } from './useLoaded'
 
 const loadWatching = (): Promise<WatchingVideo[]> => window.duet.home.getWatching()
@@ -15,21 +16,8 @@ export function Watching(): React.JSX.Element {
   return (
     <main className="home-page">
       <h1>Watching</h1>
-      {error && (
-        <p className="notice error row" role="alert">
-          <span>{error}</span>
-          <button type="button" className="btn quiet" onClick={reload}>
-            Try again
-          </button>
-        </p>
-      )}
-      {!videos ? (
-        !error && (
-          <p className="faint" role="status">
-            Loading…
-          </p>
-        )
-      ) : videos.length === 0 ? (
+      <LoadState loaded={!!videos} error={error} reload={reload} />
+      {!videos ? null : videos.length === 0 ? (
         <p className="muted">
           Nothing here yet. Videos you watch with Duet show up here, so you can pick up where you
           left off.

@@ -1,11 +1,10 @@
 // What did they mean?: one question about a line the learner met, answered in their own words.
 import { useEffect, useState } from 'react'
-import type { SessionView } from '../../../../shared/daily'
+import type { MeaningView } from '../../../../shared/daily'
 import { say } from '../errors'
 import type { ChallengeApi } from './api'
 import './challenges.css'
 
-type MeaningView = Extract<NonNullable<SessionView['challenge']>, { kind: 'meaning' }>
 
 export function Meaning({ challenge, api, onNext }: { challenge: MeaningView; api: ChallengeApi; onNext: (answered: boolean) => void }): React.JSX.Element {
   const [question, setQuestion] = useState<string>()

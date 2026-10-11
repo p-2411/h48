@@ -11,7 +11,7 @@ import { say } from '../components/errors'
 import { LevelMeter } from './LevelMeter'
 import { LineView } from './LineView'
 import { actionable, quiet, statusDot } from './notice'
-import type { CheckpointView } from '../../../shared/checkpoints'
+import type { CheckpointView, Offer } from '../../../shared/checkpoints'
 import { Checkpoint } from './Checkpoint'
 import { SettingsPopover } from './SettingsPopover'
 import { useOverlay } from './useOverlay'
@@ -49,9 +49,10 @@ export function Overlay(): React.JSX.Element {
   // Stars given in this run, by line and word ("12:3", or "12:line"), so they show as saved.
   const [stars, setStars] = useState<Record<string, string>>({})
   // A checkpoint offered (the strip glows; a click opens it) and the one open.
-  const [offer, setOffer] = useState<'pause' | 'break' | null>(null)
+  const [offer, setOffer] = useState<Offer | null>(null)
   const [checkpoint, setCheckpoint] = useState<CheckpointView>()
   useEffect(() => window.duet.checkpoint.onOffer(setOffer), [])
+  useEffect(() => window.duet.checkpoint.onClosed(() => setCheckpoint(undefined)), [])
   // Where the pointer went down on the strip, so a click can be told from a drag.
   const pressedAt = useRef<{ x: number; y: number }>(undefined)
   const openCheckpoint = (event: React.MouseEvent<HTMLElement>): void => {

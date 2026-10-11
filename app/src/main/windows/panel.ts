@@ -1,4 +1,4 @@
-// The side panel window: beside the video, with tabs (Script, Explain, Review). Opened from the
+// The side panel window: beside the video, with tabs (Script, Explain). Opened from the
 // strip or the menu bar; its tabs are in src/renderer/src/panel. Drawn in the macOS sidebar
 // material, and opens where it was last left.
 import type { BrowserWindow, Rectangle } from 'electron'

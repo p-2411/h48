@@ -4,6 +4,8 @@
 // SLOWED_EVERY_MS (never stop), and taking one brings the normal pace back. Duet's own pauses
 // (Explain, Wait, talking to Duet) never count. Pure: index.ts feeds it the app's state each tick.
 
+import type { Offer } from '../../shared/checkpoints'
+
 export const PAUSE_MS = 2_000
 // An offer no one takes fades after this long.
 export const OFFER_MS = 10_000
@@ -12,9 +14,8 @@ export const SLOWED_EVERY_MS = 10 * 60_000
 // A scene end older than this is gone: not offered late.
 const BREAK_LATE_MS = 10_000
 
-export type Offer = 'pause' | 'break'
 
-export type TriggerState = {
+type TriggerState = {
   now: number
   /** The video on screen (its watch-log key), if any. */
   video?: string
@@ -65,10 +66,7 @@ export class CheckpointTriggers {
       return this.offer?.reason
     }
 
-    const every = this.slowed ? SLOWED_EVERY_MS : OFFER_EVERY_MS
-    const allowed =
-      !!state.video && state.canOffer && !state.open && (this.lastOfferAt === undefined || now - this.lastOfferAt >= every)
-    if (!allowed) return undefined
+    if (!state.video || !state.canOffer || state.open || !this.ready(now)) return undefined
     if (learnerPaused && !this.offeredThisPause && now - this.pausedSince! >= PAUSE_MS) {
       this.offeredThisPause = true
       return this.make('pause', now)
@@ -79,6 +77,14 @@ export class CheckpointTriggers {
       return this.make('break', now)
     }
     return undefined
+  }
+
+  /** Whether an offer could come now: none stands, and the wait since the last one is over. Work
+   * that costs something (judging the dialogue) waits for this. */
+  ready(now: number): boolean {
+    if (this.offer) return false
+    const every = this.slowed ? SLOWED_EVERY_MS : OFFER_EVERY_MS
+    return this.lastOfferAt === undefined || now - this.lastOfferAt >= every
   }
 
   /** The learner took the offer: the checkpoint opens, and the normal pace is back. */

@@ -40,6 +40,10 @@ function videoIdOf(key: string, site: Site): string {
   return key.slice(site.length + 1)
 }
 
+// The columns read into a VideoRow, and into a VideoLinesRow.
+const VIDEO_COLUMNS = 'id, site, title, position, last_watched, watched_ms'
+const VIDEO_LINES_COLUMNS = 'id, site, title, language'
+
 type VideoRow = {
   id: string
   site: Site
@@ -65,7 +69,7 @@ type VideoLinesRow = { id: string; site: Site; title: string | null; language: L
 
 /** A video's lines and words: the last video's for the daily session (lastVideo), the one on screen's
  * for a checkpoint (videoLines). */
-export type LastVideo = {
+export type VideoLines = {
   key: string
   site: Site
   videoId: string
@@ -131,9 +135,7 @@ export class WatchLog {
   /** Videos watched with Duet, the one watched last first. */
   recentVideos(limit: number): WatchedVideoSummary[] {
     const rows = database()
-      .prepare(
-        'SELECT id, site, title, position, last_watched, watched_ms FROM videos ORDER BY last_watched DESC LIMIT ?'
-      )
+      .prepare(`SELECT ${VIDEO_COLUMNS} FROM videos ORDER BY last_watched DESC LIMIT ?`)
       .all(limit) as VideoRow[]
     return rows.map(summary)
   }
@@ -141,19 +143,17 @@ export class WatchLog {
   /** One video watched with Duet, by its key. */
   video(key: string): WatchedVideoSummary | undefined {
     const row = database()
-      .prepare(
-        'SELECT id, site, title, position, last_watched, watched_ms FROM videos WHERE id = ?'
-      )
+      .prepare(`SELECT ${VIDEO_COLUMNS} FROM videos WHERE id = ?`)
       .get(key) as VideoRow | undefined
     return row && summary(row)
   }
 
   /** The video watched last that has lines on record: its lines, newest first (at most `limit`),
    * and the words the learner looked at in it (hovered or saved), for the daily session. */
-  lastVideo(limit = 40): LastVideo | undefined {
+  lastVideo(limit = 40): VideoLines | undefined {
     const video = database()
       .prepare(
-        `SELECT id, site, title, language FROM videos WHERE id IN (SELECT video_id FROM lines)
+        `SELECT ${VIDEO_LINES_COLUMNS} FROM videos WHERE id IN (SELECT video_id FROM lines)
          ORDER BY last_watched DESC LIMIT 1`
       )
       .get() as VideoLinesRow | undefined
@@ -162,9 +162,17 @@ export class WatchLog {
 
   /** A video's lines met since `since` (ms), newest first, and the words looked at in it, for a
    * checkpoint; undefined when the video isn't on record. */
-  videoLines(key: string, since: number, limit = 40): LastVideo | undefined {
-    const video = database().prepare('SELECT id, site, title, language FROM videos WHERE id = ?').get(key) as VideoLinesRow | undefined
+  videoLines(key: string, since: number, limit = 40): VideoLines | undefined {
+    const video = database().prepare(`SELECT ${VIDEO_LINES_COLUMNS} FROM videos WHERE id = ?`).get(key) as VideoLinesRow | undefined
     return video && this.withLines(video, since, limit)
+  }
+
+  /** Whether a video has lines met since `since` (ms), in the language it was last watched in: a
+   * cheap check, made every few seconds while watching. */
+  hasLinesSince(key: string, since: number): boolean {
+    return !!database()
+      .prepare('SELECT 1 FROM lines WHERE video_id = ? AND language = (SELECT language FROM videos WHERE id = ?) AND met_at >= ? LIMIT 1')
+      .get(key, key, since)
   }
 
   /** How many videos have been watched with Duet. */
@@ -172,7 +180,7 @@ export class WatchLog {
     return (database().prepare('SELECT COUNT(*) n FROM videos').get() as { n: number }).n
   }
 
-  private withLines(video: VideoLinesRow, since: number, limit: number): LastVideo {
+  private withLines(video: VideoLinesRow, since: number, limit: number): VideoLines {
     const rows = database()
       .prepare(
         'SELECT id, original, translation, processed, start FROM lines WHERE video_id = ? AND language = ? AND met_at >= ? ORDER BY met_at DESC LIMIT ?'
@@ -278,14 +286,14 @@ export class WatchLog {
     })
   }
 
-  /** The learner finished the daily session (piece 3 calls this). */
+  /** The learner finished the daily session (src/main/daily). */
   markSessionDone(now = Date.now()): void {
     const day = studyDay(now)
     this.ensureDay(day)
     database().prepare('UPDATE days SET session_done = 1 WHERE day = ?').run(day)
   }
 
-  /** The learner finished a checkpoint (piece 4 calls this). */
+  /** The learner finished a checkpoint (src/main/checkpoints). */
   markCheckpointDone(now = Date.now()): void {
     const day = studyDay(now)
     this.ensureDay(day)

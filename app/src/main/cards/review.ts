@@ -291,3 +291,8 @@ export class ReviewSession {
     this.skipped.delete(card.id)
   }
 }
+
+/** Ratings made since `at` that weren't undone. */
+export function reviewsSince(at: number): number {
+  return (database().prepare('SELECT COUNT(*) n FROM reviews WHERE reviewed_at >= ? AND undone_at IS NULL').get(at) as { n: number }).n
+}

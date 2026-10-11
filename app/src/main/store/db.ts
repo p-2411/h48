@@ -108,6 +108,10 @@ const MIGRATIONS: string[] = [
     session_done     INTEGER NOT NULL DEFAULT 0,
     checkpoints_done INTEGER NOT NULL DEFAULT 0
   );
+  `,
+  // 3: the lines met lately in a video, for checkpoints (asked every few seconds while watching).
+  `
+  CREATE INDEX lines_recent ON lines (video_id, language, met_at);
   `
 ]
 

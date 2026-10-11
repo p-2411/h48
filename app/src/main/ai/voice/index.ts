@@ -5,7 +5,7 @@
 //   DUET_VOICE_PROVIDER  openai (the only one so far, and the default)
 //   DUET_STT_MODEL       speech to text; default gpt-4o-transcribe
 //   DUET_LISTEN_MODEL    hears how a video's line is said, for Explain; default gpt-audio-1.5
-//   DUET_TTS_MODEL       says a line for the daily session; default gpt-4o-mini-tts
+//   DUET_TTS_MODEL       says a line to say back (daily session, checkpoints); default gpt-4o-mini-tts
 //   DUET_COACH_MODEL     hears the learner say a line back; default gpt-audio-1.5
 //   DUET_LIVE_VOICE      Duet's voice (the tutor's too); default marin
 //   OPENAI_API_KEY

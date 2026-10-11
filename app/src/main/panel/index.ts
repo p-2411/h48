@@ -14,6 +14,7 @@ import type { Moment } from '../../shared/moment'
 import type { PanelTab } from '../../shared/types'
 import type { Settings } from '../settings'
 import type { Watcher } from '../watcher'
+import { isFrom } from '../windows/from'
 import { createPanelWindow } from '../windows/panel'
 
 export class Panel extends EventEmitter {
@@ -62,7 +63,7 @@ export class Panel extends EventEmitter {
 
   /** Whether a message came from the panel's page (the only page allowed to talk to the tutor). */
   owns(sender: Electron.WebContents): boolean {
-    return !!this.window && !this.window.isDestroyed() && sender === this.window.webContents
+    return isFrom(this.window, sender)
   }
 
   send(channel: string, payload: unknown): void {

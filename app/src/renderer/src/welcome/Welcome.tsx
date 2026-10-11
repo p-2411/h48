@@ -1,7 +1,7 @@
 // The first run, in short steps: the language, how much of it in each line (shown on a sample line),
 // on macOS the two permissions (each one's state live, so the learner sees it take), and what the
 // colours mean. Windows asks for no permissions, so it skips that step. Every choice can be changed
-// later under ⚙ on the strip.
+// later in Settings, in the home base.
 import { useEffect, useState } from 'react'
 import { joinTokens, mixedLine } from '../../../shared/levels'
 import { LANGUAGE_CODES, languageModule, languageName } from '../../../shared/languages'

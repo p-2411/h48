@@ -3,7 +3,7 @@
 // interfaces in one file (see openai.ts) and index.ts picks it from settings.
 //
 // The tutor's conversation itself (what to say back) is not here (it is GPT-Live, src/main/tutor).
-// Saying a line back in the daily session uses TextToSpeech (Duet says it) and PronunciationCoach
+// Saying a line back (the daily session, checkpoints) uses TextToSpeech (Duet says it) and PronunciationCoach
 // (how the learner said it).
 import type { LineAttempt } from '../../../shared/daily'
 import type { Language } from '../../../shared/types'
@@ -47,7 +47,7 @@ export interface DeliveryListener {
   describe(audio: AudioClip, line: { original: string; language: Language }, signal?: AbortSignal): Promise<Delivery | undefined>
 }
 
-/** Says text aloud, as Duet's voice: the line the learner is to say back in the daily session. */
+/** Says text aloud, as Duet's voice: the line the learner is to say back (the daily session, checkpoints). */
 export interface TextToSpeech {
   readonly name: string
   speak(text: string, language: Language, signal?: AbortSignal): Promise<AudioClip>

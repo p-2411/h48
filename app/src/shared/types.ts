@@ -138,3 +138,6 @@ export type AudioPermission = 'granted' | 'denied' | 'not-asked' | 'unknown' | '
 
 /** Cards ready to review now: due ones, and new ones still allowed today. */
 export type DueCounts = { due: number; newAvailable: number }
+
+/** The cards that can be reviewed now: those due, plus new ones still allowed today. */
+export const reviewableNow = ({ due, newAvailable }: DueCounts): number => due + newAvailable

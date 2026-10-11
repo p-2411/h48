@@ -12,5 +12,5 @@
 .scene { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 14px; }
 .scene mark { background: rgba(255, 214, 10, 0.22); color: inherit; border-radius: 4px; padding: 0 2px; }
 .scene .faint { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-/* Narrow (the side panel): the four ratings in two rows. */
+/* Narrow: the four ratings in two rows. */
 @media (max-width: 520px) { .ratings { grid-template-columns: repeat(2, 1fr); } .legend { grid-template-columns: 1fr; } }

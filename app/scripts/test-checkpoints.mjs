@@ -12,7 +12,7 @@ const fakeElectron = join(folder, 'fake-electron.cjs')
 writeFileSync(
   fakeElectron,
   `const handlers = new Map()
-module.exports = { app: { getPath: () => ${JSON.stringify(folder)} }, ipcMain: { handle: (channel, work) => handlers.set(channel, work), on: () => {} }, is: { dev: false }, handlers }
+module.exports = { app: { getPath: () => ${JSON.stringify(folder)} }, ipcMain: { handle: (channel, work) => { if (handlers.has(channel)) throw new Error('Attempted to register a second handler for ' + channel); handlers.set(channel, work) }, on: () => {} }, is: { dev: false }, handlers }
 `
 )
 const jiti = createJiti(import.meta.url, { alias: { electron: fakeElectron, '@electron-toolkit/utils': fakeElectron }, moduleCache: true })
@@ -178,8 +178,9 @@ try {
   assert.equal(sent.slice(quietSince).filter(([, value]) => value).length, 0, 'checkpoints off: no glow')
 
   // Checkpoints turn themselves on after the third video watched, unless the learner chose.
+  electron.handlers.clear()
   const fresh = Object.assign(new EventEmitter(), { current: { language: 'ko' }, update: (change) => Object.assign(fresh.current, change) })
-  const counting = { videoCount: () => 2, videoLines: () => undefined, noteWord: () => {}, markCheckpointDone: () => {}, streak: () => ({}) }
+  const counting = { videoCount: () => 2, videoLines: () => undefined, hasLinesSince: () => false, noteWord: () => {}, markCheckpointDone: () => {}, streak: () => ({}) }
   const auto = new Checkpoints({ watcher, player, settings: fresh, log: counting, cards: { missed: () => {} }, overlay: { owns: () => false, send: () => {} } })
   auto.tick(now)
   assert.equal(fresh.current.checkpoints, undefined, 'two videos: not yet')
@@ -202,6 +203,7 @@ try {
   const playing = { ...player, playing: true }
   const on = Object.assign(new EventEmitter(), { current: { language: 'ko', checkpoints: true }, update: () => {} })
   const sent2 = []
+  electron.handlers.clear()
   const scened = new Checkpoints({ watcher: transcriptWatcher, player: playing, settings: on, log, cards: { missed: () => {} }, scenes, overlay: { owns: () => true, send: (channel, value) => sent2.push([channel, value]) } })
   transcriptWatcher.script = { source: 'transcript', lines: [ready(10, 'a'), ready(11, 'b'), ready(12, 'c')] }
   transcriptWatcher.emit('script', transcriptWatcher.script)
@@ -221,6 +223,7 @@ try {
   const captionWatcher = Object.assign(new EventEmitter(), { currentVideo: video, script: { source: 'captions', lines: [] } })
   const sent3 = []
   asked.length = 0
+  electron.handlers.clear()
   const judged = new Checkpoints({ watcher: captionWatcher, player: playing, settings: on, log, cards: { missed: () => {} }, scenes, overlay: { owns: () => true, send: (channel, value) => sent3.push([channel, value]) } })
   for (const id of [20, 21, 22]) {
     captionWatcher.emit('line', ready(id, `line ${id}`))
@@ -236,6 +239,82 @@ try {
   await new Promise((done) => setTimeout(done, 0))
   judged.tick(Date.now() + 100)
   assert.deepEqual(sent3.at(-1), ['checkpoint:offer', 'break'], 'judged the end of the exchange: the strip glows')
+
+  // --- What the audit found ---------------------------------------------------------------------------
+  // Checkpoints off: no transcript is sent to the scene model; turning them on splits it then.
+  asked.length = 0
+  electron.handlers.clear()
+  const offSettings = Object.assign(new EventEmitter(), { current: { language: 'ko', checkpoints: false }, update: () => {} })
+  const offWatcher = Object.assign(new EventEmitter(), { currentVideo: video, script: { source: 'transcript', lines: [ready(30, 'x'), ready(31, 'y')] } })
+  new Checkpoints({ watcher: offWatcher, player: playing, settings: offSettings, log, cards: { missed: () => {} }, scenes, overlay: { owns: () => true, send: () => {} } })
+  offWatcher.emit('script', offWatcher.script)
+  await new Promise((done) => setTimeout(done, 0))
+  assert.deepEqual(asked, [], 'checkpoints off: the transcript is not sent anywhere')
+  offSettings.current.checkpoints = true
+  offSettings.emit('change', offSettings.current, { checkpoints: true })
+  await new Promise((done) => setTimeout(done, 0))
+  assert.deepEqual(asked, [['ends', 2]], 'turned on: the video on screen is split then')
+
+  // A checkpoint open when the video changes is closed: the video goes, the strip is told, and offers
+  // come again (it doesn't stay open for good).
+  electron.handlers.clear()
+  const changing = Object.assign(new EventEmitter(), { currentVideo: video })
+  const changingHolds = []
+  const changingSent = []
+  const changingPlayer = { playing: false, isHeldBy: () => false, hold: (holder) => changingHolds.push(['hold', holder]), release: (holder) => changingHolds.push(['release', holder]) }
+  const moving = new Checkpoints({ watcher: changing, player: changingPlayer, settings: on, log, cards: { missed: () => {} }, overlay: { owns: () => true, send: (channel, value) => changingSent.push([channel, value]) }, random: () => 0 })
+  const t1 = Date.now()
+  changing.emit('current', 1)
+  moving.tick(t1)
+  moving.tick(t1 + 2_100)
+  await call('checkpoint:open', overlayPage)
+  changing.currentVideo = { site: 'youtube', id: 'other', url: 'https://www.youtube.com/watch?v=other' }
+  moving.tick(t1 + 3_000)
+  assert.deepEqual(changingHolds.at(-1), ['release', 'checkpoint'], 'another video: the open checkpoint lets the video go')
+  assert.ok(changingSent.some(([channel]) => channel === 'checkpoint:closed'), '...and the strip drops its card')
+  // The strip's page reloaded (or crashed): its open checkpoint is closed too.
+  changing.currentVideo = video
+  log.noteLine('youtube:cp', 'ko', { id: 3, original: '저는 어제 친구랑 영화를 봤어요.', at: 0, start: 60, state: 'ready', processed: movie }, t1 + 3_100 + SLOWED_EVERY_MS)
+  moving.tick(t1 + 3_100)
+  moving.tick(t1 + 3_100 + SLOWED_EVERY_MS)
+  moving.tick(t1 + 3_100 + SLOWED_EVERY_MS + 2_100)
+  await call('checkpoint:open', overlayPage)
+  moving.reset()
+  assert.deepEqual(changingHolds.at(-1), ['release', 'checkpoint'], 'reset closes an open checkpoint')
+
+  // Duet's own hold (an open checkpoint, Explain, Wait, voice) is not the learner's pause.
+  electron.handlers.clear()
+  const heldSent = []
+  const held = new Checkpoints({ watcher: changing, player: { ...changingPlayer, isHeldBy: (holder) => holder === 'explain' }, settings: on, log, cards: { missed: () => {} }, overlay: { owns: () => true, send: (channel, value) => heldSent.push([channel, value]) } })
+  held.tick(t1)
+  held.tick(t1 + 5_000)
+  assert.equal(heldSent.filter(([, value]) => value).length, 0, 'paused by Explain: no glow')
+
+  // Without a transcript, a pause in the dialogue is judged only when an offer could follow: not while
+  // a recent offer's wait is running.
+  electron.handlers.clear()
+  asked.length = 0
+  const coolWatcher = Object.assign(new EventEmitter(), { currentVideo: video, script: { source: 'captions', lines: [] } })
+  const cool = new Checkpoints({ watcher: coolWatcher, player: { ...changingPlayer, playing: false }, settings: on, log, cards: { missed: () => {} }, scenes, overlay: { owns: () => true, send: () => {} } })
+  const t2 = Date.now()
+  coolWatcher.emit('current', 40)
+  cool.tick(t2)
+  cool.tick(t2 + 2_100) // a pause offer: the wait starts
+  cool.tick(t2 + 13_000) // it faded, left alone
+  for (const id of [41, 42, 43]) {
+    coolWatcher.emit('line', ready(id, `line ${id}`))
+    coolWatcher.emit('current', id)
+  }
+  cool.tick(Date.now() + 6_000)
+  assert.deepEqual(asked, [], 'within the wait after an offer: the dialogue is not judged')
+
+  // The content check is a cheap query, served by an index.
+  assert.equal(log.hasLinesSince('youtube:cp', Date.now() - 5 * 60_000), true)
+  assert.equal(log.hasLinesSince('youtube:cp', Date.now() + 2 * SLOWED_EVERY_MS), false)
+  assert.equal(log.hasLinesSince('youtube:nothing', 0), false)
+  const { database } = await jiti.import(join(root, 'store/db.ts'))
+  const plan = database().prepare("EXPLAIN QUERY PLAN SELECT 1 FROM lines WHERE video_id = ? AND language = ? AND met_at >= ? LIMIT 1").all('youtube:cp', 'ko', 0)
+  assert.ok(plan.some((row) => String(row.detail).includes('lines_recent')), `the recent-lines check uses its index: ${JSON.stringify(plan)}`)
 
   console.log('Checkpoint tests passed.')
 } finally {

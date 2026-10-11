@@ -4,10 +4,15 @@
 //   player.ts       the video's position and the one place that pauses and plays it
 //   watcher.ts      captions or transcript → processed lines, one session per video and language
 //   wait.ts         holds the video while the line on screen is still being translated
-//   panel/          the side panel beside the video: Script, Explain and Review tabs
+//   panel/          the side panel beside the video: Script and Explain tabs
 //   explain/        Explain that: the side panel's Explain tab and its request
 //   cards/          saved cards, My cards and FSRS review
 //   tutor/          the conversation about a line (text and voice) and its card tools
+//   home/           the home base window: Today, Watching, My cards, Settings
+//   watchlog/       what was watched with Duet (videos, lines, words, days) and the streak
+//   daily/          the daily session: the cards, a line said back, one challenge; the reminder
+//   checkpoints/    a glow on the strip at a pause or a scene's end, one challenge when clicked
+//   challenges/     the challenges the daily session and checkpoints share
 //   sources/        each video site (YouTube, Netflix); store/ the local database
 //   ipc/overlay.ts  the overlay's IPC; windows/ the windows; tray.ts the menu bar icon
 //   ai/             the models (lines, explain, voice), one file per provider
@@ -43,12 +48,13 @@ import { WaitForTranslation } from './wait'
 import { Watcher } from './watcher'
 import { WatchLog } from './watchlog'
 import { connectWatchLog } from './watchlog/connect'
-import { Home } from './home'
+import { Home, openDuet } from './home'
 import { DailySession } from './daily'
-import { openAIQuiz } from './daily/quiz'
+import { openAIQuiz } from './challenges/quiz'
 import { Reminder } from './daily/reminder'
 import { Checkpoints } from './checkpoints'
 import { openAISceneJudge } from './checkpoints/scenes'
+import { isFrom } from './windows/from'
 import { createOverlay, toggleOverlay } from './windows/overlay'
 
 // In development, settings such as OPENAI_API_KEY can live in app/.env.local (git-ignored).
@@ -75,8 +81,6 @@ app.whenReady().then(() => {
   nativeTheme.themeSource = 'dark'
   if (!primary) return
   electronApp.setAppUserModelId('io.useduet.app')
-  // An overlay app lives in the menu bar, not the Dock.
-  if (process.platform === 'darwin') app.dock?.hide()
   app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 
   let models: Models | undefined
@@ -118,12 +122,11 @@ app.whenReady().then(() => {
   const cards = new Cards({
     replay: replayMoment,
     practise: (moment) => explain.open(moment),
-    open: (cardId) => home.open('cards', cardId),
-    openReview: () => home.open('review')
+    open: (cardId) => home.open('cards', cardId)
   })
   // Explain and the conversation about a line are one: the explanation first, then text or voice
   // with the tutor, which reads and saves cards in the same collection as My cards.
-  const tutor = new Tutor(player, cards, panel)
+  const tutor = new Tutor(player, cards)
   const explain = new Explain({
     explainer: models?.explainer,
     replay: replayMoment,
@@ -160,7 +163,6 @@ app.whenReady().then(() => {
   app.on('before-quit', () => logLink.finish())
   // The home base: opened from the Dock, the menu bar, the strip's ⚙ and when Duet starts.
   const home = new Home({ log: watchLog, cards, settings, openWelcome: () => welcome.open(true) })
-  app.on('activate', () => home.open())
   // The text model's quiz (what did they mean?), for the daily session and checkpoints.
   const quiz = openAIQuiz()
   // The daily session in the home base's Today: reviews, a line said back, one challenge.
@@ -169,8 +171,7 @@ app.whenReady().then(() => {
     cards,
     voice,
     quiz,
-    owns: (sender) => home.owns(sender),
-    setReminder: (time) => settings.update({ reminder: time })
+    owns: (sender) => home.owns(sender)
   })
   // Checkpoints: a glow on the strip at a pause or where a scene ends; one challenge when clicked.
   const checkpoints = new Checkpoints({
@@ -183,30 +184,34 @@ app.whenReady().then(() => {
     quiz,
     scenes: openAISceneJudge(),
     overlay: {
-      owns: (sender) => !overlay.isDestroyed() && sender === overlay.webContents,
+      owns: (sender) => isFrom(overlay, sender),
       send: (channel, value) => overlay.isDestroyed() || overlay.webContents.send(channel, value)
     }
   })
-  // The daily reminder (off unless a time is set in Settings); clicking it opens Today.
+  // The strip's page reloaded or crashed: a checkpoint it had open goes with it.
+  overlay.webContents.on('did-start-loading', () => checkpoints.reset())
+  overlay.webContents.on('render-process-gone', () => checkpoints.reset())
+  // The daily reminder (off unless a time is set in Settings); clicking it opens Today. The last one
+  // is kept, so it isn't garbage-collected (and its click lost) while it's on screen.
+  let shownReminder: Notification | undefined
   const reminder = new Reminder({
     streak: () => watchLog.streak(),
     notify: (text) => {
-      const notification = new Notification({ title: 'Duet', body: text })
-      notification.on('click', () => home.open('today'))
-      notification.show()
+      shownReminder = new Notification({ title: 'Duet', body: text })
+      shownReminder.on('click', () => home.open('today'))
+      shownReminder.show()
     }
   })
   reminder.set(settings.current.reminder)
   settings.on('change', (current, changed) => {
     if ('reminder' in changed) reminder.set(current.reminder)
   })
-  // Shows or hides the overlay from anywhere; the keys are a setting (⚙ on the strip).
+  // Shows or hides the overlay from anywhere; the keys are a setting (Settings, in the home base).
   const shortcut = new Shortcut(settings.current.shortcut, () => toggleOverlay(overlay))
   const showScript = (): void => panel.show('script')
-  const { sendDue, sendFit } = connectOverlay(overlay, {
+  const { sendFit } = connectOverlay(overlay, {
     watcher,
     settings,
-    due: () => cards.counts(),
     explainLine,
     showScript,
     // A star on the strip: the whole line, or one of its words.
@@ -236,13 +241,12 @@ app.whenReady().then(() => {
   const placement = new Placement(overlay, settings, sendFit)
   captions.on('frame', (frame?: VideoFrame) => placement.setFrame(frame))
   captions.on('status', (status: CaptionStatus) => placement.setVideo(status.url))
-  cards.on('changed', sendDue)
-  // Due counts change with the clock too (a card comes due), so refresh them now and then.
-  setInterval(() => sendDue(cards.counts()), 60_000)
   const welcome = new Welcome(settings, audio)
-  // First run: the welcome window, then the home base once it is done. After that, the home base.
-  if (settings.current.onboarded) home.open()
-  else welcome.open()
+  // First run: the welcome window, then the home base once it is done. After that, the home base,
+  // at launch and from the Dock icon.
+  const open = (): void => openDuet({ onboarded: settings.current.onboarded, home, welcome })
+  open()
+  app.on('activate', open)
   settings.on('change', (_, changed) => {
     if (changed.onboarded) home.open()
   })

@@ -21,11 +21,13 @@ OPENAI_API_KEY=sk-...
 On macOS, grant **Accessibility** to the app that runs `npm run dev` (Terminal, your editor, or the
 Electron app itself) the first time: System Settings › Privacy & Security › Accessibility. Windows
 needs no permission. Then open a YouTube or Netflix video in Chrome, Arc, Edge or Brave. The strip
-sits on the video; Option+Shift+D (Alt+Shift+D on Windows) shows or hides it by default, and ⚙ on
-the strip changes the keys. The menu bar (or system tray) icon has the rest.
+sits on the video; Option+Shift+D (Alt+Shift+D on Windows) shows or hides it by default, and
+Settings in the home base changes the keys. The home base opens at launch and from the Dock; the
+menu bar (or system tray) icon has the rest.
 
 Checks before you push: `npm run typecheck`, `npm run lint` and `npm test` (the tutor, overlay,
-language and player tests; `npm run test:native-reader` checks the Windows reader on Windows).
+language, player, cards, watch log, home base, daily session and checkpoint tests;
+`npm run test:native-reader` checks the Windows reader on Windows).
 
 ### Working without a browser
 
@@ -71,15 +73,20 @@ browser ──(accessibility)──▶ caption reader ──JSON lines──▶ 
 | `src/main/captions.ts`                 | Runs the caption reader for this OS; turns its output into events.                                                                   |
 | `src/main/watcher.ts`, `session.ts`    | Video → lines → processed lines.                                                                                                     |
 | `src/main/sources/`                    | One file per video site (`youtube.ts`, `netflix.ts`) behind the `Source` interface.                                                  |
-| `src/main/store/db.ts`                 | The local SQLite database (settings, cards, reviews) and its migrations.                                                             |
+| `src/main/store/db.ts`                 | The local SQLite database (settings, cards, reviews, the watch log) and its migrations.                                              |
 | `src/main/explain/`                    | Explain that: the side panel's Explain tab and its request.                                                                          |
-| `src/main/panel/`                      | The side panel: Script, Explain and Review tabs.                                                                                     |
+| `src/main/panel/`                      | The side panel: Script and Explain tabs.                                                                                             |
+| `src/main/home/`                       | The home base window: Today, Watching, My cards (with Review) and Settings.                                                          |
+| `src/main/watchlog/`                   | What was watched with Duet (videos, lines met, words, study days), kept locally, and the streak.                                     |
+| `src/main/daily/`                      | The daily session (`plan.ts`) and the daily reminder (`reminder.ts`).                                                                |
+| `src/main/checkpoints/`                | When a checkpoint is offered (`triggers.ts`), where scenes end (`scenes.ts`), and the checkpoint itself.                             |
+| `src/main/challenges/`                 | The challenges the daily session and checkpoints share: picking them, recall, the quiz, a round and its IPC.                         |
 | `src/main/placement.ts`                | Keeps the strip on the video (from the reader's frame), until the learner drags it; the next video snaps it back.                    |
 | `src/main/detect.ts`, `spoken.ts`      | Which language a caption line is in, and once per video which language is spoken.                                                    |
 | `src/main/welcome.ts`, `shortcut.ts`   | The first-run window, and the show/hide keys.                                                                                        |
 | `src/main/demo.ts`                     | Demo fixtures for the tutor (`DUET_DEMO_FIXTURES=1`).                                                                                |
 | `src/shared/languages/`                | Every language Duet teaches, one module each (`module.ts` is the shape, `index.ts` the list).                                        |
-| `src/main/cards/`                      | Cards: `store.ts` (collection), `scheduler.ts` (ts-fsrs), `review.ts` (queue, rating, undo), `index.ts` (IPC, My cards window).      |
+| `src/main/cards/`                      | Cards: `store.ts` (collection), `scheduler.ts` (ts-fsrs), `review.ts` (queue, rating, undo), `index.ts` (IPC; My cards is a place in the home base). |
 | `src/main/replay.ts`                   | Going back to a moment: seek the open video, or open it at that point.                                                               |
 | `src/main/audio.ts`, `listen.ts`       | The audio reader (last minute of the browser's sound) and hearing one line for Explain.                                              |
 | `native/macos/AudioReader/`            | The audio reader: a Core Audio process tap on the browser, with its own Info.plist and permission.                                   |
@@ -91,9 +98,9 @@ browser ──(accessibility)──▶ caption reader ──JSON lines──▶ 
 | `src/main/ai/`                         | Text models: `structured.ts` is what every provider does (`providers/`); tasks (`lines/`, `explain/`) are written once on top of it. |
 | `src/main/ai/voice/`                   | Voice models (speech↔text), same pattern.                                                                                            |
 | `src/main/windows/`, `ipc/`, `tray.ts` | Windows, each window's IPC, the menu bar icon.                                                                                       |
-| `src/preload/`                         | `window.duet`: one file per window or feature (`overlay`, `panel`, `explain`, `cards`, `tutor`, `welcome`).                          |
-| `src/renderer/`                        | One HTML page per window; `src/overlay/`, `src/panel/`, `src/explain/` (with `voice/`), `src/cards/`, `src/welcome/`, `components/`. |
-| `src/shared/`                          | Types used by both sides: lines, settings, levels, `moment.ts`, `explain.ts`, `cards.ts`.                                            |
+| `src/preload/`                         | `window.duet`: one file per window or feature (`overlay`, `panel`, `explain`, `cards`, `tutor`, `welcome`, `home`, `daily`, `checkpoint`). |
+| `src/renderer/`                        | One HTML page per window; `src/overlay/`, `src/panel/`, `src/explain/` (with `voice/`), `src/cards/`, `src/home/`, `src/welcome/`, `components/` (with `challenges/`). |
+| `src/shared/`                          | Types used by both sides: lines, settings, levels, `moment.ts`, `explain.ts`, `cards.ts`, `home.ts`, `daily.ts`, `checkpoints.ts`.   |
 
 ## Moments
 
@@ -135,11 +142,30 @@ same context. `watcher.moment(lineId?)` takes one.
   opens the side panel's Explain tab on the line: what it means here and how it comes across, with
   more under "More", Replay and Save, then the conversation about the line (below).
 - **Save** fills an editable card from the explanation; the same line, target and type is
-  caught as a duplicate. **My cards** (menu bar) lists, searches, edits, pauses, deletes (with undo),
+  caught as a duplicate. **My cards** (in the home base) lists, searches, edits, pauses, deletes (with undo),
   backs up and restores cards, and runs **review** with FSRS (`ts-fsrs` 5.4.2): due learning cards,
   then due reviews, then new cards within the daily allowance (10, study day from 04:00). A rating
   is one transaction with the scheduler state before and after; undo restores the state before.
 - Cards live in `duet.db` in the app's data folder, on this computer only.
+
+## The home base, the daily session and checkpoints
+
+- The **home base** is a normal window with a Dock icon: Today (the streak and today's session),
+  Watching (videos watched with Duet, reopened where the learner left off), My cards (with Review)
+  and Settings. The welcome window comes first until the learner has been through it.
+- The **watch log** (`src/main/watchlog/`) keeps, on this computer only, the videos watched, the lines
+  met in the last 30 videos, the words the learner hovered, saved, explained or missed, and each study
+  day. A day is kept by finishing the daily session, finishing a checkpoint, or watching 10 minutes;
+  each Monday-to-Sunday week forgives two missed days (freezes).
+- The **daily session** (Today › Start): the cards due (at most 12, in the scheduler's order), then a
+  line from the last video that Duet says and the learner says back (`DUET_TTS_MODEL`,
+  `DUET_COACH_MODEL`), then one challenge: recall a word they looked at, or what a line meant. Today is
+  kept only when something was done. An optional reminder (Settings) comes when today isn't kept.
+- **Checkpoints** (Settings; on by themselves after the third video, unless the learner chose) glow
+  on the strip at a pause the learner makes or where a scene or conversation ends, judged from the
+  dialogue by `gpt-6-luna`. An offer stands 10 s; at most one every 5 minutes, or every 10 after one
+  is left alone. Clicking it holds the video for one challenge from the last few minutes. A word
+  missed, here or in the daily session, becomes a card.
 
 ## Hearing the video
 
@@ -177,8 +203,10 @@ the delivery, not only the words.
   Voice uses `gpt-live-1` over WebRTC, delegating reasoning and the same tools to `gpt-6-luna`; the
   renderer owns microphone and playback, and the main process exchanges the SDP offer, so
   `OPENAI_API_KEY` never enters the page. The video waits while voice is live. `gpt-6-luna` also writes
-  the Meaning reveal and the romanisation. Override the voice with `DUET_LIVE_VOICE` or that model with
-  `DUET_LIVE_BACKEND_MODEL` in `.env.local`.
+  the Meaning reveal and the romanisation. Override the voice with `DUET_LIVE_VOICE` (it is also the
+  voice that says a line to say back) or that model with `DUET_LIVE_BACKEND_MODEL` in `.env.local`.
+  Saying a line back uses `DUET_TTS_MODEL` (default `gpt-4o-mini-tts`) to say it and
+  `DUET_COACH_MODEL` (default `gpt-audio-1.5`) to hear the learner.
 - Duet uses the same `duet.db`, card collection and FSRS scheduler as My cards. Saves and reviews are
   previewed first and committed only by the learner: a click, or a reply after the preview.
 - `DUET_DEMO_FIXTURES=1` (demos only, `main/demo.ts`) seeds two labelled Japanese cards into an empty

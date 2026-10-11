@@ -18,20 +18,33 @@ export function nextReminderAt(time: string, now: number): number {
   return next.getTime()
 }
 
+// The clock is looked at this often. A timer counted down to the time would come late after the Mac
+// slept (timers don't count during sleep).
+const CHECK_EVERY_MS = 60_000
+// A reminder this late (the Mac slept through it) is skipped, not given.
+const LATE_MS = 2 * 60 * 60_000
+
 export class Reminder {
   private timer?: NodeJS.Timeout
+  private time?: string
+  private nextAt?: number
 
   constructor(private readonly deps: { streak: () => Streak; notify: (text: string) => void }) {}
 
-  /** Reminds at `time` every day from now on, or (with none) stops. */
+  /** Reminds at `time` every day from now on, or (with none, or not a time) stops. */
   set(time: string | undefined, now = Date.now()): void {
-    clearTimeout(this.timer)
+    clearInterval(this.timer)
     this.timer = undefined
-    if (!time) return
-    this.timer = setTimeout(() => {
-      this.remind()
-      this.set(time)
-    }, nextReminderAt(time, now) - now)
+    this.time = parseReminder(time)
+    this.nextAt = this.time ? nextReminderAt(this.time, now) : undefined
+    if (this.time) this.timer = setInterval(() => this.check(), CHECK_EVERY_MS)
+  }
+
+  /** Gives the reminder if its time has come (and isn't long gone), then waits for the next. */
+  check(now = Date.now()): void {
+    if (!this.time || this.nextAt === undefined || now < this.nextAt) return
+    if (now - this.nextAt < LATE_MS) this.remind()
+    this.nextAt = nextReminderAt(this.time, now)
   }
 
   /** The reminder, unless today is already kept. */

@@ -1,14 +1,14 @@
-// Say the line: Duet says a line from the last video, the learner says it back, and Duet says what
+// Say the line: Duet says a line from the video, the learner says it back, and Duet says what
 // matched and at most one thing to work on.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { LineAttempt, SessionView } from '../../../../shared/daily'
+import type { LineAttempt, SayView } from '../../../../shared/daily'
 import { say } from '../errors'
 import { Icon } from '../Icon'
 import type { ChallengeApi } from './api'
 import './challenges.css'
 import { useRecorder } from './useRecorder'
 
-export function SayLine({ line, api, onNext }: { line: NonNullable<SessionView['say']>; api: ChallengeApi; onNext: (answered: boolean) => void }): React.JSX.Element {
+export function SayLine({ line, api, onNext }: { line: SayView; api: ChallengeApi; onNext: (answered: boolean) => void }): React.JSX.Element {
   const [attempt, setAttempt] = useState<LineAttempt>()
   const [busy, setBusy] = useState<'hearing' | 'coaching'>()
   const [error, setError] = useState<string>()

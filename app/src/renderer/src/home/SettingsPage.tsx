@@ -1,6 +1,6 @@
 // Settings: everything Duet can be set to, in one page. The strip's ⚙ keeps the quick switches (the
 // same controls, SettingControls.tsx); review settings stay with Review.
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { languageName } from '../../../shared/languages'
 import type { OverlaySettings } from '../../../shared/types'
 import { say } from '../components/errors'
@@ -11,6 +11,7 @@ import {
   ShortcutRecorder,
   Toggle
 } from '../components/SettingControls'
+import { LoadState } from './LoadState'
 
 // The reminder's time when it is first turned on.
 const DEFAULT_REMINDER = '19:00'
@@ -20,7 +21,7 @@ function ReminderSetting({ time }: { time?: string }): React.JSX.Element {
   const [error, setError] = useState<string>()
   const save = (next: string | null): void => {
     setError(undefined)
-    window.duet.daily.setReminder(next).catch((cause) => setError(say(cause, 'Could not save the reminder.')))
+    window.duet.setReminder(next).catch((cause) => setError(say(cause, 'Could not save the reminder.')))
   }
   return (
     <>
@@ -44,27 +45,24 @@ function ReminderSetting({ time }: { time?: string }): React.JSX.Element {
 export function SettingsPage(): React.JSX.Element {
   const [settings, setSettings] = useState<OverlaySettings>()
   const [error, setError] = useState<string>()
-  useEffect(() => {
+  const load = useCallback(() => {
     window.duet.getState().then(
-      (state) => setSettings(state.settings),
+      (state) => {
+        setSettings(state.settings)
+        setError(undefined)
+      },
       (cause) => setError(say(cause, 'Could not load the settings.'))
     )
-    return window.duet.onSettings(setSettings)
   }, [])
+  useEffect(() => {
+    load()
+    return window.duet.onSettings(setSettings)
+  }, [load])
   return (
     <main className="home-page home-settings">
       <h1>Settings</h1>
-      {error && !settings && (
-        <p className="notice error" role="alert">
-          {error}
-        </p>
-      )}
       {!settings ? (
-        !error && (
-          <p className="faint" role="status">
-            Loading…
-          </p>
-        )
+        <LoadState loaded={false} error={error} reload={load} />
       ) : (
         <>
           <section className="card-box" aria-labelledby="settings-learning">
