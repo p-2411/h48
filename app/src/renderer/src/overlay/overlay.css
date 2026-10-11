@@ -5,14 +5,14 @@
 .dock { position: relative; max-width: 100%; display: flex; flex-direction: column; align-items: center; }
 
 /* Duet's surfaces: nearly opaque dark glass, as macOS draws its HUDs. */
-.strip, .settings, .act {
+.strip, .settings, .act, .meter {
   --glass: rgba(30, 30, 32, 0.92);
   --glass-edge: rgba(255, 255, 255, 0.1);
 }
 
 /* The strip: as small as the line it carries. Its background drags it anywhere. */
 .strip {
-  position: relative; max-width: min(860px, var(--fit, 860px)); min-width: 260px; padding: 10px 46px 12px 20px; border-radius: 18px;
+  position: relative; max-width: min(860px, var(--fit, 860px)); min-width: 320px; padding: 10px 46px 12px 20px; border-radius: 18px;
   background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg);
   display: flex; flex-direction: column; gap: 6px; user-select: none;
 }
@@ -54,6 +54,18 @@
   font-size: 12px; font-weight: 500; height: 28px; padding: 0 11px; border-radius: 999px; white-space: nowrap;
   background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg);
 }
+.actions .spacer { flex: 1; }
+/* The level on the hover row: its name, then five bars rising like a signal meter. */
+.meter {
+  display: flex; align-items: flex-end; gap: 1px; height: 28px; padding: 0 9px 0 11px; border-radius: 999px;
+  background: var(--glass); border: 0.5px solid var(--glass-edge);
+}
+.meter-name { align-self: center; margin-right: 6px; font-size: 12px; font-weight: 500; color: var(--fg-2); }
+.meter .bar { display: flex; align-items: flex-end; height: 100%; padding: 0 2px 8px; }
+.meter .bar i { display: block; width: 4px; height: var(--h); border-radius: 2px; background: rgba(255, 255, 255, 0.22); transition: background 0.15s; }
+.meter .bar.on i { background: #fff; }
+.meter .bar:hover i { background: rgba(255, 255, 255, 0.6); }
+.meter .bar.on:hover i { background: #fff; }
 .act.icon { width: 28px; padding: 0; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
 .act:hover { background: rgba(58, 58, 62, 0.95); }
 .act.primary { background: #fff; color: #111; border-color: #fff; }

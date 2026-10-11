@@ -6,6 +6,7 @@
 // dragged anywhere by its background.
 import { useEffect, useState, type PointerEvent } from 'react'
 import type { SaveResult } from '../../../shared/cards'
+import { LevelMeter } from './LevelMeter'
 import { LineView } from './LineView'
 import { actionable, quiet } from './notice'
 import { SettingsPopover } from './SettingsPopover'
@@ -94,6 +95,8 @@ export function Overlay(): React.JSX.Element {
       <div className={`dock${settingsOpen ? ' pinned' : ''}`} data-solid>
         {settingsOpen && <SettingsPopover settings={settings} />}
         <div className="actions" role="toolbar" aria-label="Line actions">
+          <LevelMeter settings={settings} />
+          <span className="spacer" />
           <button type="button" className="act primary" disabled={!current} onClick={() => window.duet.explainLine()}>
             Explain
           </button>

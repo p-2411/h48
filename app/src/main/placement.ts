@@ -48,7 +48,7 @@ export class Placement {
 
   /** How wide the strip may be to stay inside the video (undefined: no video in view). */
   maxWidth(): number | undefined {
-    return this.frame && Math.max(260, this.frame.width - SIDE_ROOM * 2)
+    return this.frame && Math.max(320, this.frame.width - SIDE_ROOM * 2)
   }
 
   /** The page's address, from the reader's status: a new video snaps the strip back onto it. */
