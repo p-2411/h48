@@ -3,6 +3,7 @@
 //
 //   duet:get-state     → { settings, status }
 //   duet:set-*         settings changes
+//   duet:explain       explains a line (the one on screen when no id is given)
 //   duet:open-tutor    opens the tutor on a line (the one on screen when no id is given)
 //   duet:hide          hides the overlay
 //   duet:status / duet:settings / duet:line / duet:current / duet:live   ← updates
@@ -13,7 +14,12 @@ import type { Watcher } from '../watcher'
 
 export function connectOverlay(
   overlay: BrowserWindow,
-  { watcher, settings, openTutor }: { watcher: Watcher; settings: Settings; openTutor: (lineId?: number) => void }
+  {
+    watcher,
+    settings,
+    openTutor,
+    explainLine
+  }: { watcher: Watcher; settings: Settings; openTutor: (lineId?: number) => void; explainLine: (lineId?: number) => void }
 ): void {
   const send = (channel: string, payload: unknown): void => {
     if (!overlay.isDestroyed()) overlay.webContents.send(channel, payload)
@@ -30,5 +36,6 @@ export function connectOverlay(
   ipcMain.on('duet:set-guess-first', (_, guessFirst: boolean) => settings.update({ guessFirst }))
   ipcMain.on('duet:set-wait', (_, waitForTranslation: boolean) => settings.update({ waitForTranslation }))
   ipcMain.on('duet:open-tutor', (_, lineId?: number) => openTutor(lineId))
+  ipcMain.on('duet:explain', (_, lineId?: number) => explainLine(lineId))
   ipcMain.on('duet:hide', () => overlay.hide())
 }

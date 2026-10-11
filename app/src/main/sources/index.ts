@@ -7,6 +7,10 @@ export * from './types'
 
 export const SOURCES: Source[] = [youtube, netflix]
 
+export function sourceForSite(site: Source['site']): Source | undefined {
+  return SOURCES.find((source) => source.site === site)
+}
+
 /** The site a page address belongs to, if Duet supports it. */
 export function sourceFor(url: string | undefined): Source | undefined {
   return url ? SOURCES.find((source) => source.matches(url)) : undefined

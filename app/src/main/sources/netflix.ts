@@ -22,5 +22,6 @@ export const netflix: Source = {
       return undefined
     }
   },
-  controls: { playPause: false, seek: false }
+  controls: { playPause: false, seek: false },
+  linkAt: (id, seconds) => `https://www.netflix.com/watch/${encodeURIComponent(id)}?t=${Math.max(0, Math.floor(seconds))}`
 }

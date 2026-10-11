@@ -4,7 +4,7 @@ import { z } from 'zod'
 import type { Moment } from '../../../shared/moment'
 import { LANGUAGES, type Language } from '../../../shared/types'
 
-export const EXPLAIN_VERSION = 1
+export const EXPLAIN_VERSION = 2
 
 export function explainInstructions(language: Language): string {
   const name = LANGUAGES[language]
@@ -16,7 +16,7 @@ Return:
 - why: what in the wording or the earlier lines supports your reading. null when it is obvious.
 - alternative: one other natural way to say it, and what changes (tone, formality, nuance). Only when it genuinely helps; "more formal" is not automatically better. null otherwise.
 - limitation: missing context or real doubt that affects your answer. If two readings are plausible, say so here. null when there is none.
-- card: a starting point for a flashcard about the most useful expression in the line. expression: copied exactly from the line (the whole line when it is short). meaning: what that expression means here. target: the one thing the card should test, as a short phrase. situation: who says it to whom and when, from the earlier lines, in one short sentence.
+- card: a starting point for a flashcard about the most useful expression in the line. expression: copied exactly from the line (the whole line when it is short). meaning: what that expression means here. target: the one thing the card should test, as a short phrase. situation: who says it to whom and when, from the earlier lines, in one short sentence; an empty string when they don't show it (never say that context is missing).
 
 Keep meaning, notice, why, alternative and limitation to about 70 words together. Write plain English. Never invent nuance or certainty the text does not support. You have only the words, not the audio: claim nothing about tone of voice, pitch or emotion that the words themselves do not show. Never change or correct the line.
 

@@ -7,7 +7,7 @@ export function Overlay(): React.JSX.Element {
   const { settings, status, current, building } = useOverlay()
   return (
     <div className="panel">
-      <Bar settings={settings} status={status} />
+      <Bar settings={settings} status={status} hasLine={!!current} />
       <Line line={current} settings={settings} building={building} modelError={status.modelError} />
     </div>
   )

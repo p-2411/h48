@@ -28,5 +28,6 @@ export const youtube: Source = {
     }
   },
   fetchTranscript,
-  controls: { playPause: true, seek: true }
+  controls: { playPause: true, seek: true },
+  linkAt: (id, seconds) => `https://www.youtube.com/watch?v=${encodeURIComponent(id)}&t=${Math.max(0, Math.floor(seconds))}s`
 }

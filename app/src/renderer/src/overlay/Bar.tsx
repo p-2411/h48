@@ -26,7 +26,7 @@ function Toggle({ on, label, title, onChange }: { on: boolean; label: string; ti
   )
 }
 
-export function Bar({ settings, status }: { settings: OverlaySettings; status: OverlayStatus }): React.JSX.Element {
+export function Bar({ settings, status, hasLine }: { settings: OverlaySettings; status: OverlayStatus; hasLine: boolean }): React.JSX.Element {
   return (
     <header className="bar">
       <div className="brand">
@@ -40,6 +40,9 @@ export function Bar({ settings, status }: { settings: OverlaySettings; status: O
         </span>
       </div>
       <div className="controls">
+        <button type="button" className="action" disabled={!hasLine} title="Explain the line on screen" onClick={() => window.duet.explainLine()}>
+          Explain
+        </button>
         <div className="segment" role="group" aria-label="Language">
           {(Object.keys(LANGUAGES) as Language[]).map((language) => (
             <button

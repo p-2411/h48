@@ -35,6 +35,9 @@
 .switch i { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: transform 0.25s var(--ease); }
 .toggle.is-on .switch { background: #fff; }
 .toggle.is-on .switch i { background: #121214; transform: translateX(10px); }
+.action { padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 500; background: #fff; color: #111; }
+.action:hover { background: #e6e6e6; }
+.action:disabled { opacity: 0.4; cursor: default; }
 .close { width: 22px; height: 22px; border-radius: 50%; font-size: 16px; line-height: 1; color: var(--text-2); }
 .close:hover { background: var(--fill); color: #fff; }
 

@@ -69,6 +69,11 @@ export class Watcher extends EventEmitter {
     return this._status
   }
 
+  /** The video open in the browser, if any. */
+  get currentVideo(): { site: Source['site']; id: string } | undefined {
+    return this.video && { site: this.video.source.site, id: this.video.id }
+  }
+
   /** The line on screen, if any. */
   get currentLine(): OverlayLine | undefined {
     return this.session?.currentLine

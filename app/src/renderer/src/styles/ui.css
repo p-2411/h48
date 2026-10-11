@@ -1,0 +1,36 @@
+/* Controls shared by the side windows and My cards: buttons, fields, sections, notices. */
+html, body, #root { background: #101013; overflow: auto; }
+body { color: var(--fg); font-size: 14px; }
+h1, h2, h3, p { margin: 0; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 9px; font-size: 13px; font-weight: 500; background: var(--fill); color: var(--fg); }
+.btn:hover { background: rgba(118, 118, 128, 0.36); }
+.btn.primary { background: #fff; color: #111; }
+.btn.primary:hover { background: #e6e6e6; }
+.btn.quiet { background: none; color: var(--text-2); padding: 7px 8px; }
+.btn.quiet:hover { color: #fff; background: var(--fill); }
+.btn.danger { color: #ff6961; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.muted { color: var(--text-2); }
+.faint { color: var(--text-3); font-size: 12px; }
+.card-box { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255, 255, 255, 0.03); }
+.notice { padding: 10px 12px; border-radius: 10px; background: var(--fill); font-size: 13px; color: var(--fg-2); }
+.notice.error { color: #ff8a80; }
+.close { width: 24px; height: 24px; border-radius: 50%; font-size: 16px; line-height: 1; color: var(--text-2); }
+.close:hover { background: var(--fill); color: #fff; }
+details summary { cursor: pointer; color: var(--text-2); font-size: 13px; }
+details p { margin-top: 8px; font-size: 13px; line-height: 1.45; color: var(--fg-2); }
+
+.form { display: flex; flex-direction: column; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field > span { font-size: 12px; color: var(--text-2); }
+.field input, .field textarea, .field select, .search {
+  width: 100%; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04);
+  color: var(--fg); font: inherit; font-size: 14px;
+}
+.field textarea { resize: vertical; min-height: 54px; line-height: 1.4; }
+.field input:focus, .field textarea:focus, .search:focus { outline: none; border-color: rgba(255, 255, 255, 0.4); }
+.segment { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--fill); }
+.segment button { padding: 4px 10px; border-radius: 6px; font-size: 12px; color: var(--fg-2); }
+.segment button[aria-pressed='true'] { background: #636366; color: #fff; font-weight: 500; }

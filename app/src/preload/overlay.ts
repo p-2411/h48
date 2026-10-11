@@ -17,6 +17,8 @@ export const overlayApi = {
   setLevel: (level: Level) => ipcRenderer.send('duet:set-level', level),
   setGuessFirst: (on: boolean) => ipcRenderer.send('duet:set-guess-first', on),
   setWaitForTranslation: (on: boolean) => ipcRenderer.send('duet:set-wait', on),
+  /** Explains a line; the line on screen when no id is given. */
+  explainLine: (lineId?: number) => ipcRenderer.send('duet:explain', lineId),
   /** Opens the voice tutor on a line; the line on screen when no id is given. */
   openTutor: (lineId?: number) => ipcRenderer.send('duet:open-tutor', lineId),
   hide: () => ipcRenderer.send('duet:hide')

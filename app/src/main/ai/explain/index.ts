@@ -34,7 +34,7 @@ export class Explainer {
       why: output.why ?? undefined,
       alternative: output.alternative ?? undefined,
       limitation: output.limitation ?? undefined,
-      card: output.card,
+      card: { ...output.card, situation: output.card.situation.trim() },
       model: this.model.name,
       version: EXPLAIN_VERSION
     }

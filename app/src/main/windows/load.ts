@@ -4,7 +4,7 @@ import type { BrowserWindow } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 
-export type Page = 'index' | 'tutor'
+export type Page = 'index' | 'tutor' | 'explain' | 'cards'
 
 export function loadPage(window: BrowserWindow, page: Page): void {
   const devServer = process.env['ELECTRON_RENDERER_URL']

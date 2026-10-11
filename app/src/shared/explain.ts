@@ -1,3 +1,5 @@
+import type { Moment } from './moment'
+
 // An explanation of one line for the learner ("Explain that"): what it means here and the one thing
 // most worth noticing. Fields the line does not need are left out rather than filled.
 export type Explanation = {
@@ -17,4 +19,12 @@ export type Explanation = {
   /** Who wrote it: the model, and the version of the instructions it had. */
   model: string
   version: number
+}
+
+/** What the Explain window shows: the moment, and the explanation once it arrives. */
+export type ExplainState = {
+  moment?: Moment
+  explanation?: Explanation
+  loading: boolean
+  error?: string
 }

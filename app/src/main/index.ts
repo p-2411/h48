@@ -3,16 +3,23 @@
 //   player.ts       the video's position and the one place that pauses and plays it
 //   watcher.ts      captions or transcript → processed lines, one session per video and language
 //   wait.ts         holds the video while the line on screen is still being translated
+//   explain/        Explain that: the explanation window and its request
+//   cards/          saved cards, My cards and FSRS review
 //   tutor/          the voice tutor's window and work
+//   sources/        each video site (YouTube, Netflix); store/ the local database
 //   ipc/overlay.ts  the overlay's IPC; windows/ the windows; tray.ts the menu bar icon
 //   ai/             the models (lines, voice), one file per provider
 import { app, globalShortcut, type Tray } from 'electron'
 import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
+import type { Moment } from '../shared/moment'
 import { createModels, type Models } from './ai'
 import { CaptionSource } from './captions'
+import { Cards } from './cards'
+import { Explain } from './explain'
 import { connectOverlay } from './ipc/overlay'
 import { Player } from './player'
+import { replay } from './replay'
 import { Settings } from './settings'
 import { createTray } from './tray'
 import { Tutor } from './tutor'
@@ -56,14 +63,28 @@ app.whenReady().then(() => {
   const watcher = new Watcher(captions, player, settings, models?.lines, modelError)
   const wait = new WaitForTranslation(player, settings, () => watcher.currentLine)
   const tutor = new Tutor(player)
+  const replayMoment = (moment: Moment): void => replay(moment, { watcher, player })
+  const explain = new Explain(models?.explainer, replayMoment)
+  const cards = new Cards({ replay: replayMoment, practise: (moment) => tutor.open(moment) })
+  // Each opens on a line: the one on screen when no id is given.
   const openTutor = (lineId?: number): void => {
     const moment = watcher.moment(lineId)
     if (moment) tutor.open(moment)
   }
+  const explainLine = (lineId?: number): void => {
+    const moment = watcher.moment(lineId)
+    if (moment) explain.open(moment)
+  }
 
   const overlay = createOverlay()
-  connectOverlay(overlay, { watcher, settings, openTutor })
-  tray = createTray({ shortcut: SHORTCUT, toggleOverlay: () => toggleOverlay(overlay), openTutor: () => openTutor() })
+  connectOverlay(overlay, { watcher, settings, openTutor, explainLine })
+  tray = createTray({
+    shortcut: SHORTCUT,
+    toggleOverlay: () => toggleOverlay(overlay),
+    explainLine: () => explainLine(),
+    openTutor: () => openTutor(),
+    openCards: () => cards.open()
+  })
   if (!globalShortcut.register(SHORTCUT, () => toggleOverlay(overlay)))
     console.error(`[duet] could not register ${SHORTCUT}; another app may be using it`)
 
