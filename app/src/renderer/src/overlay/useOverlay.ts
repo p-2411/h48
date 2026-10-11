@@ -18,6 +18,29 @@ export type OverlayState = {
 
 const DEFAULTS: OverlaySettings = { language: 'es', level: 2, guessFirst: true, waitForTranslation: true, pauseForHelp: false, onboarded: false, shortcut: 'Alt+Shift+D' }
 
+/** The line the strip last showed, and the video and language it belongs to. */
+export type Shown = { id: number; url?: string; language: string }
+
+/**
+ * The line to show: the one on screen once it is settled (translated, or failed and shown as it
+ * is); while it is still being translated, the line shown before, if it belongs to the same video
+ * and language (switching either drops it). `next` is what to remember as shown.
+ */
+export function chooseLine(
+  onScreen: OverlayLine | undefined,
+  lines: OverlayLine[],
+  shown: Shown | undefined,
+  here: { url?: string; language: string }
+): { current?: OverlayLine; next?: Shown } {
+  const same = (item?: Shown): boolean => !!item && item.url === here.url && item.language === here.language
+  if (onScreen && onScreen.state !== 'pending') {
+    const next = shown?.id === onScreen.id && same(shown) ? shown : { id: onScreen.id, ...here }
+    return { current: onScreen, next }
+  }
+  const kept = same(shown) ? lines.find((line) => line.id === shown!.id) : undefined
+  return { current: kept ?? onScreen, next: shown }
+}
+
 export function useOverlay(): OverlayState {
   const [settings, setSettings] = useState<OverlaySettings>(DEFAULTS)
   const [status, setStatus] = useState<OverlayStatus>({ trusted: false })
@@ -49,12 +72,9 @@ export function useOverlay(): OverlayState {
   }, [])
 
   const onScreen = useMemo(() => lines.find((line) => line.id === currentId), [lines, currentId])
-  // The last line shown translated, kept until the next one is ready; it belongs to its video.
-  const [shown, setShown] = useState<{ id: number; url?: string }>()
-  const ready = onScreen?.state === 'ready'
-  if (ready && (shown?.id !== onScreen.id || shown.url !== status.url)) setShown({ id: onScreen.id, url: status.url })
-  const kept = shown?.url === status.url ? lines.find((line) => line.id === shown?.id) : undefined
-  const current = ready ? onScreen : (kept ?? onScreen)
+  const [shown, setShown] = useState<Shown>()
+  const { current, next } = chooseLine(onScreen, lines, shown, { url: status.url, language: settings.language })
+  if (next !== shown) setShown(next)
   const building = !current && status.source !== 'transcript' ? live : ''
   return { settings, status, due: due.due + due.newAvailable, current, building }
 }

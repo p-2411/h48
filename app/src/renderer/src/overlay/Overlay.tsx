@@ -110,7 +110,7 @@ export function Overlay(): React.JSX.Element {
               <path d="M4 7.3v3.2c0 .9 1.8 1.9 4 1.9s4-1 4-1.9V7.3M14.5 6v3.5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
             </svg>
           </button>
-          <button type="button" className="act primary" disabled={!current} onClick={() => window.duet.explainLine()}>
+          <button type="button" className="act primary" disabled={!current} onClick={() => window.duet.explainLine(current?.id)}>
             Explain
           </button>
           <button
@@ -123,7 +123,7 @@ export function Overlay(): React.JSX.Element {
           >
             {stars[key()] ? '★' : '☆'}
           </button>
-          <button type="button" className="act icon" disabled={!current} title="Replay this line" aria-label="Replay this line" onClick={() => window.duet.replay()}>
+          <button type="button" className="act icon" disabled={!current} title="Replay this line" aria-label="Replay this line" onClick={() => window.duet.replay(current?.id)}>
             ↺
           </button>
           <button
