@@ -120,22 +120,60 @@
 .notice { padding-top: 6px; border-top: 1px solid var(--line); }
 .toast { color: var(--fg); }
 
-/* A checkpoint offered or open: the strip's edge breathes in the logo's colours (no text, no sound),
-   and fades out over half a second when it's done. A layer of its own, so the fade is a plain
-   opacity transition; still for people who ask for reduced motion. */
-.strip::after {
-  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-  opacity: 0; transition: opacity 0.5s ease-out; animation: checkpoint-glow 2.4s ease-in-out infinite paused;
+/* A checkpoint offered or open: light in the Apple Intelligence colours flows around the strip and
+   glows outward from its edge, wavy and alive like Siri's (no text, no sound). Four layers just behind
+   the strip (Overlay.tsx), so only what's outside it shows and the subtitles stay clear: a thin
+   stroke on the edge, then three glows, each wider and softer. Each layer's colours turn at their own
+   speed (some the other way) and each one's reach swells and shrinks on its own rhythm, so where they
+   meet the glow thickens and thins and its shape keeps moving round the box. It comes up bright, then
+   at once settles to a quieter glow for as long as it stays (--glow-strength, 1 → 0.35). Motion fades
+   it in when offered and out over half a second when it's done; for people who ask for reduced motion
+   it is the quiet glow, still. */
+@property --glow-strength { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --glow-turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --glow-reach { syntax: '<length>'; inherits: false; initial-value: 0px; }
+.strip-glow {
+  position: absolute; inset: 0; pointer-events: none;
+  animation: glow-settle 1.8s ease-out forwards;
+}
+.glow-layer {
+  --reach-from: 2px; --reach-to: 4px;
+  position: absolute; inset: calc(-1 * var(--glow-reach)); border-radius: calc(18px + var(--glow-reach));
+  background: conic-gradient(from var(--glow-turn), var(--glow-colours));
+  animation: glow-turn var(--turn-time) linear infinite var(--turn-way, normal), glow-reach var(--reach-time) ease-in-out infinite alternate;
+}
+/* The stroke on the edge: crisp; softer once settled, but always there. */
+.glow-layer:nth-child(1) {
+  --glow-colours: #bc82f3, #f5b9ea, #8d9fff, #ff6778, #ffba71, #c686ff, #bc82f3;
+  --turn-time: 6s; --reach-from: 1.5px; --reach-to: 1.5px; --reach-time: 1s;
+  filter: blur(0.5px); opacity: calc(0.5 + 0.5 * var(--glow-strength));
+}
+/* Close glow: a little blurred, turning the other way. */
+.glow-layer:nth-child(2) {
+  --glow-colours: #f5b9ea, #8d9fff 20%, #bc82f3 35%, #ffba71 55%, #ff6778 70%, #c686ff 85%, #f5b9ea;
+  --turn-time: 8s; --turn-way: reverse; --reach-from: 2px; --reach-to: 5px; --reach-time: 2.7s;
+  filter: blur(4px); opacity: calc(0.9 * var(--glow-strength));
+}
+/* Wide glow. */
+.glow-layer:nth-child(3) {
+  --glow-colours: #8d9fff, #ff6778 25%, #ffba71 40%, #bc82f3 60%, #f5b9ea 80%, #8d9fff;
+  --turn-time: 10s; --reach-from: 4px; --reach-to: 10px; --reach-time: 3.6s;
+  filter: blur(12px); opacity: calc(0.8 * var(--glow-strength));
+}
+/* Widest glow, out into the video; turning the other way, slowly. */
+.glow-layer:nth-child(4) {
+  --glow-colours: #c686ff, #8d9fff 30%, #f5b9ea 50%, #ff6778 65%, #ffba71 85%, #c686ff;
+  --turn-time: 14s; --turn-way: reverse; --reach-from: 8px; --reach-to: 16px; --reach-time: 4.7s;
+  filter: blur(22px); opacity: calc(0.6 * var(--glow-strength));
+}
+@keyframes glow-turn { to { --glow-turn: 360deg; } }
+@keyframes glow-reach { from { --glow-reach: var(--reach-from); } to { --glow-reach: var(--reach-to); } }
+@keyframes glow-settle { 0%, 30% { --glow-strength: 1; } 100% { --glow-strength: 0.35; } }
+@media (prefers-reduced-motion: reduce) {
+  .strip-glow { animation: none; --glow-strength: 0.35; }
+  .glow-layer { animation: none; --glow-reach: var(--reach-from); }
 }
 .strip.glow { cursor: pointer; }
-.strip.glow::after { opacity: 1; transition-duration: 0.3s; animation-play-state: running; }
-@keyframes checkpoint-glow {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 0 14px rgba(77, 163, 255, 0.25), 0 0 26px rgba(218, 143, 255, 0.18); }
-  50% { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4), 0 0 20px rgba(77, 163, 255, 0.5), 0 0 34px rgba(218, 143, 255, 0.4); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .strip::after { animation: none; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4), 0 0 20px rgba(77, 163, 255, 0.45); }
-}
 /* An open checkpoint, just above the strip (where a word's card opens), over the actions row. */
 .checkpoint { position: absolute; z-index: 5; bottom: calc(100% + 6px); left: 50%; transform-origin: bottom center; width: min(440px, 100%); max-height: min(440px, calc(var(--room, 446px) - 12px)); overflow-y: auto; }
 /* Talking to Duet: the mascot button left of the strip (quiet until reached for), and while talking
