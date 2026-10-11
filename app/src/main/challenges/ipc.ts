@@ -5,14 +5,16 @@
 //   <prefix>:check-recall      the word picked → { correct, answer, carded }
 //   <prefix>:meaning-question  → { question }
 //   <prefix>:meaning-check     the learner's answer → { note }
+//   <prefix>:produce-check     the learner's own sentence → { note, used }
 import type { Handle } from '../ipc/owned'
 import type { Round } from './round'
 
-/** The five challenge steps, on whatever round `round` gives (it throws when there is none). */
+/** The six challenge steps, on whatever round `round` gives (it throws when there is none). */
 export function connectRound(handle: Handle, round: () => Round): void {
   handle('speak', () => round().speak())
   handle('coach', (clip) => round().coach(clip))
   handle('check-recall', (choice) => round().checkRecall(choice))
   handle('meaning-question', () => round().meaningQuestion())
   handle('meaning-check', (answer) => round().meaningCheck(answer))
+  handle('produce-check', (sentence) => round().produceCheck(sentence))
 }

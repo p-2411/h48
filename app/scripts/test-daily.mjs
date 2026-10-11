@@ -116,6 +116,73 @@ try {
   const one = planSession({ due: 0, lines: [met(1, movie)], words: [], random: first })
   assert.equal(one.challenge.line.id, 1, 'with one line, the challenge may use it too')
 
+  // --- Practice by rung ---------------------------------------------------------------------------
+  // With the knowledge ladder, a line's lowest rung (ignored words aside) says what it needs: a word
+  // only met → recall it; every word known → say the line; every word sayable → use them (the
+  // daily session's produce step); every word usable → nothing.
+  const { lineNeed, pickCheckpoint: pickByRung } = await jiti.import(join(root, 'challenges/pick.ts'))
+  const { pairText } = await jiti.import(resolve('src/shared/levels.ts'))
+  // Rungs by word as written; grammar words and names are ignored, the rest only met unless named.
+  const ladder = (rungs) => (line, pair) => {
+    const token = line.processed.source.find((item) => item.pair === pair)
+    return ['g', 'x'].includes(token.job) ? 'ignored' : (rungs[pairText(line.processed.source, pair)] ?? 'encountered')
+  }
+  const all = (line, rung) => Object.fromEntries(line.source.filter((t) => t.pair !== null).map((t) => [t.text, rung]))
+  assert.equal(lineNeed(met(1, movie), ladder({})), 'recall', 'a word only met: recall')
+  assert.equal(lineNeed(met(1, movie), ladder(all(movie, 'known'))), 'say', 'every word known: say it')
+  assert.equal(lineNeed(met(1, movie), ladder({ ...all(movie, 'usable'), 영화: 'known' })), 'say', 'the lowest word decides')
+  assert.equal(lineNeed(met(1, movie), ladder(all(movie, 'speakable'))), 'produce', 'every word sayable: use them')
+  assert.equal(lineNeed(met(3, weather), ladder(all(weather, 'usable'))), 'done', 'every word usable (names and grammar aside): nothing')
+
+  const knownMarket = { ...all(weather, 'usable'), ...all(market, 'known') }
+  assert.equal(pickByRung({ lines, words: [] }, first, ladder(knownMarket)).say.id, 2, 'checkpoint: a line whose words are all known is said back, before any recall')
+  const both = pickByRung({ lines, words: ['영화'] }, first, ladder(all(weather, 'usable')))
+  assert.equal(both.challenge.kind, 'recall', 'checkpoint: else recall a word only met')
+  assert.equal(both.challenge.recall.answer, '영화', '...one the learner looked at first')
+  const notKnown = pickByRung({ lines: [met(1, movie)], words: ['영화'] }, first, ladder({ ...all(movie, 'known'), 친구: 'encountered' }))
+  assert.equal(notKnown.challenge.recall.answer, '친구', 'a known word is not recalled, looked at or not')
+  const finished = { ...all(weather, 'usable'), ...all(market, 'usable'), ...all(movie, 'usable') }
+  assert.equal(pickByRung({ lines, words: [] }, first, ladder(finished)).challenge.kind, 'meaning', 'every line usable: only what a line meant')
+
+  const byRung = planSession({ due: 1, lines, words: [], random: first, stateOf: ladder(knownMarket) })
+  assert.equal(byRung.say.id, 2, 'daily: the line to say back is one whose words are all known')
+  assert.equal(byRung.challenge.kind, 'recall', 'daily: and a word only met is recalled')
+  assert.equal(byRung.challenge.line.id, 1)
+  assert.deepEqual(planSession({ due: 1, lines, words: [], random: first, stateOf: ladder(finished) }), { cards: 1 }, 'daily: every line usable: cards only')
+  // Every word sayable: the learner says the line, then uses its words in a sentence of their own.
+  const sayableMovie = { ...all(weather, 'usable'), ...all(market, 'known'), ...all(movie, 'speakable') }
+  const producing = planSession({ due: 0, lines, words: [], random: first, stateOf: ladder(sayableMovie) })
+  assert.equal(producing.say.id, 1, 'daily: a line whose words are all sayable is said back first')
+  assert.deepEqual([producing.challenge.kind, producing.challenge.line.id], ['produce', 1], '...then used')
+  assert.notEqual(pickByRung({ lines, words: [] }, first, ladder(sayableMovie)).challenge?.kind, 'produce', 'checkpoints never ask for a sentence')
+
+  // The sentence is judged word by word: each word of the line used is evidence, right or not, with
+  // the sentence as its context; a word not used is no evidence.
+  const { Round: UseRound, challengeView } = await jiti.import(join(root, 'challenges/round.ts'))
+  const useVideo = { key: 'youtube:sess', site: 'youtube', videoId: 'sess', title: 'Sintel', language: 'ko' }
+  const judged = []
+  const useQuiz = {
+    use: async (line, sentence, words) => (judged.push([sentence, words]), { note: 'Nice follow-up.', words: [{ word: '영화', used: true, correct: true }, { word: '친구', used: true, correct: false }, { word: '어제', used: false, correct: false }, { word: 'made-up', used: true, correct: true }] })
+  }
+  const usedNotes = []
+  const produceRound = new UseRound(
+    { cards: { missed: () => {} }, log: { noteWord: () => {} }, knowledge: { noteAttempt: (...args) => usedNotes.push(args) }, quiz: useQuiz },
+    useVideo,
+    met(1, movie),
+    { kind: 'produce', line: met(1, movie) }
+  )
+  await assert.rejects(produceRound.produceCheck('  '), /sentence/i, 'an empty sentence is refused')
+  const produced = await produceRound.produceCheck(' 영화를 같이 봤어요. ')
+  assert.deepEqual(produced, { note: 'Nice follow-up.', used: ['영화'] }, 'the note, and the words used well')
+  assert.deepEqual(judged[0], ['영화를 같이 봤어요.', ['저는', '어제', '친구', '영화', '봤어요']], 'judged on the line’s words (grammar words and names aside)')
+  assert.deepEqual(
+    usedNotes.map(([language, key, kind, good, context]) => [language, key, kind, good, context]),
+    [['ko', 'ko:영화', 'use', true, '영화를 같이 봤어요.'], ['ko', 'ko:친구', 'use', false, '영화를 같이 봤어요.']],
+    'used well, used wrongly; not used and not in the line: nothing'
+  )
+  assert.equal(produceRound.finished, true)
+  assert.deepEqual(challengeView({ kind: 'produce', line: met(1, movie) }, 'ko'), { kind: 'produce', original: '저는 어제 친구랑 영화를 봤어요.', translation: 'I watched a movie with a friend yesterday.', words: ['저는', '어제', '친구', '영화', '봤어요'] }, 'the page is shown the line and its words')
+
   // --- The session's IPC --------------------------------------------------------------------------
   const electron = await jiti.import(fakeElectron)
   const { WatchLog } = await jiti.import(join(root, 'watchlog/index.ts'))
@@ -134,7 +201,7 @@ try {
   const coached = []
   const voice = {
     tts: { speak: async (text, language) => (spoken.push([text, language]), { data: new Uint8Array([1, 2]), mimeType: 'audio/mpeg' }) },
-    coach: { coach: async (clip, line) => (coached.push([clip.mimeType, line.original]), { heard: line.original, note: 'Nice and clear.' }) }
+    coach: { coach: async (clip, line) => (coached.push([clip.mimeType, line.original]), { heard: line.original, note: 'Nice and clear.', good: true }) }
   }
   const quiz = {
     ask: async (line) => `What is the speaker asking about in "${line.original}"?`,
@@ -162,7 +229,7 @@ try {
   assert.deepEqual(spoken, [['이 길로 가면 시장이 나와요?', 'ko']], 'Duet speaks the planned line, in the language')
   assert.equal(audio.mimeType, 'audio/mpeg')
   const attempt = await call('daily:coach', fromHome, { data: new Uint8Array([9]), mimeType: 'audio/wav' })
-  assert.deepEqual(attempt, { heard: '이 길로 가면 시장이 나와요?', note: 'Nice and clear.' })
+  assert.deepEqual(attempt, { heard: '이 길로 가면 시장이 나와요?', note: 'Nice and clear.', good: true })
   assert.deepEqual(coached, [['audio/wav', '이 길로 가면 시장이 나와요?']], 'the attempt is judged against the planned line')
   await assert.rejects(call('daily:coach', fromHome, { data: 'not audio', mimeType: 'audio/wav' }), /recording/i, 'a recording must be audio')
 
@@ -188,6 +255,27 @@ try {
   const broken = new Round({ cards: { missed: () => { throw new Error('disk full') } }, log: { noteWord: () => {} } }, sessVideo, failing.say, failing.challenge)
   const lost = broken.checkRecall(failing.challenge.recall.choices.find((choice) => choice !== '친구'))
   assert.deepEqual(lost, { correct: false, answer: '친구', carded: false }, 'no card made: not "in your cards now"')
+
+  // Saying a line back is evidence for each of its words (by dictionary form), good or not; a try
+  // the coach couldn't hear is no evidence.
+  const noted = []
+  const knowledge = { noteAttempt: (language, key, kind, good) => noted.push([language, key, kind, good]) }
+  const sayRound = (verdict) =>
+    new Round({ cards: { missed: () => {} }, log: { noteWord: () => {} }, knowledge, coach: { coach: async () => verdict } }, sessVideo, met(1, movie), undefined)
+  const clip = { data: new Uint8Array([9]), mimeType: 'audio/wav' }
+  const good = await sayRound({ heard: '저는 어제', note: 'Nice.', good: true }).coach(clip)
+  assert.equal(good.good, true, 'the page is told whether it was good')
+  assert.deepEqual(
+    noted.map(([, key, kind, ok]) => [key, kind, ok]),
+    [['ko:저는', 'say', true], ['ko:어제', 'say', true], ['ko:친구', 'say', true], ['ko:랑', 'say', true], ['ko:영화', 'say', true], ['ko:봤어요', 'say', true]],
+    'every word of the line said well is a good say'
+  )
+  noted.length = 0
+  await sayRound({ heard: '저는', note: 'Try the end again.', good: false }).coach(clip)
+  assert.ok(noted.length === 6 && noted.every(([, , kind, ok]) => kind === 'say' && ok === false), 'said poorly: a poor say for each')
+  noted.length = 0
+  await sayRound({ heard: '', note: 'Duet couldn’t hear you.', good: false }).coach(clip)
+  assert.deepEqual(noted, [], 'nothing heard: no evidence')
 
 
   const done = await call('daily:done', fromHome)
@@ -265,6 +353,12 @@ try {
   assert.deepEqual(JSON.parse(sent.text), { line: sneaky.original, translation: sneaky.translation }, 'it is sent as data')
   assert.ok(user.content.some((part) => part.type === 'input_audio'), 'with the recording')
 
+  // --- Judging a sentence of the learner's own ---------------------------------------------------------
+  // The model's verdict keeps only what was asked for; the sentence goes to it as data.
+  const { readUse, openAIQuiz } = await jiti.import(join(root, 'challenges/quiz.ts'))
+  assert.deepEqual(readUse({ note: ' Good. ', words: [{ word: '영화', used: true, correct: true }, { word: 3 }, null, { word: '친구', used: 'yes', correct: true }] }), { note: 'Good.', words: [{ word: '영화', used: true, correct: true }] })
+  assert.deepEqual(readUse('nonsense'), { note: '', words: [] })
+  assert.equal(openAIQuiz({}), undefined, 'no key: no quiz')
   // --- The recording, as WAV ------------------------------------------------------------------------
   const { encodeWav, downsample } = await jiti.import(resolve('src/renderer/src/components/challenges/wav.ts'))
   const wav = encodeWav(new Float32Array([0, 1, -1, 0.5]), 16_000)

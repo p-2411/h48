@@ -87,7 +87,11 @@ const panel = {
   owns: (sender) => sender === panelPage,
   send: (channel, value) => panelPage.sent.push([channel, value])
 }
-const tutor = new Tutor({ hold: nothing, release: nothing }, cards)
+// The knowledge ladder, faked: the words the learner can say but hasn't used yet, and the uses noted.
+const practice = [{ key: 'ja:行く', word: '行く', seenAs: '行った' }]
+const uses = []
+const knowledge = { practiceWords: () => practice, noteAttempt: (...args) => uses.push(args) }
+const tutor = new Tutor({ hold: nothing, release: nothing }, cards, knowledge)
 tutor.open({ moment: moment() }, panel)
 const fromTutor = { sender: panelPage }
 const fromElsewhere = { sender: {} }
@@ -368,6 +372,28 @@ await test('12: a free conversation opened with the cards open to Duet can searc
   tutor.open({ kind: 'free', language: 'ja', level: 3 }, panel)
   const closed = await tool('search_cards', { query: '表現' })
   expect(closed.error === 'EXPLORE_REQUIRED', 'without it, the cards stay closed')
+})
+
+await test('14: a word is recorded as used only when Duet offered it, once per learner turn', async () => {
+  tutor.open({ kind: 'free', language: 'ja', level: 3 }, panel)
+  const early = await tool('record_word_use', { word: '行く', sentence: '昨日、公園に行きました。', correct: true })
+  expect(early.error === 'WORD_NOT_OFFERED', `a word Duet never offered: ${JSON.stringify(early)}`)
+  const offered = await tool('get_practice_words')
+  expect(offered.words?.[0]?.word === '行く', `the practice words: ${JSON.stringify(offered)}`)
+  const alone = await tool('record_word_use', { word: '行く', sentence: '昨日、公園に行きました。', correct: true })
+  expect(alone.error === 'LEARNER_TURN_REQUIRED', `no learner turn yet: ${JSON.stringify(alone)}`)
+  await learnerTurn()
+  const used = await tool('record_word_use', { word: '行く', sentence: '昨日、公園に行きました。', correct: true })
+  expect(used.ok !== false && used.status === 'recorded', `recorded: ${JSON.stringify(used)}`)
+  expect(JSON.stringify(uses) === JSON.stringify([['ja', 'ja:行く', 'use', true, '昨日、公園に行きました。']]), `noted: ${JSON.stringify(uses)}`)
+  const twice = await tool('record_word_use', { word: '行く', sentence: '昨日、公園に行きました。', correct: true })
+  expect(twice.error === 'LEARNER_TURN_REQUIRED' && uses.length === 1, 'the same word twice in one turn is one use')
+  const other = await tool('record_word_use', { word: '食べる', sentence: '食べた', correct: true })
+  expect(other.error === 'WORD_NOT_OFFERED', 'a word not offered is refused')
+  tutor.open({ kind: 'free', language: 'ja', level: 3 }, panel)
+  await learnerTurn()
+  const fresh = await tool('record_word_use', { word: '行く', sentence: '行こう', correct: true })
+  expect(fresh.error === 'WORD_NOT_OFFERED', 'a new conversation starts with no words offered')
 })
 
 await test('13: a file that is not a backup is refused in plain words', async () => {

@@ -1,9 +1,22 @@
 // The mixed line: the English translation with some words swapped for their partners in the
-// original, more of them at higher levels. Worked out from the word pairs alone, so changing level
-// never needs another request.
+// original, more of them at higher levels; at Auto, the words of level 1 and every word the learner
+// knows (the knowledge ladder). Worked out from the word pairs alone, so changing level never needs
+// another request.
+import type { WordState } from './knowledge'
 import type { Level, ProcessedLine, Token, WordJob, WordScript } from './types'
 
-const SWAPPED: Record<Exclude<Level, 5>, WordJob[]> = {
+/** The level that follows the learner: level 1's words, and every word they know. */
+export const AUTO = 0
+
+// The rungs at which Auto swaps a word in, whatever its job.
+const KNOWN: WordState[] = ['known', 'speakable', 'usable']
+
+/** Whether `value` is a level (what the strip may set). */
+export function isLevel(value: unknown): value is Level {
+  return typeof value === 'number' && Number.isInteger(value) && value >= AUTO && value <= 5
+}
+
+const SWAPPED: Record<Exclude<Level, 0 | 5>, WordJob[]> = {
   1: ['n'],
   2: ['n', 'v'],
   3: ['n', 'v', 'a'],
@@ -38,10 +51,17 @@ export function written(token: Token, script: WordScript): string {
   return script === 'reading' && token.reading ? token.reading : token.text
 }
 
-export function mixedLine(line: ProcessedLine, level: Level): MixedToken[] {
+/** The line as the strip shows it at `level`. At Auto, `stateOf` gives each pair's rung (without it,
+ * Auto is level 1); an ignored word stays in English. */
+export function mixedLine(line: ProcessedLine, level: Level, stateOf?: (pair: number) => WordState): MixedToken[] {
   // Level 5 is the original line itself.
   if (level === 5) return line.source.map((token) => ({ ...token, swapped: true }))
-  const jobs = SWAPPED[level]
+  const jobs = SWAPPED[level === AUTO ? 1 : level]
+  const swaps = (token: Token): boolean => {
+    if (level !== AUTO || !stateOf || token.pair === null) return jobs.includes(token.job)
+    const state = stateOf(token.pair)
+    return state !== 'ignored' && (KNOWN.includes(state) || jobs.includes(token.job))
+  }
   const sourceByPair = new Map<number, Token[]>()
   for (const token of line.source) {
     if (token.pair === null) continue
@@ -51,7 +71,7 @@ export function mixedLine(line: ProcessedLine, level: Level): MixedToken[] {
   const mixed: MixedToken[] = []
   for (const token of line.english) {
     const partners = token.pair === null ? undefined : sourceByPair.get(token.pair)
-    if (!partners || token.pair === null || !jobs.includes(token.job)) {
+    if (!partners || token.pair === null || !swaps(token)) {
       mixed.push({ ...token, swapped: false })
       continue
     }
@@ -64,7 +84,8 @@ export function mixedLine(line: ProcessedLine, level: Level): MixedToken[] {
       text = text.charAt(0).toLocaleLowerCase() + text.slice(1)
     // Its reading goes with it, so the strip can write it in Latin letters (a setting).
     const reading = pairReading(partners, token.pair)
-    mixed.push({ text, job: token.job, pair: token.pair, space: token.space, swapped: true, ...(reading && { reading }) })
+    const base = partners[0].base
+    mixed.push({ text, job: token.job, pair: token.pair, space: token.space, swapped: true, ...(reading && { reading }), ...(base && { base }) })
   }
   return mixed
 }

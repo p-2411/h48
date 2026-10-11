@@ -11,11 +11,13 @@ import { SettingsPage } from './SettingsPage'
 import { TalkPage } from './TalkPage'
 import { Today } from './Today'
 import { Watching } from './Watching'
+import { Words } from './Words'
 
 const PLACES: { place: Exclude<HomePlace, 'review'>; label: string }[] = [
   { place: 'today', label: 'Today' },
   { place: 'talk', label: 'Talk' },
   { place: 'watching', label: 'Watching' },
+  { place: 'words', label: 'Words' },
   { place: 'cards', label: 'Cards' },
   { place: 'settings', label: 'Settings' }
 ]
@@ -30,6 +32,7 @@ function Place({
   if (place === 'today') return <Today onReview={() => onPlace('review')} />
   if (place === 'talk') return <TalkPage />
   if (place === 'watching') return <Watching />
+  if (place === 'words') return <Words />
   if (place === 'cards') return <MyCards onReview={() => onPlace('review')} />
   if (place === 'settings') return <SettingsPage />
   return (

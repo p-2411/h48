@@ -7,7 +7,7 @@
 import type { LinesOutput, Phrase } from './prompt'
 import { ModelError, type ProcessedLine, type Token, type WordJob } from './types'
 
-type Span = { start: number; end: number; job: WordJob; pair: number | null; reading?: string }
+type Span = { start: number; end: number; job: WordJob; pair: number | null; reading?: string; base?: string }
 
 const WORD_CHAR = /[\p{L}\p{N}]/u
 
@@ -35,8 +35,8 @@ function locate(text: string, needle: string, spans: Span[], from: number, wordE
 /** Cuts `text` into tokens: each span is one token, and the words between spans are glue. */
 function tokenize(text: string, spans: Span[]): Token[] {
   const tokens: Token[] = []
-  const push = (start: number, end: number, job: WordJob, pair: number | null, reading?: string): void => {
-    tokens.push({ text: text.slice(start, end), job, pair, space: /\s/.test(text.charAt(end)), ...(reading && { reading }) })
+  const push = (start: number, end: number, job: WordJob, pair: number | null, reading?: string, base?: string): void => {
+    tokens.push({ text: text.slice(start, end), job, pair, space: /\s/.test(text.charAt(end)), ...(reading && { reading }), ...(base && { base }) })
   }
   const glue = (start: number, end: number): void => {
     for (const match of text.slice(start, end).matchAll(/\S+/g)) push(start + match.index, start + match.index + match[0].length, 'g', null)
@@ -44,7 +44,7 @@ function tokenize(text: string, spans: Span[]): Token[] {
   let cursor = 0
   for (const span of [...spans].sort((a, b) => a.start - b.start)) {
     glue(cursor, span.start)
-    push(span.start, span.end, span.job, span.pair, span.reading)
+    push(span.start, span.end, span.job, span.pair, span.reading, span.base)
     cursor = span.end
   }
   glue(cursor, text.length)
@@ -73,7 +73,7 @@ export function alignLine(line: string, translation: string, phrases: Phrase[]):
       at = locate(line, source, sourceSpans, from, wordEdges)
     }
     if (at >= 0) {
-      sourceSpans.push({ start: at, end: at + source.length, job: phrase.job, pair: null, reading: phrase.reading?.trim() || undefined })
+      sourceSpans.push({ start: at, end: at + source.length, job: phrase.job, pair: null, reading: phrase.reading?.trim() || undefined, base: phrase.base?.trim() || undefined })
       cursor = at + source.length
     }
     return { phrase, pair: index + 1, sourceAt: at }

@@ -154,3 +154,19 @@
 .home-talk-head .btn {
   margin-left: auto;
 }
+
+/* Words: a tab for each rung, with its count in the rung's colour, then that rung's words. */
+.words-rungs { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.words-rung { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); color: var(--text-2); font-size: 13px; text-align: left; }
+.words-rung[aria-selected='true'] { border-color: var(--fg); color: var(--fg); }
+.words-rung .words-count { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; --c: var(--fg); color: var(--c); }
+.words-rung[data-k='encountered'] .words-count { --c: var(--k-encountered); }
+.words-rung[data-k='known'] .words-count { --c: var(--k-known); }
+.words-rung[data-k='speakable'] .words-count { --c: var(--k-speakable); }
+.words-rung[data-k='usable'] .words-count { --c: var(--k-usable); }
+.words-rung[data-k='ignored'] .words-count { --c: var(--k-ignored); }
+.home-words { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.home-words li { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto; align-items: baseline; column-gap: 12px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); }
+.home-words .w { font-size: 17px; overflow-wrap: anywhere; }
+.home-words .faint { overflow-wrap: anywhere; }
+.home-words .btn { grid-column: 3; }

@@ -140,6 +140,31 @@ export const tools: FunctionTool[] = [
       'Undo the latest save or review made in this conversation after the learner asks to undo.',
     strict: true,
     parameters: emptyObject
+  },
+  {
+    type: 'function',
+    name: 'get_practice_words',
+    description:
+      'Return words the learner can already say but has not yet used in sentences of their own (dictionary form, and the form they last saw).',
+    strict: true,
+    parameters: emptyObject
+  },
+  {
+    type: 'function',
+    name: 'record_word_use',
+    description:
+      'Record that the learner used one of the practice words in a sentence of their own, and whether it was used with the right meaning and grammar.',
+    strict: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        word: { type: 'string', description: 'The practice word, exactly as get_practice_words gave it.' },
+        sentence: { type: 'string', description: 'The learner’s own sentence, as they said or wrote it.' },
+        correct: { type: 'boolean' }
+      },
+      required: ['word', 'sentence', 'correct'],
+      additionalProperties: false
+    }
   }
 ]
 

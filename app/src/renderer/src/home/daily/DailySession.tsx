@@ -1,7 +1,8 @@
 // The daily session: the due cards (capped at about 5 minutes), then a line said back, then one
-// challenge, then "done for today" with the streak (kept only when something was done). Each step
-// can be skipped; what's in it comes from main (src/main/daily) and the last video watched. Each new
-// step takes the focus, so the keyboard and a screen reader follow along.
+// challenge (recall a word, what a line meant, or use the line's words in a sentence of one's own),
+// then "done for today" with the streak (kept only when something was done). Each step can be
+// skipped; what's in it comes from main (src/main/daily) and the last video watched. Each new step
+// takes the focus, so the keyboard and a screen reader follow along.
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { HomeToday } from '../../../../shared/home'
@@ -12,6 +13,7 @@ import { LoadState } from '../../components/LoadState'
 import { CountUp, SLIDE } from '../../components/motion'
 import { Review } from '../../review/Review'
 import { Meaning } from '../../components/challenges/Meaning'
+import { Produce } from '../../components/challenges/Produce'
 import { Recall } from '../../components/challenges/Recall'
 import { SayLine } from '../../components/challenges/SayLine'
 
@@ -90,6 +92,7 @@ export function DailySession({ onClose }: { onClose: () => void }): React.JSX.El
         {step === 'say' && plan.say && <SayLine line={plan.say} api={window.duet.daily} onNext={next} />}
         {step === 'challenge' && plan.challenge?.kind === 'recall' && <Recall challenge={plan.challenge} api={window.duet.daily} onNext={next} />}
         {step === 'challenge' && plan.challenge?.kind === 'meaning' && <Meaning challenge={plan.challenge} api={window.duet.daily} onNext={next} />}
+        {step === 'challenge' && plan.challenge?.kind === 'produce' && <Produce challenge={plan.challenge} api={window.duet.daily} onNext={next} />}
       </ErrorBoundary>
       {step === 'done' && (
         <section className="card-box" aria-label="End of today’s session">

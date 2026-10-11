@@ -11,6 +11,10 @@
 // counts; a commit tool call with none since the preview is refused. So a model can not confirm its
 // own preview.
 //
+// Practice words (the knowledge ladder): the tutor may record that the learner used a word in a
+// sentence of their own only for a word it was given this conversation (get_practice_words), and
+// once per word per learner turn, so a model can't pile up evidence on its own.
+//
 // IPC (all "tutor:*", from the window that owns the conversation; window.duet.tutor in src/preload/tutor.ts):
 //   tutor:start-session / tutor:voice-ended   voice starts (holding the video) and ends
 //   tutor:set-explore, tutor:translate, tutor:romanise, tutor:execute-tool, tutor:confirm-action,
@@ -29,6 +33,7 @@ import type {
   TutorToolResult
 } from '../../shared/tutor'
 import type { Cards } from '../cards'
+import type { Knowledge } from '../knowledge'
 import { StaleReviewError } from '../cards/review'
 import type { Player } from '../player'
 import { createLiveSession, romaniseForLearner, translateForLearner } from './live'
@@ -82,11 +87,13 @@ const TOOL_ERRORS = [
   'CARD_NOT_FOUND',
   'EXPLORE_REQUIRED',
   'LEARNER_CONFIRMATION_REQUIRED',
+  'LEARNER_TURN_REQUIRED',
   'MOMENT_NOT_FOUND',
   'NEW_CARD_LIMIT_REACHED',
   'NO_ACTION_TO_UNDO',
   'SIBLING_CARD_DEFERRED',
-  'UNKNOWN_TOOL'
+  'UNKNOWN_TOOL',
+  'WORD_NOT_OFFERED'
 ]
 
 function safeError(error: unknown): string {
@@ -107,10 +114,18 @@ export class Tutor {
   private lastAction?: LastAction
   // When the learner last spoke or wrote. 0: not yet.
   private lastLearnerTurnAt = 0
+  // Learner turns so far, and how many there were when this conversation opened.
+  private turns = 0
+  private openedTurn = 0
+  // The practice words given this conversation (dictionary form → key), and the turn each was last
+  // recorded in.
+  private readonly offered = new Map<string, string>()
+  private readonly usedIn = new Map<string, number>()
 
   constructor(
     private readonly player: Player,
-    private readonly cards: Cards
+    private readonly cards: Cards,
+    private readonly knowledge?: Pick<Knowledge, 'practiceWords' | 'noteAttempt'>
   ) {
     ipcMain.handle('tutor:set-explore', (event, enabled: boolean) => {
       this.assertTutor(event)
@@ -148,7 +163,7 @@ export class Tutor {
     })
     // The learner finished a spoken turn. Only this lets the voice model commit a preview.
     ipcMain.on('tutor:learner-turn', (event) => {
-      if (this.isTutor(event.sender)) this.lastLearnerTurnAt = Date.now()
+      if (this.isTutor(event.sender)) this.noteLearnerTurn()
     })
     ipcMain.handle('tutor:undo', (event) => {
       this.assertTutor(event)
@@ -163,6 +178,12 @@ export class Tutor {
     this.context = context
     this.window = window
     this.exploreEnabled = context.exploreEnabled === true
+    this.openedTurn = this.turns
+  }
+
+  private noteLearnerTurn(): void {
+    this.lastLearnerTurnAt = Date.now()
+    this.turns++
   }
 
   /** `window`'s conversation is over (its window closed): its previews, undo and any hold on the
@@ -205,7 +226,7 @@ export class Tutor {
   /** Duet's text reply to the learner's message. Writing counts as the learner's turn. */
   reply(message: string): Promise<TextReply> {
     const context = this.requireContext()
-    this.lastLearnerTurnAt = Date.now()
+    this.noteLearnerTurn()
     return replyInText({ ...context, exploreEnabled: this.exploreEnabled }, message, async (name, args) => (await this.executeTool({ callId: randomUUID(), name, arguments: args })).output)
   }
 
@@ -214,6 +235,8 @@ export class Tutor {
     this.window = undefined
     this.exploreEnabled = false
     this.pending.clear()
+    this.offered.clear()
+    this.usedIn.clear()
     this.lastAction = undefined
     this.cards.resetTutorReview()
     this.player.release('tutor')
@@ -312,12 +335,31 @@ export class Tutor {
         }
         case 'undo_last_action':
           return this.output(this.undoLastAction())
+        case 'get_practice_words': {
+          const words = this.knowledge?.practiceWords(contextLanguage(this.requireContext())) ?? []
+          for (const word of words) this.offered.set(word.word, word.key)
+          return this.output({ words: words.map(({ word, seenAs }) => ({ word, seenAs })) })
+        }
+        case 'record_word_use':
+          return this.output(this.recordWordUse(args))
         default:
           throw new Error('UNKNOWN_TOOL')
       }
     } catch (error) {
       return { ok: false, output: JSON.stringify({ error: safeError(error) }) }
     }
+  }
+
+  /** The learner used a practice word in a sentence of their own, well or not. */
+  private recordWordUse(args: Record<string, unknown>): { status: 'recorded' } {
+    const key = this.offered.get(string(args.word, 'word', 100))
+    if (!key) throw new Error('WORD_NOT_OFFERED')
+    const sentence = string(args.sentence, 'sentence', 500)
+    if (typeof args.correct !== 'boolean') throw new Error('INVALID_CORRECT')
+    if (this.turns === this.openedTurn || this.usedIn.get(key) === this.turns) throw new Error('LEARNER_TURN_REQUIRED')
+    this.usedIn.set(key, this.turns)
+    this.knowledge?.noteAttempt(contextLanguage(this.requireContext()), key, 'use', args.correct, sentence)
+    return { status: 'recorded' }
   }
 
   private prepareSave(draft: CardDraft): PendingTutorAction {

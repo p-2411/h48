@@ -28,6 +28,9 @@ export type CardDraft = CardContent & {
   language: Language
   source: CardSource
   explanation?: Explanation
+  /** The word it is for, on the knowledge ladder (shared/knowledge.ts wordKey); by default its
+   * expression's. */
+  wordKey?: string
 }
 
 export type CardState = 'new' | 'learning' | 'review' | 'relearning'

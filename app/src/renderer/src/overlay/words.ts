@@ -12,12 +12,13 @@ export const JOBS: Record<WordJob, string> = {
 }
 
 /** How much of the language each level swaps in, named for what it does. */
-export const LEVELS: { level: Level; name: string; adds: string }[] = [
-  { level: 1, name: 'Few', adds: 'things' },
-  { level: 2, name: 'Some', adds: 'things and actions' },
-  { level: 3, name: 'More', adds: 'and describing words' },
-  { level: 4, name: 'Most', adds: 'and people and names' },
-  { level: 5, name: 'All', adds: 'the whole line' }
+export const LEVELS: { level: Level; mark: string; name: string; adds: string }[] = [
+  { level: 0, mark: 'A', name: 'Auto', adds: 'things, and every word you know' },
+  { level: 1, mark: '1', name: 'Few', adds: 'things' },
+  { level: 2, mark: '2', name: 'Some', adds: 'things and actions' },
+  { level: 3, mark: '3', name: 'More', adds: 'and describing words' },
+  { level: 4, mark: '4', name: 'Most', adds: 'and people and names' },
+  { level: 5, mark: '5', name: 'All', adds: 'the whole line' }
 ]
 
 /** The two sides of a pair: the words in the language learnt and their English partner. */

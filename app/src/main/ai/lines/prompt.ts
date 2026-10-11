@@ -23,7 +23,8 @@ You get one or more new lines, numbered, and the lines that came before them in 
    - source: the ${name} words, copied exactly from the line (same spelling, accents and case).
    - english: the English words that say the same thing, copied exactly from your translation.
    - job: what the phrase does, one of:
-${WORD_JOBS}${
+${WORD_JOBS}
+   - base: the source words in their dictionary form, as a learner would look them up: verbs as the dictionary gives them (Spanish infinitive, Japanese and Korean dictionary form), nouns singular, adjectives in their basic form; a set expression or idiom as it is usually written; names as they are; "" when source is "". Written in the language's own script.${
     reading
       ? `
    - reading: the source words in ${reading.name}, as an English speaker would read them aloud in this line (readings from context), in ordinary Latin letters; "" when source is "".`
@@ -47,11 +48,13 @@ export function formatNewLines(lines: string[]): string {
 const PhraseSchema = z.object({
   source: z.string(),
   english: z.string(),
-  job: z.enum(['n', 'v', 'a', 'p', 'x', 'g'])
+  job: z.enum(['n', 'v', 'a', 'p', 'x', 'g']),
+  base: z.string()
 })
 
-/** One phrase of a line: its words, their English, their job, and (for a language not written in
- * Latin letters) how its words are read. */
+/** One phrase of a line: its words, their English, their job, their dictionary form (the word the
+ * learner learns: src/shared/knowledge.ts), and (for a language not written in Latin letters) how
+ * its words are read. */
 export type Phrase = z.infer<typeof PhraseSchema> & { reading?: string }
 
 export type LinesOutput = { lines: { translation: string; phrases: Phrase[] }[] }

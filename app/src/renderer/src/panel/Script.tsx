@@ -3,9 +3,11 @@
 // a line goes back to it; each line can also be explained or starred from here. Without a
 // transcript it lists the lines read so far, newest first.
 import { motion } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Script as ScriptData } from '../../../shared/types'
 import { clock } from '../components/time'
+import { useSettings } from '../components/useSettings'
+import { useWordStates } from '../components/useWordStates'
 import { Words } from '../components/Words'
 import { Icon } from '../components/Icon'
 import { DURATION, fade, GLIDING } from '../components/motion'
@@ -34,6 +36,10 @@ export function Script({
       return next
     })
   const timed = script.source === 'transcript'
+  // Each word coloured by how well the learner knows it.
+  const language = useSettings()?.language ?? 'es'
+  const processedLines = useMemo(() => script.lines.map((line) => (line.state === 'ready' ? line.processed : undefined)), [script.lines])
+  const stateOf = useWordStates(language, processedLines)
   const lines = timed ? script.lines : [...script.lines].reverse()
   const currentIndex = script.lines.findIndex((line) => line.id === current)
 
@@ -75,7 +81,7 @@ export function Script({
               <span className="time">{line.start !== undefined ? clock(line.start) : ''}</span>
               <span>
                 <span className="original">
-                  {processed ? <Words tokens={processed.source} /> : line.original}
+                  {processed ? <Words tokens={processed.source} state={(pair) => stateOf(processed, pair)} /> : line.original}
                 </span>
                 {processed && <span className="english">{processed.translation}</span>}
               </span>

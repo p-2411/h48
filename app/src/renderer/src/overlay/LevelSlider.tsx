@@ -1,5 +1,5 @@
 // How much of the language the line swaps in, on the strip's hover row: the level's number in a
-// round button like the others. Hovering it slides it open into the five levels, the number going to
+// round button like the others (A for Auto). Hovering it slides it open into the six levels, the number going to
 // its place among them, and it becomes a slider: the white circle is its handle, and pressing a level
 // or dragging across them moves it there (the line changes at once). Scrolling on it (the wheel, or a
 // trackpad swiped any way) moves one level per swipe (wheel.ts); so do the arrow keys. Moving away,
@@ -7,6 +7,7 @@
 import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { languageName } from '../../../shared/languages'
+import { AUTO } from '../../../shared/levels'
 import type { Level, OverlaySettings } from '../../../shared/types'
 import { GLIDE, GLIDING, SPRING } from '../components/motion'
 import { levelAt } from './levels'
@@ -28,12 +29,12 @@ export function LevelSlider({ settings }: { settings: OverlaySettings }): React.
     closing.current = window.setTimeout(() => setOpen(false), CLOSE_MS)
   }
   const current = LEVELS.find((item) => item.level === settings.level)!
-  const describe = (item: (typeof LEVELS)[number]): string => `${item.level} · ${item.name} ${language}: swaps in ${item.adds}`
+  const describe = (item: (typeof LEVELS)[number]): string => `${item.mark} · ${item.name} ${language}: swaps in ${item.adds}`
   const set = (level: Level): void => {
     if (level !== settings.level) window.duet.setLevel(level)
   }
   const go = (steps: number): void => {
-    if (steps) set(Math.min(5, Math.max(1, settings.level + steps)) as Level)
+    if (steps) set(Math.min(5, Math.max(AUTO, settings.level + steps)) as Level)
   }
 
   // Dragging the handle: the level under the pointer, as it moves.
@@ -53,7 +54,7 @@ export function LevelSlider({ settings }: { settings: OverlaySettings }): React.
       role="slider"
       tabIndex={0}
       aria-label={`How much ${language} in each line`}
-      aria-valuemin={1}
+      aria-valuemin={AUTO}
       aria-valuemax={5}
       aria-valuenow={settings.level}
       aria-valuetext={describe(current)}
@@ -97,14 +98,14 @@ export function LevelSlider({ settings }: { settings: OverlaySettings }): React.
               {/* The handle: one circle, gliding to the level chosen. */}
               {item.level === settings.level && <motion.span layoutId="level-handle" className="level-handle" transition={SPRING} />}
               <motion.span layoutId={`level-${item.level}`} transition={GLIDING} className={`level-digit${item.level === settings.level ? ' on' : ''}`}>
-                {item.level}
+                {item.mark}
               </motion.span>
             </span>
           ))}
         </div>
       ) : (
         <motion.span layoutId={`level-${settings.level}`} transition={GLIDING} className="level-digit">
-          {settings.level}
+          {current.mark}
         </motion.span>
       )}
     </motion.div>

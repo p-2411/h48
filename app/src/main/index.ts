@@ -49,6 +49,8 @@ import { WaitForTranslation } from './wait'
 import { Watcher } from './watcher'
 import { WatchLog } from './watchlog'
 import { connectWatchLog } from './watchlog/connect'
+import { Knowledge } from './knowledge'
+import { connectKnowledge } from './knowledge/ipc'
 import { Home, openDuet } from './home'
 import { Talk } from './talk'
 import { StripTalk } from './talk/strip'
@@ -127,9 +129,11 @@ app.whenReady().then(() => {
     practise: (moment) => explain.open(moment),
     open: (cardId) => home.open('cards', cardId)
   })
+  // The knowledge ladder: each word met and what the learner did with it (src/main/knowledge).
+  const knowledge = new Knowledge()
   // Explain and the conversation about a line are one: the explanation first, then text or voice
   // with the tutor, which reads and saves cards in the same collection as My cards.
-  const tutor = new Tutor(player, cards)
+  const tutor = new Tutor(player, cards, knowledge)
   const explain = new Explain({
     explainer: models?.explainer,
     replay: replayMoment,
@@ -161,6 +165,7 @@ app.whenReady().then(() => {
     player,
     settings,
     cards,
+    knowledge,
     shown: () => !overlay.isDestroyed() && overlay.isVisible()
   })
   app.on('before-quit', () => logLink.finish())
@@ -176,7 +181,8 @@ app.whenReady().then(() => {
     cards,
     voice,
     quiz,
-    owns: (sender) => home.owns(sender)
+    owns: (sender) => home.owns(sender),
+    knowledge
   })
   // The strip's window, for the features that talk to its page.
   const strip = {
@@ -191,9 +197,20 @@ app.whenReady().then(() => {
     log: watchLog,
     cards,
     voice,
+    knowledge,
     quiz,
     scenes: openAISceneJudge(),
     overlay: strip
+  })
+  // Duet's pages ask how well each word is known (their colours, the word card), and hear when it
+  // may have changed.
+  connectKnowledge(knowledge, {
+    owns: (sender) => strip.owns(sender) || panel.owns(sender) || home.owns(sender),
+    send: (channel) => {
+      strip.send(channel, null)
+      panel.send(channel, null)
+      home.send(channel, null)
+    }
   })
   // The strip's page reloaded or crashed: a checkpoint it had open goes with it.
   overlay.webContents.on('did-start-loading', () => checkpoints.reset())

@@ -9,6 +9,7 @@ export function challengeBridge(prefix: 'daily' | 'checkpoint'): ChallengeApi {
     coach: (clip) => invoke<LineAttempt>(`${prefix}:coach`, clip),
     checkRecall: (choice) => invoke<RecallResult>(`${prefix}:check-recall`, choice),
     meaningQuestion: () => invoke<{ question: string }>(`${prefix}:meaning-question`),
-    meaningCheck: (answer) => invoke<{ note: string }>(`${prefix}:meaning-check`, answer)
+    meaningCheck: (answer) => invoke<{ note: string }>(`${prefix}:meaning-check`, answer),
+    produceCheck: (sentence) => invoke<{ note: string; used: string[] }>(`${prefix}:produce-check`, sentence)
   }
 }

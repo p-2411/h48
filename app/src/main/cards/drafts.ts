@@ -1,6 +1,7 @@
 // Cards made straight from a line, without Explain: one click on the strip. A word card comes from
 // a pair of matching phrases in the line (the word and its English partner); a line card from the
 // whole line and its translation.
+import { pairKeys } from '../../shared/knowledge'
 import { joinTokens } from '../../shared/levels'
 import type { CardDraft } from '../../shared/cards'
 import type { Moment } from '../../shared/moment'
@@ -15,5 +16,7 @@ export function draftFromMoment(moment: Moment, pair?: number): CardDraft | unde
   const source = joinTokens(processed.source.filter((token) => token.pair === pair))
   const english = joinTokens(processed.english.filter((token) => token.pair === pair))
   if (!source || !english) return undefined
-  return { ...base, expression: source, meaning: english, target: `${source} = ${english}` }
+  // The word it is for: its dictionary form ("ir" for a card on "fue").
+  const word = pairKeys(moment.language, processed).find((item) => item.pair === pair)
+  return { ...base, expression: source, meaning: english, target: `${source} = ${english}`, ...(word && { wordKey: word.key }) }
 }

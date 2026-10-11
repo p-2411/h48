@@ -1,7 +1,7 @@
 // The first run, in short steps: the language, how much of it in each line (shown on a sample line),
 // on macOS the two permissions (each one's state live, so the learner sees it take), and what the
-// colours mean. Windows asks for no permissions, so it skips that step. Every choice can be changed
-// later in Settings, in the home base.
+// colours mean (how well the learner knows each word). Windows asks for no permissions, so it skips
+// that step. Every choice can be changed later in Settings, in the home base.
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { joinTokens, mixedLine } from '../../../shared/levels'
@@ -10,8 +10,13 @@ import { type AudioPermission, type Language, type Level, type OverlaySettings, 
 import { Mascot } from '../components/Mascot'
 import { SLIDE } from '../components/motion'
 import { Words } from '../components/Words'
-import { JOBS, LEVELS } from '../overlay/words'
+import { LADDER, STATE_LABELS, type WordState } from '../../../shared/knowledge'
+import { LEVELS } from '../overlay/words'
 import { Icon } from '../components/Icon'
+
+// The sample line's words spread over the ladder, to show each colour (grammar words stay grey).
+const DEMO: WordState[] = ['known', 'encountered', 'speakable', 'unknown', 'usable']
+const demoState = (pair: number | null): WordState => (pair === null ? 'ignored' : DEMO[pair % DEMO.length])
 
 const STEPS = (['Language', 'Level', 'Permissions', 'Colours'] as const).filter(
   (step) => step !== 'Permissions' || window.duet.welcome.asksPermissions
@@ -151,7 +156,7 @@ export function Welcome(): React.JSX.Element {
         {STEPS[step] === 'Level' && (
           <>
             <h2>How much {languageName(language)} in each line?</h2>
-            <p className="muted">Duet swaps some English words for {languageName(language)} ones. Start with a few; add more as they get easy.</p>
+            <p className="muted">Duet swaps some English words for {languageName(language)} ones. Auto starts with a few and brings in each word as you learn it; or choose how many.</p>
             <div className="segment wide" role="group" aria-label="Level">
               {LEVELS.map((item) => (
                 <button key={item.level} type="button" aria-pressed={settings.level === item.level} onClick={() => setLevel(item.level)}>
@@ -208,20 +213,21 @@ export function Welcome(): React.JSX.Element {
 
         {STEPS[step] === 'Colours' && (
           <>
-            <h2>Each colour is a kind of word</h2>
+            <h2>Each colour is how well you know the word</h2>
             <div className="sample card-box">
               <p className="mix">
-                <Words tokens={mixedLine(sample, 4)} />
+                <Words tokens={mixedLine(sample, 4)} state={demoState} />
               </p>
             </div>
             <ul className="legend">
-              {(Object.keys(JOBS) as (keyof typeof JOBS)[]).map((job) => (
-                <li key={job}>
-                  <span className="swatch w" data-t={job} aria-hidden="true" />
-                  {JOBS[job]}
+              {LADDER.map((state) => (
+                <li key={state}>
+                  <span className="swatch w" data-k={state} aria-hidden="true" />
+                  {STATE_LABELS[state]}
                 </li>
               ))}
             </ul>
+            <p className="faint">Words climb as you meet them, recall them, say them and use them, and fall back if you forget.</p>
             <p className="muted">
               Hover the strip for the full line and the English. Hover a word for what it means, and <Icon name="star" size={13} /> to keep it.
               Drag the strip anywhere; <Icon name="settings" size={13} /> holds the rest.

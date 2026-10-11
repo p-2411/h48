@@ -10,7 +10,7 @@ import type { EventEmitter } from 'events'
 import type { Card } from '../../shared/cards'
 import { pairText } from '../../shared/levels'
 import type { Moment } from '../../shared/moment'
-import type { Language, OverlayLine } from '../../shared/types'
+import type { Language, OverlayLine, ProcessedLine } from '../../shared/types'
 import { videoKey, type WatchedVideo, type WatchLog } from '.'
 
 // A gap between ticks longer than this (the Mac slept, the loop stalled) counts as this much.
@@ -56,12 +56,15 @@ export function connectWatchLog(
     player,
     settings,
     cards,
+    knowledge,
     shown
   }: {
     watcher: WatchSource
     player: { playing: boolean; now(): number | undefined }
     settings: { current: { language: Language } }
     cards: EventEmitter
+    /** The knowledge ladder: each word of a line met is seen once more (src/main/knowledge). */
+    knowledge?: { noteSeen(language: Language, line: ProcessedLine): void }
     /** Duet is on screen (the strip is shown): only then is watching "with Duet", and a line met. */
     shown: () => boolean
   }
@@ -90,7 +93,7 @@ export function connectWatchLog(
     const key = onScreen()
     if (!key || !line || line.id !== watcher.currentLine?.id || !shown()) return
     if (watchedKey !== key) noteVideo(Date.now())
-    log.noteLine(key, language(), line)
+    if (log.noteLine(key, language(), line) && line.processed) knowledge?.noteSeen(language(), line.processed)
   }
   watcher.on('current', () => record(() => meet(watcher.currentLine)))
   watcher.on('line', (line: OverlayLine) => record(() => meet(line)))

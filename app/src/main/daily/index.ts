@@ -14,18 +14,22 @@ import type { CardDraft } from '../../shared/cards'
 import type { SessionView } from '../../shared/daily'
 import { reviewableNow, type DueCounts } from '../../shared/types'
 import type { PronunciationCoach, TextToSpeech } from '../ai/voice'
+import type { Knowledge } from '../knowledge'
 import { connectRound } from '../challenges/ipc'
 import type { Quiz } from '../challenges/quiz'
 import { ownedHandler } from '../ipc/owned'
 import { challengeView, Round, sayView } from '../challenges/round'
 import type { VideoLines, WordEvent } from '../watchlog'
 import type { Streak } from '../watchlog/streak'
+import { ladderOf } from '../challenges/ladder'
 import { planSession } from './plan'
 
 type Deps = {
   log: { lastVideo(): VideoLines | undefined; markSessionDone(): void; streak(): Streak; noteWord(event: WordEvent): unknown }
   cards: { counts(): DueCounts; missed(draft: CardDraft): unknown; reviewsSince(at: number): number }
   voice?: { tts: TextToSpeech; coach: PronunciationCoach }
+  /** The knowledge ladder: what the session asks follows it, and what the learner does feeds it. */
+  knowledge?: Pick<Knowledge, 'noteAttempt' | 'statesFor'>
   quiz?: Quiz
   /** Whether a message came from the home page. */
   owns: (sender: WebContents) => boolean
@@ -37,7 +41,7 @@ export class DailySession {
   // When this session's plan was made: reviews since count as done in it.
   private plannedAt = 0
 
-  constructor({ log, cards, voice, quiz, owns, random = Math.random }: Deps) {
+  constructor({ log, cards, voice, knowledge, quiz, owns, random = Math.random }: Deps) {
     // Every step is the home page's, and works on the plan made for it.
     const handle = ownedHandler('daily', owns, 'Not allowed: the daily session runs in the home base.')
     connectRound(handle, () => {
@@ -46,10 +50,12 @@ export class DailySession {
     })
     handle('plan', (): SessionView => {
       const video = log.lastVideo()
-      const plan = planSession({ due: reviewableNow(cards.counts()), lines: video?.lines ?? [], words: video?.words ?? [], random })
-      this.round = new Round({ cards, log, tts: voice?.tts, coach: voice?.coach, quiz }, video, plan.say, plan.challenge)
+      const lines = video?.lines ?? []
+      const stateOf = video && ladderOf(knowledge, video.language, lines)
+      const plan = planSession({ due: reviewableNow(cards.counts()), lines, words: video?.words ?? [], random, stateOf })
+      this.round = new Round({ cards, log, knowledge, tts: voice?.tts, coach: voice?.coach, quiz }, video, plan.say, plan.challenge)
       this.plannedAt = Date.now()
-      return { cards: plan.cards, video: video?.title, say: plan.say && sayView(plan.say), challenge: challengeView(plan.challenge) }
+      return { cards: plan.cards, video: video?.title, say: plan.say && sayView(plan.say), challenge: video && challengeView(plan.challenge, video.language) }
     })
     handle('done', () => {
       const kept = !!this.round?.finished || cards.reviewsSince(this.plannedAt) > 0

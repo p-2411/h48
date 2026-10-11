@@ -2,6 +2,7 @@
 // backing up. Scheduling a review is review.ts; this file only stores what that decides.
 import { randomUUID } from 'crypto'
 import { z } from 'zod'
+import { wordKey } from '../../shared/knowledge'
 import type {
   Card,
   CardContent,
@@ -139,8 +140,8 @@ export class CardStore {
     database()
       .prepare(
         `INSERT INTO cards (id, type, expression, reading, meaning, target, situation, alternative, note,
-           language, source, explanation, dedupe_key, fsrs, fsrs_version, state, due, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+           language, source, explanation, dedupe_key, fsrs, fsrs_version, state, due, created_at, updated_at, word_key)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         id,
@@ -154,7 +155,8 @@ export class CardStore {
         fsrs.state,
         fsrs.due.getTime(),
         now,
-        now
+        now,
+        draft.wordKey ?? wordKey(draft.language, draft.expression)
       )
     return { saved: this.get(id)! }
   }

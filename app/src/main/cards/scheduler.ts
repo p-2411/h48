@@ -78,3 +78,10 @@ export function serialize(card: FsrsCard): string {
 export function revive(json: string): FsrsCard {
   return TypeConvert.card(JSON.parse(json))
 }
+
+/** The chance a card is remembered now (0 for a card never reviewed), for the knowledge ladder. */
+export function retrievability(json: string, now: number): number {
+  const card = revive(json)
+  if (card.state === State.New) return 0
+  return fsrs().get_retrievability(card, new Date(now), false)
+}

@@ -177,7 +177,11 @@ Write workflow:
 - Reviews begin with preview_review. The learner, not the tutor, chooses Again, Hard, Good or Easy.
 - Call commit_review only after the learner explicitly says one of those ratings. Pronunciation quality must never choose the memory rating.
 - Voice practice, opening a card and revealing an answer do not update FSRS.
-- Use undo_last_action only after the learner asks to undo.`
+- Use undo_last_action only after the learner asks to undo.
+
+Practice words workflow:
+- In a free conversation, call get_practice_words once, early. Weave one or two of them into your questions so the learner has a reason to use them; never list them as a drill.
+- When the learner uses one of those words in a sentence of their own (not just repeating yours), call record_word_use with the word as given, their sentence, and whether they used it with the right meaning and grammar. Never for a sentence you wrote. Don't mention the recording.`
 }
 
 /** The text conversation's instructions: the same teaching and tools as voice, written for typing. */

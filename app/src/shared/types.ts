@@ -25,6 +25,8 @@ export type Token = {
   space: boolean
   /** How the words are read, in Latin letters, for a language not written in them ("eiga" for 映画). */
   reading?: string
+  /** The words' dictionary form, the word the learner learns ("ir" for "fue"; shared/knowledge.ts). */
+  base?: string
 }
 
 export type ProcessedLine = {
@@ -36,8 +38,9 @@ export type ProcessedLine = {
   english: Token[]
 }
 
-/** How far into the target language the mixed line goes: 1 swaps only things, 5 is the full line. */
-export type Level = 1 | 2 | 3 | 4 | 5
+/** How much of the language each line swaps in: 1 (a few things) to 5 (the whole line), or 0, Auto:
+ * the words of level 1 and every word the learner knows (src/shared/levels.ts). */
+export type Level = 0 | 1 | 2 | 3 | 4 | 5
 
 /** One caption line as the overlay sees it. */
 export type OverlayLine = {
@@ -140,7 +143,7 @@ export type OverlaySettings = {
 /** Settings before the learner changes any: Spanish, a few words swapped in. */
 export const DEFAULT_SETTINGS: OverlaySettings = {
   language: 'es',
-  level: 2,
+  level: 0,
   guessFirst: true,
   waitForTranslation: true,
   pauseForHelp: true,

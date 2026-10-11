@@ -20,9 +20,11 @@ import type { CheckpointView, Offer } from '../../shared/checkpoints'
 import type { Language, OverlayLine, Script } from '../../shared/types'
 import type { PronunciationCoach, TextToSpeech } from '../ai/voice'
 import { connectRound } from '../challenges/ipc'
+import { ladderOf } from '../challenges/ladder'
 import { pickCheckpoint } from '../challenges/pick'
 import type { Quiz } from '../challenges/quiz'
 import { challengeView, Round, sayView } from '../challenges/round'
+import type { Knowledge } from '../knowledge'
 import { ownedHandler } from '../ipc/owned'
 import type { Holder } from '../player'
 import { videoKey, type VideoLines, type WatchedVideo, type WordEvent } from '../watchlog'
@@ -52,6 +54,8 @@ type Deps = {
   }
   cards: { missed(draft: CardDraft): unknown }
   voice?: { tts: TextToSpeech; coach: PronunciationCoach }
+  /** The knowledge ladder: what a checkpoint asks follows it, and what the learner does feeds it. */
+  knowledge?: Pick<Knowledge, 'noteAttempt' | 'statesFor'>
   quiz?: Quiz
   /** Finds where scenes end; without it, checkpoints come at pauses only. */
   scenes?: SceneJudge
@@ -70,7 +74,7 @@ export class Checkpoints {
   private round?: Round
 
   constructor(private readonly deps: Deps) {
-    const { watcher, player, settings, log, cards, voice, quiz, overlay, random = Math.random } = deps
+    const { watcher, player, settings, log, cards, voice, knowledge, quiz, overlay, random = Math.random } = deps
     if (deps.scenes) {
       const scenes = new SceneTracker(deps.scenes, () => this.key(), () => settings.current.language)
       this.scenes = scenes
@@ -96,10 +100,10 @@ export class Checkpoints {
       this.triggers.accept()
       this.setOffer(undefined)
       player.hold('checkpoint')
-      // A word the learner looked at, recalled; else, by turns, a line said back or what it meant.
-      const { say, challenge } = pickCheckpoint(video, random)
-      this.round = new Round({ cards, log, tts: voice?.tts, coach: voice?.coach, quiz }, video, say, challenge)
-      return { ...(say ? { kind: 'say' as const, ...sayView(say) } : challengeView(challenge)!), video: video.title }
+      // By the words' rungs: a line known word for word, said back; else a word only met, recalled.
+      const { say, challenge } = pickCheckpoint(video, random, ladderOf(knowledge, video.language, video.lines))
+      this.round = new Round({ cards, log, knowledge, tts: voice?.tts, coach: voice?.coach, quiz }, video, say, challenge)
+      return { ...(say ? { kind: 'say' as const, ...sayView(say) } : challengeView(challenge, video.language)!), video: video.title }
     })
     handle('done', () => {
       if (!this.round) throw new Error('No checkpoint is open.')

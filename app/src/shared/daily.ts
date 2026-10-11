@@ -18,6 +18,10 @@ export type RecallView = {
 /** What did they mean: the line asked about. */
 export type MeaningView = { kind: 'meaning'; original: string }
 
+/** Use it: the line just said back, its English, and its words, for a sentence of the learner's own
+ * that could come next. */
+export type ProduceView = { kind: 'produce'; original: string; translation: string; words: string[] }
+
 export type SessionView = {
   /** Due cards to review first (capped to about 5 minutes). */
   cards: number
@@ -25,13 +29,14 @@ export type SessionView = {
   video?: string
   /** The line to say back. */
   say?: SayView
-  challenge?: RecallView | MeaningView
+  challenge?: RecallView | MeaningView | ProduceView
 }
 
 export type SessionAudio = { data: Uint8Array; mimeType: string }
 
-/** The learner's try at saying a line: what Duet heard, and a short, encouraging note. */
-export type LineAttempt = { heard: string; note: string }
+/** The learner's try at saying a line: what Duet heard (empty when it heard no speech), a short,
+ * encouraging note, and whether it was good: every word clear enough for a native speaker. */
+export type LineAttempt = { heard: string; note: string; good: boolean }
 
 /** The word picked in a recall: right or not, the answer, and whether a missed word is in the cards now. */
 export type RecallResult = { correct: boolean; answer: string; carded: boolean }
@@ -44,4 +49,6 @@ export type ChallengeApi = {
   checkRecall(choice: string): Promise<RecallResult>
   meaningQuestion(): Promise<{ question: string }>
   meaningCheck(answer: string): Promise<{ note: string }>
+  /** The learner's own sentence: a note on it, and the line's words used well in it. */
+  produceCheck(sentence: string): Promise<{ note: string; used: string[] }>
 }

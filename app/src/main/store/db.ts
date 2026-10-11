@@ -112,6 +112,33 @@ const MIGRATIONS: string[] = [
   // 3: the lines met lately in a video, for checkpoints (asked every few seconds while watching).
   `
   CREATE INDEX lines_recent ON lines (video_id, language, met_at);
+  `,
+  // 4: the knowledge ladder (src/main/knowledge): each word met, by its key (its dictionary form),
+  // and what the learner did with it; cards name the word they are for.
+  `
+  CREATE TABLE words (
+    language   TEXT NOT NULL,
+    key        TEXT NOT NULL,     -- shared/knowledge.ts wordKey: "es:ir"
+    text       TEXT NOT NULL,     -- as it was last on screen ("fue")
+    job        TEXT NOT NULL,     -- its job there (names and grammar words start ignored)
+    seen       INTEGER NOT NULL DEFAULT 0,
+    first_seen INTEGER NOT NULL,
+    last_seen  INTEGER NOT NULL,
+    ignored    INTEGER,           -- the learner's choice (1 or 0); none: by its job
+    PRIMARY KEY (language, key)
+  );
+  CREATE TABLE word_evidence (
+    id       INTEGER PRIMARY KEY,
+    language TEXT NOT NULL,
+    key      TEXT NOT NULL,
+    kind     TEXT NOT NULL CHECK (kind IN ('recall', 'say', 'use')),
+    good     INTEGER NOT NULL,
+    context  TEXT,                -- for a use: the learner's sentence
+    at       INTEGER NOT NULL
+  );
+  CREATE INDEX word_evidence_key ON word_evidence (language, key);
+  ALTER TABLE cards ADD COLUMN word_key TEXT;
+  CREATE INDEX cards_word ON cards (language, word_key);
   `
 ]
 

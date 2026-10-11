@@ -31,8 +31,9 @@ const TOAST_MS = 5000
 const popped = (message: React.ReactNode): React.ReactNode => <div className="strip-crash">{message}</div>
 
 // Undo on a toast: takes back a star just given (`unsave`), or brings back the card a star just
-// removed (`restore`; a removed card is kept for 30 s, longer than the toast shows).
-type Toast = { text: string; undo?: { kind: 'unsave' | 'restore'; cardId: string; key: string } }
+// removed (`restore`; a removed card is kept for 30 s, longer than the toast shows). Open shows a
+// card already saved, in My cards.
+type Toast = { text: string; undo?: { kind: 'unsave' | 'restore'; cardId: string; key: string }; open?: string }
 
 // Pressing these does what they do; pressing anywhere else on the strip drags it.
 const NOT_FOR_DRAGGING = 'button, a, .w.live, .english, .popup'
@@ -58,6 +59,8 @@ export function Overlay(): React.JSX.Element {
   useRoomAbove(dock)
   const { settings, status, current, building, translating, fit, loaded } = useOverlay()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // The pointer is on Duet: the strip shows more of the line (in React, so its size change glides).
+  const [hovered, setHovered] = useState(false)
   const [toast, setToast] = useState<Toast>()
   const talk = useStripTalk(settings.language, useCallback((text: string) => setToast({ text }), []))
   // Stars given in this run, by line and word ("12:3", or "12:line"), so they show as saved.
@@ -124,7 +127,7 @@ export function Overlay(): React.JSX.Element {
             text: `Saved “${card.expression}”`,
             undo: { kind: 'unsave', cardId: card.id, key: key(pair) }
           }
-        : { text: `Already saved “${card.expression}”` }
+        : { text: `Already saved “${card.expression}”`, open: card.id }
     )
   }
 
@@ -164,6 +167,8 @@ export function Overlay(): React.JSX.Element {
         ref={dock}
         className={`dock${settingsOpen ? ' pinned' : ''}`}
         data-solid
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         onContextMenu={(event) => {
           event.preventDefault()
           window.duet.showMenu()
@@ -269,13 +274,14 @@ export function Overlay(): React.JSX.Element {
 
           {/* Each new line rises in as the last fades out. */}
           <AnimatePresence mode="popLayout" initial={false}>
-            <motion.div key={current ? current.id : 'idle'} layout="position" {...fadeUp(4, 0.18)}>
+            <motion.div key={current ? current.id : 'idle'} layout {...fadeUp(4, 0.18)}>
               {current ? (
                 <LineView
                   line={current}
                   settings={settings}
                   starred={(pair) => !!stars[key(pair)]}
                   onStar={star}
+                  expanded={hovered || settingsOpen}
                 />
               ) : (
                 <p className="idle">
@@ -288,7 +294,7 @@ export function Overlay(): React.JSX.Element {
 
           <AnimatePresence initial={false}>
           {notice && (
-            <motion.p key={`notice:${notice.text}`} layout="position" {...fadeUp()} className="notice" role="status">
+            <motion.p key={`notice:${notice.text}`} layout {...fadeUp()} className="notice" role="status">
               <span>{notice.text}</span>
               {notice.action && (
                 <button type="button" className="act primary" onClick={notice.action.run}>
@@ -298,11 +304,23 @@ export function Overlay(): React.JSX.Element {
             </motion.p>
           )}
           {toast && (
-            <motion.p key={`toast:${toast.text}`} layout="position" {...fadeUp()} className="toast" role="status">
+            <motion.p key={`toast:${toast.text}`} layout {...fadeUp()} className="toast" role="status">
               <span>{toast.text}</span>
               {toast.undo && (
                 <button type="button" className="act" onClick={() => undo(toast.undo!)}>
                   Undo
+                </button>
+              )}
+              {toast.open && (
+                <button
+                  type="button"
+                  className="act"
+                  onClick={() => {
+                    void window.duet.cards.open(toast.open)
+                    setToast(undefined)
+                  }}
+                >
+                  Open
                 </button>
               )}
             </motion.p>
