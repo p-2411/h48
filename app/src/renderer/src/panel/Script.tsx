@@ -1,13 +1,16 @@
 // The Script tab: every line of the video with its time, the original in colour and the English.
 // The line being spoken is highlighted and kept in view; lines already passed are dimmed; clicking
-// a line goes back to it. Without a transcript it lists the lines read so far, newest first.
-import { useEffect, useRef } from 'react'
+// a line goes back to it; each line can also be explained or starred from here. Without a
+// transcript it lists the lines read so far, newest first.
+import { useEffect, useRef, useState } from 'react'
 import type { Script as ScriptData } from '../../../shared/types'
 import { clock } from '../components/time'
 import { Words } from '../components/Words'
 
 export function Script({ script, current }: { script: ScriptData; current: number | null }): React.JSX.Element {
   const list = useRef<HTMLOListElement>(null)
+  // Lines starred from here in this run.
+  const [saved, setSaved] = useState<Set<number>>(new Set())
   const timed = script.source === 'transcript'
   const lines = timed ? script.lines : [...script.lines].reverse()
   const currentIndex = script.lines.findIndex((line) => line.id === current)
@@ -31,7 +34,7 @@ export function Script({ script, current }: { script: ScriptData; current: numbe
         const index = script.lines.indexOf(line)
         const processed = line.state === 'ready' ? line.processed : undefined
         return (
-          <li key={line.id}>
+          <li key={line.id} className="script-item">
             <button
               type="button"
               className={`script-row${line.id === current ? ' is-now' : ''}${timed && currentIndex >= 0 && index < currentIndex ? ' is-past' : ''}`}
@@ -43,6 +46,22 @@ export function Script({ script, current }: { script: ScriptData; current: numbe
                 {processed && <span className="english">{processed.translation}</span>}
               </span>
             </button>
+            <span className="row-actions">
+              <button type="button" className="btn quiet" onClick={() => window.duet.explainLine(line.id)}>
+                Explain
+              </button>
+              <button
+                type="button"
+                className="btn quiet"
+                disabled={!processed || saved.has(line.id)}
+                onClick={async () => {
+                  const result = await window.duet.save(line.id)
+                  if (result) setSaved((now) => new Set(now).add(line.id))
+                }}
+              >
+                {saved.has(line.id) ? '★ Saved' : '☆ Save'}
+              </button>
+            </span>
           </li>
         )
       })}

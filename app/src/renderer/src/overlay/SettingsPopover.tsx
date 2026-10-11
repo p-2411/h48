@@ -1,8 +1,8 @@
-// The ⚙ popover: what changes once in a while (language, how much of it, the pauses), kept off
-// the strip. The level picker previews the line on screen at each level.
-import { mixedLine } from '../../../shared/levels'
-import { LANGUAGES, type Language, type OverlayLine, type OverlaySettings } from '../../../shared/types'
-import { Words } from '../components/Words'
+// The ⚙ popover: what changes once in a while (language, how much of it, the pauses, the keys
+// that show and hide Duet), kept off the strip, and the way to the whole script.
+import { useEffect, useState } from 'react'
+import { LANGUAGES, type Language, type OverlaySettings } from '../../../shared/types'
+import { accelerator, symbols } from './keys'
 import { LEVELS } from './words'
 
 function Toggle({ on, label, hint, onChange }: { on: boolean; label: string; hint: string; onChange: (on: boolean) => void }): React.JSX.Element {
@@ -19,9 +19,48 @@ function Toggle({ on, label, hint, onChange }: { on: boolean; label: string; hin
   )
 }
 
-export function SettingsPopover({ settings, line }: { settings: OverlaySettings; line?: OverlayLine }): React.JSX.Element {
-  const ready = line?.state === 'ready' ? line.processed : undefined
-  const level = LEVELS.find((item) => item.level === settings.level)!
+/** The show/hide keys: click, then press the new ones (Esc keeps the old). */
+function ShortcutRecorder({ keys }: { keys: string }): React.JSX.Element {
+  const [recording, setRecording] = useState(false)
+  const [error, setError] = useState<string>()
+  useEffect(() => {
+    if (!recording) return
+    const press = async (event: KeyboardEvent): Promise<void> => {
+      event.preventDefault()
+      if (event.key === 'Escape') return setRecording(false)
+      const next = accelerator(event)
+      if (!next) return
+      setRecording(false)
+      setError(await window.duet.setShortcut(next))
+    }
+    window.addEventListener('keydown', press)
+    return () => window.removeEventListener('keydown', press)
+  }, [recording])
+  return (
+    <>
+      <div className="toggle">
+        <span>
+          Show or hide Duet
+          <small>{recording ? 'Press the new keys · Esc to keep' : 'Click to change'}</small>
+        </span>
+        <button
+          type="button"
+          className={`keys${recording ? ' on' : ''}`}
+          onClick={() => {
+            setError(undefined)
+            setRecording(!recording)
+            if (!recording) window.duet.focus()
+          }}
+        >
+          {recording ? '…' : symbols(keys)}
+        </button>
+      </div>
+      {error && <small className="error-text">{error}</small>}
+    </>
+  )
+}
+
+export function SettingsPopover({ settings }: { settings: OverlaySettings }): React.JSX.Element {
   return (
     <div className="settings" data-solid role="dialog" aria-label="Settings">
       <span className="label">Learning</span>
@@ -40,9 +79,6 @@ export function SettingsPopover({ settings, line }: { settings: OverlaySettings;
           </button>
         ))}
       </div>
-      <p className="preview">
-        {ready ? <Words tokens={mixedLine(ready, settings.level)} /> : <span className="hint">Swaps in {level.adds}.</span>}
-      </p>
       <Toggle on={settings.guessFirst} label="Hide English until I look" hint="Hover the English to see it" onChange={window.duet.setGuessFirst} />
       <Toggle
         on={settings.waitForTranslation}
@@ -51,8 +87,9 @@ export function SettingsPopover({ settings, line }: { settings: OverlaySettings;
         onChange={window.duet.setWaitForTranslation}
       />
       <Toggle on={settings.pauseForHelp} label="Pause while explaining" hint="While the Explain panel is open" onChange={window.duet.setPauseForHelp} />
-      <button type="button" className="quiet" onClick={() => window.duet.hide()}>
-        Hide Duet <kbd>⌥⇧D</kbd>
+      <ShortcutRecorder keys={settings.shortcut} />
+      <button type="button" className="quiet" onClick={() => window.duet.showScript()}>
+        Open the whole script
       </button>
     </div>
   )

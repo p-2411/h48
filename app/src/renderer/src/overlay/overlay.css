@@ -4,12 +4,20 @@
 .stage { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 20px 6px; }
 .dock { position: relative; max-width: 100%; display: flex; flex-direction: column; align-items: center; }
 
-/* The strip: as small as the line it carries. */
-.strip {
-  position: relative; max-width: 860px; min-width: 260px; padding: 9px 46px 11px 18px; border-radius: 14px;
-  background: var(--panel); border: 1px solid var(--line); color: var(--fg);
-  display: flex; flex-direction: column; gap: 6px; box-shadow: 0 6px 30px rgba(0, 0, 0, 0.35);
+/* Duet's surfaces: nearly opaque dark glass, as macOS draws its HUDs. */
+.strip, .settings, .act {
+  --glass: rgba(30, 30, 32, 0.92);
+  --glass-edge: rgba(255, 255, 255, 0.1);
 }
+
+/* The strip: as small as the line it carries. Its background drags it anywhere. */
+.strip {
+  position: relative; max-width: 860px; min-width: 260px; padding: 10px 46px 12px 20px; border-radius: 18px;
+  background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg);
+  display: flex; flex-direction: column; gap: 6px; user-select: none;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.6), 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+.strip.dragging { cursor: grabbing; }
 .strip p { margin: 0; }
 .line { display: flex; flex-direction: column; gap: 4px; }
 .mix { font-size: 24px; line-height: 1.3; letter-spacing: -0.012em; text-wrap: balance; }
@@ -23,10 +31,10 @@
 .hint { font-size: 12.5px; color: var(--text-3); }
 .idle { font-size: 13px; color: var(--text-2); }
 
-/* Words: swapped ones tinted; a hovered pair lit up in every line it appears in. */
-.mix .w.sw { padding: 0 0.16em; font-weight: 500; background: color-mix(in srgb, var(--c) 15%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent); }
-.w.live { cursor: pointer; }
-.w.lit { background: color-mix(in srgb, var(--c) 30%, transparent); box-shadow: inset 0 0 0 1px var(--c); }
+/* Words: swapped ones a little heavier (their colour already marks them); the hovered one lit. */
+.mix .w.sw { font-weight: 500; }
+.w.live { cursor: pointer; border-radius: 5px; }
+.mix .w.live:hover { background: color-mix(in srgb, var(--c, #fff) 28%, transparent); }
 
 /* Top-right corner: cards due, and the quiet status dot (its words on hover). */
 .corner { position: absolute; top: 9px; right: 10px; display: flex; align-items: center; gap: 7px; }
@@ -34,23 +42,28 @@
 .dot.on { background: #32d74b; box-shadow: 0 0 6px #32d74b; }
 .due { font-size: 10.5px; font-weight: 600; color: #111; background: #fff; border-radius: 999px; padding: 2px 7px; }
 
-/* Actions: above the strip, only while the pointer is on Duet (or the settings are open). */
+/* Actions: above the strip's right end, only while the pointer is on Duet (or the settings are
+   open). Their bottom padding bridges the gap to the strip, so the pointer never leaves Duet on the
+   way up, and they linger a moment after it does. */
 .actions {
-  position: absolute; bottom: calc(100% + 6px); right: 0; display: flex; gap: 5px; align-items: center;
-  opacity: 0; visibility: hidden; transition: opacity 0.15s var(--ease);
+  position: absolute; bottom: 100%; right: 8px; padding-bottom: 6px; display: flex; gap: 4px; align-items: center;
+  opacity: 0; visibility: hidden; transition: opacity 0.15s var(--ease) 0.25s, visibility 0s linear 0.4s;
 }
-.dock:hover .actions, .dock:focus-within .actions, .dock.pinned .actions { opacity: 1; visibility: visible; }
-.act { font-size: 12px; font-weight: 500; padding: 5px 10px; border-radius: 999px; background: #2b2b30; border: 1px solid var(--line); color: var(--fg); white-space: nowrap; }
-.act:hover { background: #3a3a40; }
+.dock:hover .actions, .dock:focus-within .actions, .dock.pinned .actions { opacity: 1; visibility: visible; transition-delay: 0s; }
+.act {
+  font-size: 12px; font-weight: 500; height: 28px; padding: 0 11px; border-radius: 999px; white-space: nowrap;
+  background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.act.icon { width: 28px; padding: 0; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
+.act:hover { background: rgba(58, 58, 62, 0.95); }
 .act.primary { background: #fff; color: #111; border-color: #fff; }
 .act.primary:hover { background: #e6e6e6; }
 .act.on { background: #fff; color: #111; }
 .act:disabled { opacity: 0.4; cursor: default; }
-.grip { -webkit-app-region: drag; cursor: grab; color: var(--text-3); padding: 4px 6px; letter-spacing: -2px; user-select: none; }
 
 /* A word's popup, above it and above the actions row. */
 .popup {
-  position: absolute; z-index: 3; bottom: calc(100% + 46px); transform: translateX(-50%); width: max-content; max-width: 280px;
+  position: absolute; z-index: 3; bottom: calc(100% + 40px); transform: translateX(-50%); width: max-content; max-width: 280px;
   background: #fff; color: #111; border-radius: 12px; padding: 9px 12px; display: flex; flex-direction: column; gap: 2px;
   box-shadow: 0 10px 34px rgba(0, 0, 0, 0.4); font-size: 13px;
 }
@@ -65,16 +78,14 @@
 
 /* The settings, above the strip on the right. */
 .settings {
-  position: absolute; z-index: 4; bottom: calc(100% + 44px); right: 0; width: 330px; padding: 14px; border-radius: 14px;
-  background: #1c1c20; border: 1px solid var(--line); color: var(--fg); display: flex; flex-direction: column; gap: 9px;
-  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
+  position: absolute; z-index: 4; bottom: calc(100% + 40px); right: 0; width: 330px; padding: 14px; border-radius: 16px;
+  background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg); display: flex; flex-direction: column; gap: 9px;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.6), 0 16px 48px rgba(0, 0, 0, 0.5);
 }
 .settings .label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
 .segment { display: flex; padding: 2px; border-radius: 8px; background: var(--fill); }
 .segment button { flex: 1; padding: 4px 6px; border-radius: 6px; font-size: 12px; color: var(--fg-2); }
 .segment button[aria-pressed='true'] { background: #636366; color: #fff; font-weight: 500; }
-.preview { font-size: 14px; line-height: 1.4; padding: 8px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.04); }
-.preview .w.sw { padding: 0 0.14em; background: color-mix(in srgb, var(--c) 15%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent); border-radius: 5px; }
 .toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; font-size: 13px; }
 .toggle small { display: block; font-size: 11px; color: var(--text-3); }
 .switch { flex: none; position: relative; width: 28px; height: 17px; border-radius: 9px; background: var(--fill); transition: background 0.2s; }
@@ -82,7 +93,11 @@
 .toggle.is-on .switch { background: #fff; }
 .toggle.is-on .switch i { background: #121214; transform: translateX(11px); }
 .quiet { align-self: flex-start; font-size: 12px; color: var(--text-2); }
-.quiet kbd { font: inherit; color: var(--text-3); margin-left: 4px; }
+.quiet:hover { color: var(--fg); }
+.keys { flex: none; min-width: 52px; padding: 4px 9px; border-radius: 7px; background: var(--fill); font-size: 13px; letter-spacing: 0.04em; }
+.keys:hover { background: rgba(255, 255, 255, 0.16); }
+.keys.on { background: #fff; color: #111; }
+.error-text { font-size: 11.5px; color: #ff6961; }
 
 /* Words that need the learner: a notice, the review nudge, a saved toast. */
 .notice, .toast { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--fg-2); }

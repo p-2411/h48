@@ -1,14 +1,15 @@
-// My cards: every saved card (All cards) and scheduled review (Review), plus backup and export.
+// My cards: every saved card, to browse, edit, pause and delete, plus backup and export (in the ⋯
+// menu). Review itself is in the side panel; the Review button opens it there.
 import { useEffect, useState } from 'react'
 import type { Card, CardDetail, CardQuery } from '../../../shared/cards'
 import { CardList } from './CardList'
 import { CardView } from './CardView'
-import { Review } from './Review'
 
 const UNDO_MS = 8000
 
 export function MyCards(): React.JSX.Element {
-  const [tab, setTab] = useState<'all' | 'review'>('all')
+  const [due, setDue] = useState(0)
+  const [menu, setMenu] = useState(false)
   const [query, setQuery] = useState<CardQuery>({ show: 'all' })
   const [cards, setCards] = useState<Card[]>([])
   const [selected, setSelected] = useState<string>()
@@ -16,11 +17,19 @@ export function MyCards(): React.JSX.Element {
   const [deleted, setDeleted] = useState<string[]>([])
   const [message, setMessage] = useState<string>()
 
+  useEffect(() => {
+    window.duet.getState().then((state) => setDue(state.due.due + state.due.newAvailable))
+    return window.duet.onDue((counts) => setDue(counts.due + counts.newAvailable))
+  }, [])
+
   // The list and the open card, loaded again whenever the query, the selection or any card changes.
   useEffect(() => {
     let live = true
     const load = (): Promise<void> =>
-      Promise.all([window.duet.cards.list(query), selected ? window.duet.cards.get(selected) : undefined]).then(([list, card]) => {
+      Promise.all([
+        window.duet.cards.list(query),
+        selected ? window.duet.cards.get(selected) : undefined
+      ]).then(([list, card]) => {
         if (!live) return
         setCards(list)
         setDetail(card)
@@ -36,7 +45,6 @@ export function MyCards(): React.JSX.Element {
   useEffect(
     () =>
       window.duet.cards.onShow((id) => {
-        setTab('all')
         setQuery({ show: 'all' })
         setSelected(id)
       }),
@@ -50,7 +58,10 @@ export function MyCards(): React.JSX.Element {
     setTimeout(() => forget(id), UNDO_MS)
   }
 
-  const file = async (work: () => Promise<unknown>, done: (result: never) => string | undefined): Promise<void> => {
+  const file = async (
+    work: () => Promise<unknown>,
+    done: (result: never) => string | undefined
+  ): Promise<void> => {
     try {
       const result = await work()
       if (result !== undefined) setMessage(done(result as never))
@@ -62,24 +73,71 @@ export function MyCards(): React.JSX.Element {
   return (
     <main className="my-cards">
       <header className="top">
-        <div className="segment" role="tablist">
-          <button type="button" role="tab" aria-pressed={tab === 'all'} onClick={() => setTab('all')}>
-            All cards
-          </button>
-          <button type="button" role="tab" aria-pressed={tab === 'review'} onClick={() => setTab('review')}>
-            Review
-          </button>
-        </div>
+        <h1>My cards</h1>
         <div className="row">
-          <button type="button" className="btn quiet" onClick={() => file(window.duet.cards.exportBackup, (path: string) => `Backup saved to ${path}.`)}>
-            Back up
+          <button
+            type="button"
+            className="btn primary"
+            disabled={due === 0}
+            onClick={() => window.duet.cards.openReview()}
+          >
+            {due > 0 ? `Review ${due}` : 'Nothing to review'}
           </button>
-          <button type="button" className="btn quiet" onClick={() => file(window.duet.cards.restoreBackup, (added: { cards: number; reviews: number }) => `Restored ${added.cards} cards and ${added.reviews} reviews.`)}>
-            Restore
-          </button>
-          <button type="button" className="btn quiet" onClick={() => file(window.duet.cards.exportText, (path: string) => `Exported to ${path}. The schedule is not included.`)}>
-            Export text
-          </button>
+          <div className="menu-wrap">
+            <button
+              type="button"
+              className="btn quiet"
+              aria-expanded={menu}
+              aria-label="More"
+              onClick={() => setMenu(!menu)}
+            >
+              ⋯
+            </button>
+            {menu && (
+              <div className="menu" role="menu" onClick={() => setMenu(false)}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() =>
+                    file(
+                      window.duet.cards.exportBackup,
+                      (path: string) => `Backup saved to ${path}.`
+                    )
+                  }
+                >
+                  Back up cards…
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() =>
+                    file(
+                      window.duet.cards.restoreBackup,
+                      (added: { cards: number; reviews: number }) =>
+                        `Restored ${added.cards} cards and ${added.reviews} reviews.`
+                    )
+                  }
+                >
+                  Restore a backup…
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() =>
+                    file(
+                      window.duet.cards.exportText,
+                      (path: string) => `Exported to ${path}. The schedule is not included.`
+                    )
+                  }
+                >
+                  Export as text…
+                </button>
+                <p className="faint">
+                  Cards are kept on this computer only. Back up to keep a copy.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </header>
       {message && (
@@ -106,27 +164,27 @@ export function MyCards(): React.JSX.Element {
           </button>
         </p>
       ))}
-      <p className="faint">Cards are kept on this computer only. Back up to keep a copy.</p>
-
-      {tab === 'review' ? (
-        <Review onBrowse={() => setTab('all')} />
-      ) : (
-        <div className="browse">
-          <CardList cards={cards} query={query} onQuery={setQuery} selected={selected} onSelect={setSelected} />
-          {detail ? (
-            <CardView
-              key={detail.id}
-              card={detail}
-              onDeleted={(id) => {
-                markDeleted(id)
-                setSelected(undefined)
-              }}
-            />
-          ) : (
-            <p className="faint pick">Pick a card to see it.</p>
-          )}
-        </div>
-      )}
+      <div className="browse">
+        <CardList
+          cards={cards}
+          query={query}
+          onQuery={setQuery}
+          selected={selected}
+          onSelect={setSelected}
+        />
+        {detail ? (
+          <CardView
+            key={detail.id}
+            card={detail}
+            onDeleted={(id) => {
+              markDeleted(id)
+              setSelected(undefined)
+            }}
+          />
+        ) : (
+          <p className="faint pick">Pick a card to see it.</p>
+        )}
+      </div>
     </main>
   )
 }

@@ -34,6 +34,12 @@ export const overlayApi = {
   playOn: () => ipcRenderer.send('duet:play-on'),
   /** Whether the pointer is over something of Duet's (take clicks) or not (let them through). */
   setSolid: (solid: boolean) => ipcRenderer.send('duet:solid', solid),
+  /** Dragging the subtitles: the window follows the pointer between start and end. */
+  drag: (phase: 'start' | 'end') => ipcRenderer.send('duet:drag', phase),
+  /** Takes the keyboard (the overlay normally leaves it to the video), to record new keys. */
+  focus: () => ipcRenderer.send('duet:focus'),
+  /** New show/hide keys (an Electron accelerator); resolves with why not, if they can't be had. */
+  setShortcut: (keys: string) => invoke<string | undefined>('duet:set-shortcut', keys),
   /** Opens the side panel on the Script tab. */
   showScript: () => ipcRenderer.send('duet:script'),
   /** Explains a line; the line on screen when no id is given. */

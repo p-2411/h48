@@ -14,7 +14,7 @@ export type OverlayState = {
   building: string
 }
 
-const DEFAULTS: OverlaySettings = { language: 'es', level: 2, guessFirst: true, waitForTranslation: true, pauseForHelp: false, onboarded: false }
+const DEFAULTS: OverlaySettings = { language: 'es', level: 2, guessFirst: true, waitForTranslation: true, pauseForHelp: false, onboarded: false, shortcut: 'Alt+Shift+D' }
 
 export function useOverlay(): OverlayState {
   const [settings, setSettings] = useState<OverlaySettings>(DEFAULTS)

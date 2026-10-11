@@ -4,7 +4,6 @@ import { Menu, nativeImage, Tray } from 'electron'
 import icon from '../../resources/icon.png?asset'
 
 type Actions = {
-  shortcut: string
   toggleOverlay: () => void
   showScript: () => void
   explainLine: () => void
@@ -14,7 +13,6 @@ type Actions = {
 }
 
 export function createTray({
-  shortcut,
   toggleOverlay,
   showScript,
   explainLine,
@@ -26,10 +24,7 @@ export function createTray({
   tray.setToolTip('Duet')
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      {
-        label: `Show or hide (${shortcut.replace('Alt', process.platform === 'darwin' ? 'Option' : 'Alt')})`,
-        click: toggleOverlay
-      },
+      { label: 'Show or hide Duet', click: toggleOverlay },
       { label: 'Script', click: showScript },
       { label: 'Explain this line', click: explainLine },
       { label: 'Talk about this line', click: openTutor },

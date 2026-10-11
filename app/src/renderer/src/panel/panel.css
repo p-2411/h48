@@ -12,3 +12,7 @@ html, body, #root { height: 100%; overflow: hidden; }
 .script-row.is-now .time { color: #fff; font-weight: 600; }
 .script-row .original { display: block; font-size: 15px; line-height: 1.4; }
 .script-row .english { display: block; margin-top: 2px; font-size: 13px; line-height: 1.4; color: var(--text-2); }
+.script-item { position: relative; }
+.row-actions { position: absolute; top: 6px; right: 6px; display: none; gap: 2px; background: #1c1c20; border-radius: 9px; padding: 2px; }
+.script-item:hover .row-actions, .script-item:focus-within .row-actions { display: flex; }
+.row-actions .btn { padding: 4px 8px; font-size: 12px; }

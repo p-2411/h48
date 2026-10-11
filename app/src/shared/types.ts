@@ -105,6 +105,10 @@ export type OverlaySettings = {
   pauseForHelp: boolean
   /** The first-run screens have been seen. */
   onboarded: boolean
+  /** The keys that show and hide Duet anywhere, as an Electron accelerator ("Alt+Shift+D"). */
+  shortcut: string
+  /** Where the learner dragged the subtitles to (the overlay window's top-left), if anywhere. */
+  overlayPosition?: { x: number; y: number }
 }
 
 /** Whether Duet may hear the browser's sound (macOS System Audio Recording); 'unavailable' when

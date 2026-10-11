@@ -1,5 +1,6 @@
-// The side panel beside the video: Script and Explain tabs.
+// The side panel beside the video: Script, Explain and Review tabs.
 import { ExplainView } from '../explain/ExplainView'
+import { Review } from '../review/Review'
 import { Script } from './Script'
 import { useExplain } from './useExplain'
 import { usePanel } from './usePanel'
@@ -17,6 +18,9 @@ export function Panel(): React.JSX.Element {
           <button type="button" role="tab" aria-pressed={tab === 'explain'} onClick={() => setTab('explain')}>
             Explain
           </button>
+          <button type="button" role="tab" aria-pressed={tab === 'review'} onClick={() => setTab('review')}>
+            Review
+          </button>
         </div>
         <button type="button" className="close" aria-label="Close" onClick={() => window.duet.panel.close()}>
           ×
@@ -24,8 +28,10 @@ export function Panel(): React.JSX.Element {
       </header>
       {tab === 'script' ? (
         <Script script={script} current={current} />
-      ) : (
+      ) : tab === 'explain' ? (
         <ExplainView state={explain} onReplay={window.duet.explain.replay} onRetry={window.duet.explain.retry} />
+      ) : (
+        <Review onEnd={() => setTab('script')} />
       )}
     </main>
   )

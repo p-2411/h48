@@ -39,13 +39,16 @@ export function CardList({
             </button>
           ))}
         </div>
-        <div className="segment" role="group" aria-label="Card type">
-          {([undefined, 'understand', 'use'] as const).map((type) => (
-            <button key={type ?? 'any'} type="button" aria-pressed={query.type === type} onClick={() => onQuery({ ...query, type })}>
-              {type === 'understand' ? 'Understand' : type === 'use' ? 'Use it' : 'Any type'}
-            </button>
-          ))}
-        </div>
+        <select
+          className="type"
+          aria-label="Card type"
+          value={query.type ?? ''}
+          onChange={(event) => onQuery({ ...query, type: (event.target.value || undefined) as CardQuery['type'] })}
+        >
+          <option value="">Any type</option>
+          <option value="understand">Understand</option>
+          <option value="use">Use it</option>
+        </select>
       </div>
       {cards.length === 0 ? (
         <p className="faint">{query.search || (query.show && query.show !== 'all') || query.type ? 'No cards match.' : 'No cards yet. Save one from Explain.'}</p>

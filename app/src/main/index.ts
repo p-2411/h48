@@ -32,6 +32,7 @@ import { Settings } from './settings'
 import { createTray } from './tray'
 import { Tutor } from './tutor'
 import { Welcome } from './welcome'
+import { Shortcut } from './shortcut'
 import { WaitForTranslation } from './wait'
 import { Watcher } from './watcher'
 import { createOverlay, toggleOverlay } from './windows/overlay'
@@ -45,8 +46,6 @@ if (is.dev) {
   }
 }
 
-// Shows or hides the overlay from anywhere. Option/Alt+Shift+D on every OS.
-const SHORTCUT = 'Alt+Shift+D'
 // How often the line on screen follows the video, and how often hearing looks at the audio.
 const TICK_MS = 100
 const HEARING_TICK_MS = 500
@@ -116,7 +115,9 @@ app.whenReady().then(() => {
     if (changed.pauseForHelp === false) player.release('explain')
   })
 
-  const overlay = createOverlay()
+  const overlay = createOverlay(settings)
+  // Shows or hides the overlay from anywhere; the keys are a setting (⚙ on the strip).
+  const shortcut = new Shortcut(settings.current.shortcut, () => toggleOverlay(overlay))
   const showScript = (): void => panel.show('script')
   const { sendDue } = connectOverlay(overlay, {
     watcher,
@@ -137,6 +138,11 @@ app.whenReady().then(() => {
       if (moment) replayMoment(moment)
     },
     openReview: () => panel.show('review'),
+    setShortcut: (keys) => {
+      const error = shortcut.change(keys)
+      if (!error) settings.update({ shortcut: keys })
+      return error
+    },
     // Pressing play for the learner counts as their own play, so Wait lets this line go.
     playOn: () => captions.command({ type: 'play' })
   })
@@ -146,7 +152,6 @@ app.whenReady().then(() => {
   const welcome = new Welcome(settings, audio)
   welcome.open()
   tray = createTray({
-    shortcut: SHORTCUT,
     toggleOverlay: () => toggleOverlay(overlay),
     showScript,
     explainLine: () => explainLine(),
@@ -154,8 +159,6 @@ app.whenReady().then(() => {
     openCards: () => cards.open(),
     openWelcome: () => welcome.open(true)
   })
-  if (!globalShortcut.register(SHORTCUT, () => toggleOverlay(overlay)))
-    console.error(`[duet] could not register ${SHORTCUT}; another app may be using it`)
 
   // Videos with neither a transcript nor captions: lines from the audio.
   const hearing = new Hearing({ watcher, player, audio, speech: voice?.speechToText, settings })

@@ -11,10 +11,13 @@
 //   duet:review        opens the side panel on Review
 //   duet:play-on       plays the video that Wait is holding
 //   duet:solid         the pointer is over Duet (take clicks) or not (let them through to the video)
+//   duet:drag          the learner drags the subtitles: start, end (between them the window follows the pointer)
+//   duet:focus         takes the keyboard, while the learner presses new show/hide keys
+//   duet:set-shortcut  new show/hide keys → why not, if they can't be had
 //   duet:open-tutor    opens the tutor on a line (the one on screen when no id is given)
 //   duet:hide          hides the overlay
 //   duet:status / duet:settings / duet:line / duet:current / duet:live / duet:due   ← updates
-import { ipcMain, type BrowserWindow } from 'electron'
+import { ipcMain, screen, type BrowserWindow } from 'electron'
 import type { SaveResult } from '../../shared/cards'
 import type { DueCounts, Language, Level, OverlaySettings } from '../../shared/types'
 import type { Settings } from '../settings'
@@ -32,6 +35,7 @@ type Actions = {
   replayLine: (lineId?: number) => void
   openReview: () => void
   playOn: () => void
+  setShortcut: (keys: string) => string | undefined
 }
 
 export function connectOverlay(overlay: BrowserWindow, actions: Actions): { sendDue: (due: DueCounts) => void } {
@@ -64,6 +68,29 @@ export function connectOverlay(overlay: BrowserWindow, actions: Actions): { send
   // The window lets clicks through to the video except where Duet is drawn (see windows/overlay.ts).
   ipcMain.on('duet:solid', (_, solid: boolean) => {
     if (!overlay.isDestroyed()) overlay.setIgnoreMouseEvents(!solid, { forward: true })
+  })
+  ipcMain.handle('duet:set-shortcut', (_, keys: string) => actions.setShortcut(String(keys)))
+  ipcMain.on('duet:focus', () => overlay.isDestroyed() || overlay.focus())
+  // Dragging: until the page says it ended, the window follows the pointer, keeping the offset
+  // between the pointer and its corner from the start. Following here, not on the page's mouse
+  // moves, keeps up when the pointer outruns the window.
+  let follow: NodeJS.Timeout | undefined
+  ipcMain.on('duet:drag', (_, phase: 'start' | 'end') => {
+    if (overlay.isDestroyed()) return
+    clearInterval(follow)
+    follow = undefined
+    if (phase === 'start') {
+      const pointer = screen.getCursorScreenPoint()
+      const [x, y] = overlay.getPosition()
+      follow = setInterval(() => {
+        if (overlay.isDestroyed()) return clearInterval(follow)
+        const now = screen.getCursorScreenPoint()
+        overlay.setPosition(now.x - (pointer.x - x), now.y - (pointer.y - y))
+      }, 1000 / 60)
+    } else {
+      const [x, y] = overlay.getPosition()
+      settings.update({ overlayPosition: { x, y } })
+    }
   })
   ipcMain.on('duet:hide', () => overlay.hide())
   return { sendDue: (due) => send('duet:due', due) }

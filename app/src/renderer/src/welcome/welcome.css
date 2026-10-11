@@ -1,0 +1,41 @@
+/* The welcome window: one step at a time, with Back and Continue at the bottom. */
+html, body { background: #101013; }
+.welcome { height: 100%; display: flex; flex-direction: column; gap: 18px; padding: 30px 34px 24px; color: var(--fg); }
+.welcome h1 { margin: 0 0 6px; font-size: 24px; letter-spacing: -0.02em; }
+.welcome h2 { margin: 0; font-size: 17px; font-weight: 600; }
+.welcome p { margin: 0; font-size: 13.5px; line-height: 1.5; }
+.welcome header p { font-size: 14px; }
+.body { flex: 1; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+.spacer { flex: 1; }
+.grow { flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.grow small { font-size: 12px; line-height: 1.4; }
+.end { justify-content: flex-end; }
+
+/* Where the learner is: four names, the current one white. */
+.steps { display: flex; gap: 6px; margin: 16px 0 0; padding: 0; list-style: none; counter-reset: step; }
+.steps li { flex: 1; padding-top: 8px; border-top: 2px solid var(--fill); font-size: 11.5px; color: var(--text-3); counter-increment: step; }
+.steps li::before { content: counter(step) ' · '; }
+.steps li.done { border-color: var(--text-2); color: var(--text-2); }
+.steps li.now { border-color: #fff; color: #fff; font-weight: 500; }
+
+/* The language: one card each, with the sample line in it. */
+.choices { display: flex; flex-direction: column; gap: 8px; }
+.choice { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); text-align: left; }
+.choice span { font-size: 13px; color: var(--text-2); }
+.choice:hover { background: rgba(255, 255, 255, 0.04); }
+.choice[aria-pressed='true'] { border-color: #fff; background: rgba(255, 255, 255, 0.06); }
+
+.segment.wide { display: flex; }
+.segment.wide button { flex: 1; padding: 6px; border-radius: 6px; font-size: 13px; color: var(--fg-2); }
+.segment.wide button[aria-pressed='true'] { background: #636366; color: #fff; font-weight: 500; }
+.sample .mix { font-size: 21px; line-height: 1.35; }
+.sample .w.sw { font-weight: 500; }
+
+/* Permissions: each with its state, live. */
+.check { padding: 12px 14px; }
+.tick { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--text-3); display: grid; place-items: center; font-size: 11px; font-style: normal; }
+.tick.on { background: #32d74b; border-color: #32d74b; color: #111; font-weight: 700; }
+.ok { color: #32d74b; font-size: 12.5px; font-weight: 500; }
+
+.legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 12px; margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--fg-2); }
+.legend .w { margin-right: 6px; }

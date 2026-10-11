@@ -3,7 +3,7 @@
 // that rating will do.
 import { useCallback, useEffect, useState } from 'react'
 import type { Card, Rating, ReviewQueue, ReviewSettings } from '../../../shared/cards'
-import { when } from '../components/time'
+import { clock, when } from '../components/time'
 
 const RATINGS: { rating: Rating; label: string; meaning: string }[] = [
   { rating: 'again', label: 'Again', meaning: 'I did not recall it correctly' },
@@ -46,11 +46,42 @@ function Answer({ card }: { card: Card }): React.JSX.Element {
       {card.explanation?.notice && <p>{card.explanation.notice.text}</p>}
       {card.alternative && <p className="muted">Alternative: {card.alternative}</p>}
       {card.note && <p className="muted">Note: {card.note}</p>}
+      <Scene card={card} />
     </div>
   )
 }
 
-export function Review({ onBrowse }: { onBrowse: () => void }): React.JSX.Element {
+/** The scene the card came from: the line, with what the card tests lit up, and a way back to it. */
+function Scene({ card }: { card: Card }): React.JSX.Element | null {
+  if (card.source.kind !== 'video') return null
+  const { line, video } = card.source.moment
+  const at = line.original.toLocaleLowerCase().indexOf(card.expression.toLocaleLowerCase())
+  return (
+    <div className="scene">
+      <p lang={card.language}>
+        {at < 0 || card.expression === line.original ? (
+          line.original
+        ) : (
+          <>
+            {line.original.slice(0, at)}
+            <mark>{line.original.slice(at, at + card.expression.length)}</mark>
+            {line.original.slice(at + card.expression.length)}
+          </>
+        )}
+      </p>
+      <p className="faint">
+        {video.title ?? video.site}
+        {video.position !== undefined && ` · ${clock(video.position)}`}
+        <button type="button" className="btn quiet" onClick={() => window.duet.cards.replay(card.id)}>
+          Watch this moment
+        </button>
+      </p>
+    </div>
+  )
+}
+
+/** `onEnd` leaves the review (back to where it was opened from). */
+export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
   const [queue, setQueue] = useState<ReviewQueue>()
   const [revealed, setRevealed] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -146,7 +177,7 @@ export function Review({ onBrowse }: { onBrowse: () => void }): React.JSX.Elemen
                 Undo last rating
               </button>
             )}
-            <button type="button" className="btn quiet" onClick={onBrowse}>
+            <button type="button" className="btn quiet" onClick={onEnd}>
               End session
             </button>
           </div>
@@ -161,7 +192,7 @@ export function Review({ onBrowse }: { onBrowse: () => void }): React.JSX.Elemen
                 Undo last rating
               </button>
             )}
-            <button type="button" className="btn" onClick={onBrowse}>
+            <button type="button" className="btn" onClick={() => window.duet.cards.open()}>
               Browse cards
             </button>
           </div>
@@ -169,7 +200,7 @@ export function Review({ onBrowse }: { onBrowse: () => void }): React.JSX.Elemen
       )}
 
       {settings && (
-        <details className="settings">
+        <details className="review-settings">
           <summary>Review settings</summary>
           <label className="field">
             <span>Target recall: {Math.round(settings.desiredRetention * 100)}% (higher means more reviews)</span>

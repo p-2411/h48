@@ -1,9 +1,10 @@
-// The explanation of one line: what it means here and the one thing worth noticing, with Replay
-// and Save card, then a conversation about the line. One component with no window of its own, so it can move into the tutor's window.
+// The explanation of one line. It opens with the line itself (the words worth noticing lit up in
+// it), Replay and Save card, then one short paragraph: what it means here and how it comes across.
+// The reasoning, an alternative and any doubt fold under "More"; the conversation about the line
+// follows. One component with no window of its own, so it can move into the tutor's window.
 import type { ExplainState, HearingNote } from '../../../shared/explain'
 import { LANGUAGES } from '../../../shared/types'
 import { clock } from '../components/time'
-import { Words } from '../components/Words'
 import { Chat } from './Chat'
 import { SaveCard } from './SaveCard'
 
@@ -13,6 +14,19 @@ const HEARING: Partial<Record<HearingNote, string>> = {
   'not-allowed': 'Duet can’t hear the video. Allow it in System Settings › Privacy & Security › Screen & System Audio Recording.',
   'not-kept': 'This line played too long ago for Duet to hear it, so the explanation goes by the words.',
   unclear: 'Duet couldn’t make out the speech in this line, so the explanation goes by the words.'
+}
+
+/** The line, with the quoted words lit up when they are in it. */
+function LineWithQuote({ text, quote }: { text: string; quote?: string }): React.JSX.Element {
+  const at = quote ? text.toLocaleLowerCase().indexOf(quote.toLocaleLowerCase()) : -1
+  if (!quote || at < 0) return <>{text}</>
+  return (
+    <>
+      {text.slice(0, at)}
+      <mark>{text.slice(at, at + quote.length)}</mark>
+      {text.slice(at + quote.length)}
+    </>
+  )
 }
 
 export function ExplainView({
@@ -25,20 +39,30 @@ export function ExplainView({
   onRetry: () => void
 }): React.JSX.Element {
   const { moment, explanation, loading, stage, hearing, error } = state
-  if (!moment) return <p className="muted center">Press Explain in the overlay while a line is on screen.</p>
+  if (!moment) return <p className="muted center">Press Explain on the strip, or on a line in Script.</p>
   const processed = moment.line.processed
   const position = moment.video.position
+  const more = explanation && (explanation.why || explanation.alternative || explanation.limitation || moment.earlier.length > 0)
   return (
     <div className="explain">
       <section className="card-box" aria-label="The line">
         <p className="line" lang={moment.language}>
-          {processed ? <Words tokens={processed.source} /> : moment.line.original}
+          <LineWithQuote text={moment.line.original} quote={explanation?.notice?.quote} />
         </p>
         {processed && <p className="muted">{processed.translation}</p>}
-        <p className="faint">
-          {LANGUAGES[moment.language]}
-          {position !== undefined && ` · ${clock(position)}`}
-        </p>
+        <div className="row">
+          <span className="faint">
+            {moment.video.title ?? LANGUAGES[moment.language]}
+            {position !== undefined && ` · ${clock(position)}`}
+          </span>
+          <span className="spacer" />
+          {position !== undefined && (
+            <button type="button" className="btn quiet" onClick={onReplay}>
+              ↺ Replay
+            </button>
+          )}
+          {explanation && <SaveCard key={moment.takenAt} moment={moment} explanation={explanation} />}
+        </div>
       </section>
 
       {loading && <p className="muted">{stage === 'listening' ? 'Listening…' : 'Explaining…'}</p>}
@@ -51,30 +75,23 @@ export function ExplainView({
         </div>
       )}
       {explanation && (
-        <>
-          <section className="part">
-            <h2 className="label">
-              Explanation
-              {explanation.heard && (
-                <span className="heard" title={`Includes how it was said, from the audio (spoken in ${explanation.heard.spokenLanguage})`}>
-                  heard
-                </span>
-              )}
-            </h2>
-            <p>{explanation.meaning}</p>
-          </section>
+        <section className="part">
+          <p className="lead">
+            {explanation.meaning}
+            {explanation.heard && (
+              <span className="heard" title={`Includes how it was said, from the audio (spoken in ${explanation.heard.spokenLanguage})`}>
+                heard
+              </span>
+            )}
+          </p>
+          {explanation.notice && <p>{explanation.notice.text}</p>}
           {hearing && HEARING[hearing] && <p className="faint">{HEARING[hearing]}</p>}
-          {explanation.notice && (
-            <section className="part">
-              <h2 className="label">What to notice</h2>
-              {explanation.notice.quote && (
-                <p className="quote" lang={moment.language}>
-                  {explanation.notice.quote}
-                </p>
-              )}
-              <p>{explanation.notice.text}</p>
-            </section>
-          )}
+        </section>
+      )}
+
+      {more && (
+        <details className="more-explain">
+          <summary>More</summary>
           {explanation.why && (
             <section className="part">
               <h2 className="label">Why here</h2>
@@ -83,7 +100,7 @@ export function ExplainView({
           )}
           {explanation.alternative && (
             <section className="part">
-              <h2 className="label">Alternative</h2>
+              <h2 className="label">Another way to say it</h2>
               <p className="quote" lang={moment.language}>
                 {explanation.alternative.expression}
               </p>
@@ -92,33 +109,24 @@ export function ExplainView({
           )}
           {explanation.limitation && (
             <section className="part">
-              <h2 className="label">Limitation</h2>
+              <h2 className="label">Not sure about</h2>
               <p className="muted">{explanation.limitation}</p>
             </section>
           )}
-        </>
-      )}
-
-      {moment.earlier.length > 0 && (
-        <details>
-          <summary>Conversation context ({moment.earlier.length} lines before)</summary>
-          {moment.earlier.map((line, index) => (
-            <p key={index}>
-              <span lang={moment.language}>{line.original}</span>
-              {line.translation && <span className="muted"> {line.translation}</span>}
-            </p>
-          ))}
+          {moment.earlier.length > 0 && (
+            <section className="part">
+              <h2 className="label">Lines before</h2>
+              {moment.earlier.map((line, index) => (
+                <p key={index}>
+                  <span lang={moment.language}>{line.original}</span>
+                  {line.translation && <span className="muted"> {line.translation}</span>}
+                </p>
+              ))}
+            </section>
+          )}
         </details>
       )}
 
-      <div className="row">
-        {position !== undefined && (
-          <button type="button" className="btn" onClick={onReplay}>
-            Replay
-          </button>
-        )}
-        {explanation && <SaveCard key={moment.takenAt} moment={moment} explanation={explanation} />}
-      </div>
       {explanation && <p className="faint">Written by AI ({explanation.model}). It can be wrong.</p>}
       {explanation && <Chat chat={state.chat} replying={state.replying} error={state.chatError} lang={moment.language} />}
     </div>

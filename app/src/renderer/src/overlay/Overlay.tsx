@@ -1,8 +1,9 @@
 // The overlay: a strip the size of a subtitle at the bottom of the window, showing only the mixed
 // line. Everything else appears when reached for: hovering the strip shows the original, the
 // English and the actions above it; hovering a word shows its popup; ⚙ opens the settings. Words
-// show on the strip itself only when the learner can act on them (see notice.ts).
-import { useEffect, useState } from 'react'
+// show on the strip itself only when the learner can act on them (see notice.ts). The strip can be
+// dragged anywhere by its background.
+import { useEffect, useState, type PointerEvent } from 'react'
 import type { SaveResult } from '../../../shared/cards'
 import { LineView } from './LineView'
 import { actionable, quiet } from './notice'
@@ -15,6 +16,24 @@ const TOAST_MS = 5000
 const NUDGE_AFTER_MS = 15_000
 
 type Toast = { text: string; cardId?: string }
+
+// Pressing these does what they do; pressing anywhere else on the strip drags it.
+const NOT_FOR_DRAGGING = 'button, a, .w.live, .english, .popup'
+
+/** Drags the whole overlay window while the pointer is held on the strip's background. */
+function startDrag(event: PointerEvent<HTMLElement>): void {
+  if (event.button !== 0 || (event.target as Element).closest(NOT_FOR_DRAGGING)) return
+  const strip = event.currentTarget
+  strip.setPointerCapture(event.pointerId)
+  strip.classList.add('dragging')
+  window.duet.drag('start')
+  const end = (): void => {
+    strip.classList.remove('dragging')
+    window.duet.drag('end')
+    strip.removeEventListener('lostpointercapture', end)
+  }
+  strip.addEventListener('lostpointercapture', end)
+}
 
 export function Overlay(): React.JSX.Element {
   useSolid()
@@ -66,32 +85,36 @@ export function Overlay(): React.JSX.Element {
   return (
     <div className="stage">
       <div className={`dock${settingsOpen ? ' pinned' : ''}`} data-solid>
-        {settingsOpen && <SettingsPopover settings={settings} line={current} />}
+        {settingsOpen && <SettingsPopover settings={settings} />}
         <div className="actions" role="toolbar" aria-label="Line actions">
-          <span className="grip" title="Drag to move" aria-hidden="true">
-            ⋮⋮
-          </span>
           <button type="button" className="act primary" disabled={!current} onClick={() => window.duet.explainLine()}>
             Explain
           </button>
-          <button type="button" className={`act${stars[key()] ? ' on' : ''}`} disabled={!ready} onClick={() => star()}>
-            {stars[key()] ? '★ Saved' : '☆ Save line'}
+          <button
+            type="button"
+            className={`act icon${stars[key()] ? ' on' : ''}`}
+            disabled={!ready}
+            title={stars[key()] ? 'Saved — click to remove' : 'Save this line'}
+            aria-label={stars[key()] ? 'Remove the saved line' : 'Save this line'}
+            onClick={() => star()}
+          >
+            {stars[key()] ? '★' : '☆'}
           </button>
-          <button type="button" className="act" disabled={!current} onClick={() => window.duet.replay()}>
-            ↺ Replay
+          <button type="button" className="act icon" disabled={!current} title="Replay this line" aria-label="Replay this line" onClick={() => window.duet.replay()}>
+            ↺
           </button>
-          <button type="button" className="act" onClick={() => window.duet.showScript()}>
-            Script
-          </button>
-          <button type="button" className={`act${settingsOpen ? ' on' : ''}`} aria-label="Settings" onClick={() => setSettingsOpen(!settingsOpen)}>
+          <button
+            type="button"
+            className={`act icon${settingsOpen ? ' on' : ''}`}
+            title="Settings"
+            aria-label="Settings"
+            onClick={() => setSettingsOpen(!settingsOpen)}
+          >
             ⚙
-          </button>
-          <button type="button" className="act" aria-label="Hide Duet" onClick={() => window.duet.hide()}>
-            ×
           </button>
         </div>
 
-        <div className="strip">
+        <div className="strip" onPointerDown={startDrag}>
           <div className="corner">
             {due > 0 && (
               <button type="button" className="due" onClick={() => window.duet.openReview()} title="Review the cards due">
