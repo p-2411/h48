@@ -1,7 +1,8 @@
 // The overlay: a strip the size of a subtitle at the bottom of the window, showing only the mixed
 // line. Everything else appears when reached for: hovering the strip shows the original, the
 // English and the actions above it; hovering a word shows its popup; ⚙ opens the settings. Words
-// show on the strip itself only when the learner can act on them (see notice.ts). The strip can be
+// show on the strip itself only when the learner can act on them (see notice.ts). The strip sits on
+// the video, no wider than it (the main process moves the window; see placement.ts), and can be
 // dragged anywhere by its background.
 import { useEffect, useState, type PointerEvent } from 'react'
 import type { SaveResult } from '../../../shared/cards'
@@ -43,6 +44,12 @@ export function Overlay(): React.JSX.Element {
   // Stars given in this run, by line and word ("12:3", or "12:line"), so they show as saved.
   const [stars, setStars] = useState<Record<string, string>>({})
   const [pausedLong, setPausedLong] = useState(false)
+  // How wide the strip may be to stay inside the video.
+  const [fit, setFit] = useState<number | null>(null)
+  useEffect(() => {
+    void window.duet.getState().then((state) => setFit(state.fit))
+    return window.duet.onFit(setFit)
+  }, [])
 
   useEffect(() => {
     if (!toast) return
@@ -83,7 +90,7 @@ export function Overlay(): React.JSX.Element {
   const nudge = pausedLong && due > 0 && !notice
 
   return (
-    <div className="stage">
+    <div className="stage" style={fit ? ({ '--fit': `${fit}px` } as React.CSSProperties) : undefined}>
       <div className={`dock${settingsOpen ? ' pinned' : ''}`} data-solid>
         {settingsOpen && <SettingsPopover settings={settings} />}
         <div className="actions" role="toolbar" aria-label="Line actions">

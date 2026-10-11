@@ -7,10 +7,12 @@ import { invoke } from './invoke'
 import { subscribe } from './subscribe'
 
 export const overlayApi = {
-  getState: () => invoke<{ settings: OverlaySettings; status: OverlayStatus; due: DueCounts }>('duet:get-state'),
+  getState: () => invoke<{ settings: OverlaySettings; status: OverlayStatus; due: DueCounts; fit: number | null }>('duet:get-state'),
   /** Cards ready to review, whenever that changes. */
   onDue: (listener: (due: DueCounts) => void) => subscribe('duet:due', listener),
   onStatus: (listener: (status: OverlayStatus) => void) => subscribe('duet:status', listener),
+  /** How wide the strip may be to stay inside the video; null when it can be as wide as it likes. */
+  onFit: (listener: (maxWidth: number | null) => void) => subscribe('duet:fit', listener),
   onSettings: (listener: (settings: OverlaySettings) => void) => subscribe('duet:settings', listener),
   /** The caption text on screen right now, before the line has finished. */
   onLive: (listener: (text: string) => void) => subscribe('duet:live', listener),

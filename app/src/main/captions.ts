@@ -31,6 +31,9 @@ export type CaptionStatus = {
 
 export type CaptionLine = { text: string; url?: string; at: number }
 
+/** Where the video is on screen, in points from the top left of the main display. */
+export type VideoFrame = { x: number; y: number; width: number; height: number }
+
 export type PlayerCommand =
   { type: 'pause' } | { type: 'play' } | { type: 'seek'; seconds: number; from?: number }
 
@@ -118,6 +121,12 @@ export class CaptionSource extends EventEmitter {
         available,
         error
       } satisfies CaptionStatus)
+      return
+    }
+    if (message.type === 'frame') {
+      const { x, y, width, height } = message as Partial<VideoFrame>
+      const known = [x, y, width, height].every((side) => typeof side === 'number')
+      this.emit('frame', known ? ({ x, y, width, height } as VideoFrame) : undefined)
       return
     }
     if (message.type === 'time') {

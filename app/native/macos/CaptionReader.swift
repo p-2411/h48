@@ -9,9 +9,13 @@
 //   {"type":"status","trusted":true,"browser":"Google Chrome","bundle":"com.google.Chrome","url":"https://…","title":"…","captions":true}
 //   {"type":"caption","text":"…","url":"https://…","browser":"Google Chrome","at":1791701575123}
 //   {"type":"time","t":112,"playing":true,"ad":false,"url":"https://…","at":1791701575123}
+//   {"type":"frame","x":120,"y":160,"width":1280,"height":720}   where the video is on screen, in
+//                                        screen points from the top left of the main display; just
+//                                        {"type":"frame"} when no video is in view
 // A status line is sent whenever any of its fields change; a caption line whenever the visible
 // caption text changes (an empty text means the caption cleared); a time line whenever the player's
-// position (whole seconds), play state or ad state changes. Deciding when a line is finished, and
+// position (whole seconds), play state or ad state changes; a frame line whenever the video moves,
+// changes size, or goes out of view (mostly scrolled off the page counts as out). Deciding when a line is finished, and
 // the time between whole seconds, is left to the app.
 //
 // Input: one JSON object per line on stdin, from the app:
@@ -42,6 +46,8 @@ let browsers: [String: String] = [
 // YouTube that is each caption window (Chrome exposes the text directly inside it, without the
 // inner spans' classes).
 // `captionsButton` is the player's CC button, whose label says when the video has no captions.
+// `video` is the class of the element that frames the video; nil means the page itself (Netflix's
+// watch page is all video).
 //
 // The player's controls are found one of two ways:
 // - by class (YouTube): `player` carries the play and ad state in its classes; `progress` is the seek
@@ -58,12 +64,13 @@ struct LabelControls {
 }
 struct Site {
   let host: String; let container: String; let segment: String?; let captionsButton: String?
+  var video: String? = nil
   var player: String? = nil; var progress: String? = nil; var playButton: String? = nil
   var labels: LabelControls? = nil
 }
 let sites = [
   Site(host: "youtube.com", container: "ytp-caption-window-container", segment: "caption-window", captionsButton: "ytp-subtitles-button",
-       player: "html5-video-player", progress: "ytp-progress-bar", playButton: "ytp-play-button"),
+       video: "html5-video-player", player: "html5-video-player", progress: "ytp-progress-bar", playButton: "ytp-play-button"),
   Site(host: "netflix.com", container: "player-timedtext", segment: nil, captionsButton: nil,
        labels: LabelControls(slider: "Seek time scrubber", play: "Play", pause: "Pause", back: "Seek back", forward: "Seek forward",
                              scale: 0.001, step: 10)),
@@ -121,6 +128,14 @@ func findAll(_ root: AXUIElement, budget: Int, classNames: [String]) -> [String:
     queue.append(contentsOf: children(element))
   }
   return found
+}
+
+/** Where an element is on screen, in points from the top left of the main display. */
+func frame(_ element: AXUIElement) -> CGRect? {
+  guard let position = value(element, kAXPositionAttribute), let size = value(element, kAXSizeAttribute) else { return nil }
+  var origin = CGPoint.zero, extent = CGSize.zero
+  guard AXValueGetValue(position as! AXValue, .cgPoint, &origin), AXValueGetValue(size as! AXValue, .cgSize, &extent) else { return nil }
+  return CGRect(origin: origin, size: extent)
 }
 
 func number(_ element: AXUIElement, _ name: String) -> Double? {
@@ -259,6 +274,21 @@ func playerState(_ site: Site) -> (seconds: Double, playing: Bool, ad: Bool)? {
 }
 
 var currentSite: Site?
+var lastFrame: [String: AnyHashable] = ["type": "frame"]
+/** Sends where the video is, when that changed: nil when there is none, or most of it is scrolled out of the page. */
+func reportFrame(_ video: CGRect?, page: CGRect?) {
+  var fields: [String: AnyHashable] = ["type": "frame"]
+  if let video, let page {
+    let seen = video.intersection(page)
+    if !seen.isNull, seen.height >= video.height * 0.5, video.width >= 200, video.height >= 120 {
+      fields.merge(["x": Int(video.minX.rounded()), "y": Int(video.minY.rounded()), "width": Int(video.width.rounded()), "height": Int(video.height.rounded())]) { a, _ in a }
+    }
+  }
+  guard fields != lastFrame else { return }
+  lastFrame = fields
+  emit(fields)
+}
+var videoElement: AXUIElement?
 var lastTime: [String: AnyHashable] = [:]
 var containerURL = ""
 var available = true
@@ -276,6 +306,8 @@ Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
   // Looking up the page is the slow part; do it a few times a second, not every poll.
   guard let current = target() else {
     container = nil
+    videoElement = nil
+    reportFrame(nil, page: nil)
     status(["type": "status", "trusted": true, "captions": false])
     if lastText != nil && lastText != "" { lastText = ""; emit(["type": "caption", "text": "", "at": Date().timeIntervalSince1970 * 1000]) }
     return
@@ -285,8 +317,9 @@ Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
   if let labels = current.site.labels, slider == nil || ticks % 4 == 0 { findLabelled(current.page, labels) }
   if container == nil || containerURL != current.url || ticks % 20 == 0 {
     let site = current.site
-    let found = findAll(current.page, budget: searchBudget, classNames: [site.container, site.player, site.progress, site.playButton].compactMap { $0 })
+    let found = findAll(current.page, budget: searchBudget, classNames: [site.container, site.video, site.player, site.progress, site.playButton].compactMap { $0 })
     container = found[site.container]
+    videoElement = site.video.map { found[$0] } ?? current.page
     player = site.player.flatMap { found[$0] }
     progress = site.progress.flatMap { found[$0] }
     playButton = site.playButton.flatMap { found[$0] }
@@ -296,6 +329,7 @@ Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
   // Netflix removes its caption area between lines, so captions count as on once seen on this video.
   status(["type": "status", "trusted": true, "browser": current.browser, "bundle": current.bundle, "url": current.url,
           "title": current.title, "captions": container != nil || seenTextOn == current.url, "available": available])
+  reportFrame(videoElement.flatMap(frame), page: frame(current.page))
   let text = container.map { captionText($0, site: current.site) } ?? ""
   // Caption text on screen proves the video has captions, whatever the CC button's label says.
   if !text.isEmpty { seenTextOn = current.url }

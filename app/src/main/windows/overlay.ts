@@ -1,5 +1,5 @@
 // The overlay: a frameless, transparent window that floats above every other window, including
-// fullscreen video, near the bottom of the screen where subtitles sit. It is shown without taking
+// fullscreen video, over the video where subtitles sit (placement.ts moves it there). It is shown without taking
 // focus, so the video keeps its keyboard controls.
 //
 // Most of the window is empty: the strip sits at its bottom, with room above for its actions, a
@@ -9,22 +9,31 @@
 import { BrowserWindow, screen } from 'electron'
 import type { Settings } from '../settings'
 import { loadPage, webPreferences } from './load'
+import { onScreen } from './side'
 
-const WIDTH = 900
-const HEIGHT = 560
+/** The window's size, and the space below the strip inside it (the stage's bottom padding). */
+export const OVERLAY = { width: 900, height: 560, padding: 6 }
 const BOTTOM_GAP = 40
 
-/** Opens where the learner last dragged it, if that is still on a screen; else bottom centre. */
-export function createOverlay(settings: Settings): BrowserWindow {
-  const { workArea } = screen.getPrimaryDisplay()
+/**
+ * Where the overlay rests with no video in view: where the learner last dragged it, if that is
+ * still on a screen; else the bottom middle of the main screen. (On a video, see placement.ts.)
+ */
+export function restingPosition(settings: Settings): { x: number; y: number } {
   const saved = settings.current.overlayPosition
-  const onScreen =
-    saved && screen.getAllDisplays().some(({ workArea: area }) => saved.x + WIDTH / 2 >= area.x && saved.x + WIDTH / 2 <= area.x + area.width && saved.y + HEIGHT / 2 >= area.y && saved.y + HEIGHT / 2 <= area.y + area.height)
+  if (saved && onScreen({ ...saved, width: OVERLAY.width, height: OVERLAY.height })) return saved
+  const { workArea } = screen.getPrimaryDisplay()
+  return {
+    x: Math.round(workArea.x + (workArea.width - OVERLAY.width) / 2),
+    y: Math.round(workArea.y + workArea.height - OVERLAY.height - BOTTOM_GAP)
+  }
+}
+
+export function createOverlay(settings: Settings): BrowserWindow {
   const overlay = new BrowserWindow({
-    width: WIDTH,
-    height: HEIGHT,
-    x: onScreen ? saved.x : Math.round(workArea.x + (workArea.width - WIDTH) / 2),
-    y: onScreen ? saved.y : Math.round(workArea.y + workArea.height - HEIGHT - BOTTOM_GAP),
+    width: OVERLAY.width,
+    height: OVERLAY.height,
+    ...restingPosition(settings),
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',

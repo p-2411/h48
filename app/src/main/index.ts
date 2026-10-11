@@ -1,9 +1,10 @@
 // Duet's main process: builds the pieces and connects them. Each piece lives in its own file:
-//   captions.ts     the caption reader (which video, its captions, its position)
+//   captions.ts     the caption reader (which video, its captions, its position, where it is on screen)
+//   placement.ts    keeps the strip on the video, until the learner drags it
 //   player.ts       the video's position and the one place that pauses and plays it
 //   watcher.ts      captions or transcript → processed lines, one session per video and language
 //   wait.ts         holds the video while the line on screen is still being translated
-//   panel/          the side panel beside the video: Script and Explain tabs
+//   panel/          the side panel beside the video: Script, Explain and Review tabs
 //   explain/        Explain that: the explanation and its request
 //   cards/          saved cards, My cards and FSRS review
 //   tutor/          the voice tutor's window and work
@@ -17,7 +18,7 @@ import type { Moment } from '../shared/moment'
 import { createModels, type Models } from './ai'
 import { createVoiceModels, type VoiceModels } from './ai/voice'
 import { AudioSource } from './audio'
-import { CaptionSource } from './captions'
+import { CaptionSource, type CaptionStatus, type VideoFrame } from './captions'
 import { Cards } from './cards'
 import { draftFromMoment } from './cards/drafts'
 import { Explain } from './explain'
@@ -26,6 +27,7 @@ import { hearLine } from './listen'
 import { SpokenLanguageCheck } from './spoken'
 import { Panel } from './panel'
 import { connectOverlay } from './ipc/overlay'
+import { Placement } from './placement'
 import { Player } from './player'
 import { replay } from './replay'
 import { Settings } from './settings'
@@ -121,7 +123,7 @@ app.whenReady().then(() => {
   // Shows or hides the overlay from anywhere; the keys are a setting (⚙ on the strip).
   const shortcut = new Shortcut(settings.current.shortcut, () => toggleOverlay(overlay))
   const showScript = (): void => panel.show('script')
-  const { sendDue } = connectOverlay(overlay, {
+  const { sendDue, sendFit } = connectOverlay(overlay, {
     watcher,
     settings,
     due: () => cards.counts(),
@@ -146,8 +148,14 @@ app.whenReady().then(() => {
       return error
     },
     // Pressing play for the learner counts as their own play, so Wait lets this line go.
-    playOn: () => captions.command({ type: 'play' })
+    playOn: () => captions.command({ type: 'play' }),
+    drag: (phase) => placement.drag(phase),
+    fit: () => placement.maxWidth()
   })
+  // The strip sits on the video, following it, until the learner drags it (see placement.ts).
+  const placement = new Placement(overlay, settings, sendFit)
+  captions.on('frame', (frame?: VideoFrame) => placement.setFrame(frame))
+  captions.on('status', (status: CaptionStatus) => placement.setVideo(status.url))
   cards.on('changed', sendDue)
   // Due counts change with the clock too (a card comes due), so refresh them now and then.
   setInterval(() => sendDue(cards.counts()), 60_000)

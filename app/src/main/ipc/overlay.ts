@@ -1,7 +1,7 @@
 // The overlay's IPC: what the overlay page can ask for, and what it is sent as things change.
 // The page reaches these through window.duet in src/preload/overlay.ts.
 //
-//   duet:get-state     → { settings, status, due }
+//   duet:get-state     → { settings, status, due, fit }
 //   duet:set-*         settings changes
 //   duet:script        opens the side panel on the Script tab
 //   duet:explain       explains a line (the one on screen when no id is given)
@@ -11,13 +11,14 @@
 //   duet:review        opens the side panel on Review
 //   duet:play-on       plays the video that Wait is holding
 //   duet:solid         the pointer is over Duet (take clicks) or not (let them through to the video)
-//   duet:drag          the learner drags the subtitles: start, end (between them the window follows the pointer)
+//   duet:drag          the learner drags the subtitles: start, end (placement.ts moves the window)
 //   duet:focus         takes the keyboard, while the learner presses new show/hide keys
 //   duet:set-shortcut  new show/hide keys → why not, if they can't be had
 //   duet:open-tutor    opens the tutor on a line (the one on screen when no id is given)
 //   duet:hide          hides the overlay
 //   duet:status / duet:settings / duet:line / duet:current / duet:live / duet:due   ← updates
-import { ipcMain, screen, type BrowserWindow } from 'electron'
+//   duet:fit           ← how wide the strip may be, to stay inside the video (none: as wide as it likes)
+import { ipcMain, type BrowserWindow } from 'electron'
 import type { SaveResult } from '../../shared/cards'
 import type { DueCounts, Language, Level, OverlaySettings } from '../../shared/types'
 import type { Settings } from '../settings'
@@ -36,9 +37,15 @@ type Actions = {
   openReview: () => void
   playOn: () => void
   setShortcut: (keys: string) => string | undefined
+  drag: (phase: 'start' | 'end') => void
+  /** How wide the strip may be to stay inside the video, when one is in view. */
+  fit: () => number | undefined
 }
 
-export function connectOverlay(overlay: BrowserWindow, actions: Actions): { sendDue: (due: DueCounts) => void } {
+export function connectOverlay(
+  overlay: BrowserWindow,
+  actions: Actions
+): { sendDue: (due: DueCounts) => void; sendFit: (maxWidth?: number) => void } {
   const { watcher, settings } = actions
   const send = (channel: string, payload: unknown): void => {
     if (!overlay.isDestroyed()) overlay.webContents.send(channel, payload)
@@ -49,7 +56,7 @@ export function connectOverlay(overlay: BrowserWindow, actions: Actions): { send
   watcher.on('live', (text) => send('duet:live', text))
   settings.on('change', (current) => send('duet:settings', current))
 
-  ipcMain.handle('duet:get-state', () => ({ settings: settings.current, status: watcher.status, due: actions.due() }))
+  ipcMain.handle('duet:get-state', () => ({ settings: settings.current, status: watcher.status, due: actions.due(), fit: actions.fit() ?? null }))
   ipcMain.on('duet:set-language', (_, language: Language) => settings.update({ language }))
   ipcMain.on('duet:set-level', (_, level: Level) => settings.update({ level }))
   ipcMain.on('duet:set-guess-first', (_, guessFirst: boolean) => settings.update({ guessFirst }))
@@ -71,27 +78,7 @@ export function connectOverlay(overlay: BrowserWindow, actions: Actions): { send
   })
   ipcMain.handle('duet:set-shortcut', (_, keys: string) => actions.setShortcut(String(keys)))
   ipcMain.on('duet:focus', () => overlay.isDestroyed() || overlay.focus())
-  // Dragging: until the page says it ended, the window follows the pointer, keeping the offset
-  // between the pointer and its corner from the start. Following here, not on the page's mouse
-  // moves, keeps up when the pointer outruns the window.
-  let follow: NodeJS.Timeout | undefined
-  ipcMain.on('duet:drag', (_, phase: 'start' | 'end') => {
-    if (overlay.isDestroyed()) return
-    clearInterval(follow)
-    follow = undefined
-    if (phase === 'start') {
-      const pointer = screen.getCursorScreenPoint()
-      const [x, y] = overlay.getPosition()
-      follow = setInterval(() => {
-        if (overlay.isDestroyed()) return clearInterval(follow)
-        const now = screen.getCursorScreenPoint()
-        overlay.setPosition(now.x - (pointer.x - x), now.y - (pointer.y - y))
-      }, 1000 / 60)
-    } else {
-      const [x, y] = overlay.getPosition()
-      settings.update({ overlayPosition: { x, y } })
-    }
-  })
+  ipcMain.on('duet:drag', (_, phase: 'start' | 'end') => actions.drag(phase === 'start' ? 'start' : 'end'))
   ipcMain.on('duet:hide', () => overlay.hide())
-  return { sendDue: (due) => send('duet:due', due) }
+  return { sendDue: (due) => send('duet:due', due), sendFit: (maxWidth) => send('duet:fit', maxWidth ?? null) }
 }
