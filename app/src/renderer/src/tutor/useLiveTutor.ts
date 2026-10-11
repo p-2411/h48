@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Moment } from '../../../shared/moment'
 import { languageName } from '../../../shared/languages'
-import { LIVE_REPLY_FALLBACK_MS } from './language'
+import { LIVE_REPLY_FALLBACK_MS } from './timing'
 
 export type TutorLiveStatus =
   | 'idle'

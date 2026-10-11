@@ -9,8 +9,9 @@ import type {
   TutorCard
 } from '../../../shared/tutor'
 import { languageModule, languageName, speaks } from '../../../shared/languages'
+import { clock } from '../components/time'
 import { DuetMascot } from './DuetMascot'
-import { ENGLISH_HELP_DELAY_MS } from './language'
+import { ENGLISH_HELP_DELAY_MS } from './timing'
 import { useLiveTutor, type TranscriptSegment, type TutorLiveStatus } from './useLiveTutor'
 
 const STATUS: Record<TutorLiveStatus, string> = {
@@ -30,11 +31,6 @@ const RATINGS: ReviewRating[] = ['again', 'hard', 'good', 'easy']
 
 type Translation = { source: string; loading: boolean; text?: string; error?: string }
 type Pronunciation = { source: string; loading: boolean; text?: string }
-
-function time(position?: number): string | undefined {
-  if (position === undefined) return undefined
-  return `${Math.floor(position / 60)}:${String(Math.floor(position % 60)).padStart(2, '0')}`
-}
 
 function EyeIcon(): React.JSX.Element {
   return (
@@ -322,7 +318,7 @@ export function Tutor(): React.JSX.Element {
             {processed && <p className="english">{processed.translation}</p>}
             <p className="meta">
               {languageName(moment.language)}
-              {time(moment.video.position) && ` · ${time(moment.video.position)}`}
+              {moment.video.position !== undefined && ` · ${clock(moment.video.position)}`}
             </p>
             {moment.earlier.length > 0 && (
               <details className="earlier-context">
@@ -445,7 +441,7 @@ export function Tutor(): React.JSX.Element {
             )}
             <p className="meta">
               {cardMoment
-                ? `Saved from video${time(cardMoment.video.position) ? ` at ${time(cardMoment.video.position)}` : ''} · `
+                ? `Saved from video${cardMoment.video.position !== undefined ? ` at ${clock(cardMoment.video.position)}` : ''} · `
                 : 'Made with Duet · '}
               Next review {new Date(card.due).toLocaleString()}
               {latestRating && ` · Last rated ${latestRating}`}
