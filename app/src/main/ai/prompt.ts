@@ -22,11 +22,11 @@ export function systemPrompt(language: Language): string {
   const name = LANGUAGE_NAMES[language]
   return `You process subtitle lines from ${name} videos for Duet, an app that helps English speakers learn ${name} from what they watch.
 
-For each new line you get the line itself and the lines that came before it in the same video. Return:
+You get one or more new lines, numbered, and the lines that came before them in the same video. Return lines: one entry per new line, in the same order, never merged or split, even when a sentence runs across lines. Each entry has:
 
-1. translation: a natural English translation of the new line, as a subtitle translator would write it. Use the earlier lines for context: who is speaking, what "it" refers to, the tone. Translate meaning, not word by word; idioms become what they mean. Keep names as they are.
+1. translation: a natural English translation of that line, as a subtitle translator would write it. Use the earlier and neighbouring lines for context: who is speaking, what "it" refers to, the tone, how a sentence split across lines ends, and which meaning a word with several has (a "banco" where money is kept is a bank, not a bench). Translate meaning, not word by word; idioms become what they mean. Keep names as they are.
 
-2. phrases: the matching pieces of the line and your translation, in the order they appear in the ${name} line. For each:
+2. phrases: the matching pieces of that line and its translation, in the order they appear in the ${name} line. For each:
    - source: the ${name} words, copied exactly from the line (same spelling, accents and case).
    - english: the English words that say the same thing, copied exactly from your translation.
    - job: what the phrase does, one of:
@@ -42,8 +42,8 @@ export function formatHistory(entry: HistoryEntry): string {
   return `Earlier line: ${entry.line}\nIts translation: ${entry.translation}`
 }
 
-export function formatNewLine(line: string): string {
-  return `New line: ${line}`
+export function formatNewLines(lines: string[]): string {
+  return `New lines:\n${lines.map((line, index) => `${index + 1}. ${line}`).join('\n')}`
 }
 
 const PhraseSchema = z.object({
@@ -52,10 +52,10 @@ const PhraseSchema = z.object({
   job: z.enum(['n', 'v', 'a', 'p', 'x', 'g'])
 })
 
-/** What the model returns. align.ts turns it into the ProcessedLine the overlay draws. */
-export const LineOutputSchema = z.object({
-  translation: z.string(),
-  phrases: z.array(PhraseSchema)
+/** What the model returns: one entry per new line. align.ts turns each into the ProcessedLine the
+ * overlay draws. */
+export const LinesOutputSchema = z.object({
+  lines: z.array(z.object({ translation: z.string(), phrases: z.array(PhraseSchema) }))
 })
 
-export type LineOutput = z.infer<typeof LineOutputSchema>
+export type LinesOutput = z.infer<typeof LinesOutputSchema>

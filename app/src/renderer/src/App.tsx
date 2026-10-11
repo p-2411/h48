@@ -17,10 +17,13 @@ function statusText(status: OverlayStatus, language: Language): string {
   if (status.error) return status.error
   if (!status.trusted) return 'Needs Accessibility permission'
   if (!status.url) return `Open a YouTube or Netflix video with ${LANGUAGES[language]} captions`
+  const browser = status.browser ?? 'your browser'
+  // With the video's transcript, the captions in the player don't matter.
+  if (status.source === 'transcript') return `Following the transcript in ${browser}`
   if (status.available === false) return 'This video has no captions. Try another video'
   if (!status.captions) return 'Turn on captions in the player'
   const site = status.url.includes('netflix.com') ? 'Netflix' : 'YouTube'
-  return `Reading ${site} in ${status.browser ?? 'your browser'}`
+  return `Reading ${site} in ${browser}`
 }
 
 function Words({ tokens, swapped }: { tokens: (Token & { swapped?: boolean })[]; swapped?: boolean }): React.JSX.Element {
@@ -39,10 +42,11 @@ function Words({ tokens, swapped }: { tokens: (Token & { swapped?: boolean })[];
 }
 
 function App(): React.JSX.Element {
-  const [settings, setSettings] = useState<OverlaySettings>({ language: 'es', level: 2, guessFirst: true })
+  const [settings, setSettings] = useState<OverlaySettings>({ language: 'es', level: 2, guessFirst: true, waitForTranslation: true })
   const [status, setStatus] = useState<OverlayStatus>({ trusted: false })
   const [lines, setLines] = useState<OverlayLine[]>([])
   const [live, setLive] = useState('')
+  const [currentId, setCurrentId] = useState<number | null>(null)
 
   useEffect(() => {
     window.duet.getState().then((state) => {
@@ -53,21 +57,22 @@ function App(): React.JSX.Element {
       window.duet.onStatus(setStatus),
       window.duet.onSettings(setSettings),
       window.duet.onLive(setLive),
+      window.duet.onCurrent(setCurrentId),
       window.duet.onLine((line) =>
         setLines((current) => {
           const others = current.filter((item) => item.id !== line.id)
-          return [...others, line].sort((a, b) => a.id - b.id).slice(-20)
+          return [...others, line].sort((a, b) => a.id - b.id).slice(-40)
         })
       )
     ]
     return () => unsubscribe.forEach((stop) => stop())
   }, [])
 
-  // The newest line that is ready (or still on its way); failed lines stay out of the way.
-  const current = useMemo(() => [...lines].reverse().find((line) => line.state !== 'failed'), [lines])
+  // The line that belongs on screen now; a line that failed shows as it was spoken.
+  const current = useMemo(() => lines.find((line) => line.id === currentId), [lines, currentId])
   const ready = current?.state === 'ready' ? current.processed : undefined
-  // A caption still being spoken that is not yet a finished line.
-  const building = live && live !== current?.original ? live : ''
+  // A caption still being spoken that is not yet a finished line (only when reading the screen).
+  const building = status.source !== 'transcript' && live && live !== current?.original ? live : ''
 
   return (
     <div className="panel">
@@ -77,7 +82,7 @@ function App(): React.JSX.Element {
             <rect x="1" y="2" width="17" height="12" rx="4" fill="#fff" />
             <rect x="10" y="9" width="19" height="13" rx="4" fill="#fff" stroke="#121214" strokeWidth="2" />
           </svg>
-          <span className={`status${status.trusted && status.captions ? ' is-on' : ''}`}>
+          <span className={`status${status.trusted && (status.captions || status.source === 'transcript') ? ' is-on' : ''}`}>
             <i aria-hidden="true" />
             {statusText(status, settings.language)}
           </span>
@@ -119,6 +124,18 @@ function App(): React.JSX.Element {
             </span>
             Guess first
           </button>
+          <button
+            type="button"
+            className={`toggle${settings.waitForTranslation ? ' is-on' : ''}`}
+            aria-pressed={settings.waitForTranslation}
+            title="Pause the video until the line is translated"
+            onClick={() => window.duet.setWaitForTranslation(!settings.waitForTranslation)}
+          >
+            <span className="switch" aria-hidden="true">
+              <i />
+            </span>
+            Wait
+          </button>
           <button type="button" className="close" aria-label="Hide Duet" onClick={() => window.duet.hide()}>
             ×
           </button>
@@ -143,7 +160,7 @@ function App(): React.JSX.Element {
         ) : current ? (
           <>
             <p className="mix plain">{current.original}</p>
-            <p className="pending">Translating…</p>
+            {current.state === 'pending' && <p className="pending">Translating…</p>}
           </>
         ) : (
           <p className="empty">{status.modelError ?? 'Lines appear here as they are spoken.'}</p>

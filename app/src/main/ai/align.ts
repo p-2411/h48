@@ -4,7 +4,8 @@
 // file finds each phrase in the original line and in the translation, and everything the model left
 // out becomes uncoloured glue. A phrase always stays whole on both sides, and the model writes far
 // less than it would token by token, which is most of the wait.
-import type { ProcessedLine, Token, WordJob } from './types'
+import type { LinesOutput } from './prompt'
+import { LineModelError, type ProcessedLine, type Token, type WordJob } from './types'
 
 export type Phrase = { source: string; english: string; job: WordJob }
 
@@ -50,6 +51,13 @@ function tokenize(text: string, spans: Span[]): Token[] {
   }
   glue(cursor, text.length)
   return tokens
+}
+
+/** Aligns every line of a reply; a reply with the wrong number of lines can't be matched up. */
+export function alignLines(lines: string[], output: LinesOutput): ProcessedLine[] {
+  if (output.lines.length !== lines.length)
+    throw new LineModelError(`The model returned ${output.lines.length} lines for ${lines.length}.`, 'invalid_output')
+  return lines.map((line, index) => alignLine(line, output.lines[index].translation, output.lines[index].phrases))
 }
 
 export function alignLine(line: string, translation: string, phrases: Phrase[]): ProcessedLine {

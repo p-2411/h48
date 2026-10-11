@@ -7,9 +7,9 @@
 // anything the API checks.
 import Anthropic from '@anthropic-ai/sdk'
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod'
-import { alignLine } from './align'
-import { formatHistory, formatNewLine, LineOutputSchema, systemPrompt } from './prompt'
-import { LineModelError, type LineModel, type LineRequest, type ProcessedLine } from './types'
+import { alignLines } from './align'
+import { formatHistory, formatNewLines, LinesOutputSchema, systemPrompt } from './prompt'
+import { LineModelError, type LineModel, type LinesRequest, type ProcessedLine } from './types'
 
 export class AnthropicLineModel implements LineModel {
   readonly name: string
@@ -24,7 +24,7 @@ export class AnthropicLineModel implements LineModel {
     this.client = new Anthropic(apiKey ? { apiKey } : {})
   }
 
-  async processLine({ language, line, history }: LineRequest, signal?: AbortSignal): Promise<ProcessedLine> {
+  async processLines({ language, lines, history }: LinesRequest, signal?: AbortSignal): Promise<ProcessedLine[]> {
     const earlier: Anthropic.Beta.BetaTextBlockParam[] = history.map((entry, index) => ({
       type: 'text',
       text: formatHistory(entry),
@@ -40,14 +40,14 @@ export class AnthropicLineModel implements LineModel {
           fallbacks: 'default',
           system: [{ type: 'text', text: systemPrompt(language), cache_control: { type: 'ephemeral' } }],
           // Low effort: the work per line is small and the reader is waiting.
-          output_config: { effort: 'low', format: betaZodOutputFormat(LineOutputSchema) },
-          messages: [{ role: 'user', content: [...earlier, { type: 'text', text: formatNewLine(line) }] }]
+          output_config: { effort: 'low', format: betaZodOutputFormat(LinesOutputSchema) },
+          messages: [{ role: 'user', content: [...earlier, { type: 'text', text: formatNewLines(lines) }] }]
         },
         { signal }
       )
-      if (response.stop_reason === 'refusal') throw new LineModelError('The model declined this line.', 'refusal')
+      if (response.stop_reason === 'refusal') throw new LineModelError('The model declined these lines.', 'refusal')
       if (!response.parsed_output) throw new LineModelError('The model returned no usable result.', 'invalid_output')
-      return alignLine(line, response.parsed_output.translation, response.parsed_output.phrases)
+      return alignLines(lines, response.parsed_output)
     } catch (error) {
       if (error instanceof LineModelError) throw error
       if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError)

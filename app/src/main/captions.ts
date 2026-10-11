@@ -8,6 +8,7 @@ import { EventEmitter } from 'events'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
+import type { PlayerTime } from './clock'
 
 export type CaptionStatus = {
   /** The reader is running and has the OS permission it needs. */
@@ -48,7 +49,7 @@ export class CaptionSource extends EventEmitter {
       this.emit('status', { trusted: false, error: `No caption reader for ${process.platform} yet.` } satisfies CaptionStatus)
       return
     }
-    this.child = spawn(path, [], { stdio: ['ignore', 'pipe', 'pipe'] })
+    this.child = spawn(path, [], { stdio: ['pipe', 'pipe', 'pipe'] })
     this.child.stdout?.setEncoding('utf8')
     this.child.stdout?.on('data', (chunk: string) => {
       this.buffer += chunk
@@ -65,6 +66,11 @@ export class CaptionSource extends EventEmitter {
     })
   }
 
+  /** Asks the reader to pause or play the video (YouTube only). */
+  command(type: 'pause' | 'play'): void {
+    this.child?.stdin?.write(`${JSON.stringify({ type })}\n`)
+  }
+
   stop(): void {
     clearTimeout(this.timer)
     this.child?.kill()
@@ -72,15 +78,20 @@ export class CaptionSource extends EventEmitter {
   }
 
   private handle(raw: string): void {
-    let message: { type?: string; text?: string; url?: string; at?: number } & CaptionStatus
+    let message: { type?: string; text?: string; url?: string; at?: number } & CaptionStatus & Partial<PlayerTime>
     try {
       message = JSON.parse(raw)
     } catch {
       return
     }
     if (message.type === 'status') {
-      const { type: _type, ...status } = message
-      this.emit('status', status)
+      const { trusted, browser, url, captions, available, error } = message
+      this.emit('status', { trusted, browser, url, captions, available, error } satisfies CaptionStatus)
+      return
+    }
+    if (message.type === 'time') {
+      const { t, playing, ad, at } = message
+      if (typeof t === 'number') this.emit('time', { t, playing: !!playing, ad: !!ad, at: at ?? Date.now() } satisfies PlayerTime)
       return
     }
     if (message.type !== 'caption') return

@@ -39,6 +39,9 @@ export type OverlayLine = {
   id: number
   original: string
   at: number
+  /** When the line is spoken, in seconds into the video; only lines from a transcript have it. */
+  start?: number
+  end?: number
   state: 'pending' | 'ready' | 'failed'
   processed?: ProcessedLine
   error?: string
@@ -50,6 +53,8 @@ export type OverlayStatus = {
   browser?: string
   url?: string
   captions?: boolean
+  /** Where lines come from: the video's transcript, or the captions on screen. */
+  source?: 'transcript' | 'captions'
   /** False when the player says this video has no captions at all. */
   available?: boolean
   error?: string
@@ -58,4 +63,10 @@ export type OverlayStatus = {
   modelError?: string
 }
 
-export type OverlaySettings = { language: Language; level: Level; guessFirst: boolean }
+export type OverlaySettings = {
+  language: Language
+  level: Level
+  guessFirst: boolean
+  /** Pause the video while the line on screen is still being translated. */
+  waitForTranslation: boolean
+}

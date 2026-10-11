@@ -9,16 +9,18 @@ export type { Language, ProcessedLine, Token, WordJob } from '../../shared/types
 /** A line already processed earlier in the session, used as context. */
 export type HistoryEntry = { line: string; translation: string }
 
-export type LineRequest = {
+export type LinesRequest = {
   language: Language
-  line: string
+  /** The new lines, in order; processed together so each can use its neighbours. */
+  lines: string[]
   history: HistoryEntry[]
 }
 
 export interface LineModel {
   /** Provider and model, for logs and settings, e.g. "anthropic/claude-opus-5-5". */
   readonly name: string
-  processLine(request: LineRequest, signal?: AbortSignal): Promise<ProcessedLine>
+  /** One result per new line, in the same order. */
+  processLines(request: LinesRequest, signal?: AbortSignal): Promise<ProcessedLine[]>
 }
 
 export class LineModelError extends Error {

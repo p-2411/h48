@@ -5,9 +5,9 @@
 // the newest line is new. prompt_cache_key keeps one session's requests on the same cache.
 import OpenAI from 'openai'
 import { zodTextFormat } from 'openai/helpers/zod'
-import { alignLine } from './align'
-import { formatHistory, formatNewLine, LineOutputSchema, systemPrompt } from './prompt'
-import { LineModelError, type LineModel, type LineRequest, type ProcessedLine } from './types'
+import { alignLines } from './align'
+import { formatHistory, formatNewLines, LinesOutputSchema, systemPrompt } from './prompt'
+import { LineModelError, type LineModel, type LinesRequest, type ProcessedLine } from './types'
 
 export class OpenAILineModel implements LineModel {
   readonly name: string
@@ -24,7 +24,7 @@ export class OpenAILineModel implements LineModel {
     this.client = new OpenAI(apiKey ? { apiKey } : {})
   }
 
-  async processLine({ language, line, history }: LineRequest, signal?: AbortSignal): Promise<ProcessedLine> {
+  async processLines({ language, lines, history }: LinesRequest, signal?: AbortSignal): Promise<ProcessedLine[]> {
     try {
       const response = await this.client.responses.parse(
         {
@@ -35,11 +35,11 @@ export class OpenAILineModel implements LineModel {
               role: 'user',
               content: [
                 ...history.map((entry) => ({ type: 'input_text' as const, text: formatHistory(entry) })),
-                { type: 'input_text' as const, text: formatNewLine(line) }
+                { type: 'input_text' as const, text: formatNewLines(lines) }
               ]
             }
           ],
-          text: { format: zodTextFormat(LineOutputSchema, 'processed_line') },
+          text: { format: zodTextFormat(LinesOutputSchema, 'processed_lines') },
           ...(this.effort ? { reasoning: { effort: this.effort } } : {}),
           prompt_cache_key: `duet-lines-${language}`
         },
@@ -50,10 +50,10 @@ export class OpenAILineModel implements LineModel {
           (item) => item.type === 'message' && item.content.some((part) => part.type === 'refusal')
         )
         throw refused
-          ? new LineModelError('The model declined this line.', 'refusal')
+          ? new LineModelError('The model declined these lines.', 'refusal')
           : new LineModelError('The model returned no usable result.', 'invalid_output')
       }
-      return alignLine(line, response.output_parsed.translation, response.output_parsed.phrases)
+      return alignLines(lines, response.output_parsed)
     } catch (error) {
       if (error instanceof LineModelError) throw error
       if (error instanceof OpenAI.AuthenticationError || error instanceof OpenAI.PermissionDeniedError)
