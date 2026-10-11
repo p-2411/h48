@@ -26,10 +26,10 @@ export const tutorApi = {
     ipcRenderer.invoke('tutor:set-explore', enabled),
   startSession: (offer: TutorSessionOffer): Promise<TutorSessionAnswer> =>
     ipcRenderer.invoke('tutor:start-session', offer),
-  /** A visual English aid for a Japanese turn; GPT-Live does not speak this automatically. */
+  /** The English meaning of one of Duet's turns in the language learnt; the voice never speaks it. */
   translate: (text: string): Promise<string> => ipcRenderer.invoke('tutor:translate', text),
-  /** Silent Hepburn reading shown below Japanese transcript text. */
-  pronounce: (text: string): Promise<string> => ipcRenderer.invoke('tutor:pronounce', text),
+  /** A turn written in Latin letters (Hepburn, Revised Romanization), for languages not written in them. */
+  romanise: (text: string): Promise<string> => ipcRenderer.invoke('tutor:romanise', text),
   executeTool: (request: TutorToolRequest): Promise<TutorToolResult> =>
     ipcRenderer.invoke('tutor:execute-tool', request),
   confirmAction: (actionId: string, rating?: ReviewRating): Promise<TutorActionResult> =>

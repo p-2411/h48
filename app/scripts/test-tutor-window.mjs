@@ -35,7 +35,7 @@ assert.equal(
   'drop just before healthy'
 )
 
-// Pronunciation and late meanings wait longer than the 1 s gap that still joins words to a turn.
+// Romanisation and late meanings wait longer than the 1 s gap that still joins words to a turn.
 assert.ok(TURN_SETTLE_MS > 1_000, 'TURN_SETTLE_MS must exceed the 1 s turn merge window.')
 
 console.log('Tutor window checks passed.')

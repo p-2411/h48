@@ -22,7 +22,7 @@ import type { Cards } from '../cards'
 import { StaleReviewError } from '../cards/review'
 import type { Player } from '../player'
 import { createTutorWindow } from '../windows/tutor'
-import { createLiveSession, pronounceForLearner, translateForLearner } from './live'
+import { createLiveSession, romaniseForLearner, translateForLearner } from './live'
 
 type PendingAction =
   | { id: string; kind: 'save-card'; preparedAt: number; expiresAt: number; draft: CardDraft }
@@ -115,9 +115,9 @@ export class Tutor {
       this.assertTutor(event)
       return translateForLearner(string(text, 'translation_text', 2_000), this.requireMoment().language)
     })
-    ipcMain.handle('tutor:pronounce', (event, text: string) => {
+    ipcMain.handle('tutor:romanise', (event, text: string) => {
       this.assertTutor(event)
-      return pronounceForLearner(string(text, 'pronunciation_text', 2_000), this.requireMoment().language)
+      return romaniseForLearner(string(text, 'reading_text', 2_000), this.requireMoment().language)
     })
     ipcMain.handle('tutor:execute-tool', (event, request: TutorToolRequest) => {
       this.assertTutor(event)

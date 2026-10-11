@@ -9,7 +9,7 @@ import type { TutorSessionAnswer } from '../../shared/tutor'
 import { languageModule, languageName, type Language } from '../../shared/languages'
 import { backendInstructions, liveInstructions, momentContext } from './prompts'
 
-const pronunciationCache = new Map<string, string>()
+const readingCache = new Map<string, string>()
 
 // One client per API key: a new client for each call would set up its connection again.
 let cachedClient: { apiKey: string; client: OpenAI } | undefined
@@ -248,17 +248,17 @@ export async function translateForLearner(
  * A silent reading aid shown below transcript text in a language not written in Latin letters (its
  * romanisation); the voice never reads it by default.
  */
-export async function pronounceForLearner(
+export async function romaniseForLearner(
   text: string,
   language: Language,
   env: NodeJS.ProcessEnv = process.env
 ): Promise<string> {
   const input = text.trim()
-  if (!input || input.length > 2_000) throw new Error('INVALID_PRONUNCIATION_TEXT')
+  if (!input || input.length > 2_000) throw new Error('INVALID_READING_TEXT')
   const reading = languageModule(language).reading
   if (!reading) throw new Error('NO_READING_NEEDED')
   const key = `${language}:${input}`
-  const cached = pronunciationCache.get(key)
+  const cached = readingCache.get(key)
   if (cached) return cached
   if (!env.OPENAI_API_KEY)
     throw new Error(`Add OPENAI_API_KEY to app/.env.local to show ${reading.name}.`)
@@ -273,13 +273,13 @@ export async function pronounceForLearner(
       max_output_tokens: 260,
       reasoning: { effort: 'low' }
     })
-    const pronunciation = response.output_text.trim()
-    if (!pronunciation) throw new Error('EMPTY_PRONUNCIATION')
-    pronunciationCache.set(key, pronunciation)
-    if (pronunciationCache.size > 200)
-      pronunciationCache.delete(pronunciationCache.keys().next().value as string)
-    return pronunciation
+    const romanised = response.output_text.trim()
+    if (!romanised) throw new Error('EMPTY_READING')
+    readingCache.set(key, romanised)
+    if (readingCache.size > 200)
+      readingCache.delete(readingCache.keys().next().value as string)
+    return romanised
   } catch (error) {
-    throw safeLiveError(error, 'Could not show the pronunciation')
+    throw safeLiveError(error, 'Could not show the romanisation')
   }
 }

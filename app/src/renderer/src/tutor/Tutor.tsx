@@ -30,7 +30,7 @@ const STATUS: Record<TutorLiveStatus, string> = {
 const RATINGS: ReviewRating[] = ['again', 'hard', 'good', 'easy']
 
 type Translation = { source: string; loading: boolean; text?: string; error?: string }
-type Pronunciation = { source: string; loading: boolean; text?: string; failed?: boolean }
+type Reading = { source: string; loading: boolean; text?: string; failed?: boolean }
 
 function EyeIcon(): React.JSX.Element {
   return (
@@ -57,7 +57,7 @@ type TurnViewProps = {
   status: TutorLiveStatus
   revealed: boolean
   translation?: Translation
-  pronunciation?: Pronunciation
+  reading?: Reading
   onReveal: (turn: TranscriptSegment) => void
   onHide: (turnId: string) => void
 }
@@ -69,7 +69,7 @@ const TurnView = memo(function TurnView({
   status,
   revealed,
   translation,
-  pronunciation,
+  reading,
   onReveal,
   onHide
 }: TurnViewProps): React.JSX.Element {
@@ -97,9 +97,9 @@ const TurnView = memo(function TurnView({
       <p className="turn-text" lang={canReveal ? language : undefined}>
         {turn.text}
       </p>
-      {canReveal && pronunciation?.text && (
-        <p className="turn-pronunciation" aria-label={`${languageName(language)} pronunciation`}>
-          {pronunciation.text}
+      {canReveal && reading?.text && (
+        <p className="turn-reading" aria-label={`${languageName(language)} in Latin letters`}>
+          {reading.text}
         </p>
       )}
       {revealed && (
@@ -123,14 +123,14 @@ export function Tutor(): React.JSX.Element {
   const [contextOpen, setContextOpen] = useState(true)
   const [revealed, setRevealed] = useState<Set<string>>(() => new Set())
   const [translations, setTranslations] = useState<Record<string, Translation>>({})
-  const [pronunciations, setPronunciations] = useState<Record<string, Pronunciation>>({})
+  const [readings, setReadings] = useState<Record<string, Reading>>({})
   const [autoStartPending, setAutoStartPending] = useState(false)
   const [exploreEnabled, setExploreEnabled] = useState(false)
   const transcriptEnd = useRef<HTMLDivElement>(null)
   const helpOffered = useRef(new Set<string>())
-  // The text each turn's pronunciation or meaning was last asked for, so a paid call isn't
+  // The text each turn's romanisation or meaning was last asked for, so a paid call isn't
   // repeated for the same words, even after a failure.
-  const pronouncing = useRef(new Map<string, string>())
+  const romanising = useRef(new Map<string, string>())
   const translating = useRef(new Map<string, string>())
   const autoStartClaimed = useRef(false)
   const live = useLiveTutor(moment)
@@ -153,8 +153,8 @@ export function Tutor(): React.JSX.Element {
       setContextOpen(true)
       setRevealed(new Set())
       setTranslations({})
-      setPronunciations({})
-      pronouncing.current.clear()
+      setReadings({})
+      romanising.current.clear()
       translating.current.clear()
       setExploreEnabled(false)
       autoStartClaimed.current = false
@@ -241,23 +241,23 @@ export function Tutor(): React.JSX.Element {
     if (!lastTurn || lastTurn.role !== 'tutor' || !moment || !languageModule(moment.language).reading) return
     if (!speaks(moment.language, lastTurn.text)) return
     const { id, text: source } = lastTurn
-    if (pronouncing.current.get(id) === source) return
+    if (romanising.current.get(id) === source) return
     // Wait for the turn to settle, so a half-spoken turn isn't sent and then sent again.
     const timer = window.setTimeout(() => {
-      pronouncing.current.set(id, source)
-      setPronunciations((current) => ({ ...current, [id]: { source, loading: true } }))
+      romanising.current.set(id, source)
+      setReadings((current) => ({ ...current, [id]: { source, loading: true } }))
       // Results for words the turn has since outgrown are dropped.
       window.duet.tutor
-        .pronounce(source)
+        .romanise(source)
         .then((text) =>
-          setPronunciations((current) =>
+          setReadings((current) =>
             current[id]?.source === source
               ? { ...current, [id]: { source, loading: false, text } }
               : current
           )
         )
         .catch(() =>
-          setPronunciations((current) =>
+          setReadings((current) =>
             current[id]?.source === source
               ? { ...current, [id]: { source, loading: false, failed: true } }
               : current
@@ -475,7 +475,7 @@ export function Tutor(): React.JSX.Element {
             status={turn.id === lastTutorId ? live.status : 'idle'}
             revealed={revealed.has(turn.id)}
             translation={translations[turn.id]}
-            pronunciation={pronunciations[turn.id]}
+            reading={readings[turn.id]}
             onReveal={reveal}
             onHide={hideMeaning}
           />
