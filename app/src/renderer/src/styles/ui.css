@@ -33,5 +33,5 @@ details p { margin-top: 8px; font-size: 13px; line-height: 1.45; color: var(--fg
 .field input:focus, .field textarea:focus, .search:focus { outline: none; border-color: rgba(255, 255, 255, 0.4); }
 .segment { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--fill); }
 .segment button { padding: 4px 10px; border-radius: 6px; font-size: 12px; color: var(--fg-2); }
-.segment button[aria-pressed='true'] { background: #636366; color: #fff; font-weight: 500; }
+.segment button[aria-pressed='true'], .segment button[aria-selected='true'] { background: #636366; color: #fff; font-weight: 500; }
 .big { font-size: 22px; line-height: 1.35; }
