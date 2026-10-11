@@ -22,12 +22,13 @@ html, body, #root { min-height: 100%; background: #000; }
   scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 .item {
-  width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 3px 9px; padding: 12px 13px; border: 1px solid transparent;
+  width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 9px; padding: 12px 13px; border: 1px solid transparent;
   border-radius: 12px; text-align: left; transition: border-color 0.18s, background 0.18s;
 }
 .item:hover { background: rgba(255, 255, 255, 0.055); }
 .item.is-on { border-color: rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.095); }
-.item .expression { font-size: 15px; line-height: 1.45; }
+/* In the list a long expression shows two lines; the open card shows it all. */
+.item .expression { font-size: 15px; line-height: 1.45; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .item .faint { grid-column: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .item .badge { grid-row: 1; grid-column: 2; align-self: start; padding: 3px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); color: var(--text-2); font-size: 10px; }
 
