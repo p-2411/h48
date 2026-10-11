@@ -18,10 +18,9 @@ import { Conversation } from './Conversation'
 import { SaveCard } from './SaveCard'
 import { Icon } from '../components/Icon'
 
-// Why the explanation could not draw on the audio, when it couldn't.
+// Why the explanation could not draw on the audio, when it couldn't (while macOS is still asking for
+// the permission, nothing is said: macOS's own prompt says it).
 const HEARING: Partial<Record<HearingNote, string>> = {
-  asking:
-    'Allow System Audio Recording when macOS asks, and Duet will hear how the next lines are said.',
   'not-allowed':
     'Duet can’t hear the video. Allow it in System Settings › Privacy & Security › Screen & System Audio Recording.',
   'not-kept':
