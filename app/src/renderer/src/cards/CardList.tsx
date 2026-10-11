@@ -1,6 +1,7 @@
 // All cards: search, filters, and the list (newest first).
-import type { Card, CardQuery } from '../../../shared/cards'
+import type { CardQuery } from '../../../shared/cards'
 import { stateLabel } from './labels'
+import type { CardLibrary } from './useCardLibrary'
 
 const SHOW: { value: NonNullable<CardQuery['show']>; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -9,19 +10,9 @@ const SHOW: { value: NonNullable<CardQuery['show']>; label: string }[] = [
   { value: 'paused', label: 'Paused' }
 ]
 
-export function CardList({
-  cards,
-  query,
-  onQuery,
-  selected,
-  onSelect
-}: {
-  cards: Card[]
-  query: CardQuery
-  onQuery: (query: CardQuery) => void
-  selected?: string
-  onSelect: (id: string) => void
-}): React.JSX.Element {
+export function CardList({ library }: { library: CardLibrary }): React.JSX.Element {
+  const { cards, query, setQuery: onQuery, selected, setSelected: onSelect, error, retry } = library
+  const filtered = !!(query.search || (query.show && query.show !== 'all') || query.type)
   return (
     <aside className="list">
       <input
@@ -50,8 +41,19 @@ export function CardList({
           <option value="use">Use it</option>
         </select>
       </div>
-      {cards.length === 0 ? (
-        <p className="faint">{query.search || (query.show && query.show !== 'all') || query.type ? 'No cards match.' : 'No cards yet. Save one from Explain.'}</p>
+      {error ? (
+        <div className="notice error row" role="alert">
+          <span>{error}</span>
+          <button type="button" className="btn quiet" onClick={retry}>
+            Try again
+          </button>
+        </div>
+      ) : !cards ? (
+        <p className="muted" role="status">
+          Loading…
+        </p>
+      ) : cards.length === 0 ? (
+        <p className="faint">{filtered ? 'No cards match.' : 'No cards yet. Save one from Explain.'}</p>
       ) : (
         <ul>
           {cards.map((card) => (

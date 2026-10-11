@@ -1,9 +1,10 @@
 // Review: the next due card, recall first, then reveal and rate. Ratings and what they mean are
 // always shown; the interval on each button comes from the scheduler and is exactly what saving
 // that rating will do.
-import { useCallback, useEffect, useState } from 'react'
-import type { Card, Rating, ReviewQueue, ReviewSettings } from '../../../shared/cards'
+import type { Card, Rating } from '../../../shared/cards'
 import { clock, when } from '../components/time'
+import { ReviewSettings } from './ReviewSettings'
+import { useReviewSession } from './useReviewSession'
 
 const RATINGS: { rating: Rating; label: string; meaning: string }[] = [
   { rating: 'again', label: 'Again', meaning: 'I did not recall it correctly' },
@@ -82,41 +83,24 @@ function Scene({ card }: { card: Card }): React.JSX.Element | null {
 
 /** `onEnd` leaves the review (back to where it was opened from). */
 export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
-  const [queue, setQueue] = useState<ReviewQueue>()
-  const [revealed, setRevealed] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string>()
-  const [settings, setSettings] = useState<ReviewSettings>()
+  const session = useReviewSession()
+  const { queue, revealed, busy, error, act, settings } = session
 
-  const act = useCallback(async (work: () => Promise<ReviewQueue>) => {
-    setBusy(true)
-    setError(undefined)
-    try {
-      setQueue(await work())
-      setRevealed(false)
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'That did not work.')
-      setQueue(await window.duet.cards.reviewQueue())
-      setRevealed(false)
-    } finally {
-      setBusy(false)
-    }
-  }, [])
-
-  // New settings apply from the next card shown, so the queue is loaded again.
-  const saveSettings = (change: ReviewSettings): void => {
-    window.duet.cards.setSettings(change).then((saved) => {
-      setSettings(saved)
-      void act(() => window.duet.cards.reviewQueue())
-    })
-  }
-
-  useEffect(() => {
-    window.duet.cards.startReview().then(setQueue)
-    window.duet.cards.getSettings().then(setSettings)
-  }, [])
-
-  if (!queue) return <p className="muted">Loading…</p>
+  if (session.loadError)
+    return (
+      <div className="notice error row" role="alert">
+        <span>{session.loadError}</span>
+        <button type="button" className="btn quiet" onClick={session.start}>
+          Try again
+        </button>
+      </div>
+    )
+  if (!queue)
+    return (
+      <p className="muted" role="status">
+        Loading…
+      </p>
+    )
   const { counts, next } = queue
   return (
     <section className="review">
@@ -165,7 +149,7 @@ export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
           )}
           <div className="row">
             {!revealed && (
-              <button type="button" className="btn primary" onClick={() => setRevealed(true)}>
+              <button type="button" className="btn primary" onClick={session.reveal}>
                 Reveal answer
               </button>
             )}
@@ -184,8 +168,14 @@ export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
         </>
       ) : (
         <div className="card-box">
-          <p>Nothing to review right now.</p>
-          {queue.nextDueAt && <p className="muted">Next card is due {when(queue.nextDueAt)}.</p>}
+          {session.noCards ? (
+            <p>No cards yet. Save a line from the strip or from Explain.</p>
+          ) : (
+            <>
+              <p>Nothing to review right now.</p>
+              {queue.nextDueAt && <p className="muted">Next card is due {when(queue.nextDueAt)}.</p>}
+            </>
+          )}
           <div className="row">
             {queue.canUndo && (
               <button type="button" className="btn quiet" disabled={busy} onClick={() => act(() => window.duet.cards.undo())}>
@@ -200,34 +190,7 @@ export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
       )}
 
       {settings && (
-        <details className="review-settings">
-          <summary>Review settings</summary>
-          <label className="field">
-            <span>Target recall: {Math.round(settings.desiredRetention * 100)}% (higher means more reviews)</span>
-            <input
-              type="range"
-              min={0.8}
-              max={0.97}
-              step={0.01}
-              value={settings.desiredRetention}
-              onChange={(event) => setSettings({ ...settings, desiredRetention: Number(event.target.value) })}
-              onMouseUp={() => saveSettings(settings)}
-              onKeyUp={() => saveSettings(settings)}
-            />
-          </label>
-          <label className="field">
-            <span>New cards per day</span>
-            <input
-              type="number"
-              min={0}
-              max={100}
-              value={settings.newPerDay}
-              onChange={(event) => setSettings({ ...settings, newPerDay: Number(event.target.value) })}
-              onBlur={() => saveSettings(settings)}
-            />
-          </label>
-          <p className="faint">Changes apply to the next ratings; cards already scheduled keep their dates.</p>
-        </details>
+        <ReviewSettings settings={settings} onChange={session.setSettings} onSave={session.saveSettings} />
       )}
     </section>
   )

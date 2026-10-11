@@ -2,12 +2,13 @@
 // done with it. Editing keeps the schedule; a change to what is tested becomes a new card.
 // Shown with key={card.id}, so another card starts with a fresh view.
 import { useState } from 'react'
-import type { CardContent, CardDetail } from '../../../shared/cards'
+import type { CardDetail } from '../../../shared/cards'
 import { languageName } from '../../../shared/languages'
-import { CardForm } from '../components/CardForm'
-import { cardReady, contentOf } from '../components/cards'
+import { say } from '../components/errors'
 import { clock, when } from '../components/time'
+import { CardEditor } from './CardEditor'
 import { stateLabel } from './labels'
+import { NuanceBox } from './NuanceBox'
 
 export function CardView({
   card,
@@ -16,7 +17,7 @@ export function CardView({
   card: CardDetail
   onDeleted: (id: string) => void
 }): React.JSX.Element {
-  const [editing, setEditing] = useState<CardContent>()
+  const [editing, setEditing] = useState(false)
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
 
@@ -27,9 +28,9 @@ export function CardView({
     setError(undefined)
     try {
       await work()
-      setEditing(undefined)
+      setEditing(false)
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'That did not work.')
+      setError(say(failure, 'That did not work.'))
     } finally {
       setBusy(false)
     }
@@ -38,41 +39,17 @@ export function CardView({
 
   if (editing)
     return (
-      <section className="detail">
-        <CardForm value={editing} onChange={setEditing} lang={card.language}>
-          <p className="faint">
-            Save keeps the review schedule. If you changed what the card tests, save it as a new
-            card instead.
-          </p>
-          {error && <p className="notice error">{error}</p>}
-          <div className="row">
-            <button
-              type="button"
-              className="btn primary"
-              disabled={busy || !cardReady(editing)}
-              onClick={() => run(() => window.duet.cards.update(card.id, editing))}
-            >
-              Save
-            </button>
-            <button
-              type="button"
-              className="btn"
-              disabled={busy || !cardReady(editing)}
-              onClick={() => run(() => window.duet.cards.saveAsNew(card.id, editing))}
-            >
-              Save as new card
-            </button>
-            <button
-              type="button"
-              className="btn quiet"
-              disabled={busy}
-              onClick={() => setEditing(undefined)}
-            >
-              Cancel
-            </button>
-          </div>
-        </CardForm>
-      </section>
+      <CardEditor
+        card={card}
+        busy={busy}
+        error={error}
+        onSave={(content) => run(() => window.duet.cards.update(card.id, content))}
+        onSaveAsNew={(content) => run(() => window.duet.cards.saveAsNew(card.id, content))}
+        onCancel={() => {
+          setError(undefined)
+          setEditing(false)
+        }}
+      />
     )
 
   return (
@@ -138,29 +115,7 @@ export function CardView({
           </>
         )}
       </dl>
-      {card.explanation && (
-        <section className="nuance-box" aria-label="Saved nuance analysis">
-          <span className="label">Nuance analysis</span>
-          <p>{card.explanation.meaning}</p>
-          {card.explanation.notice && (
-            <p>
-              <strong>Notice:</strong> {card.explanation.notice.text}
-            </p>
-          )}
-          {card.explanation.why && (
-            <p>
-              <strong>Why:</strong> {card.explanation.why}
-            </p>
-          )}
-          {card.explanation.alternative && (
-            <p>
-              <strong>Alternative:</strong> {card.explanation.alternative.expression} —{' '}
-              {card.explanation.alternative.changes}
-            </p>
-          )}
-          {card.explanation.limitation && <p className="faint">{card.explanation.limitation}</p>}
-        </section>
-      )}
+      {card.explanation && <NuanceBox explanation={card.explanation} />}
       {video && video.earlier.length > 0 && (
         <details>
           <summary>Original context ({video.earlier.length} lines before)</summary>
@@ -191,7 +146,7 @@ export function CardView({
           type="button"
           className="btn"
           disabled={busy}
-          onClick={() => setEditing(contentOf(card))}
+          onClick={() => setEditing(true)}
         >
           Edit
         </button>

@@ -1,6 +1,5 @@
 import '../styles/base.css'
 import '../styles/ui.css'
-import '../review/review.css'
 import './cards.css'
 
 import { StrictMode } from 'react'
