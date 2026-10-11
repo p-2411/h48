@@ -1,8 +1,7 @@
 /* The overlay: a subtitle-sized strip at the bottom of a transparent window. The window's empty
    space lets clicks through to the video (see useSolid); the strip, its actions, the word popup
    and the settings sit above it when reached for. */
-/* Match OVERLAY.padding: leave transparent room below the strip for the checkpoint halo. */
-.stage { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 64px 20px; }
+.stage { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 64px 6px; }
 .dock { position: relative; max-width: 100%; display: flex; flex-direction: column; align-items: center; }
 
 /* Duet's surfaces: nearly opaque dark glass, as macOS draws its HUDs. */
@@ -13,8 +12,7 @@
 
 /* The strip: as small as the line it carries. Its background drags it anywhere. */
 .strip {
-  --strip-radius: 18px;
-  position: relative; isolation: isolate; max-width: min(860px, var(--fit, 860px)); min-width: 320px; padding: 10px 46px 12px 20px; border-radius: var(--strip-radius);
+  position: relative; max-width: min(860px, var(--fit, 860px)); min-width: 320px; padding: 10px 46px 12px 20px; border-radius: 18px;
   background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg);
   display: flex; flex-direction: column; gap: 6px; user-select: none;
 }
@@ -58,40 +56,34 @@
   position: absolute; bottom: 100%; left: 0; right: 0; padding: 0 8px 6px; display: flex; justify-content: safe flex-end; gap: 4px; align-items: center;
   opacity: 0; visibility: hidden; transition: opacity 0.15s var(--ease) 0.25s, visibility 0s linear 0.4s;
 }
-.dock:hover .actions, .dock:focus-within .actions, .dock.pinned .actions, .dock.level-gesture .actions { opacity: 1; visibility: visible; transition-delay: 0s; }
+.dock:hover .actions, .dock:focus-within .actions, .dock.pinned .actions { opacity: 1; visibility: visible; transition-delay: 0s; }
 .act {
   font-size: 12px; font-weight: 500; height: 28px; padding: 0 11px; border-radius: 999px; white-space: nowrap;
   background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg);
 }
 .actions .spacer { flex: 1; }
-/* The level on the hover row: its number in a round button like the others (.act); pressed, a row of
-   the five levels in its place, the current one in a white circle. */
-.level-number { position: relative; isolation: isolate; flex-shrink: 0; width: 28px; padding: 0; border: 0; background: var(--glass); box-shadow: inset 0 0 0 1px var(--glass-edge); color: #111; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.level-dial-surface { position: absolute; inset: 4px; border-radius: 50%; background: linear-gradient(145deg, #fff, #f1f2f4); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95); pointer-events: none; }
-.level-dial-number { position: relative; display: grid; place-items: center; width: 100%; height: 100%; pointer-events: none; }
-.level-row { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: 2px; padding: 0 2px; flex-shrink: 0; animation: level-open 0.15s var(--ease); }
-.level-thumb {
-  position: absolute; left: 2px; top: 50%; width: 24px; height: 24px; border-radius: 50%; pointer-events: none;
-  background: #fff; box-shadow: 0 0 9px rgba(255, 255, 255, 0.18), 0 1px 3px rgba(0, 0, 0, 0.18);
-  transform: translate3d(var(--level-x), -50%, 0);
-  transition: transform 340ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms ease;
+/* The level on the hover row: its number in a round button like the others (.act); hovered, it
+   slides open into the six levels (Auto, then 1 to 5) and is a slider, its white circle the handle (LevelSlider.tsx). */
+.level-slider { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 28px; padding: 0; overflow: hidden; }
+.level-slider.open { padding: 0 2px; }
+.level-track { display: flex; align-items: center; gap: 2px; cursor: ew-resize; touch-action: none; }
+.level-slot { position: relative; width: 24px; height: 24px; display: grid; place-items: center; }
+.level-handle { position: absolute; inset: 0; border-radius: 50%; background: #fff; }
+.level-digit { position: relative; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--fg-2); }
+/* Folded, the circle is drawn by its blob, which a swipe tugs: stretched, squashed, sprung back
+   (LevelSlider.tsx). */
+.level-slider:not(.open), .level-slider:not(.open):hover { background: none; border-color: transparent; overflow: visible; }
+.level-frame { position: absolute; inset: 0; }
+.level-blob {
+  position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; overflow: hidden;
+  background: var(--glass); border: 0.5px solid var(--glass-edge); transition: background 0.15s;
 }
-.level-row.scrubbing .level-thumb { transition: transform 65ms linear; box-shadow: 0 0 12px rgba(255, 255, 255, 0.3), 0 1px 3px rgba(0, 0, 0, 0.18); }
-.level-row button {
-  position: relative; z-index: 1; padding: 0; flex-shrink: 0; transition: color 100ms ease;
-  width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid transparent; font-size: 12.5px; font-weight: 600;
-  font-variant-numeric: tabular-nums; color: var(--fg-2);
-}
-.level-row button:hover { color: #fff; }
-.level-row button.on { color: #111; }
-@keyframes level-open { from { opacity: 0; transform: scale(0.92); } }
-@media (prefers-reduced-motion: reduce) {
-  .level-row { animation: none; }
-  .level-row .level-thumb, .level-row.scrubbing .level-thumb, .level-row button { transition: none; }
-}
+.level-slider:not(.open):hover .level-blob { background: rgba(58, 58, 62, 0.95); }
+.level-slider:not(.open) .level-digit { color: #fff; font-size: 13px; }
+.level-digit.on { color: #111; }
+.level-slider:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.6); outline-offset: 2px; }
 .act.icon { width: 28px; padding: 0; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
 .act:hover { background: rgba(58, 58, 62, 0.95); }
-.level-number:hover { background: var(--glass); }
 .act.primary { background: #fff; color: #111; border-color: #fff; }
 .act.primary:hover { background: #e6e6e6; }
 .act.on { background: #fff; color: #111; }
@@ -140,6 +132,60 @@
 .notice { padding-top: 6px; border-top: 1px solid var(--line); }
 .toast { color: var(--fg); }
 
+/* A checkpoint offered or open: light in the Apple Intelligence colours flows around the strip and
+   glows outward from its edge, wavy and alive like Siri's (no text, no sound). Four layers just behind
+   the strip (Overlay.tsx), so only what's outside it shows and the subtitles stay clear: a thin
+   stroke on the edge, then three glows, each wider and softer. Each layer's colours turn at their own
+   speed (some the other way) and each one's reach swells and shrinks on its own rhythm, so where they
+   meet the glow thickens and thins and its shape keeps moving round the box. It comes up bright, then
+   at once settles to a quieter glow for as long as it stays (--glow-strength, 1 → 0.35). Motion fades
+   it in when offered and out over half a second when it's done; for people who ask for reduced motion
+   it is the quiet glow, still. */
+@property --glow-strength { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --glow-turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --glow-reach { syntax: '<length>'; inherits: false; initial-value: 0px; }
+.strip-glow {
+  position: absolute; inset: 0; pointer-events: none;
+  animation: glow-settle 1.8s ease-out forwards;
+}
+.glow-layer {
+  --reach-from: 2px; --reach-to: 4px;
+  position: absolute; inset: calc(-1 * var(--glow-reach)); border-radius: calc(18px + var(--glow-reach));
+  background: conic-gradient(from var(--glow-turn), var(--glow-colours));
+  animation: glow-turn var(--turn-time) linear infinite var(--turn-way, normal), glow-reach var(--reach-time) ease-in-out infinite alternate;
+}
+/* The stroke on the edge: crisp; softer once settled, but always there. */
+.glow-layer:nth-child(1) {
+  --glow-colours: #bc82f3, #f5b9ea, #8d9fff, #ff6778, #ffba71, #c686ff, #bc82f3;
+  --turn-time: 6s; --reach-from: 1.5px; --reach-to: 1.5px; --reach-time: 1s;
+  filter: blur(0.5px); opacity: calc(0.5 + 0.5 * var(--glow-strength));
+}
+/* Close glow: a little blurred, turning the other way. */
+.glow-layer:nth-child(2) {
+  --glow-colours: #f5b9ea, #8d9fff 20%, #bc82f3 35%, #ffba71 55%, #ff6778 70%, #c686ff 85%, #f5b9ea;
+  --turn-time: 8s; --turn-way: reverse; --reach-from: 2px; --reach-to: 5px; --reach-time: 2.7s;
+  filter: blur(4px); opacity: calc(0.9 * var(--glow-strength));
+}
+/* Wide glow. */
+.glow-layer:nth-child(3) {
+  --glow-colours: #8d9fff, #ff6778 25%, #ffba71 40%, #bc82f3 60%, #f5b9ea 80%, #8d9fff;
+  --turn-time: 10s; --reach-from: 4px; --reach-to: 10px; --reach-time: 3.6s;
+  filter: blur(12px); opacity: calc(0.8 * var(--glow-strength));
+}
+/* Widest glow, out into the video; turning the other way, slowly. */
+.glow-layer:nth-child(4) {
+  --glow-colours: #c686ff, #8d9fff 30%, #f5b9ea 50%, #ff6778 65%, #ffba71 85%, #c686ff;
+  --turn-time: 14s; --turn-way: reverse; --reach-from: 8px; --reach-to: 16px; --reach-time: 4.7s;
+  filter: blur(22px); opacity: calc(0.6 * var(--glow-strength));
+}
+@keyframes glow-turn { to { --glow-turn: 360deg; } }
+@keyframes glow-reach { from { --glow-reach: var(--reach-from); } to { --glow-reach: var(--reach-to); } }
+@keyframes glow-settle { 0%, 30% { --glow-strength: 1; } 100% { --glow-strength: 0.35; } }
+@media (prefers-reduced-motion: reduce) {
+  .strip-glow { animation: none; --glow-strength: 0.35; }
+  .glow-layer { animation: none; --glow-reach: var(--reach-from); }
+}
+.strip.glow { cursor: pointer; }
 /* An open checkpoint, just above the strip (where a word's card opens), over the actions row. */
 .checkpoint { position: absolute; z-index: 5; bottom: calc(100% + 6px); left: 50%; transform-origin: bottom center; width: min(440px, 100%); max-height: min(440px, calc(var(--room, 446px) - 12px)); overflow-y: auto; }
 /* Talking to Duet: the mascot button left of the strip (quiet until reached for), and while talking
@@ -159,58 +205,10 @@
 .talk-button svg { width: 20px; height: 20px; }
 .talk-bubble {
   /* Above the actions row (Explain, star, replay, ⚙), which shows on hover. */
-  /* The avatar handles its own reversible flight from the activation icon. */
-  position: absolute; z-index: 5; bottom: calc(100% + 48px); left: 50%; transform: translateX(-50%); transform-origin: bottom center; width: min(420px, 100%);
+  /* Centred by Motion (x: -50%), which also opens and closes it. */
+  position: absolute; z-index: 5; bottom: calc(100% + 48px); left: 50%; transform-origin: bottom center; width: min(420px, 100%);
   max-height: calc(var(--room, 480px) - 54px);
   display: flex; flex-direction: column; align-items: center; gap: 4px; color: #fff; text-align: center;
-}
-/* The reference's opaque dark stage and faint white glow, held inside a circle. */
-.talk-avatar {
-  position: relative; isolation: isolate; transform-origin: top left;
-  width: 128px; height: 128px; border-radius: 50%; display: grid; place-items: center;
-}
-.talk-avatar .duet-mascot { top: -6px; }
-.talk-avatar .duet-mascot .mouth-core { scale: 2.25; }
-.talk-avatar::before {
-  content: ''; position: absolute; z-index: -1; inset: 0; border-radius: inherit; pointer-events: none;
-  background: radial-gradient(ellipse at 50% 48%, rgba(255, 255, 255, 0.09), transparent 65%), #050505;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08), 0 0 24px rgba(255, 255, 255, 0.1), 0 6px 18px rgba(0, 0, 0, 0.18);
-  animation: talk-circle-in 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-.talk-avatar .eye,
-.talk-avatar .mouth-core,
-.talk-avatar .brow {
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.55));
-}
-/* One uninterrupted opening: transform the sockets instead of relaying out their heights.
-   Keep the glass reflections present under the white mark so they never pop in at the end. */
-.talk-bubble .duet-mascot[data-state='opening'] .socket {
-  height: 76px;
-  background-image:
-    radial-gradient(circle at 26% 8%, rgba(255, 255, 255, 0.34), transparent 42%),
-    linear-gradient(152deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.045) 48%, rgba(255, 255, 255, 0.11));
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-}
-.talk-bubble .duet-mascot[data-state='opening'] .socket:first-of-type { animation-name: talk-open-left; }
-.talk-bubble .duet-mascot[data-state='opening'] .socket:nth-of-type(2) { animation-name: talk-open-right; }
-.talk-bubble .duet-mascot[data-state='opening'] .eye { animation-name: talk-open-eyes; }
-.talk-bubble .duet-mascot[data-state='opening'] .mouth { animation-name: talk-open-mouth; }
-@keyframes talk-open-left {
-  from { scale: 1; background-color: #fff; border-color: #fff; transform: translate3d(34px, -25px, 0) scale(0.98, 1.237); }
-  to { scale: 0.84; background-color: rgba(255, 255, 255, 0.045); border-color: rgba(255, 255, 255, 0.72); transform: translate3d(0, 0, 0) scale(1); }
-}
-@keyframes talk-open-right {
-  from { scale: 1; background-color: #fff; border-color: #fff; transform: translate3d(-34px, 25px, 0) scale(0.98, 1.237); }
-  to { scale: 0.84; background-color: rgba(255, 255, 255, 0.045); border-color: rgba(255, 255, 255, 0.72); transform: translate3d(0, 0, 0) scale(1); }
-}
-@keyframes talk-open-eyes {
-  0%, 22% { opacity: 0; transform: scaleX(0.65); }
-  80%, 100% { opacity: 1; transform: scaleX(1); }
-}
-@keyframes talk-open-mouth {
-  0% { opacity: 0.82; transform: translateX(-50%) translateY(2px) scale(0.92); }
-  100% { opacity: 0.82; transform: translateX(-50%) translateY(0) scale(1); }
 }
 /* No card: the text reads over the video by its shadow. */
 .talk-lines, .talk-actions { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.6); }
@@ -233,16 +231,4 @@
 .crashed .btn, .strip-crash .btn {
   font-size: 12px; font-weight: 500; height: 28px; padding: 0 11px; border-radius: 999px;
   background: rgba(58, 58, 62, 0.95); border: 0.5px solid rgba(255, 255, 255, 0.1); color: var(--fg);
-}
-.talk-link:disabled { opacity: 0.4; cursor: default; text-decoration: none; }
-.talk-lines, .talk-actions { animation: talk-content-in 240ms var(--ease) 160ms both; }
-@keyframes talk-content-in { from { opacity: 0; transform: translateY(4px); } }
-@keyframes talk-circle-in { 0%, 15% { opacity: 0; } 100% { opacity: 1; } }
-.talk-bubble.closing { pointer-events: none; }
-.talk-bubble.closing .talk-avatar::before { animation: talk-circle-out 240ms ease-out both; }
-.talk-bubble.closing .talk-lines, .talk-bubble.closing .talk-actions { animation: talk-content-out 120ms ease-out both; }
-@keyframes talk-circle-out { to { opacity: 0; } }
-@keyframes talk-content-out { to { opacity: 0; transform: translateY(4px); } }
-@media (prefers-reduced-motion: reduce) {
-  .talk-lines, .talk-actions, .talk-avatar::before { animation: none; }
 }

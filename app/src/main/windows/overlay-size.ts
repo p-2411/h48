@@ -5,7 +5,7 @@
 import type { Rectangle } from 'electron'
 
 /** The window's size, and the space below the strip inside it (the stage's bottom padding). */
-export const OVERLAY = { width: 900, height: 560, padding: 20 }
+export const OVERLAY = { width: 900, height: 560, padding: 6 }
 // However high the strip goes, the window keeps this much: the strip, and a little room above it.
 const LEAST_HEIGHT = 140
 // The strip's own height, roughly, for telling whether it is on a screen.

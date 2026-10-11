@@ -1,9 +1,7 @@
-// Talking to Duet on the strip: the mascot inside a softly glowing circle pops up above the subtitles,
-// with small subtitles under it of what it last heard and said, plus Open chat and microphone mute.
-import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react'
+// Talking to Duet on the strip: the mascot alone (no card behind it) pops up just above the subtitles,
+// with small subtitles under it of what it last heard and said, and quiet Text chat and End.
 import type { Language } from '../../../shared/languages'
 import { Mascot } from '../components/Mascot'
-import { useTalkMotion } from './useTalkMotion'
 import { VOICE_STATUS, voiceMascotState } from '../explain/voice/status'
 import { isVoiceOn, type LiveTutor, type TutorLiveStatus } from '../explain/voice/useLiveTutor'
 
@@ -13,44 +11,28 @@ function waiting(status: TutorLiveStatus): string {
 }
 
 export function TalkBubble({
-  active,
   live,
   language,
-  origin,
-  onText
+  onText,
+  onEnd
 }: {
-  active: boolean
   live: LiveTutor
   language: Language
-  origin: RefObject<HTMLButtonElement | null>
   onText: () => void
-}): React.JSX.Element | null {
-  const [present, setPresent] = useState(active)
-  const bubble = useRef<HTMLDivElement>(null)
-  const lastLive = useRef(live)
-  useLayoutEffect(() => {
-    if (active) {
-      lastLive.current = live
-      setPresent(true)
-    }
-  }, [active, live])
-  const returned = useCallback(() => setPresent(false), [])
-  useTalkMotion(active, present, origin, bubble, returned)
-  const shown = active ? live : lastLive.current
-  const said = [...shown.transcripts].reverse()
+  onEnd: () => void
+}): React.JSX.Element {
+  const said = [...live.transcripts].reverse()
   const heard = said.find((turn) => turn.role === 'learner' && turn.text.trim())
   const reply = said.find((turn) => turn.role === 'tutor' && turn.text.trim())
-  if (!present) return null
   return (
-    <div ref={bubble} className={`talk-bubble${active ? '' : ' closing'}`} data-solid={active || undefined} inert={!active} aria-hidden={!active} role="dialog" aria-label="Talking with Duet">
-      <div className="talk-avatar">
-        <Mascot state={voiceMascotState(shown.status)} scale={0.26} openingDuration={700} speechAudio={shown.playback} />
-      </div>
+    // Placed above the strip, and opened and closed, by the strip (Overlay.tsx).
+    <>
+      <Mascot state={voiceMascotState(live.status)} scale={0.3} opening={false} />
       <div className="talk-lines" aria-live="polite">
-        {shown.error ? (
-          <p className="talk-error">{shown.error}</p>
+        {live.error ? (
+          <p className="talk-error">{live.error}</p>
         ) : !heard && !reply ? (
-          <p className="talk-wait">{shown.muted ? 'Microphone muted' : waiting(shown.status)}</p>
+          <p className="talk-wait">{waiting(live.status)}</p>
         ) : (
           <>
             {heard && <p className="talk-heard">{heard.text}</p>}
@@ -75,19 +57,12 @@ export function TalkBubble({
           </button>
         )}
         <button type="button" className="talk-link" onClick={onText}>
-          Open chat
+          Text chat
         </button>
-        <button
-          type="button"
-          className="talk-link"
-          onClick={live.toggleMicrophone}
-          disabled={!isVoiceOn(shown.status) || shown.status === 'ending'}
-          aria-pressed={shown.muted}
-          aria-label={shown.muted ? 'Unmute microphone' : 'Mute microphone'}
-        >
-          {shown.muted ? 'Unmute' : 'Mute'}
+        <button type="button" className="talk-link" onClick={onEnd}>
+          End
         </button>
       </div>
-    </div>
+    </>
   )
 }
