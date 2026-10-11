@@ -32,6 +32,8 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
+    "demo:seed": "node scripts/seed-demo.mjs",
+    "demo": "electron-vite build && electron . --user-data-dir=\"$HOME/Library/Application Support/Duet Demo\"",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:native": "node scripts/build-native.mjs",
