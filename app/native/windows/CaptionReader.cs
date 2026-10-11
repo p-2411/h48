@@ -70,6 +70,16 @@ internal static class CaptionReader
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr window);
+
+    [DllImport("user32.dll")]
+    private static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra);
+
+    private const byte VK_LEFT = 0x25;
+    private const byte VK_RIGHT = 0x27;
+    private const uint KEYEVENTF_KEYUP = 0x0002;
+
     private static long NowMilliseconds()
     {
         return (long)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds;
@@ -355,11 +365,15 @@ internal static class CaptionReader
                 else if (type == "seek" && target != null && target.Progress != null)
                 {
                     object rawSeconds;
-                    object pattern;
-                    if (command.TryGetValue("seconds", out rawSeconds) &&
-                        target.Progress.TryGetCurrentPattern(RangeValuePattern.Pattern, out pattern))
+                    object rawFrom;
+                    object rawPlay;
+                    if (command.TryGetValue("seconds", out rawSeconds))
                     {
-                        ((RangeValuePattern)pattern).SetValue(Convert.ToDouble(rawSeconds, CultureInfo.InvariantCulture));
+                        double? from = command.TryGetValue("from", out rawFrom) && rawFrom != null
+                            ? Convert.ToDouble(rawFrom, CultureInfo.InvariantCulture)
+                            : (double?)null;
+                        bool play = command.TryGetValue("play", out rawPlay) && rawPlay is bool && (bool)rawPlay;
+                        Seek(target, Convert.ToDouble(rawSeconds, CultureInfo.InvariantCulture), from, play);
                     }
                 }
             }
@@ -367,6 +381,65 @@ internal static class CaptionReader
             {
                 Debug.WriteLine(error);
             }
+        }
+    }
+
+    // How many steps of `size` seconds go `distance` seconds. Going back always lands on or before
+    // the point, however close it is (a replay must hear the line's start); going forward lands just
+    // before, and a little short is close enough. As in the macOS reader.
+    private static int Steps(double distance, double size)
+    {
+        if (distance < -0.3) return (int)Math.Ceiling(-distance / size);
+        if (distance > 1.5) return (int)Math.Floor(distance / size);
+        return 0;
+    }
+
+    // Seeking: set the seek bar's value. Chrome ignores that on a page's own slider (YouTube's and
+    // Netflix's are), so when the bar didn't move, the browser comes to the front, the bar takes the
+    // focus, and the arrow keys step it (5 seconds each on YouTube, 10 on Netflix), as the macOS
+    // reader steps it with the bar's own actions. Duet starts this reader, so Windows lets it bring
+    // the browser forward even while Duet's strip has just been clicked. Then play, if asked.
+    private static void Seek(Target target, double seconds, double? from, bool play)
+    {
+        object pattern;
+        if (target.Progress.TryGetCurrentPattern(RangeValuePattern.Pattern, out pattern))
+        {
+            RangeValuePattern range = (RangeValuePattern)pattern;
+            double before = range.Current.Value;
+            try
+            {
+                range.SetValue(seconds);
+            }
+            catch (Exception error)
+            {
+                Debug.WriteLine(error);
+            }
+            Thread.Sleep(300);
+            double now = range.Current.Value;
+            if (Math.Abs(before - seconds) > 0.3 && Math.Abs(now - seconds) >= Math.Abs(before - seconds) - 0.5)
+            {
+                double distance = seconds - (from.HasValue ? from.Value : now);
+                double step = target.Url != null && target.Url.Contains("netflix.com") ? 10.0 : 5.0;
+                int count = Steps(distance, step);
+                if (count > 0)
+                {
+                    SetForegroundWindow(target.Process.MainWindowHandle);
+                    target.Progress.SetFocus();
+                    byte key = distance < 0 ? VK_LEFT : VK_RIGHT;
+                    for (int index = 0; index < count; index++)
+                    {
+                        keybd_event(key, 0, 0, UIntPtr.Zero);
+                        keybd_event(key, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                        Thread.Sleep(40);
+                    }
+                }
+            }
+        }
+        if (play && !target.Playing && target.PlayButton != null)
+        {
+            object invoke;
+            if (target.PlayButton.TryGetCurrentPattern(InvokePattern.Pattern, out invoke))
+                ((InvokePattern)invoke).Invoke();
         }
     }
 

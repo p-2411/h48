@@ -5,12 +5,13 @@
 //
 // The overlay window has the strip at its bottom middle (see windows/overlay.ts), so placing the
 // strip is moving the window. macOS keeps windows below the top of the screen, so on a video near
-// the top the window is cut shorter from the top instead (the room above the strip for its popups
-// shrinks, the strip stays put).
+// the top, or when dragged up there, the window is cut shorter from the top instead (the room above
+// the strip for its popups shrinks, the strip stays put; windows/overlay-size.ts).
 import { screen, type BrowserWindow, type Rectangle } from 'electron'
 import type { VideoFrame } from './captions'
 import type { Settings } from './settings'
-import { OVERLAY, restingPosition } from './windows/overlay'
+import { OVERLAY, restingBounds } from './windows/overlay'
+import { fullTop, overlayBounds } from './windows/overlay-size'
 
 // How far above the video's bottom edge the strip's bottom sits: clear of the player's controls.
 const LIFT = { share: 0.09, least: 30 }
@@ -88,7 +89,9 @@ export class Placement {
     if (phase === 'start') {
       this.dragged = true
       const grab = screen.getCursorScreenPoint()
-      const [x, y] = this.overlay.getPosition()
+      // Where the window's full-height top is (it may be cut near the top of the screen).
+      const start = this.overlay.getBounds()
+      const y = fullTop(start)
       let last = grab
       this.follow = setInterval(() => {
         if (this.overlay.isDestroyed()) return this.stopFollowing()
@@ -96,11 +99,13 @@ export class Placement {
         // Only move when the pointer did.
         if (now.x === last.x && now.y === last.y) return
         last = now
-        this.overlay.setPosition(now.x - (grab.x - x), now.y - (grab.y - y))
+        // Up to the top of the screen: the window is cut from its top so the strip can go there.
+        const { workArea } = screen.getDisplayNearestPoint(now)
+        this.overlay.setBounds(overlayBounds(now.x - (grab.x - start.x), now.y - (grab.y - y), workArea.y))
       }, 1000 / 60)
     } else {
-      const [x, y] = this.overlay.getPosition()
-      this.settings.update({ overlayPosition: { x, y } })
+      const bounds = this.overlay.getBounds()
+      this.settings.update({ overlayPosition: { x: bounds.x, y: fullTop(bounds) } })
     }
   }
 
@@ -114,16 +119,12 @@ export class Placement {
     const frame = this.frame
     this.fit(this.maxWidth())
     if (this.dragged || this.follow) return
-    if (!frame) {
-      const { x, y } = restingPosition(this.settings)
-      return this.put({ x, y, width: OVERLAY.width, height: OVERLAY.height })
-    }
+    if (!frame) return this.put(restingBounds(this.settings))
     const x = Math.round(frame.x + frame.width / 2 - OVERLAY.width / 2)
     // The strip's bottom is the window's bottom, less the stage's padding.
     const bottom = Math.round(frame.y + frame.height - Math.max(LIFT.least, frame.height * LIFT.share) + OVERLAY.padding)
     const { workArea } = screen.getDisplayNearestPoint({ x: Math.round(frame.x + frame.width / 2), y: bottom })
-    const top = Math.max(bottom - OVERLAY.height, workArea.y)
-    this.put({ x, y: top, width: OVERLAY.width, height: bottom - top })
+    this.put(overlayBounds(x, bottom - OVERLAY.height, workArea.y))
   }
 
   private put(bounds: Rectangle): void {

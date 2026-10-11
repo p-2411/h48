@@ -9,7 +9,8 @@ import type {
   OverlayLine,
   OverlaySettings,
   OverlayStatus,
-  ShortcutKind
+  ShortcutKind,
+  WordScript
 } from '../shared/types'
 import { invoke } from './invoke'
 import { subscribe } from './subscribe'
@@ -37,6 +38,10 @@ export const overlayApi = {
   setWaitForTranslation: (on: boolean) => ipcRenderer.send('duet:set-wait', on),
   setCheckpoints: (on: boolean) => ipcRenderer.send('duet:set-checkpoints', on),
   setPauseForHelp: (on: boolean) => ipcRenderer.send('duet:set', { pauseForHelp: on }),
+  setShowEnglish: (on: boolean) => ipcRenderer.send('duet:set', { showEnglish: on }),
+  /** The strip was right-clicked: Duet's menu (Hide Duet, Settings…, Quit Duet). */
+  showMenu: () => ipcRenderer.send('duet:menu'),
+  setWordScript: (script: WordScript) => ipcRenderer.send('duet:set', { wordScript: script }),
   /** Stars a line (the one on screen when no id is given), or one of its words by pair number. */
   save: (lineId?: number, pair?: number) =>
     invoke<SaveResult | undefined>('duet:save', lineId, pair),

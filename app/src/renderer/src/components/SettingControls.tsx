@@ -1,7 +1,7 @@
 // The controls for Duet's settings, in the home base's Settings; the quick toggles are on the strip's
 // ⚙ too, so they look and work the same in both. Styles: settings.css.
 import { useEffect, useState } from 'react'
-import { LANGUAGE_CODES, languageName } from '../../../shared/languages'
+import { LANGUAGE_CODES, languageModule, languageName } from '../../../shared/languages'
 import type { OverlaySettings, ShortcutKind } from '../../../shared/types'
 import { accelerator, symbols } from '../overlay/keys'
 import { LEVELS } from '../overlay/words'
@@ -39,8 +39,23 @@ export function Toggle({
 
 /** The switches worth flipping mid-show: what the strip's ⚙ keeps. */
 export function QuickToggles({ settings }: { settings: OverlaySettings }): React.JSX.Element {
+  const { name, reading } = languageModule(settings.language)
   return (
     <>
+      <Toggle
+        on={settings.showEnglish}
+        label="Show the English line"
+        hint="Under the line, when you hover the strip"
+        onChange={window.duet.setShowEnglish}
+      />
+      {reading && (
+        <Toggle
+          on={settings.wordScript === 'reading'}
+          label={`${name} words in Latin letters`}
+          hint={`As they sound (${reading.name}), not in ${name} script`}
+          onChange={(on) => window.duet.setWordScript(on ? 'reading' : 'native')}
+        />
+      )}
       <Toggle
         on={settings.guessFirst}
         label="Hide English until I look"

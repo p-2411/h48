@@ -1,7 +1,7 @@
 // The mixed line: the English translation with some words swapped for their partners in the
 // original, more of them at higher levels. Worked out from the word pairs alone, so changing level
 // never needs another request.
-import type { Level, ProcessedLine, Token, WordJob } from './types'
+import type { Level, ProcessedLine, Token, WordJob, WordScript } from './types'
 
 const SWAPPED: Record<Exclude<Level, 5>, WordJob[]> = {
   1: ['n'],
@@ -23,6 +23,19 @@ export function joinTokens(tokens: Token[]): string {
 /** One pair's words in a line, written out: what the strip names for a word (its popup, a hover). */
 export function pairText(tokens: Token[], pair: number): string {
   return joinTokens(tokens.filter((token) => token.pair === pair))
+}
+
+/** How a pair's words are read, in Latin letters, when the line has their reading. */
+export function pairReading(tokens: Token[], pair: number): string | undefined {
+  const words = tokens.filter((token) => token.pair === pair)
+  if (!words.length || words.some((token) => !token.reading)) return undefined
+  return words.map((token) => token.reading).join(' ')
+}
+
+/** A word as the strip writes it: in its own script, or in its reading (Latin letters) when the
+ * learner chose that and the line has one. */
+export function written(token: Token, script: WordScript): string {
+  return script === 'reading' && token.reading ? token.reading : token.text
 }
 
 export function mixedLine(line: ProcessedLine, level: Level): MixedToken[] {

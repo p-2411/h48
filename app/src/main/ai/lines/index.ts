@@ -2,7 +2,7 @@
 // as input, and the reply's phrases are aligned into word tokens (align.ts).
 import type { StructuredModel } from '../structured'
 import { alignLines } from './align'
-import { formatHistory, formatNewLines, LinesOutputSchema, systemPrompt } from './prompt'
+import { formatHistory, formatNewLines, linesOutputSchema, systemPrompt } from './prompt'
 import type { LineModel, LinesRequest, ProcessedLine } from './types'
 
 export * from './types'
@@ -20,7 +20,7 @@ export class Lines implements LineModel {
         instructions: systemPrompt(language),
         context: history.map(formatHistory),
         input: formatNewLines(lines),
-        schema: LinesOutputSchema,
+        schema: linesOutputSchema(language),
         name: `lines_${language}`,
         pace: 'quick'
       },

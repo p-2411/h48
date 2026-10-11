@@ -2,7 +2,7 @@
 // The page reaches these through window.duet in src/preload/overlay.ts.
 //
 //   duet:get-state     → { settings, status, fit }
-//   duet:set-*         settings changes
+//   duet:set-*         settings changes; duet:set takes a few at once (settings-change.ts)
 //   duet:script        opens the side panel on the Script tab
 //   duet:open-settings opens the home base's Settings
 //   duet:explain       explains a line (the one on screen when no id is given)
@@ -14,14 +14,16 @@
 //   duet:solid         the pointer is over Duet (take clicks) or not (let them through to the video)
 //   duet:drag          the learner drags the subtitles: start, end (placement.ts moves the window)
 //   duet:focus         takes the keyboard, while the learner types an answer in a checkpoint
+//   duet:menu          the strip was right-clicked: Hide Duet, Settings…, Quit Duet
 //   duet:set-shortcut  new keys, to show or hide Duet or to talk to it → why not, if they can't be had
 //   duet:set-reminder  the daily reminder's time ("19:30"), or null for none; anything else is refused
 //   duet:status / duet:settings / duet:line / duet:current / duet:live   ← updates
 //   duet:fit           ← how wide the strip may be, to stay inside the video (none: as wide as it likes)
-import { ipcMain, type BrowserWindow } from 'electron'
+import { app, ipcMain, Menu, type BrowserWindow } from 'electron'
 import type { SaveResult } from '../../shared/cards'
-import type { Language, Level, OverlaySettings, ShortcutKind } from '../../shared/types'
+import type { Language, Level, ShortcutKind } from '../../shared/types'
 import { parseReminder } from '../daily/reminder'
+import { settingsChange } from './settings-change'
 import type { Settings } from '../settings'
 import type { Watcher } from '../watcher'
 
@@ -75,9 +77,10 @@ export function connectOverlay(
     if (time !== null && !reminder) throw new Error('Pick a time for the reminder, like 19:30.')
     settings.update({ reminder })
   })
-  ipcMain.on('duet:set', (_, change: Partial<Pick<OverlaySettings, 'pauseForHelp'>>) =>
-    settings.update({ pauseForHelp: change.pauseForHelp })
-  )
+  ipcMain.on('duet:set', (_, change: unknown) => {
+    const kept = settingsChange(change)
+    if (Object.keys(kept).length) settings.update(kept)
+  })
   ipcMain.on('duet:explain', (_, lineId?: number) => actions.explainLine(lineId))
   ipcMain.on('duet:script', () => actions.showScript())
   ipcMain.on('duet:open-settings', () => actions.openSettings())
@@ -95,6 +98,15 @@ export function connectOverlay(
   })
   ipcMain.handle('duet:set-shortcut', (_, keys: unknown, kind: unknown) => actions.setShortcut(String(keys), kind === 'talk' ? 'talk' : 'show'))
   ipcMain.on('duet:focus', () => overlay.isDestroyed() || overlay.focus())
+  ipcMain.on('duet:menu', (event) => {
+    if (overlay.isDestroyed() || event.sender !== overlay.webContents) return
+    Menu.buildFromTemplate([
+      { label: 'Hide Duet', click: () => overlay.isDestroyed() || overlay.hide() },
+      { label: 'Settings…', click: () => actions.openSettings() },
+      { type: 'separator' },
+      { label: 'Quit Duet', click: () => app.quit() }
+    ]).popup({ window: overlay })
+  })
   ipcMain.on('duet:drag', (_, phase: 'start' | 'end') =>
     actions.drag(phase === 'start' ? 'start' : 'end')
   )

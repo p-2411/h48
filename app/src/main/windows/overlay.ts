@@ -6,34 +6,36 @@
 // word's popup and the settings. Clicks pass through the empty part to the video; the page says
 // when the pointer is over something of Duet's (duet:solid), and only then does the window take
 // clicks.
-import { BrowserWindow, screen } from 'electron'
+import { BrowserWindow, screen, type Rectangle } from 'electron'
 import type { Settings } from '../settings'
 import { loadPage, webPreferences } from './load'
-import { onScreen } from './side'
+import { OVERLAY, overlayBounds, stripOnScreen } from './overlay-size'
 
-/** The window's size, and the space below the strip inside it (the stage's bottom padding). */
-export const OVERLAY = { width: 900, height: 560, padding: 6 }
+export { OVERLAY } from './overlay-size'
 const BOTTOM_GAP = 40
 
 /**
- * Where the overlay rests with no video in view: where the learner last dragged it, if that is
+ * Where the overlay rests with no video in view: where the learner last dragged it, if its strip is
  * still on a screen; else the bottom middle of the main screen. (On a video, see placement.ts.)
  */
-export function restingPosition(settings: Settings): { x: number; y: number } {
+export function restingBounds(settings: Settings): Rectangle {
   const saved = settings.current.overlayPosition
-  if (saved && onScreen({ ...saved, width: OVERLAY.width, height: OVERLAY.height })) return saved
+  if (saved && stripOnScreen(saved, screen.getAllDisplays().map((display) => display.workArea))) {
+    const { workArea } = screen.getDisplayNearestPoint({ x: Math.round(saved.x + OVERLAY.width / 2), y: Math.round(saved.y + OVERLAY.height) })
+    return overlayBounds(saved.x, saved.y, workArea.y)
+  }
   const { workArea } = screen.getPrimaryDisplay()
   return {
     x: Math.round(workArea.x + (workArea.width - OVERLAY.width) / 2),
-    y: Math.round(workArea.y + workArea.height - OVERLAY.height - BOTTOM_GAP)
+    y: Math.round(workArea.y + workArea.height - OVERLAY.height - BOTTOM_GAP),
+    width: OVERLAY.width,
+    height: OVERLAY.height
   }
 }
 
 export function createOverlay(settings: Settings): BrowserWindow {
   const overlay = new BrowserWindow({
-    width: OVERLAY.width,
-    height: OVERLAY.height,
-    ...restingPosition(settings),
+    ...restingBounds(settings),
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',

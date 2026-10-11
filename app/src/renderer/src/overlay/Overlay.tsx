@@ -4,12 +4,13 @@
 // show on the strip itself only when the learner can act on them (see notice.ts). The strip sits on
 // the video, no wider than it (the main process moves the window; see placement.ts), and can be
 // dragged anywhere by its background. The mascot button left of it (or the talk keys) starts talking
-// to Duet any time, about the line on screen if there is one (useStripTalk.ts).
+// to Duet any time, about the line on screen if there is one (useStripTalk.ts). Right-clicking opens
+// Duet's menu (Hide Duet, Settings…, Quit Duet).
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react'
 import type { SaveResult } from '../../../shared/cards'
 import { Icon } from '../components/Icon'
 import { say } from '../components/errors'
-import { LevelMeter } from './LevelMeter'
+import { LevelNumber } from './LevelNumber'
 import { LineView } from './LineView'
 import { actionable, quiet, statusDot } from './notice'
 import type { CheckpointView, Offer } from '../../../shared/checkpoints'
@@ -144,10 +145,17 @@ export function Overlay(): React.JSX.Element {
       className="stage"
       style={fit ? ({ '--fit': `${fit}px` } as React.CSSProperties) : undefined}
     >
-      <div className={`dock${settingsOpen ? ' pinned' : ''}`} data-solid>
+      <div
+        className={`dock${settingsOpen ? ' pinned' : ''}`}
+        data-solid
+        onContextMenu={(event) => {
+          event.preventDefault()
+          window.duet.showMenu()
+        }}
+      >
         {settingsOpen && <SettingsPopover settings={settings} />}
         <div className="actions" role="toolbar" aria-label="Line actions">
-          <LevelMeter settings={settings} />
+          <LevelNumber settings={settings} />
           <span className="spacer" />
           <button
             type="button"

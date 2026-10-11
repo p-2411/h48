@@ -23,6 +23,8 @@ export type Token = {
   pair: number | null
   /** Whether a space follows this token when the line is written out. */
   space: boolean
+  /** How the words are read, in Latin letters, for a language not written in them ("eiga" for 映画). */
+  reading?: string
 }
 
 export type ProcessedLine = {
@@ -95,6 +97,10 @@ export type OverlayStatus = {
   modelError?: string
 }
 
+/** How the strip writes words of a language not written in Latin letters: in its own script, or
+ * as they are read, in Latin letters (Japanese 映画 or "eiga"). */
+export type WordScript = 'native' | 'reading'
+
 /** Which of Duet's global keys: show or hide the strip, or talk to Duet. */
 export type ShortcutKind = 'show' | 'talk'
 
@@ -112,7 +118,12 @@ export type OverlaySettings = {
   shortcut: string
   /** The keys that start talking to Duet about the line on screen ("Alt+Shift+T"). */
   talkShortcut: string
-  /** Where the learner dragged the subtitles to (the overlay window's top-left), if anywhere. */
+  /** For Japanese and Korean: the words swapped into a line in their own script, or read in Latin letters. */
+  wordScript: WordScript
+  /** The English line shows under the line when the strip is hovered (off: the strip never shows it). */
+  showEnglish: boolean
+  /** Where the learner dragged the subtitles to (the overlay window's top-left at full height: near
+   * the top of the screen the window is cut shorter, see windows/overlay-size.ts), if anywhere. */
   overlayPosition?: { x: number; y: number }
   /** Where the side panel was last left, and its size. */
   panelBounds?: { x: number; y: number; width: number; height: number }
@@ -135,6 +146,8 @@ export const DEFAULT_SETTINGS: OverlaySettings = {
   onboarded: false,
   shortcut: 'Alt+Shift+D',
   talkShortcut: 'Alt+Shift+T',
+  wordScript: 'native',
+  showEnglish: true,
   version: 2
 }
 

@@ -1,10 +1,14 @@
 // Checks the strip's state: which line it shows (overlay/useOverlay.ts chooseLine), the status dot
-// (overlay/notice.ts statusDot) and the settings upgrade (main/upgrade-settings.ts).
+// (overlay/notice.ts statusDot), the settings upgrade (main/upgrade-settings.ts) and the overlay
+// window's bounds near the top of the screen (main/windows/overlay-size.ts).
 // Run: npx jiti scripts/test-overlay.mjs
 import { chooseLine } from '../src/renderer/src/overlay/useOverlay.ts'
 import { statusDot } from '../src/renderer/src/overlay/notice.ts'
 import { hoverOn } from '../src/renderer/src/overlay/words.ts'
+import { WheelSteps } from '../src/renderer/src/overlay/wheel.ts'
 import { upgradeSettings } from '../src/main/upgrade-settings.ts'
+import { settingsChange } from '../src/main/ipc/settings-change.ts'
+import { OVERLAY, overlayBounds, stripOnScreen } from '../src/main/windows/overlay-size.ts'
 
 const line = (id, state) => ({ id, original: `line ${id}`, at: id, state })
 const here = { url: 'https://youtube.com/watch?v=a', language: 'es' }
@@ -91,4 +95,31 @@ check(
 )
 check(upgradeSettings(undefined) === undefined, 'no saved settings should stay none')
 
+// The strip can go as high as the screen: near the top, the window is cut shorter from its top
+// (macOS keeps windows below the menu bar), so the strip at its bottom stays where it was put.
+const low = overlayBounds(100, 400, 25)
+check(low.y === 400 && low.height === OVERLAY.height, 'well below the top: the whole window')
+const high = overlayBounds(100, -300, 25)
+check(high.y === 25 && high.y + high.height === -300 + OVERLAY.height, `near the top: cut from the top, strip at the same place (${JSON.stringify(high)})`)
+const top = overlayBounds(100, -540, 25)
+check(top.y === 25 && top.height >= 120, 'at the very top: still room for the strip')
+// A saved place counts as on screen by where the strip is, not the empty top of the window.
+const screens = [{ x: 0, y: 25, width: 1440, height: 875 }]
+check(stripOnScreen({ x: 100, y: -300 }, screens), 'a strip dragged near the top is on screen')
+check(!stripOnScreen({ x: 100, y: 2000 }, screens), 'one below every screen is not')
+// A page's settings change keeps only the settings it may set, with values of the right kind.
+const changed = settingsChange({ pauseForHelp: false, showEnglish: false, wordScript: 'reading', language: 'xx', shortcut: 'Ctrl+Q' })
+check(JSON.stringify(changed) === JSON.stringify({ pauseForHelp: false, showEnglish: false, wordScript: 'reading' }), `only the page's own settings: ${JSON.stringify(changed)}`)
+check(JSON.stringify(settingsChange({ showEnglish: 'yes', wordScript: 'cursive' })) === '{}', 'values of the wrong kind are dropped')
+check(JSON.stringify(settingsChange(null)) === '{}', 'no change at all')
+// Scrolling the level carousel: a swipe's many small scroll events make one step, not many; a
+// sideways swipe counts as much as the wheel; scrolling on after a pause steps again.
+const wheel = new WheelSteps()
+check(wheel.step(10, 0, 1000) === 0, 'a nudge is not a step')
+check(wheel.step(15, 0, 1010) === 0, 'still not')
+check(wheel.step(20, 0, 1020) === 1, 'enough scrolled: one step on')
+check([1030, 1040, 1050, 1060].map((at) => wheel.step(30, 0, at)).every((steps) => steps === 0), 'the same swipe goes on: no more steps')
+check(wheel.step(0, -60, 1400) === -1, 'later, a swipe back (sideways): one step back')
+check(wheel.step(0, 80, 1450) === 0, 'a swipe straight back the other way waits its turn')
+check(wheel.step(0, 80, 1700) === 1, 'then steps')
 console.log('Overlay line choice, status dot and settings upgrade tests passed.')

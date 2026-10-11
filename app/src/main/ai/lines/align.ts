@@ -4,12 +4,10 @@
 // file finds each phrase in the original line and in the translation, and everything the model left
 // out becomes uncoloured glue. A phrase always stays whole on both sides, and the model writes far
 // less than it would token by token, which is most of the wait.
-import type { LinesOutput } from './prompt'
+import type { LinesOutput, Phrase } from './prompt'
 import { ModelError, type ProcessedLine, type Token, type WordJob } from './types'
 
-export type Phrase = { source: string; english: string; job: WordJob }
-
-type Span = { start: number; end: number; job: WordJob; pair: number | null }
+type Span = { start: number; end: number; job: WordJob; pair: number | null; reading?: string }
 
 const WORD_CHAR = /[\p{L}\p{N}]/u
 
@@ -37,8 +35,8 @@ function locate(text: string, needle: string, spans: Span[], from: number, wordE
 /** Cuts `text` into tokens: each span is one token, and the words between spans are glue. */
 function tokenize(text: string, spans: Span[]): Token[] {
   const tokens: Token[] = []
-  const push = (start: number, end: number, job: WordJob, pair: number | null): void => {
-    tokens.push({ text: text.slice(start, end), job, pair, space: /\s/.test(text.charAt(end)) })
+  const push = (start: number, end: number, job: WordJob, pair: number | null, reading?: string): void => {
+    tokens.push({ text: text.slice(start, end), job, pair, space: /\s/.test(text.charAt(end)), ...(reading && { reading }) })
   }
   const glue = (start: number, end: number): void => {
     for (const match of text.slice(start, end).matchAll(/\S+/g)) push(start + match.index, start + match.index + match[0].length, 'g', null)
@@ -46,7 +44,7 @@ function tokenize(text: string, spans: Span[]): Token[] {
   let cursor = 0
   for (const span of [...spans].sort((a, b) => a.start - b.start)) {
     glue(cursor, span.start)
-    push(span.start, span.end, span.job, span.pair)
+    push(span.start, span.end, span.job, span.pair, span.reading)
     cursor = span.end
   }
   glue(cursor, text.length)
@@ -75,7 +73,7 @@ export function alignLine(line: string, translation: string, phrases: Phrase[]):
       at = locate(line, source, sourceSpans, from, wordEdges)
     }
     if (at >= 0) {
-      sourceSpans.push({ start: at, end: at + source.length, job: phrase.job, pair: null })
+      sourceSpans.push({ start: at, end: at + source.length, job: phrase.job, pair: null, reading: phrase.reading?.trim() || undefined })
       cursor = at + source.length
     }
     return { phrase, pair: index + 1, sourceAt: at }
