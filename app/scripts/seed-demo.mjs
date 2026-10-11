@@ -632,7 +632,11 @@ try {
   // Seen in earlier videos too, then all of them in today's.
   for (const line of clean) knowledge.noteSeen('ja', line.processed, at(ago(11), 20, 50))
   for (const line of clean.slice(0, 20)) knowledge.noteSeen('ja', line.processed, at(ago(5), 21))
-  for (const line of lines) knowledge.noteSeen('ja', line.processed, metAt(line.start))
+  // Today only the clean lines count as just seen, so the words shown as met most recently (Your
+  // words, Talk's nudge) never come from the jokes; those lines were seen in the earlier sitting.
+  for (const line of clean) knowledge.noteSeen('ja', line.processed, metAt(line.start))
+  for (const line of lines.filter((line) => !clean.includes(line)))
+    knowledge.noteSeen('ja', line.processed, at(ago(11), 20, 50))
 
   const key = (word) => wordKey('ja', word)
   const USABLE = ['子供', '話', 'みんな', '友達']
