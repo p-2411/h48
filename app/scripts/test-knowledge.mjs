@@ -177,5 +177,8 @@ try {
   assert.deepEqual(told, ['knowledge:changed'], 'a burst of changes is told once')
   console.log('Knowledge ladder tests passed.')
 } finally {
+  // Windows cannot remove an open SQLite database. Release the test's handle first.
+  const { database } = await jiti.import(resolve('src/main/store/db.ts'))
+  database().close()
   rmSync(folder, { recursive: true, force: true })
 }

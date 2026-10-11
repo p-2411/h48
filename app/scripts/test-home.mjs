@@ -222,5 +222,8 @@ try {
 
   console.log('Home tests passed.')
 } finally {
+  // Windows cannot remove an open SQLite database. Release the test's handle first.
+  const { database } = await jiti.import(join(root, 'store/db.ts'))
+  database().close()
   rmSync(folder, { recursive: true, force: true })
 }

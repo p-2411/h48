@@ -2,6 +2,7 @@
 // (overlay/notice.ts statusDot), the settings upgrade (main/upgrade-settings.ts) and the overlay
 // window's bounds near the top of the screen (main/windows/overlay-size.ts).
 // Run: npx jiti scripts/test-overlay.mjs
+import { join } from 'node:path'
 import { chooseLine } from '../src/renderer/src/overlay/useOverlay.ts'
 import { statusDot } from '../src/renderer/src/overlay/notice.ts'
 import { hoverOn } from '../src/renderer/src/overlay/words.ts'
@@ -141,6 +142,6 @@ check(levelAt(-40) === 0 && levelAt(400) === 5, 'dragged past either end: the en
 // The app is called Duet, but its data stays in the folder it has always had ("app"): renaming it
 // must not leave the learner's cards and words behind.
 check(JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).productName === 'Duet', 'the app is called Duet')
-check(dataFolder('/Users/x/Library/Application Support') === '/Users/x/Library/Application Support/app', 'its data stays in the app folder')
+check(dataFolder('/Users/x/Library/Application Support') === join('/Users/x/Library/Application Support', 'app'), 'its data stays in the app folder')
 
 console.log('Overlay line choice, status dot and settings upgrade tests passed.')
