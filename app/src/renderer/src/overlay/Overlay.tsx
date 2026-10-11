@@ -105,9 +105,9 @@ export function Overlay(): React.JSX.Element {
             aria-label="Converse about this line"
             onClick={() => window.duet.openTutor(current?.id)}
           >
-            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-              <rect x="5.5" y="1.5" width="5" height="8.5" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
-              <path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+              <path d="M8 3 1.5 6 8 9l6.5-3L8 3Z" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+              <path d="M4 7.3v3.2c0 .9 1.8 1.9 4 1.9s4-1 4-1.9V7.3M14.5 6v3.5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
             </svg>
           </button>
           <button type="button" className="act primary" disabled={!current} onClick={() => window.duet.explainLine()}>
