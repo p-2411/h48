@@ -35,6 +35,9 @@ export const tutorApi = {
   confirmAction: (actionId: string, rating?: ReviewRating): Promise<TutorActionResult> =>
     ipcRenderer.invoke('tutor:confirm-action', actionId, rating),
   undo: (): Promise<TutorActionResult> => ipcRenderer.invoke('tutor:undo'),
+  /** Call on each finished learner transcript. Only a learner turn after a preview lets the voice
+   * model commit that save or rating; the model's own turns never count. */
+  learnerTurn: () => ipcRenderer.send('tutor:learner-turn'),
   onCard: (listener: (card: TutorCard) => void) => subscribe('tutor:card', listener),
   onPendingAction: (listener: (action: PendingTutorAction) => void) =>
     subscribe('tutor:pending-action', listener),

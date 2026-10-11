@@ -2,14 +2,13 @@
 // rather than being told by whoever changed it. Saved in the local database, so they survive a
 // restart; a setting added later simply starts at its default.
 import { EventEmitter } from 'events'
-import { type OverlaySettings, DEFAULT_SETTINGS } from '../shared/types'
-import { database } from './store/db'
+import { DEFAULT_SETTINGS, type OverlaySettings } from '../shared/types'
+import { readSetting, writeSetting } from './store/db'
 
 const KEY = 'overlay'
 
-
 export class Settings extends EventEmitter {
-  private value: OverlaySettings = { ...DEFAULT_SETTINGS, ...load() }
+  private value: OverlaySettings = { ...DEFAULT_SETTINGS, ...readSetting<Partial<OverlaySettings>>(KEY) }
 
   get current(): OverlaySettings {
     return this.value
@@ -22,16 +21,7 @@ export class Settings extends EventEmitter {
     ) as Partial<OverlaySettings>
     if (!Object.keys(changed).length) return
     this.value = { ...this.value, ...changed }
-    database().prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value').run(KEY, JSON.stringify(this.value))
+    writeSetting(KEY, this.value)
     this.emit('change', this.value, changed)
-  }
-}
-
-function load(): Partial<OverlaySettings> {
-  const row = database().prepare('SELECT value FROM settings WHERE key = ?').get(KEY) as { value: string } | undefined
-  try {
-    return row ? JSON.parse(row.value) : {}
-  } catch {
-    return {}
   }
 }

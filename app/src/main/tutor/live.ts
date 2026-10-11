@@ -3,12 +3,26 @@
 // the preload boundary.
 import OpenAI from 'openai'
 import type { FunctionTool } from 'openai/resources/live/live'
+import { RATINGS } from '../../shared/cards'
 import type { Moment } from '../../shared/moment'
 import type { TutorSessionAnswer } from '../../shared/tutor'
 import { languageModule, languageName, type Language } from '../../shared/languages'
 import { backendInstructions, liveInstructions, momentContext } from './prompts'
 
 const pronunciationCache = new Map<string, string>()
+
+// One client per API key: a new client for each call would set up its connection again.
+let cachedClient: { apiKey: string; client: OpenAI } | undefined
+
+function openai(apiKey: string): OpenAI {
+  if (cachedClient?.apiKey !== apiKey) cachedClient = { apiKey, client: new OpenAI({ apiKey }) }
+  return cachedClient.client
+}
+
+/** The text model behind the voice: it runs the tools, and it translates and romanises. */
+function backendModel(env: NodeJS.ProcessEnv): string {
+  return env.DUET_LIVE_BACKEND_MODEL || 'gpt-6-luna'
+}
 
 const emptyObject = {
   type: 'object',
@@ -113,7 +127,7 @@ const tools: FunctionTool[] = [
       type: 'object',
       properties: {
         actionId: { type: 'string' },
-        rating: { type: 'string', enum: ['again', 'hard', 'good', 'easy'] }
+        rating: { type: 'string', enum: [...RATINGS] }
       },
       required: ['actionId', 'rating'],
       additionalProperties: false
@@ -129,15 +143,16 @@ const tools: FunctionTool[] = [
   }
 ]
 
-function safeLiveError(error: unknown): Error {
+/** An error the learner can read. `context` says what failed, such as "Could not translate". */
+function safeLiveError(error: unknown, context: string): Error {
   if (error instanceof OpenAI.AuthenticationError || error instanceof OpenAI.PermissionDeniedError)
     return new Error('The OpenAI project key was rejected or does not have GPT-Live access.')
   if (error instanceof OpenAI.RateLimitError)
     return new Error('The OpenAI project is rate limited. Wait a moment and try again.')
   if (error instanceof OpenAI.APIConnectionError)
     return new Error('Could not reach OpenAI. Check the network connection and try again.')
-  if (error instanceof Error) return new Error(`Could not start the voice tutor: ${error.message}`)
-  return new Error('Could not start the voice tutor.')
+  if (error instanceof Error) return new Error(`${context}: ${error.message}`)
+  return new Error(`${context}.`)
 }
 
 export async function createLiveSession(
@@ -149,7 +164,7 @@ export async function createLiveSession(
     throw new Error('Add OPENAI_API_KEY to app/.env.local to start the voice tutor.')
   if (!sdp.trim() || sdp.length > 100_000) throw new Error('INVALID_SDP_OFFER')
 
-  const client = new OpenAI({ apiKey: env.OPENAI_API_KEY })
+  const client = openai(env.OPENAI_API_KEY)
   try {
     const result = await client.live.create({
       session: {
@@ -181,7 +196,7 @@ export async function createLiveSession(
         delegation: {
           type: 'responses',
           responses: {
-            model: env.DUET_LIVE_BACKEND_MODEL || 'gpt-6-luna',
+            model: backendModel(env),
             instructions: backendInstructions(moment.language),
             max_output_tokens: 1_200,
             parallel_tool_calls: false,
@@ -195,7 +210,7 @@ export async function createLiveSession(
     })
     return { sessionId: result.session.id, sdp: result.transport.sdp }
   } catch (error) {
-    throw safeLiveError(error)
+    throw safeLiveError(error, 'Could not start the voice tutor')
   }
 }
 
@@ -210,10 +225,10 @@ export async function translateForLearner(
   if (!env.OPENAI_API_KEY)
     throw new Error('Add OPENAI_API_KEY to app/.env.local to reveal a translation.')
 
-  const client = new OpenAI({ apiKey: env.OPENAI_API_KEY })
+  const client = openai(env.OPENAI_API_KEY)
   try {
     const response = await client.responses.create({
-      model: env.DUET_LIVE_BACKEND_MODEL || 'gpt-6-luna',
+      model: backendModel(env),
       store: false,
       instructions:
         `Translate the ${languageName(language)} Duet just spoke into concise, natural English for a learner. Return only the translation. Preserve uncertainty and tone; do not add notes, romanisation, labels or quotation marks.`,
@@ -225,7 +240,7 @@ export async function translateForLearner(
     if (!translation) throw new Error('EMPTY_TRANSLATION')
     return translation
   } catch (error) {
-    throw safeLiveError(error)
+    throw safeLiveError(error, 'Could not translate')
   }
 }
 
@@ -248,10 +263,10 @@ export async function pronounceForLearner(
   if (!env.OPENAI_API_KEY)
     throw new Error(`Add OPENAI_API_KEY to app/.env.local to show ${reading.name}.`)
 
-  const client = new OpenAI({ apiKey: env.OPENAI_API_KEY })
+  const client = openai(env.OPENAI_API_KEY)
   try {
     const response = await client.responses.create({
-      model: env.DUET_LIVE_BACKEND_MODEL || 'gpt-6-luna',
+      model: backendModel(env),
       store: false,
       instructions: reading.instructions,
       input,
@@ -265,6 +280,6 @@ export async function pronounceForLearner(
       pronunciationCache.delete(pronunciationCache.keys().next().value as string)
     return pronunciation
   } catch (error) {
-    throw safeLiveError(error)
+    throw safeLiveError(error, 'Could not show the pronunciation')
   }
 }
