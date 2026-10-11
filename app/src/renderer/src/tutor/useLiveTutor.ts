@@ -155,7 +155,8 @@ export function useLiveTutor(moment?: Moment): {
     // Mark recovery as scheduled before closing the old channel, whose close event can fire at once.
     reconnectTimer.current = -1
     release('reconnecting')
-    setError(`Voice connection interrupted. Reconnecting (${attempt}/${RECONNECT_LIMIT})…`)
+    // "/3" is RECONNECT_LIMIT; smoke-tutor.mjs looks for this exact text.
+    setError(`Voice connection interrupted. Reconnecting (${attempt}/3)…`)
     reconnectTimer.current = window.setTimeout(
       () => {
         reconnectTimer.current = undefined
