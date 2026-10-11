@@ -2,6 +2,7 @@
 // lines met in each (for checkpoints and the daily "say the line"), what the learner did with
 // words (hovered, saved, explained, missed in a checkpoint) and each study day's activity (for the
 // streak). This class is the only code that touches those tables; connect.ts feeds it.
+import type { WatchedVideoSummary } from '../../shared/home'
 import type { Language, OverlayLine, Site } from '../../shared/types'
 import { database, transaction } from '../store/db'
 import { studyDay } from '../study-day'
@@ -34,19 +35,52 @@ export function videoKey(video: { site: Site; id: string }): string {
   return `${video.site}:${video.id}`
 }
 
+type VideoRow = {
+  id: string
+  site: Site
+  title: string | null
+  position: number | null
+  last_watched: number
+  watched_ms: number
+}
+
+function summary(row: VideoRow): WatchedVideoSummary {
+  return {
+    key: row.id,
+    site: row.site,
+    videoId: row.id.slice(row.site.length + 1), // the key is site:videoId (see videoKey)
+    title: row.title ?? undefined,
+    position: row.position ?? undefined,
+    lastWatched: row.last_watched,
+    watchedMs: row.watched_ms
+  }
+}
+
 export class WatchLog {
   // Watch time not yet written, by video and study day, and when it was last written.
   private pending = new Map<string, { video: string; day: string; ms: number }>()
   private flushedAt?: number
 
-  /** The video on screen: added, or brought up to date (URL, title, language, where it is). */
+  /** The video on screen. While the learner watches it, it is added or brought up to date and
+   * counts as watched now. Otherwise (open but paused) only a video already on record is brought up
+   * to date, with no change to when it was last watched: opening a page is not watching it. */
   noteVideo(
     video: WatchedVideo,
     language: Language,
     position: number | undefined,
-    now = Date.now()
+    now = Date.now(),
+    { watching = true }: { watching?: boolean } = {}
   ): void {
     const key = videoKey(video)
+    if (!watching) {
+      database()
+        .prepare(
+          `UPDATE videos SET url = ?, title = COALESCE(?, title), language = ?, position = COALESCE(?, position)
+           WHERE id = ?`
+        )
+        .run(video.url, video.title ?? null, language, position ?? null, key)
+      return
+    }
     transaction(() => {
       const known = database().prepare('SELECT 1 FROM videos WHERE id = ?').get(key)
       database()
@@ -60,6 +94,26 @@ export class WatchLog {
         .run(key, video.site, video.url, video.title ?? null, language, position ?? null, now, now)
       if (!known) this.prune()
     })
+  }
+
+  /** Videos watched with Duet, the one watched last first. */
+  recentVideos(limit: number): WatchedVideoSummary[] {
+    const rows = database()
+      .prepare(
+        'SELECT id, site, title, position, last_watched, watched_ms FROM videos ORDER BY last_watched DESC LIMIT ?'
+      )
+      .all(limit) as VideoRow[]
+    return rows.map(summary)
+  }
+
+  /** One video watched with Duet, by its key. */
+  video(key: string): WatchedVideoSummary | undefined {
+    const row = database()
+      .prepare(
+        'SELECT id, site, title, position, last_watched, watched_ms FROM videos WHERE id = ?'
+      )
+      .get(key) as VideoRow | undefined
+    return row && summary(row)
   }
 
   /** A line the learner met. Only translated lines count; returns whether it was added. */

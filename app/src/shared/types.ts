@@ -52,7 +52,7 @@ export type OverlayLine = {
 }
 
 /** The side panel's tabs. */
-export type PanelTab = 'script' | 'explain' | 'review'
+export type PanelTab = 'script' | 'explain'
 
 /** Every line of the video so far (or the whole transcript), for the Script tab. */
 export type Script = {

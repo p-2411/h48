@@ -58,6 +58,8 @@ export const overlayApi = {
   focus: () => ipcRenderer.send('duet:focus'),
   /** New show/hide keys (an Electron accelerator); resolves with why not, if they can't be had. */
   setShortcut: (keys: string) => invoke<string | undefined>('duet:set-shortcut', keys),
+  /** Opens the home base's Settings. */
+  openSettings: () => ipcRenderer.send('duet:open-settings'),
   /** Opens the side panel on the Script tab. */
   showScript: () => ipcRenderer.send('duet:script'),
   /** Explains a line; the line on screen when no id is given. */

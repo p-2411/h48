@@ -1,7 +1,7 @@
-// The side panel beside the video: Script, Explain and Review tabs. The window's own buttons close it.
+// The side panel beside the video: Script and Explain tabs (Review is in the home base). The window's
+// own buttons close it.
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { ExplainView } from '../explain/ExplainView'
-import { Review } from '../review/Review'
 import { Script } from './Script'
 import { useExplain } from './useExplain'
 import { usePanel } from './usePanel'
@@ -19,9 +19,6 @@ export function Panel(): React.JSX.Element {
           <button type="button" role="tab" aria-selected={tab === 'explain'} onClick={() => setTab('explain')}>
             Explain
           </button>
-          <button type="button" role="tab" aria-selected={tab === 'review'} onClick={() => setTab('review')}>
-            Review
-          </button>
         </div>
       </header>
       {/* Keyed by tab, so a tab that broke can be left and come back fresh, and the others still work. */}
@@ -32,16 +29,12 @@ export function Panel(): React.JSX.Element {
           </p>
         ) : tab === 'script' ? (
           <Script script={script} current={current} />
-        ) : tab === 'explain' ? (
-          explain ? (
-            <ExplainView state={explain} onReplay={window.duet.explain.replay} onRetry={window.duet.explain.retry} />
-          ) : (
-            <p className="faint" role="status">
-              Loading…
-            </p>
-          )
+        ) : explain ? (
+          <ExplainView state={explain} onReplay={window.duet.explain.replay} onRetry={window.duet.explain.retry} />
         ) : (
-          <Review onEnd={() => setTab('script')} />
+          <p className="faint" role="status">
+            Loading…
+          </p>
         )}
       </ErrorBoundary>
     </main>

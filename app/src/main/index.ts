@@ -43,6 +43,7 @@ import { WaitForTranslation } from './wait'
 import { Watcher } from './watcher'
 import { WatchLog } from './watchlog'
 import { connectWatchLog } from './watchlog/connect'
+import { Home } from './home'
 import { createOverlay, toggleOverlay } from './windows/overlay'
 
 // In development, settings such as OPENAI_API_KEY can live in app/.env.local (git-ignored).
@@ -107,11 +108,13 @@ app.whenReady().then(() => {
   const demo = demoEnabled()
   // Listen to the browser only while a video is being watched in it.
   watcher.on('status', (status) => audio.listen(watcher.currentVideo ? status.bundle : undefined))
-  // Practising a card opens Explain, and its conversation, on the card's moment.
+  // Practising a card opens Explain, and its conversation, on the card's moment. My cards and Review
+  // are places in the home base.
   const cards = new Cards({
     replay: replayMoment,
     practise: (moment) => explain.open(moment),
-    openReview: () => panel.show('review')
+    open: (cardId) => home.open('cards', cardId),
+    openReview: () => home.open('review')
   })
   // Explain and the conversation about a line are one: the explanation first, then text or voice
   // with the tutor, which reads and saves cards in the same collection as My cards.
@@ -150,6 +153,9 @@ app.whenReady().then(() => {
     shown: () => !overlay.isDestroyed() && overlay.isVisible()
   })
   app.on('before-quit', () => logLink.finish())
+  // The home base: opened from the Dock, the menu bar, the strip's ⚙ and when Duet starts.
+  const home = new Home({ log: watchLog, cards, openWelcome: () => welcome.open(true) })
+  app.on('activate', () => home.open())
   // Shows or hides the overlay from anywhere; the keys are a setting (⚙ on the strip).
   const shortcut = new Shortcut(settings.current.shortcut, () => toggleOverlay(overlay))
   const showScript = (): void => panel.show('script')
@@ -167,6 +173,7 @@ app.whenReady().then(() => {
     },
     unsave: (cardId) => cards.remove(cardId),
     hoveredWord: (lineId, text) => logLink.hovered(lineId, text),
+    openSettings: () => home.open('settings'),
     replayLine: (lineId) => {
       const moment = watcher.moment(lineId)
       if (moment) replayMoment(moment)
@@ -189,12 +196,18 @@ app.whenReady().then(() => {
   // Due counts change with the clock too (a card comes due), so refresh them now and then.
   setInterval(() => sendDue(cards.counts()), 60_000)
   const welcome = new Welcome(settings, audio)
-  welcome.open()
+  // First run: the welcome window, then the home base once it is done. After that, the home base.
+  if (settings.current.onboarded) home.open()
+  else welcome.open()
+  settings.on('change', (_, changed) => {
+    if (changed.onboarded) home.open()
+  })
   tray = createTray({
+    openHome: () => home.open(),
     toggleOverlay: () => toggleOverlay(overlay),
     showScript,
     explainLine: () => explainLine(),
-    openCards: () => cards.open(),
+    openCards: () => home.open('cards'),
     openWelcome: () => welcome.open(true)
   })
   // In demo mode Explain opens at once on the demo line, so the flow shows without a video.

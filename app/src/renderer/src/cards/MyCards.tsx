@@ -1,5 +1,5 @@
 // My cards: every saved card, to browse, edit, pause and delete, plus backup and export (in the ⋯
-// menu). Review itself is in the side panel; the Review button opens it there.
+// menu). A place in the home base; its Review button opens Review there.
 import { useState } from 'react'
 import { say } from '../components/errors'
 import { useDue } from '../components/useDue'

@@ -1,4 +1,5 @@
-// Cards, main-process side: the My cards window and everything the windows can ask about cards.
+// Cards, main-process side: everything the windows can ask about cards. My cards is a place in the
+// home base (src/main/home), which opens it.
 // Storing is store.ts, scheduling scheduler.ts, the review queue review.ts.
 //
 // IPC (all "cards:*"; pages reach them through window.duet.cards in src/preload/cards.ts):
@@ -7,11 +8,10 @@
 //   get-settings, set-settings                                       review settings
 //   export-backup, export-text, restore-backup                       files
 //   open, replay, practise, review                                   going elsewhere
-//   cards:changed  ← sent to the My cards window when cards change
-// The class also emits "changed" (with the due counts) for the overlay's badge, and "saved" (the
-// new card) when a card is saved, for the watch log.
+// The class emits "changed" (with the due counts) when cards change (the home base reloads them),
+// and "saved" (the new card) when a card is saved, for the watch log.
 import { EventEmitter } from 'events'
-import { dialog, ipcMain, type BrowserWindow } from 'electron'
+import { BrowserWindow, dialog, ipcMain } from 'electron'
 import { readFile, writeFile } from 'fs/promises'
 import type {
   Card,
@@ -27,7 +27,6 @@ import type {
 import type { DueCounts } from '../../shared/types'
 import type { Moment } from '../../shared/moment'
 import { readSetting, writeSetting } from '../store/db'
-import { createCardsWindow } from '../windows/cards'
 import { reviewCounts, ReviewSession } from './review'
 import { Scheduler } from './scheduler'
 import { CardStore, UNDO_DELETE_MS } from './store'
@@ -40,7 +39,6 @@ function loadSettings(): ReviewSettings {
 }
 
 export class Cards extends EventEmitter {
-  private window?: BrowserWindow
   private store = new CardStore()
   private settings = loadSettings()
   private scheduler = new Scheduler(this.settings)
@@ -58,16 +56,25 @@ export class Cards extends EventEmitter {
   constructor({
     replay,
     practise,
+    open,
     openReview
   }: {
     replay: (moment: Moment) => void
     practise: (moment: Moment) => void
+    /** Opens My cards, on one card when given. */
+    open: (cardId?: string) => void
     openReview: () => void
   }) {
     super()
     this.store.purge()
     const handle = (channel: string, work: (...args: never[]) => unknown): void => {
       ipcMain.handle(`cards:${channel}`, (_, ...args) => work(...(args as never[])))
+    }
+    // File dialogs open over the window that asked.
+    const handleFrom = (channel: string, work: (parent: BrowserWindow | null) => unknown): void => {
+      ipcMain.handle(`cards:${channel}`, (event) =>
+        work(BrowserWindow.fromWebContents(event.sender))
+      )
     }
     // Tells My cards to reload once the work is done (after it settles, for async work).
     const changing =
@@ -136,27 +143,33 @@ export class Cards extends EventEmitter {
       return this.settings
     })
 
-    handle('export-backup', () =>
+    handleFrom('export-backup', (parent) =>
       this.saveFile(
+        parent,
         `duet-cards-${new Date().toISOString().slice(0, 10)}.json`,
         JSON.stringify(this.store.backup(this.scheduler), null, 2),
         'json'
       )
     )
-    handle('export-text', () => this.saveFile('duet-cards.tsv', this.store.textExport(), 'tsv'))
-    handle(
+    handleFrom('export-text', (parent) =>
+      this.saveFile(parent, 'duet-cards.tsv', this.store.textExport(), 'tsv')
+    )
+    handleFrom(
       'restore-backup',
-      changing(async () => {
-        const result = await dialog.showOpenDialog(this.window!, {
+      changing(async (parent: BrowserWindow | null) => {
+        const options = {
           filters: [{ name: 'Duet backup', extensions: ['json'] }],
-          properties: ['openFile']
-        })
+          properties: ['openFile' as const]
+        }
+        const result = await (parent
+          ? dialog.showOpenDialog(parent, options)
+          : dialog.showOpenDialog(options))
         if (result.canceled || !result.filePaths[0]) return undefined
         return this.store.restoreBackup(JSON.parse(await readFile(result.filePaths[0], 'utf8')))
       })
     )
 
-    handle('open', (id?: string) => this.open(id))
+    handle('open', (id?: string) => open(id))
     handle('review', () => openReview())
     const momentOf = (id: string): Moment | undefined => {
       const card = this.store.get(id)
@@ -170,22 +183,6 @@ export class Cards extends EventEmitter {
       const moment = momentOf(id)
       if (moment) practise(moment)
     })
-  }
-
-  /** Opens My cards, on one card when given. */
-  open(cardId?: string): void {
-    if (!this.window || this.window.isDestroyed()) {
-      this.window = createCardsWindow()
-      this.window.on('closed', () => (this.window = undefined))
-      if (cardId)
-        this.window.webContents.once('did-finish-load', () =>
-          this.window?.webContents.send('cards:show', cardId)
-        )
-    } else {
-      this.window.show()
-      this.window.focus()
-      if (cardId) this.window.webContents.send('cards:show', cardId)
-    }
   }
 
   /** Cards ready to review now. */
@@ -283,19 +280,22 @@ export class Cards extends EventEmitter {
   }
 
   private changed(): void {
-    if (this.window && !this.window.isDestroyed()) this.window.webContents.send('cards:changed')
     this.emit('changed', this.counts())
   }
 
   private async saveFile(
+    parent: BrowserWindow | null,
     name: string,
     contents: string,
     extension: string
   ): Promise<string | undefined> {
-    const result = await dialog.showSaveDialog(this.window!, {
+    const options = {
       defaultPath: name,
       filters: [{ name: extension.toUpperCase(), extensions: [extension] }]
-    })
+    }
+    const result = await (parent
+      ? dialog.showSaveDialog(parent, options)
+      : dialog.showSaveDialog(options))
     if (result.canceled || !result.filePath) return undefined
     await writeFile(result.filePath, contents, 'utf8')
     return result.filePath

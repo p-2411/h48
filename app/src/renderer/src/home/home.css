@@ -1,0 +1,116 @@
+/* The home base: a sidebar of places on the left, the place on the right. My cards brings its own
+   layout (cards.css); the other places are a column of glass panels. */
+.home {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 188px minmax(0, 1fr);
+  background: #000;
+}
+.home-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 44px 12px 16px;
+  border-right: 1px solid var(--line);
+  background: rgba(22, 22, 24, 0.68);
+  -webkit-app-region: drag;
+}
+.home-nav button {
+  -webkit-app-region: no-drag;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--fg-2);
+}
+.home-nav button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+}
+.home-nav button[aria-current='page'] {
+  background: var(--fill);
+  color: #fff;
+  font-weight: 500;
+}
+.home-brand {
+  padding: 0 10px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.home-page {
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 26px 26px;
+}
+.home-page h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.home-page .card-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+.home-page .card-box > p {
+  margin: 0;
+}
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+.home-number {
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.home-videos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.home-videos li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(22, 22, 24, 0.68);
+}
+.home-videos .btn {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.home-video-title {
+  font-weight: 500;
+  min-width: 0;
+}
+
+.home-settings {
+  max-width: 640px;
+}
+.home-settings .card-box {
+  align-items: stretch;
+}
+.home-settings .label {
+  margin: 0;
+}
+.home-settings .btn {
+  align-self: flex-start;
+}

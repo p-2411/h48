@@ -491,6 +491,64 @@ try {
     'the last seconds watched are kept (the gap since the block before counts as one tick)'
   )
 
+  // --- A video is on record only once it is watched ---------------------------------------------
+  // Opening a video page is not watching it: no row until it plays with Duet shown. A paused video
+  // keeps its title and place up to date but doesn't move up the list of videos watched.
+  const opened = new WatchLog()
+  const page = {
+    site: 'youtube',
+    id: 'opened',
+    url: 'https://www.youtube.com/watch?v=opened',
+    title: 'Opened'
+  }
+  opened.noteVideo(page, 'ko', 3, at(2026, 11, 5, 20, 0), { watching: false })
+  assert.equal(
+    count("SELECT COUNT(*) n FROM videos WHERE id = 'youtube:opened'"),
+    0,
+    'a video only opened is not on record'
+  )
+  opened.noteVideo(page, 'ko', 10, at(2026, 11, 5, 20, 1))
+  opened.noteVideo({ ...page, title: 'Opened, renamed' }, 'ko', 42, at(2026, 11, 6, 9, 0), {
+    watching: false
+  })
+  const paused = database().prepare("SELECT * FROM videos WHERE id = 'youtube:opened'").get()
+  assert.equal(paused.position, 42, 'a paused video keeps where it is')
+  assert.equal(paused.title, 'Opened, renamed')
+  assert.equal(
+    paused.last_watched,
+    at(2026, 11, 5, 20, 1),
+    'pausing overnight does not count as watching'
+  )
+  // ...and in the app: a page left paused never gets a row, however long Duet ticks over it.
+  const idleWatcher = Object.assign(new EventEmitter(), {
+    currentVideo: { site: 'youtube', id: 'idle', url: 'https://www.youtube.com/watch?v=idle' },
+    currentLine: undefined,
+    moment: () => undefined
+  })
+  const idlePlayer = { playing: false, now: () => 0 }
+  const idleLink = connectWatchLog(opened, {
+    watcher: idleWatcher,
+    player: idlePlayer,
+    settings: { current: { language: 'ko' } },
+    cards: new EventEmitter(),
+    shown: () => true
+  })
+  idleLink.tick(at(2026, 11, 6, 10, 0))
+  idleLink.tick(at(2026, 11, 6, 10, 0) + 20_000)
+  idleLink.finish(at(2026, 11, 6, 10, 1))
+  assert.equal(
+    count("SELECT COUNT(*) n FROM videos WHERE id = 'youtube:idle'"),
+    0,
+    'a paused page is not a video watched'
+  )
+  idlePlayer.playing = true
+  idleLink.tick(at(2026, 11, 6, 10, 1) + 1000)
+  assert.equal(
+    count("SELECT COUNT(*) n FROM videos WHERE id = 'youtube:idle'"),
+    1,
+    'the moment it plays, it is (not at the next 15-second update)'
+  )
+
   console.log('Watch log tests passed.')
 } finally {
   rmSync(folder, { recursive: true, force: true })

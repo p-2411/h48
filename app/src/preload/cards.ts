@@ -33,7 +33,7 @@ export const cardsApi = {
   open: (id?: string) => invoke<void>('cards:open', id),
   replay: (id: string) => invoke<void>('cards:replay', id),
   practise: (id: string) => invoke<void>('cards:practise', id),
-  /** Opens Review in the side panel. */
+  /** Opens Review in the home base. */
   openReview: () => invoke<void>('cards:review'),
   onChanged: (listener: () => void) => subscribe('cards:changed', listener),
   onShow: (listener: (id: string) => void) => subscribe('cards:show', listener)

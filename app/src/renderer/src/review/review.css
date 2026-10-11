@@ -1,4 +1,4 @@
-/* Review: one card at a time, recall first, then reveal and rate. Used in the side panel's Review tab. */
+/* Review: one card at a time, recall first, then reveal and rate. Shown in the home base (Cards). */
 .review { max-width: 620px; width: 100%; align-self: center; display: flex; flex-direction: column; gap: 14px; }
 .counts { display: flex; gap: 18px; font-size: 13px; color: var(--fg-2); }
 .prompt { min-height: 140px; justify-content: center; }

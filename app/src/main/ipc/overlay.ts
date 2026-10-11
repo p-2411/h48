@@ -4,6 +4,7 @@
 //   duet:get-state     → { settings, status, due, fit }
 //   duet:set-*         settings changes
 //   duet:script        opens the side panel on the Script tab
+//   duet:open-settings opens the home base's Settings
 //   duet:explain       explains a line (the one on screen when no id is given)
 //   duet:save          stars a line, or one of its words (by pair) → SaveResult
 //   duet:unsave        undoes a star (deletes that card)
@@ -31,6 +32,7 @@ type Actions = {
   saveLine: (lineId?: number, pair?: number) => SaveResult | undefined
   unsave: (cardId: string) => void
   replayLine: (lineId?: number) => void
+  openSettings: () => void
   hoveredWord: (lineId: number, text: string) => void
   playOn: () => void
   setShortcut: (keys: string) => string | undefined
@@ -70,6 +72,7 @@ export function connectOverlay(
   )
   ipcMain.on('duet:explain', (_, lineId?: number) => actions.explainLine(lineId))
   ipcMain.on('duet:script', () => actions.showScript())
+  ipcMain.on('duet:open-settings', () => actions.openSettings())
   ipcMain.handle('duet:save', (_, lineId?: number, pair?: number) => actions.saveLine(lineId, pair))
   ipcMain.on('duet:unsave', (_, cardId: string) => actions.unsave(cardId))
   ipcMain.on('duet:replay', (_, lineId?: number) => actions.replayLine(lineId))

@@ -72,20 +72,24 @@ export function connectWatchLog(
   let lastTick: number | undefined
   let videoNotedAt: number | undefined
   let notedKey: string | undefined
+  // The video last noted while it played: on record, so its lines can be met.
+  let watchedKey: string | undefined
 
   const noteVideo = (now: number): void => {
     const video = watcher.currentVideo
     if (!video) return
-    log.noteVideo(video, language(), player.now(), now)
+    const watching = player.playing
+    log.noteVideo(video, language(), player.now(), now, { watching })
     videoNotedAt = now
     notedKey = videoKey(video)
+    if (watching) watchedKey = notedKey
   }
 
   // A line is met when it is on screen and translated, whichever happens last.
   const meet = (line: OverlayLine | undefined): void => {
     const key = onScreen()
     if (!key || !line || line.id !== watcher.currentLine?.id || !shown()) return
-    if (notedKey !== key) noteVideo(Date.now())
+    if (watchedKey !== key) noteVideo(Date.now())
     log.noteLine(key, language(), line)
   }
   watcher.on('current', () => record(() => meet(watcher.currentLine)))
@@ -112,8 +116,14 @@ export function connectWatchLog(
       const key = onScreen()
       if (!key || !shown()) return
       record(() => {
-        if (key !== notedKey || videoNotedAt === undefined || now - videoNotedAt >= VIDEO_EVERY_MS)
-          noteVideo(now)
+        // Note the video when it changes, the moment it starts playing (so it is on record at once),
+        // and every VIDEO_EVERY_MS.
+        const due =
+          key !== notedKey ||
+          (player.playing && key !== watchedKey) ||
+          videoNotedAt === undefined ||
+          now - videoNotedAt >= VIDEO_EVERY_MS
+        if (due) noteVideo(now)
         if (player.playing) log.addWatchTime(since, key, now)
       })
     },
