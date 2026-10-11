@@ -8,6 +8,7 @@
 //   explain:state      ← sent whenever it changes
 //   explain:retry      asks again for the same moment
 //   explain:replay     goes back to the moment in the video
+//   explain:converse   opens the voice tutor on the moment, talking at once
 //   explain:ask        a follow-up question about the line
 import { ipcMain } from 'electron'
 import type { ExplainState, HearingNote } from '../../shared/explain'
@@ -24,13 +25,15 @@ export class Explain {
 
   constructor(
     private explainer: Explainer | undefined,
-    private replay: (moment: Moment) => void,
+    private moments: { replay: (moment: Moment) => void; converse: (moment: Moment) => void },
     private panel: Panel,
     private hear: (moment: Moment, signal: AbortSignal) => Promise<{ delivery?: Delivery; note: HearingNote }>
   ) {
     ipcMain.handle('explain:get-state', () => this.state)
     ipcMain.on('explain:retry', () => this.state.moment && this.ask(this.state.moment))
-    ipcMain.on('explain:replay', () => this.state.moment && this.replay(this.state.moment))
+    ipcMain.on('explain:replay', () => this.state.moment && this.moments.replay(this.state.moment))
+    // The moment on show, not a line looked up again: after a video or language switch it is gone.
+    ipcMain.on('explain:converse', () => this.state.moment && this.moments.converse(this.state.moment))
     ipcMain.on('explain:ask', (_, question: string) => this.followUp(String(question ?? '').trim()))
     panel.on('closed', () => this.request?.abort())
   }

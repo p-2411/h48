@@ -65,7 +65,7 @@ export function ExplainView({
               ↺ Replay
             </button>
           )}
-          <button type="button" className="btn quiet" onClick={() => window.duet.openTutor(moment.line.id)}>
+          <button type="button" className="btn quiet" onClick={() => window.duet.explain.converse()}>
             Converse
           </button>
           {explanation && <SaveCard key={moment.takenAt} moment={moment} explanation={explanation} />}

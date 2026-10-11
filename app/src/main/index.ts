@@ -5,18 +5,22 @@
 //   watcher.ts      captions or transcript → processed lines, one session per video and language
 //   wait.ts         holds the video while the line on screen is still being translated
 //   panel/          the side panel beside the video: Script, Explain and Review tabs
-//   explain/        Explain that: the explanation and its request
+//   explain/        Explain that: the side panel's Explain tab and its request
 //   cards/          saved cards, My cards and FSRS review
 //   tutor/          the voice tutor's window and work
 //   sources/        each video site (YouTube, Netflix); store/ the local database
 //   ipc/overlay.ts  the overlay's IPC; windows/ the windows; tray.ts the menu bar icon
-//   ai/             the models (lines, voice), one file per provider
+//   ai/             the models (lines, explain, voice), one file per provider
+//   audio.ts, listen.ts, hearing.ts, spoken.ts   the video's sound: hearing lines, how they were said
+//   detect.ts       which language a caption line is in; replay.ts going back to a line
+//   settings.ts, shortcut.ts, welcome.ts, demo.ts   settings, the show/hide keys, first run, demos
 import { app, globalShortcut, nativeTheme, type Tray } from 'electron'
 import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import type { Moment } from '../shared/moment'
 import { createModels, type Models } from './ai'
 import { createVoiceModels, type VoiceModels } from './ai/voice'
+import { demoEnabled, demoMoment } from './demo'
 import { AudioSource } from './audio'
 import { CaptionSource, type CaptionStatus, type VideoFrame } from './captions'
 import { Cards } from './cards'
@@ -51,29 +55,6 @@ if (is.dev) {
 // How often the line on screen follows the video, and how often hearing looks at the audio.
 const TICK_MS = 100
 const HEARING_TICK_MS = 500
-
-function demoMoment(): Moment {
-  return {
-    language: 'ja',
-    line: {
-      id: -1,
-      original: 'ていうか、別にそういうつもりじゃなかったんだけど。',
-      at: Date.now(),
-      state: 'ready'
-    },
-    earlier: [
-      { original: '（デモ用の例文）', translation: 'Labelled demo fixture.' },
-      { original: '怒ってるの？', translation: 'Are you angry?' }
-    ],
-    video: {
-      site: 'youtube',
-      url: 'fixture:duet-japanese-nuance',
-      title: 'Labelled Duet demo',
-      position: 42
-    },
-    takenAt: Date.now()
-  }
-}
 
 let tray: Tray | undefined
 
@@ -118,26 +99,28 @@ app.whenReady().then(() => {
   )
   const replayMoment = (moment: Moment): void => replay(moment, { watcher, player })
   const panel = new Panel({ watcher, settings, replay: replayMoment })
-  const explain = new Explain(models?.explainer, replayMoment, panel, (moment, signal) =>
+  // How a line was said, from the audio; Explain and the spoken-language check both ask.
+  const hear = (moment: Moment, signal: AbortSignal): ReturnType<typeof hearLine> =>
     hearLine(moment, { audio, player, listener: voice?.listener }, signal)
-  )
+  const demo = demoEnabled()
+  // The tutor and My cards share one collection: the tutor reads and saves cards, and practising a
+  // card opens the tutor on it. The tutor needs the cards, so it is made after them.
+  const tutorRef: { current?: Tutor } = {}
+  const converse = (moment: Moment): void => tutorRef.current?.open(moment, { autoStart: true })
+  const explain = new Explain(models?.explainer, { replay: replayMoment, converse }, panel, hear)
   // Listen to the browser only while a video is being watched in it.
   watcher.on('status', (status) => audio.listen(watcher.currentVideo ? status.bundle : undefined))
-  // The tutor and My cards share one collection: the tutor reads and saves cards, and practising a
-  // card opens the tutor on it.
-  const tutorRef: { current?: Tutor } = {}
   const cards = new Cards({
     replay: replayMoment,
-    practise: (moment) => tutorRef.current?.open(moment, { autoStart: true }),
+    practise: converse,
     openReview: () => panel.show('review')
   })
   const tutor = new Tutor(player, cards)
   tutorRef.current = tutor
-  if (process.env.DUET_DEMO_FIXTURES === '1') cards.seedDemoFixtures(demoMoment())
+  if (demo) cards.seedDemoFixtures(demoMoment())
   // Each opens on a line: the one on screen when no id is given.
   const openTutor = (lineId?: number, autoStart = false): void => {
-    const moment =
-      watcher.moment(lineId) ?? (process.env.DUET_DEMO_FIXTURES === '1' ? demoMoment() : undefined)
+    const moment = watcher.moment(lineId) ?? (demo ? demoMoment() : undefined)
     if (moment) tutor.open(moment, { autoStart })
   }
   const explainLine = (lineId?: number): void => {
@@ -202,9 +185,8 @@ app.whenReady().then(() => {
     openCards: () => cards.open(),
     openWelcome: () => welcome.open(true)
   })
-  // The labelled fixture mode is for demos on machines without a caption reader; open its tutor
-  // immediately so the flow is visible without finding the tray menu first.
-  if (process.env.DUET_DEMO_FIXTURES === '1') setTimeout(() => openTutor(), 300)
+  // In demo mode the tutor opens at once, so the flow shows without finding the tray menu first.
+  if (demo) setTimeout(() => openTutor(), 300)
 
   // Videos with neither a transcript nor captions: lines from the audio.
   const hearing = new Hearing({ watcher, player, audio, speech: voice?.speechToText, settings })
@@ -222,7 +204,7 @@ app.whenReady().then(() => {
     player,
     audio,
     settings,
-    hear: (moment, signal) => hearLine(moment, { audio, player, listener: voice?.listener }, signal)
+    hear
   })
   setInterval(() => spoken.tick(), 1000)
   captions.start()
