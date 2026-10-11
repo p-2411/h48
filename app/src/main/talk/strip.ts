@@ -36,11 +36,12 @@ export class StripTalk {
       const moment = watcher.moment()
       const { language, level } = settings.current
       this.talking = { moment }
+      // The saved cards are open to Duet here too, as in Explain and Talk.
       if (moment) {
-        tutor.open({ moment }, window)
+        tutor.open({ moment, exploreEnabled: true }, window)
         return { moment, language: moment.language }
       }
-      tutor.open({ kind: 'free', language, level }, window)
+      tutor.open({ kind: 'free', language, level, exploreEnabled: true }, window)
       return { language }
     })
     handle('talk-to-text', (turns) => {

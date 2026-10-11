@@ -165,7 +165,7 @@ try {
   })
   await assert.rejects(async () => call('duet:talk', {}), /not allowed/i, 'only the strip starts talking here')
   assert.deepEqual(await call('duet:talk', stripPage), { moment: onScreen, language: 'ja' }, 'the strip is told the line it is about')
-  assert.deepEqual(stripOpened.at(-1), { context: { moment: onScreen }, window: strip }, 'the conversation is about the line on screen, and the strip’s')
+  assert.deepEqual(stripOpened.at(-1), { context: { moment: onScreen, exploreEnabled: true }, window: strip }, 'the conversation is about the line on screen, and the strip’s, with the saved cards open to Duet as in Explain')
   // The video moves on; Text chat hands over the line talked about, with the turns so far.
   lineShown = { ...onScreen, line: { ...onScreen.line, id: 8, original: '次の行' } }
   const turns = [{ from: 'learner', text: '行こうって？' }, { from: 'duet', text: '"Let\'s go."' }]
@@ -178,7 +178,7 @@ try {
   // No line on screen (or no video at all): a free conversation, in the language and level.
   lineShown = undefined
   assert.deepEqual(await call('duet:talk', stripPage), { language: 'ja' })
-  assert.deepEqual(stripOpened.at(-1).context, { kind: 'free', language: 'ja', level: 2 }, 'free, with no line')
+  assert.deepEqual(stripOpened.at(-1).context, { kind: 'free', language: 'ja', level: 2, exploreEnabled: true }, 'free, with no line, and the saved cards open as in Talk')
   // Its Text chat goes on in Talk, in the home base, with the turns so far.
   await call('duet:talk-to-text', stripPage, turns)
   assert.deepEqual(toTalk, [turns])

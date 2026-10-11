@@ -342,7 +342,12 @@
 .duet-mascot[data-state='speaking'] .eye {
   width: 19px;
   height: 19px;
-  animation: duet-speak-eye-natural 3.2s cubic-bezier(.45, 0, .55, 1) infinite;
+  animation:
+    duet-speak-eye-natural 3.2s cubic-bezier(.45, 0, .55, 1) infinite,
+    duet-socket-speak-counter 2.15s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+.duet-mascot[data-state='speaking'] .eye-right {
+  animation-delay: 0s, -90ms;
 }
 
 .duet-mascot[data-state='speaking'] .socket {
@@ -540,18 +545,29 @@
   50% { height: 78px; border-radius: 32px 34px 34px 31px; transform: translateY(-2px) rotate(-0.3deg) scaleX(1.01); }
 }
 @keyframes duet-socket-speak-left {
-  0%, 100% { width: 158px; height: 76px; border-radius: 32px 29px 31px 28px; transform: translateY(0) rotate(-.25deg); }
-  22% { width: 166px; height: 82px; border-radius: 36px 33px 35px 31px; transform: translateY(-5px) rotate(-.65deg); }
-  46% { width: 155px; height: 72px; border-radius: 29px 32px 28px 34px; transform: translateY(2px) rotate(.15deg); }
-  70% { width: 164px; height: 80px; border-radius: 35px 30px 34px 29px; transform: translateY(-3px) rotate(-.45deg); }
-  86% { width: 159px; height: 75px; border-radius: 31px 33px 30px 32px; transform: translateY(0) rotate(-.1deg); }
+  0%, 100% { border-radius: 32.41px 29.37px 31.39px 28.35px / 32.00px 29.00px 31.00px 28.00px; transform: translate(1px, 0) rotate(-.25deg) scale(0.9875, 1.0000); }
+  22% { border-radius: 34.70px 31.81px 33.73px 29.88px / 33.37px 30.59px 32.44px 28.73px; transform: translate(-3px, -5px) rotate(-.65deg) scale(1.0375, 1.0789); }
+  46% { border-radius: 29.94px 33.03px 28.90px 35.10px / 30.61px 33.78px 29.56px 35.89px; transform: translate(2.5px, 2px) rotate(.15deg) scale(0.9688, 0.9474); }
+  70% { border-radius: 34.15px 29.27px 33.17px 28.29px / 33.25px 28.50px 32.30px 27.55px; transform: translate(-2px, -3px) rotate(-.45deg) scale(1.0250, 1.0526); }
+  86% { border-radius: 31.19px 33.21px 30.19px 32.20px / 31.41px 33.44px 30.40px 32.43px; transform: translate(0.5px, 0) rotate(-.1deg) scale(0.9938, 0.9868); }
 }
 @keyframes duet-socket-speak-right {
-  0%, 100% { width: 158px; height: 76px; border-radius: 29px 32px 28px 31px; transform: translateY(0) rotate(.25deg); }
-  22% { width: 166px; height: 82px; border-radius: 33px 36px 31px 35px; transform: translateY(-5px) rotate(.65deg); }
-  46% { width: 155px; height: 72px; border-radius: 32px 29px 34px 28px; transform: translateY(2px) rotate(-.15deg); }
-  70% { width: 164px; height: 80px; border-radius: 30px 35px 29px 34px; transform: translateY(-3px) rotate(.45deg); }
-  86% { width: 159px; height: 75px; border-radius: 33px 31px 32px 30px; transform: translateY(0) rotate(.1deg); }
+  0%, 100% { border-radius: 29.37px 32.41px 28.35px 31.39px / 29.00px 32.00px 28.00px 31.00px; transform: translate(-1px, 0) rotate(.25deg) scale(0.9875, 1.0000); }
+  22% { border-radius: 31.81px 34.70px 29.88px 33.73px / 30.59px 33.37px 28.73px 32.44px; transform: translate(3px, -5px) rotate(.65deg) scale(1.0375, 1.0789); }
+  46% { border-radius: 33.03px 29.94px 35.10px 28.90px / 33.78px 30.61px 35.89px 29.56px; transform: translate(-2.5px, 2px) rotate(-.15deg) scale(0.9688, 0.9474); }
+  70% { border-radius: 29.27px 34.15px 28.29px 33.17px / 28.50px 33.25px 27.55px 32.30px; transform: translate(2px, -3px) rotate(.45deg) scale(1.0250, 1.0526); }
+  86% { border-radius: 33.21px 31.19px 32.20px 30.19px / 33.44px 31.41px 32.43px 30.40px; transform: translate(-0.5px, 0) rotate(.1deg) scale(0.9938, 0.9868); }
+}
+/* The speaking sockets flex by a transform (no layout under their glass blur, every frame), with
+   each corner's radius divided back by the scale, and each moved out by half its growth (as a wider
+   socket pushed its neighbour along the row), so they draw as when they changed width and height.
+   The eye inside is scaled back by as much as its socket, so it keeps its own size. */
+@keyframes duet-socket-speak-counter {
+  0%, 100% { scale: 1.0127 1.0000; }
+  22% { scale: 0.9639 0.9268; }
+  46% { scale: 1.0323 1.0556; }
+  70% { scale: 0.9756 0.9500; }
+  86% { scale: 1.0063 1.0133; }
 }
 @keyframes duet-socket-success-left {
   0%, 100% { height: 74px; border-radius: 36px 31px 34px 30px; transform: translateY(-2px) rotate(-0.7deg) scaleX(1.015); }

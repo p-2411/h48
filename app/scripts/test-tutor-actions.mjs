@@ -126,10 +126,9 @@ async function savedCard(overrides) {
   expect(result.kind === 'saved-card', `expected a saved card, got ${result.kind}`)
   return result.card
 }
-/** Opens the tutor on a moment with Explore further on (opening turns it off). */
+/** Opens the tutor on a moment with the saved cards open to Duet (as Explain, Talk and the strip do). */
 async function openOn(line = moment()) {
-  tutor.open({ moment: line }, panel)
-  await call('tutor:set-explore', true)
+  tutor.open({ moment: line, exploreEnabled: true }, panel)
 }
 const cardCount = () => database().prepare('SELECT COUNT(*) n FROM cards WHERE deleted_at IS NULL').get().n
 
@@ -320,26 +319,22 @@ await test('10: a conversation belongs to the window that opened it', async () =
   const stripPage = { sent: [] }
   const strip = { owns: (sender) => sender === stripPage, send: (channel, value) => stripPage.sent.push([channel, value]) }
   tutor.open({ moment: moment() }, strip)
-  let refused
-  try {
-    await electron.handlers.get('tutor:set-explore')(fromTutor, true)
-  } catch (error) {
-    refused = error
+  // Asks the tutor something only its window may (undo): what it answers, or why it refused.
+  const asks = async (sender) => {
+    try {
+      return (await electron.handlers.get('tutor:undo')({ sender }))?.kind ?? 'answered'
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error)
+    }
   }
-  expect(refused?.message === 'UNTRUSTED_TUTOR_CALLER', 'the panel may not talk to the strip\'s conversation')
-  expect((await electron.handlers.get('tutor:set-explore')({ sender: stripPage }, true)) === true, 'the strip may')
+  expect((await asks(panelPage)) === 'UNTRUSTED_TUTOR_CALLER', 'the panel may not talk to the strip\'s conversation')
+  expect((await asks(stripPage)) !== 'UNTRUSTED_TUTOR_CALLER', 'the strip may')
   // Ending the strip's conversation doesn't end another window's.
   tutor.open({ moment: moment() }, panel)
   tutor.end(strip)
-  expect((await electron.handlers.get('tutor:set-explore')(fromTutor, false)) === false, 'the panel\'s conversation goes on')
+  expect((await asks(panelPage)) !== 'UNTRUSTED_TUTOR_CALLER', 'the panel\'s conversation goes on')
   tutor.end(panel)
-  let ended
-  try {
-    await electron.handlers.get('tutor:set-explore')(fromTutor, true)
-  } catch (error) {
-    ended = error
-  }
-  expect(ended?.message === 'UNTRUSTED_TUTOR_CALLER', 'an ended conversation has no window')
+  expect((await asks(panelPage)) === 'UNTRUSTED_TUTOR_CALLER', 'an ended conversation has no window')
 })
 
 await test('11: a window that lost the conversation gets it back, on its own line', async () => {

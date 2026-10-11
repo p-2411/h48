@@ -16,9 +16,6 @@ import { invoke } from './invoke'
 import { subscribe } from './subscribe'
 
 export const tutorApi = {
-  /** Unlocks saved-card/history tools only after the learner explicitly asks to explore. */
-  setExplore: (enabled: boolean): Promise<boolean> =>
-    invoke<boolean>('tutor:set-explore', enabled),
   /** Starts voice in this window's conversation (a line, or free); the video waits until voiceEnded. */
   startSession: (offer: TutorSessionOffer): Promise<TutorSessionAnswer> =>
     invoke<TutorSessionAnswer>('tutor:start-session', offer),

@@ -42,12 +42,16 @@ export function useSpeechMouth(
       source = undefined
       stream = undefined
     }
-    const detach = (): void => {
-      releaseAudio()
+    // The mouth back to the state's own (the CSS one).
+    const rest = (): void => {
       root.removeAttribute('data-audio-mouth')
       mouth.style.removeProperty('height')
       mouth.style.removeProperty('border-radius')
       lastPaint = -1
+    }
+    const detach = (): void => {
+      releaseAudio()
+      rest()
     }
 
     const tick = (now: number): void => {
@@ -60,6 +64,9 @@ export function useSpeechMouth(
           lastSample = now
           const audio = playback.current
           const next = audio?.srcObject
+          // The same voice speaking again: wake the context kept from last time.
+          if (next === stream && context?.state === 'suspended')
+            void context.resume().catch((cause) => console.warn('[duet] the mouth could not follow Duet\'s voice', cause))
           if (next instanceof MediaStream && next !== stream) {
             // Keep the current pose through reconnects instead of resetting to a closed mouth.
             releaseAudio()
@@ -112,7 +119,10 @@ export function useSpeechMouth(
         if (requested.current || target > 0.001 || level > 0.002 || Math.abs(velocity) > 0.01) {
           frame = requestAnimationFrame(tick)
         } else {
-          detach()
+          // One context per voice, kept between replies (suspended: no audio thread running),
+          // closed only when the voice changes or the mascot goes.
+          rest()
+          if (context?.state === 'running') void context.suspend().catch(() => undefined)
           lastFrame = 0
         }
       } catch (cause) {

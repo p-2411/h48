@@ -18,7 +18,7 @@
 //
 // IPC (all "tutor:*", from the window that owns the conversation; window.duet.tutor in src/preload/tutor.ts):
 //   tutor:start-session / tutor:voice-ended   voice starts (holding the video) and ends
-//   tutor:set-explore, tutor:translate, tutor:romanise, tutor:execute-tool, tutor:confirm-action,
+//   tutor:translate, tutor:romanise, tutor:execute-tool, tutor:confirm-action,
 //   tutor:undo, tutor:learner-turn, tutor:heard
 //   tutor:pending-action / tutor:action-result / tutor:card   ← sent to that window
 import { randomUUID } from 'node:crypto'
@@ -127,11 +127,6 @@ export class Tutor {
     knowledge?: Pick<Knowledge, 'practiceWords' | 'noteAttempt'>
   ) {
     this.practice = new PracticeWords(knowledge)
-    ipcMain.handle('tutor:set-explore', (event, enabled: boolean) => {
-      this.assertTutor(event)
-      this.exploreEnabled = enabled === true
-      return this.exploreEnabled
-    })
     // Voice holds the video while it is live, so Duet and the video don't talk over each other.
     ipcMain.handle('tutor:start-session', (event, offer: TutorSessionOffer) => {
       this.assertTutor(event)
