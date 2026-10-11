@@ -127,6 +127,11 @@ export class Watcher extends EventEmitter {
     return mostly && top !== this.settings.current.language ? top : undefined
   }
 
+  /** Lines come from the video's transcript (translated ahead of the video). */
+  get followingTranscript(): boolean {
+    return !!this.session?.hasTranscript
+  }
+
   /** A video is open with neither a transcript nor captions on screen: Duet should hear it. */
   get needsHearing(): boolean {
     return !!this.video && !!this.session && !this.session.hasTranscript && Date.now() - this.captionSeenAt > NO_CAPTIONS_MS

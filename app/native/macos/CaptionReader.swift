@@ -36,10 +36,11 @@ let browsers: [String: String] = [
   "com.brave.Browser": "Brave",
 ]
 
-// Where each site draws its captions: the class on the caption container, and the class on the
-// pieces of caption text inside it (nil means "all text inside the container"). Chrome often
-// exposes caption text directly inside the caption window, without the inner span's class, so
-// both sites read all text in the container.
+// Where each site draws its captions: the class on the caption container, and the class of the
+// elements inside it that hold subtitle text (nil means "all text inside the container"). Only text
+// inside those counts, so nothing else the player puts in the caption area is taken for a line. On
+// YouTube that is each caption window (Chrome exposes the text directly inside it, without the
+// inner spans' classes).
 // `captionsButton` is the player's CC button, whose label says when the video has no captions.
 //
 // The player's controls are found one of two ways:
@@ -61,7 +62,7 @@ struct Site {
   var labels: LabelControls? = nil
 }
 let sites = [
-  Site(host: "youtube.com", container: "ytp-caption-window-container", segment: nil, captionsButton: "ytp-subtitles-button",
+  Site(host: "youtube.com", container: "ytp-caption-window-container", segment: "caption-window", captionsButton: "ytp-subtitles-button",
        player: "html5-video-player", progress: "ytp-progress-bar", playButton: "ytp-play-button"),
   Site(host: "netflix.com", container: "player-timedtext", segment: nil, captionsButton: nil,
        labels: LabelControls(slider: "Seek time scrubber", play: "Play", pause: "Pause", back: "Seek back", forward: "Seek forward",

@@ -85,7 +85,7 @@ export function Bar({ settings, status, hasLine }: { settings: OverlaySettings; 
         <Toggle
           on={settings.waitForTranslation}
           label="Wait"
-          title="Pause the video until the line is translated"
+          title="With a transcript, pause the video until the line on screen is translated"
           onChange={window.duet.setWaitForTranslation}
         />
         <button type="button" className="close" aria-label="Hide Duet" onClick={() => window.duet.hide()}>

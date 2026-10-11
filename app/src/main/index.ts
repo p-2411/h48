@@ -81,7 +81,12 @@ app.whenReady().then(() => {
   const audio = new AudioSource()
   const player = new Player((command) => captions.command(command))
   const watcher = new Watcher(captions, player, settings, models?.lines, modelError)
-  const wait = new WaitForTranslation(player, settings, () => watcher.currentLine)
+  const wait = new WaitForTranslation(
+    player,
+    settings,
+    () => watcher.currentLine,
+    () => watcher.followingTranscript
+  )
   const tutor = new Tutor(player)
   const replayMoment = (moment: Moment): void => replay(moment, { watcher, player })
   const panel = new Panel({ watcher, replay: replayMoment })
