@@ -1,10 +1,8 @@
-// The contract between Duet and whichever AI model processes caption lines. Nothing outside
-// src/main/ai knows which provider is in use; a provider only has to turn one line (plus the lines
-// before it) into a ProcessedLine. The line shapes themselves live in src/shared/types.ts because
-// the overlay renders them too.
-import type { Language, ProcessedLine } from '../../shared/types'
+// The line task: turning caption lines (plus the lines before them) into ProcessedLines. The line
+// shapes themselves live in src/shared/types.ts because the overlay renders them too.
+import type { Language, ProcessedLine } from '../../../shared/types'
 
-export type { Language, ProcessedLine, Token, WordJob } from '../../shared/types'
+export type { Language, ProcessedLine, Token, WordJob } from '../../../shared/types'
 
 /** A line already processed earlier in the session, used as context. */
 export type HistoryEntry = { line: string; translation: string }
@@ -23,4 +21,4 @@ export interface LineModel {
   processLines(request: LinesRequest, signal?: AbortSignal): Promise<ProcessedLine[]>
 }
 
-export { ModelError } from './errors'
+export { ModelError } from '../errors'

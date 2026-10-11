@@ -1,5 +1,5 @@
-// Instructions and output shape shared by every provider, so switching models never changes what
-// Duet asks for. The system prompt is fixed per language, which keeps it cacheable.
+// The line task's instructions and output shape. The instructions are fixed per language, which
+// keeps them cacheable.
 import { z } from 'zod'
 import type { HistoryEntry, Language } from './types'
 

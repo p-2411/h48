@@ -9,7 +9,7 @@
 import { app, globalShortcut, type Tray } from 'electron'
 import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
-import { createLineModel, type LineModel } from './ai'
+import { createModels, type Models } from './ai'
 import { CaptionSource } from './captions'
 import { connectOverlay } from './ipc/overlay'
 import { Player } from './player'
@@ -42,10 +42,10 @@ app.whenReady().then(() => {
   if (process.platform === 'darwin') app.dock?.hide()
   app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 
-  let model: LineModel | undefined
+  let models: Models | undefined
   let modelError: string | undefined
   try {
-    model = createLineModel()
+    models = createModels()
   } catch (error) {
     modelError = error instanceof Error ? error.message : String(error)
   }
@@ -53,7 +53,7 @@ app.whenReady().then(() => {
   const settings = new Settings()
   const captions = new CaptionSource()
   const player = new Player((command) => captions.command(command))
-  const watcher = new Watcher(captions, player, settings, model, modelError)
+  const watcher = new Watcher(captions, player, settings, models?.lines, modelError)
   const wait = new WaitForTranslation(player, settings, () => watcher.currentLine)
   const tutor = new Tutor(player)
   const openTutor = (lineId?: number): void => {
