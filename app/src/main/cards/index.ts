@@ -25,7 +25,7 @@ import type {
 } from '../../shared/cards'
 import type { DueCounts } from '../../shared/types'
 import type { Moment } from '../../shared/moment'
-import { database } from '../store/db'
+import { readSetting, writeSetting } from '../store/db'
 import { createCardsWindow } from '../windows/cards'
 import { reviewCounts, ReviewSession } from './review'
 import { Scheduler } from './scheduler'
@@ -35,13 +35,7 @@ const SETTINGS_KEY = 'review'
 const DEFAULT_SETTINGS: ReviewSettings = { desiredRetention: 0.9, newPerDay: 10 }
 
 function loadSettings(): ReviewSettings {
-  const row = database().prepare('SELECT value FROM settings WHERE key = ?').get(SETTINGS_KEY) as
-    { value: string } | undefined
-  try {
-    return { ...DEFAULT_SETTINGS, ...(row ? JSON.parse(row.value) : {}) }
-  } catch {
-    return DEFAULT_SETTINGS
-  }
+  return { ...DEFAULT_SETTINGS, ...readSetting<Partial<ReviewSettings>>(SETTINGS_KEY) }
 }
 
 export class Cards extends EventEmitter {
@@ -137,11 +131,7 @@ export class Cards extends EventEmitter {
       )
       this.settings = { desiredRetention, newPerDay }
       this.scheduler = new Scheduler(this.settings)
-      database()
-        .prepare(
-          'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value'
-        )
-        .run(SETTINGS_KEY, JSON.stringify(this.settings))
+      writeSetting(SETTINGS_KEY, this.settings)
       return this.settings
     })
 

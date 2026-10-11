@@ -94,3 +94,21 @@ export function transaction<T>(work: () => T): T {
     throw error
   }
 }
+
+/** A saved setting, or undefined when it is missing or its JSON is damaged. */
+export function readSetting<T>(key: string): T | undefined {
+  const row = database().prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined
+  if (!row) return undefined
+  try {
+    return JSON.parse(row.value) as T
+  } catch {
+    return undefined
+  }
+}
+
+/** Saves a setting as JSON, replacing any earlier value. */
+export function writeSetting(key: string, value: unknown): void {
+  database()
+    .prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value')
+    .run(key, JSON.stringify(value))
+}
