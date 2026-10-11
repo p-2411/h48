@@ -4,8 +4,19 @@
     {
       "name": "waitlist",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["waitlist/dev-server.cjs"],
+      "runtimeArgs": [
+        "waitlist/dev-server.cjs"
+      ],
       "port": 4321
+    },
+    {
+      "name": "dashboard",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--env-file=waitlist/.env.local",
+        "waitlist/scripts/dashboard.js"
+      ],
+      "port": 4400
     }
   ]
 }
