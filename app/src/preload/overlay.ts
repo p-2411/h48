@@ -45,7 +45,5 @@ export const overlayApi = {
   /** Opens the side panel on the Script tab. */
   showScript: () => ipcRenderer.send('duet:script'),
   /** Explains a line; the line on screen when no id is given. */
-  explainLine: (lineId?: number) => ipcRenderer.send('duet:explain', lineId),
-  /** Opens the voice tutor on a line; the line on screen when no id is given. */
-  hide: () => ipcRenderer.send('duet:hide')
+  explainLine: (lineId?: number) => ipcRenderer.send('duet:explain', lineId)
 }

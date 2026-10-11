@@ -15,6 +15,5 @@ export const panelApi = {
   onScriptLine: (listener: (line: OverlayLine) => void) => subscribe('panel:script-line', listener),
   onCurrent: (listener: (id: number | null) => void) => subscribe('panel:current', listener),
   /** Goes back to a line in the video. */
-  seek: (lineId: number) => ipcRenderer.send('panel:seek', lineId),
-  close: () => ipcRenderer.send('panel:close')
+  seek: (lineId: number) => ipcRenderer.send('panel:seek', lineId)
 }

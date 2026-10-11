@@ -1,7 +1,6 @@
 /* Styles every Duet window shares: black and white, with one kind of colour, the words, each
    glowing in the colour of its job. Same colours as useduet.io. */
 :root {
-  --panel: rgba(16, 16, 19, 0.86);
   --line: rgba(255, 255, 255, 0.12);
   --fg: #fff;
   --fg-2: #d6d6d6;

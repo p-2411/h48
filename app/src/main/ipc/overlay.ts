@@ -14,7 +14,6 @@
 //   duet:drag          the learner drags the subtitles: start, end (placement.ts moves the window)
 //   duet:focus         takes the keyboard, while the learner presses new show/hide keys
 //   duet:set-shortcut  new show/hide keys → why not, if they can't be had
-//   duet:hide          hides the overlay
 //   duet:status / duet:settings / duet:line / duet:current / duet:live / duet:due   ← updates
 //   duet:fit           ← how wide the strip may be, to stay inside the video (none: as wide as it likes)
 import { ipcMain, type BrowserWindow } from 'electron'
@@ -76,6 +75,5 @@ export function connectOverlay(
   ipcMain.handle('duet:set-shortcut', (_, keys: string) => actions.setShortcut(String(keys)))
   ipcMain.on('duet:focus', () => overlay.isDestroyed() || overlay.focus())
   ipcMain.on('duet:drag', (_, phase: 'start' | 'end') => actions.drag(phase === 'start' ? 'start' : 'end'))
-  ipcMain.on('duet:hide', () => overlay.hide())
   return { sendDue: (due) => send('duet:due', due), sendFit: (maxWidth) => send('duet:fit', maxWidth ?? null) }
 }

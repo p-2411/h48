@@ -8,7 +8,6 @@
 //   panel:tab / panel:script / panel:script-line / panel:current   ← updates
 //   panel:set-tab      the learner switched tabs
 //   panel:seek         goes back to a line
-//   panel:close        closes the window
 import { EventEmitter } from 'events'
 import { ipcMain, type BrowserWindow } from 'electron'
 import type { Moment } from '../../shared/moment'
@@ -32,7 +31,6 @@ export class Panel extends EventEmitter {
       const moment = watcher.moment(lineId)
       if (moment) replay(moment)
     })
-    ipcMain.on('panel:close', () => this.window?.close())
     watcher.on('script', (script) => this.send('panel:script', script))
     watcher.on('script-line', (line) => this.send('panel:script-line', line))
     watcher.on('current', (id) => this.send('panel:current', id))
