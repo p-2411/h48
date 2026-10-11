@@ -1,5 +1,5 @@
 // Trackpad gestures tug the single circle; the full chooser opens only when reached for directly.
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { languageName } from '../../../shared/languages'
 import type { Level, OverlaySettings } from '../../../shared/types'
 import type { LevelSwipe } from './useLevelSwipe'
@@ -19,12 +19,7 @@ export function LevelNumber({ settings, swipe }: { settings: OverlaySettings; sw
   const closing = useRef<number | undefined>(undefined)
   const dragging = useRef(false)
   useEffect(() => () => window.clearTimeout(closing.current), [])
-  // A swipe over the captions closes the row (the circle shows the level while it moves).
-  const [gestureSeen, setGestureSeen] = useState(swipe.gestureId)
-  if (swipe.gestureId !== gestureSeen) {
-    setGestureSeen(swipe.gestureId)
-    if (swipe.gestureId) setOpen(false)
-  }
+  useLayoutEffect(() => { if (swipe.gestureId) setOpen(false) }, [swipe.gestureId])
   const current = LEVELS.find((item) => item.level === settings.level)!
   const describe = (item: (typeof LEVELS)[number]): string => `${item.mark} · ${item.name} ${language}: swaps in ${item.adds}`
   const pick = (clientX: number): void => {

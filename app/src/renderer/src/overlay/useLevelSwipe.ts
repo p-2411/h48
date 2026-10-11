@@ -10,21 +10,7 @@ const COAST_MS = 140
 const LINGER_MS = 950
 const clampLevel = (value: number): number => Math.max(0, Math.min(5, value))
 
-export type LevelSwipe = {
-  /** Where the circle is, between levels while a swipe pulls it. */
-  position: number
-  /** The level chosen (shown before Settings has it). */
-  level: Level
-  dragging: boolean
-  /** The circle shows (a swipe just happened). */
-  visible: boolean
-  /** Counts swipes: a new one closes the row of levels. */
-  gestureId: number
-  select: (next: Level) => void
-  dismiss: () => void
-}
-
-export function useLevelSwipe(level: Level, host: RefObject<HTMLDivElement | null>): LevelSwipe {
+export function useLevelSwipe(level: Level, host: RefObject<HTMLDivElement | null>) {
   const [position, setPosition] = useState<number>(level)
   const [settled, setSettled] = useState(level)
   const [dragging, setDragging] = useState(false)
@@ -67,15 +53,10 @@ export function useLevelSwipe(level: Level, host: RefObject<HTMLDivElement | nul
     setVisible(false)
   }, [])
 
-  // A level from Settings (chosen here or elsewhere): the circle goes to it, unless a swipe holds it.
-  const [levelSeen, setLevelSeen] = useState(level)
-  if (level !== levelSeen) {
-    setLevelSeen(level)
-    setSettled(level)
-    if (!dragging) setPosition(level)
-  }
   useEffect(() => {
     selected.current = level
+    setSettled(level)
+    if (!gesture.current) setPosition(level)
   }, [level])
 
   useEffect(() => {
@@ -155,3 +136,5 @@ export function useLevelSwipe(level: Level, host: RefObject<HTMLDivElement | nul
 
   return { position, level: settled, dragging, visible, gestureId, select, dismiss }
 }
+
+export type LevelSwipe = ReturnType<typeof useLevelSwipe>

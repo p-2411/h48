@@ -1,6 +1,6 @@
 // Talking to Duet on the strip: the mascot inside a softly glowing circle pops up above the subtitles,
 // with small subtitles under it of what it last heard and said, plus Open chat and microphone mute.
-import { useCallback, useRef, useState, type RefObject } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import type { Language } from '../../../shared/languages'
 import { Mascot } from '../components/Mascot'
 import { useTalkMotion } from './useTalkMotion'
@@ -26,14 +26,17 @@ export function TalkBubble({
   onText: () => void
 }): React.JSX.Element | null {
   const [present, setPresent] = useState(active)
-  // What was said while talking, kept on the bubble as it goes back into the button.
-  const [kept, setKept] = useState(live)
-  if (active && !present) setPresent(true)
-  if (active && live !== kept) setKept(live)
   const bubble = useRef<HTMLDivElement>(null)
+  const lastLive = useRef(live)
+  useLayoutEffect(() => {
+    if (active) {
+      lastLive.current = live
+      setPresent(true)
+    }
+  }, [active, live])
   const returned = useCallback(() => setPresent(false), [])
   useTalkMotion(active, present, origin, bubble, returned)
-  const shown = active ? live : kept
+  const shown = active ? live : lastLive.current
   const said = [...shown.transcripts].reverse()
   const heard = said.find((turn) => turn.role === 'learner' && turn.text.trim())
   const reply = said.find((turn) => turn.role === 'tutor' && turn.text.trim())
