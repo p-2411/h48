@@ -224,16 +224,15 @@
     requestFocus();
   }
 
-  // The hero's video: a muted scene from Sintel (an open film, CC BY) plays inside the frame, and
-  // the Duet panel beside it follows the film line by line. The player reports its time over
-  // postMessage; the scene loops between SINTEL.from and SINTEL.to. Without the player (blocked,
-  // reduced motion, offline) the drawn still and the first line stay in place.
+  // The hero's video: a muted scene from Sintel (an open film, CC BY), served from this site
+  // (media/sintel-scene.*), plays inside the frame, and the Duet panel beside it follows the film
+  // line by line. The clip starts at SINTEL.from in the film and loops. Under reduced motion it
+  // stays on its first frame (the poster) with the first line shown.
   const heroWatch = document.querySelector('.hero-demo .watch');
   const heroScreen = heroWatch?.querySelector('.video-still');
   const heroPanel = heroWatch?.querySelector('.panel');
   const film = window.SINTEL;
   if (heroScreen && heroPanel && film?.lines?.length) {
-    const PLAYER = 'https://www.youtube-nocookie.com';
     const clock = heroPanel.querySelector('.eyebrow');
     const mixLine = heroPanel.querySelector('.mix');
     const esLine = heroPanel.querySelector('.es-line');
@@ -295,40 +294,27 @@
     clock.replaceChildren(clock.querySelector('.live-dot'), document.createTextNode(''));
     showAt(film.lines[0].start);
 
-    const quiet = motion.matches || navigator.connection?.saveData;
-    if (!quiet) {
-      const player = document.createElement('iframe');
-      const query = new URLSearchParams({
-        autoplay: 1, mute: 1, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, rel: 0,
-        playsinline: 1, start: film.from, enablejsapi: 1, origin: location.origin
-      });
-      player.src = `${PLAYER}/embed/${film.videoId}?${query}`;
-      player.className = 'hero-player';
-      player.title = 'Sintel, playing muted';
-      player.allow = 'autoplay; encrypted-media';
-      player.tabIndex = -1;
-      player.setAttribute('aria-hidden', 'true');
-      const send = (func, args = []) => player.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), PLAYER);
-      player.addEventListener('load', () => {
-        player.contentWindow?.postMessage(JSON.stringify({ event: 'listening', id: 'duet-hero', channel: 'widget' }), PLAYER);
-      });
-      window.addEventListener('message', event => {
-        if (event.origin !== PLAYER || event.source !== player.contentWindow) return;
-        let message;
-        try { message = JSON.parse(event.data); } catch { return; }
-        const seconds = message?.info?.currentTime;
-        if (typeof seconds !== 'number') return;
-        heroWatch.classList.add('is-live');
-        if (seconds >= film.to || seconds < film.from - 1) { send('seekTo', [film.from, true]); return; }
-        showAt(seconds);
-      });
+    const player = heroScreen.querySelector('video');
+    if (player) {
+      // The clip's own clock plus where it starts in the film gives the film's time.
+      player.addEventListener('timeupdate', () => showAt(film.from + player.currentTime));
+      player.addEventListener('playing', () => heroWatch.classList.add('is-live'));
+      let onScreen = true;
+      const syncPlayer = () => {
+        if (motion.matches) { player.pause(); return; }
+        if (onScreen && !document.hidden) player.play().catch(() => { /* Autoplay refused: the poster stays. */ });
+        else player.pause();
+      };
       // Pause while the hero is off screen; play again when it returns.
       if ('IntersectionObserver' in window) {
         new IntersectionObserver(entries => {
-          send(entries.some(entry => entry.isIntersecting) ? 'playVideo' : 'pauseVideo');
+          onScreen = entries.some(entry => entry.isIntersecting);
+          syncPlayer();
         }).observe(heroScreen);
       }
-      heroScreen.prepend(player);
+      document.addEventListener('visibilitychange', syncPlayer);
+      motion.addEventListener('change', syncPlayer);
+      syncPlayer();
     }
   }
 

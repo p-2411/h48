@@ -12,6 +12,7 @@
   <meta name="twitter:card" content="summary">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
+  <link rel="preload" as="image" href="./media/sintel-scene.jpg">
   <script defer src="./sintel-lines.js"></script>
   <script defer src="./site.js"></script>
 </head>
@@ -43,7 +44,7 @@
             </div>
             <div class="watch">
               <div class="watch-main">
-                <div class="video-still" aria-hidden="true"><span class="still-sun"></span><span class="still-hills far"></span><span class="still-hills near"></span><div class="still-controls"><span class="still-pause"></span><span class="still-track"><i></i></span><span class="still-time">1:47 / 14:48</span></div></div>
+                <div class="video-still" aria-hidden="true"><video class="hero-player" autoplay muted loop playsinline preload="auto" poster="./media/sintel-scene.jpg" tabindex="-1"><source src="./media/sintel-scene.webm" type="video/webm"><source src="./media/sintel-scene.mp4" type="video/mp4"></video><span class="still-sun"></span><span class="still-hills far"></span><span class="still-hills near"></span><div class="still-controls"><span class="still-pause"></span><span class="still-track"><i></i></span><span class="still-time">1:47 / 14:48</span></div></div>
                 <p class="watch-title">Sintel</p>
                 <p class="watch-meta">Blender Foundation · Open movie</p>
               </div>

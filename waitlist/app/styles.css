@@ -178,8 +178,8 @@ h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text
   .duet-controls,.duet-legend,.duet-tabs,.duet-script,.watch-meta,.browser-nav,.browser-extension{display:none}
 }
 
-/* The real video plays over the drawn still, which stays as its poster. It is scenery: no clicks. */
-.video-still .hero-player{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;z-index:1}
+/* The real video sits over the drawn still and starts on its own poster frame. It is scenery: no clicks. */
+.video-still .hero-player{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:cover;background:#000;pointer-events:none;z-index:1}
 .watch.is-live .still-controls{display:none}
 .watch{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:12px;padding:12px;align-items:start}
 .panel{border:1px solid var(--line-2);border-radius:var(--radius);background:rgba(28,28,30,.55);padding:14px 16px 16px}

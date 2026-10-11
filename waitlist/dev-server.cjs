@@ -12,6 +12,9 @@ const TYPES = {
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".webp": "image/webp",
+  ".jpg": "image/jpeg",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
   ".woff2": "font/woff2",
   ".ico": "image/x-icon",
   ".json": "application/json",
@@ -49,6 +52,25 @@ const server = http.createServer((req, res) => {
     return;
   }
   const resolved = path.extname(file) ? file : `${file}.html`;
+  // Video clients ask for byte ranges to start playing and to seek.
+  if ([".mp4", ".webm"].includes(path.extname(resolved))) {
+    fs.stat(resolved, (err, stat) => {
+      if (err || !stat.isFile()) { res.writeHead(404); res.end("Not found"); return; }
+      const headers = { "Content-Type": TYPES[path.extname(resolved)], "Accept-Ranges": "bytes" };
+      const match = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || "");
+      let start = 0, end = stat.size - 1;
+      if (match && (match[1] || match[2])) {
+        start = match[1] ? Number(match[1]) : Math.max(0, stat.size - Number(match[2]));
+        end = match[1] && match[2] ? Math.min(Number(match[2]), end) : end;
+        if (start > end) { res.writeHead(416, { ...headers, "Content-Range": `bytes */${stat.size}` }); res.end(); return; }
+        headers["Content-Range"] = `bytes ${start}-${end}/${stat.size}`;
+      }
+      headers["Content-Length"] = end - start + 1;
+      res.writeHead(match ? 206 : 200, headers);
+      fs.createReadStream(resolved, { start, end }).pipe(res);
+    });
+    return;
+  }
   fs.readFile(resolved, (err, data) => {
     if (err) {
       res.statusCode = 404;
