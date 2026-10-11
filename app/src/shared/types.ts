@@ -1,11 +1,11 @@
 // Types shared by the main process and the overlay.
 
-export type Language = 'es' | 'ja' | 'ko'
+/** A language Duet teaches; the list, and all it knows about each, is in shared/languages. */
+export type { Language } from './languages'
+import type { Language } from './languages'
 
 /** Video sites Duet supports; each is one file in src/main/sources. */
 export type Site = 'youtube' | 'netflix'
-
-export const LANGUAGES: Record<Language, string> = { es: 'Spanish', ja: 'Japanese', ko: 'Korean' }
 
 /** A word's job in its sentence; each has its own colour. */
 export type WordJob =

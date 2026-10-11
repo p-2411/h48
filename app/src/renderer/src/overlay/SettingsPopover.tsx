@@ -1,7 +1,8 @@
 // The ⚙ popover: what changes once in a while (language, how much of it, the pauses, the keys
 // that show and hide Duet), kept off the strip, and the way to the whole script.
 import { useEffect, useState } from 'react'
-import { LANGUAGES, type Language, type OverlaySettings } from '../../../shared/types'
+import { LANGUAGE_CODES, languageName } from '../../../shared/languages'
+import type { OverlaySettings } from '../../../shared/types'
 import { accelerator, symbols } from './keys'
 import { LEVELS } from './words'
 
@@ -65,13 +66,13 @@ export function SettingsPopover({ settings }: { settings: OverlaySettings }): Re
     <div className="settings" data-solid role="dialog" aria-label="Settings">
       <span className="label">Learning</span>
       <div className="segment" role="group" aria-label="Language">
-        {(Object.keys(LANGUAGES) as Language[]).map((language) => (
+        {LANGUAGE_CODES.map((language) => (
           <button key={language} type="button" aria-pressed={settings.language === language} onClick={() => window.duet.setLanguage(language)}>
-            {LANGUAGES[language]}
+            {languageName(language)}
           </button>
         ))}
       </div>
-      <span className="label">How much {LANGUAGES[settings.language]} in each line</span>
+      <span className="label">How much {languageName(settings.language)} in each line</span>
       <div className="segment" role="group" aria-label="Level">
         {LEVELS.map((item) => (
           <button key={item.level} type="button" aria-pressed={settings.level === item.level} onClick={() => window.duet.setLevel(item.level)}>

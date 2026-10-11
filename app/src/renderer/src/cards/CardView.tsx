@@ -3,7 +3,7 @@
 // Shown with key={card.id}, so another card starts with a fresh view.
 import { useState } from 'react'
 import type { CardContent, CardDetail } from '../../../shared/cards'
-import { LANGUAGES } from '../../../shared/types'
+import { languageName } from '../../../shared/languages'
 import { CardForm } from '../components/CardForm'
 import { cardReady, contentOf } from '../components/cards'
 import { clock, when } from '../components/time'
@@ -68,7 +68,7 @@ export function CardView({
     <section className="detail">
       <div className="card-box">
         <p className="faint">
-          {card.type === 'understand' ? 'Understand' : 'Use it'} · {LANGUAGES[card.language]} ·{' '}
+          {card.type === 'understand' ? 'Understand' : 'Use it'} · {languageName(card.language)} ·{' '}
           {stateLabel(card)}
         </p>
         <p className="big" lang={card.language}>

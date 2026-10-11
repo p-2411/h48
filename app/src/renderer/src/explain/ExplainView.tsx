@@ -4,7 +4,7 @@
 // The reasoning, an alternative and any doubt fold under "More"; the conversation about the line
 // follows. One component with no window of its own, so it can move into the tutor's window.
 import type { ExplainState, HearingNote } from '../../../shared/explain'
-import { LANGUAGES } from '../../../shared/types'
+import { languageName } from '../../../shared/languages'
 import { clock } from '../components/time'
 import { Chat } from './Chat'
 import { SaveCard } from './SaveCard'
@@ -56,7 +56,7 @@ export function ExplainView({
         {processed && <p className="muted">{processed.translation}</p>}
         <div className="row">
           <span className="faint">
-            {moment.video.title ?? LANGUAGES[moment.language]}
+            {moment.video.title ?? languageName(moment.language)}
             {position !== undefined && ` · ${clock(position)}`}
           </span>
           <span className="spacer" />

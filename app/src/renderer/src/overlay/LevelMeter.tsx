@@ -1,10 +1,11 @@
 // How much of the language the line swaps in, on the strip's hover row: five bars, filled up to the
 // level. Clicking a bar sets that level; the line changes at once.
-import { LANGUAGES, type OverlaySettings } from '../../../shared/types'
+import { languageName } from '../../../shared/languages'
+import { type OverlaySettings } from '../../../shared/types'
 import { LEVELS } from './words'
 
 export function LevelMeter({ settings }: { settings: OverlaySettings }): React.JSX.Element {
-  const language = LANGUAGES[settings.language]
+  const language = languageName(settings.language)
   const current = LEVELS.find((item) => item.level === settings.level)!
   return (
     <div className="meter" role="radiogroup" aria-label={`How much ${language} in each line`} title={`${current.name} ${language}: swaps in ${current.adds}`}>

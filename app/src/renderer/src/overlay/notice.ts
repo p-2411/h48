@@ -1,6 +1,7 @@
 // What the strip says about the state of things. Normal running says nothing (a dot, with these
 // words on hover); words show on the strip only when the learner can do something about it.
-import { LANGUAGES, type Language, type OverlayStatus } from '../../../shared/types'
+import { languageName } from '../../../shared/languages'
+import { type Language, type OverlayStatus } from '../../../shared/types'
 
 export type Notice = {
   text: string
@@ -10,7 +11,7 @@ export type Notice = {
 
 /** A notice the learner should see and can act on, or undefined when all is well. */
 export function actionable(status: OverlayStatus, language: Language): Notice | undefined {
-  const name = LANGUAGES[language]
+  const name = languageName(language)
   if (status.error) return { text: status.error }
   if (status.modelError) return { text: status.modelError }
   if (!status.trusted)
@@ -24,7 +25,7 @@ export function actionable(status: OverlayStatus, language: Language): Notice | 
     if (other.language !== 'other') {
       const found = other.language
       const what = other.from === 'captions' ? 'Captions are' : 'This video is'
-      return { text: `${what} in ${LANGUAGES[found]}`, action: { label: `Switch to ${found.toUpperCase()}`, run: () => window.duet.setLanguage(found) } }
+      return { text: `${what} in ${languageName(found)}`, action: { label: `Switch to ${found.toUpperCase()}`, run: () => window.duet.setLanguage(found) } }
     }
     if (other.from === 'captions') return { text: `These captions aren’t in ${name}. Choose ${name} in the player` }
     if (status.spokenLanguage) return { text: `Spoken in ${status.spokenLanguage.name}: the subtitles are a translation` }
@@ -36,7 +37,7 @@ export function actionable(status: OverlayStatus, language: Language): Notice | 
 /** Where things stand, for the dot's hover text. */
 export function quiet(status: OverlayStatus, language: Language): { text: string; on: boolean } {
   const browser = status.browser ?? 'your browser'
-  if (!status.url) return { text: `Open a ${LANGUAGES[language]} video on YouTube or Netflix`, on: false }
+  if (!status.url) return { text: `Open a ${languageName(language)} video on YouTube or Netflix`, on: false }
   if (status.source === 'transcript') return { text: `Following the transcript in ${browser}`, on: true }
   if (status.source === 'audio') return { text: `Listening to the video in ${browser}`, on: true }
   if (status.captions) return { text: `Reading ${status.siteName ?? 'the video'} in ${browser}`, on: true }

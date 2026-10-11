@@ -2,16 +2,9 @@
 import { createEmptyCard, fsrs, Rating } from 'ts-fsrs'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import {
-  BACKEND_INSTRUCTIONS,
-  LIVE_INSTRUCTIONS,
-  momentContext
-} from '../src/main/tutor/prompts.ts'
-import {
-  containsJapanese,
-  ENGLISH_HELP_DELAY_MS,
-  LIVE_REPLY_FALLBACK_MS
-} from '../src/renderer/src/tutor/language.ts'
+import { backendInstructions, liveInstructions, momentContext } from '../src/main/tutor/prompts.ts'
+import { ENGLISH_HELP_DELAY_MS, LIVE_REPLY_FALLBACK_MS } from '../src/renderer/src/tutor/language.ts'
+import { LANGUAGE_CODES, languageModule, speaks } from '../src/shared/languages/index.ts'
 
 const now = Date.now()
 const outcomes = fsrs({ request_retention: 0.9 }).repeat(
@@ -40,22 +33,43 @@ const context = momentContext({
 
 if (!context.includes('そんなつもりじゃなかった。'))
   throw new Error('The selected line was not included in the live-session context.')
-if (!LIVE_INSTRUCTIONS.includes('free recall'))
-  throw new Error('The live tutor no longer asks for recall before revealing a card.')
-if (!BACKEND_INSTRUCTIONS.includes('explicit confirmation'))
-  throw new Error('The backend prompt no longer requires explicit confirmation for card writes.')
-if (!LIVE_INSTRUCTIONS.includes('every Japanese utterance'))
-  throw new Error('Duet no longer treats each Japanese learner turn as a practice attempt.')
-if (!LIVE_INSTRUCTIONS.includes('respond in English first'))
-  throw new Error('Duet no longer puts understandable English before a Japanese correction model.')
-if (!LIVE_INSTRUCTIONS.includes('Never silently consume a turn'))
-  throw new Error('Duet no longer guarantees a spoken response to each completed learner turn.')
-if (!LIVE_INSTRUCTIONS.includes('roughly 80%') || !LIVE_INSTRUCTIONS.includes('mora timing'))
-  throw new Error('Duet no longer gives Japanese its slower, pronunciation-specific speech policy.')
-if (!BACKEND_INSTRUCTIONS.includes('explicitly enabled Explore further'))
-  throw new Error('Saved learning history is no longer gated behind Explore further.')
-if (!containsJapanese('こんにちは') || containsJapanese('hello'))
-  throw new Error('Japanese reveal detection is not working.')
+// Every language gets the whole teaching policy, with its own speech and correction sections.
+for (const language of LANGUAGE_CODES) {
+  const { name, tutor } = languageModule(language)
+  const live = liveInstructions(language)
+  const backend = backendInstructions(language)
+  if (live.includes('${') || backend.includes('${'))
+    throw new Error(`${name}: a prompt has an unfilled placeholder.`)
+  if (!live.includes('free recall'))
+    throw new Error(`${name}: the live tutor no longer asks for recall before revealing a card.`)
+  if (!backend.includes('explicit confirmation'))
+    throw new Error(`${name}: the backend prompt no longer requires confirmation for card writes.`)
+  if (!live.includes(`every ${name} utterance`))
+    throw new Error(`${name}: Duet no longer treats each learner turn as a practice attempt.`)
+  if (!live.includes('respond in English first'))
+    throw new Error(`${name}: Duet no longer puts English before a correction model.`)
+  if (!live.includes('Never silently consume a turn'))
+    throw new Error(`${name}: Duet no longer answers each completed learner turn.`)
+  if (!live.includes('roughly 80%') || !tutor.speech.every((line) => live.includes(line)))
+    throw new Error(`${name}: the speech policy is missing its slower pace or its own pronunciation lines.`)
+  if (!tutor.corrections.every((line) => live.includes(line) && backend.includes(line)))
+    throw new Error(`${name}: the prompts are missing its correction focus.`)
+  if (!backend.includes('explicitly enabled Explore further'))
+    throw new Error(`${name}: saved learning history is no longer gated behind Explore further.`)
+  if (other(language).some((code) => live.includes(languageModule(code).name)))
+    throw new Error(`${name}: its prompt names another language.`)
+}
+function other(language) {
+  return LANGUAGE_CODES.filter((code) => code !== language)
+}
+
+// The Meaning button shows for turns in the language, not for English ones.
+const SAMPLES = { ja: 'こんにちは、元気？', ko: '안녕하세요, 잘 지냈어요?', es: '¿Qué tal? Estoy muy bien, gracias.' }
+for (const language of LANGUAGE_CODES) {
+  if (!SAMPLES[language]) throw new Error(`No reveal-detection sample for ${language}.`)
+  if (!speaks(language, SAMPLES[language]) || speaks(language, 'Hello, how are you doing today?'))
+    throw new Error(`${languageModule(language).name} reveal detection is not working.`)
+}
 if (ENGLISH_HELP_DELAY_MS < 5_000 || ENGLISH_HELP_DELAY_MS > 15_000)
   throw new Error('The automatic English-help delay is outside the learner-friendly range.')
 if (LIVE_REPLY_FALLBACK_MS < 1_000 || LIVE_REPLY_FALLBACK_MS > 3_000)

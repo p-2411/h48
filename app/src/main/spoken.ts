@@ -6,13 +6,12 @@
 import type { Delivery } from './ai/voice'
 import type { AudioSource } from './audio'
 import type { HearingNote } from '../shared/explain'
+import { languageNamed } from '../shared/languages'
 import type { Moment } from '../shared/moment'
-import type { Language } from '../shared/types'
 import type { Player } from './player'
 import type { Settings } from './settings'
 import type { Watcher } from './watcher'
 
-const LANGUAGES: Record<string, Language> = { spanish: 'es', japanese: 'ja', korean: 'ko' }
 // Lines tried per video before giving up (music, or speech that can't be made out).
 const TRIES = 3
 
@@ -69,7 +68,7 @@ export class SpokenLanguageCheck {
         }
         this.done.add(key)
         const name = delivery.spokenLanguage
-        watcher.noteSpokenLanguage({ language: LANGUAGES[name.toLowerCase()] ?? 'other', name })
+        watcher.noteSpokenLanguage({ language: languageNamed(name) ?? 'other', name })
       })
       .catch(() => undefined)
       .finally(() => (this.busy = false))

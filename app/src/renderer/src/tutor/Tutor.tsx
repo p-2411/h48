@@ -8,9 +8,9 @@ import type {
   TutorActionResult,
   TutorCard
 } from '../../../shared/tutor'
-import { LANGUAGES } from '../../../shared/types'
+import { languageModule, languageName, speaks } from '../../../shared/languages'
 import { DuetMascot } from './DuetMascot'
-import { containsJapanese, ENGLISH_HELP_DELAY_MS } from './language'
+import { ENGLISH_HELP_DELAY_MS } from './language'
 import { useLiveTutor, type TranscriptSegment, type TutorLiveStatus } from './useLiveTutor'
 
 const STATUS: Record<TutorLiveStatus, string> = {
@@ -154,7 +154,7 @@ export function Tutor(): React.JSX.Element {
     if (
       !lastTurn ||
       lastTurn.role !== 'tutor' ||
-      !containsJapanese(lastTurn.text) ||
+      !(moment && speaks(moment.language, lastTurn.text)) ||
       revealed.has(lastTurn.id) ||
       helpOffered.current.has(lastTurn.id)
     )
@@ -164,10 +164,11 @@ export function Tutor(): React.JSX.Element {
       offerEnglishHelp()
     }, ENGLISH_HELP_DELAY_MS)
     return () => window.clearTimeout(timer)
-  }, [lastTurn, offerEnglishHelp, revealed])
+  }, [lastTurn, moment, offerEnglishHelp, revealed])
 
   useEffect(() => {
-    if (!lastTurn || lastTurn.role !== 'tutor' || !containsJapanese(lastTurn.text)) return
+    if (!lastTurn || lastTurn.role !== 'tutor' || !moment || !languageModule(moment.language).reading) return
+    if (!speaks(moment.language, lastTurn.text)) return
     const source = lastTurn.text
     const existing = pronunciations[lastTurn.id]
     if (existing?.source === source && (existing.loading || existing.text)) return
@@ -192,7 +193,7 @@ export function Tutor(): React.JSX.Element {
         )
     }, 550)
     return () => window.clearTimeout(timer)
-  }, [lastTurn, pronunciations])
+  }, [lastTurn, moment, pronunciations])
 
   if (!moment)
     return (
@@ -320,7 +321,7 @@ export function Tutor(): React.JSX.Element {
           <div className="context-details">
             {processed && <p className="english">{processed.translation}</p>}
             <p className="meta">
-              {LANGUAGES[moment.language]}
+              {languageName(moment.language)}
               {time(moment.video.position) && ` · ${time(moment.video.position)}`}
             </p>
             {moment.earlier.length > 0 && (
@@ -345,7 +346,7 @@ export function Tutor(): React.JSX.Element {
             <div>
               <h2>Talk with Duet</h2>
               <p>
-                Speak naturally. Duet corrects meaningful Japanese mistakes, models clear native
+                Speak naturally. Duet corrects meaningful {languageName(moment.language)} mistakes, models clear native
                 pronunciation, and lets you try again.
               </p>
             </div>
@@ -367,7 +368,7 @@ export function Tutor(): React.JSX.Element {
         )}
 
         {live.transcripts.map((turn) => {
-          const canReveal = turn.role === 'tutor' && containsJapanese(turn.text)
+          const canReveal = turn.role === 'tutor' && speaks(moment.language, turn.text)
           const isRevealed = revealed.has(turn.id)
           const translation = translations[turn.id]
           const pronunciation = pronunciations[turn.id]
@@ -391,11 +392,11 @@ export function Tutor(): React.JSX.Element {
                   </button>
                 )}
               </header>
-              <p className="turn-text" lang={canReveal ? 'ja' : undefined}>
+              <p className="turn-text" lang={canReveal ? moment.language : undefined}>
                 {turn.text}
               </p>
               {canReveal && pronunciation?.text && (
-                <p className="turn-pronunciation" aria-label="Japanese pronunciation">
+                <p className="turn-pronunciation" aria-label={`${languageName(moment.language)} pronunciation`}>
                   {pronunciation.text}
                 </p>
               )}
@@ -428,7 +429,7 @@ export function Tutor(): React.JSX.Element {
                 ×
               </button>
             </div>
-            <p className="card-expression" lang="ja">
+            <p className="card-expression" lang={card.language}>
               {card.expression}
             </p>
             <p>{card.meaning}</p>
@@ -462,7 +463,7 @@ export function Tutor(): React.JSX.Element {
         {pending?.kind === 'save-card' && (
           <section className="pending-action" aria-label="Confirm card save">
             <span className="eyebrow">Confirm save</span>
-            <p className="card-expression" lang="ja">
+            <p className="card-expression" lang={moment.language}>
               {pending.draft.expression}
             </p>
             <p>{pending.draft.meaning}</p>
@@ -479,7 +480,7 @@ export function Tutor(): React.JSX.Element {
         {pending?.kind === 'review-card' && (
           <section className="pending-action" aria-label="Choose review rating">
             <span className="eyebrow">How well did you recall it?</span>
-            <p className="card-expression" lang="ja">
+            <p className="card-expression" lang={pending.card.language}>
               {pending.card.expression}
             </p>
             <div className="ratings">

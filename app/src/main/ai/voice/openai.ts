@@ -2,7 +2,8 @@
 // OpenAI's SDK.
 import OpenAI, { toFile } from 'openai'
 import { z } from 'zod'
-import { LANGUAGES, type Language } from '../../../shared/types'
+import { languageName } from '../../../shared/languages'
+import { type Language } from '../../../shared/types'
 import { ModelError, type AudioClip, type Delivery, type DeliveryListener, type SpeechToText, type TextToSpeech } from './types'
 
 const EXTENSIONS: Record<string, string> = { 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/wav': 'wav', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a' }
@@ -42,7 +43,7 @@ export class OpenAISpeechToText implements SpeechToText {
       const result = await this.client.audio.transcriptions.create(
         options.only
           ? { file, model: this.model, language, ...(options.before ? { prompt: options.before } : {}) }
-          : { file, model: this.model, prompt: `The speaker is an English speaker practising ${LANGUAGES[language]}.` },
+          : { file, model: this.model, prompt: `The speaker is an English speaker practising ${languageName(language)}.` },
         { signal }
       )
       return { text: result.text }
@@ -72,7 +73,7 @@ export class OpenAITextToSpeech implements TextToSpeech {
           model: this.model,
           voice: this.voice,
           input: text,
-          instructions: `Speak clearly and naturally, as a friendly ${LANGUAGES[language]} tutor.`,
+          instructions: `Speak clearly and naturally, as a friendly ${languageName(language)} tutor.`,
           response_format: 'mp3'
         },
         { signal }
@@ -99,7 +100,7 @@ export class OpenAIDeliveryListener implements DeliveryListener {
   }
 
   async describe(audio: AudioClip, line: { original: string; language: Language }, signal?: AbortSignal): Promise<Delivery | undefined> {
-    const name = LANGUAGES[line.language]
+    const name = languageName(line.language)
     try {
       // The audio models don't take a response schema, so the answer comes as a forced tool call.
       const response = await this.client.chat.completions.create(

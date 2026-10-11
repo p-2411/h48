@@ -5,7 +5,8 @@ import OpenAI from 'openai'
 import type { FunctionTool } from 'openai/resources/live/live'
 import type { Moment } from '../../shared/moment'
 import type { TutorSessionAnswer } from '../../shared/tutor'
-import { BACKEND_INSTRUCTIONS, LIVE_INSTRUCTIONS, momentContext } from './prompts'
+import { languageModule, languageName, type Language } from '../../shared/languages'
+import { backendInstructions, liveInstructions, momentContext } from './prompts'
 
 const pronunciationCache = new Map<string, string>()
 
@@ -36,7 +37,7 @@ const tools: FunctionTool[] = [
       properties: {
         query: {
           type: 'string',
-          description: 'Japanese expression, English meaning or learning target.'
+          description: 'Expression in the language being learnt, English meaning or learning target.'
         },
         limit: { type: 'integer', minimum: 1, maximum: 10 }
       },
@@ -147,8 +148,6 @@ export async function createLiveSession(
   if (!env.OPENAI_API_KEY)
     throw new Error('Add OPENAI_API_KEY to app/.env.local to start the voice tutor.')
   if (!sdp.trim() || sdp.length > 100_000) throw new Error('INVALID_SDP_OFFER')
-  if (moment.language !== 'ja')
-    throw new Error('The voice tutor currently supports Japanese practice only.')
 
   const client = new OpenAI({ apiKey: env.OPENAI_API_KEY })
   try {
@@ -157,7 +156,7 @@ export async function createLiveSession(
         model: 'gpt-live-1',
         store: false,
         audio: { output: { voice: env.DUET_LIVE_VOICE || 'marin' } },
-        instructions: LIVE_INSTRUCTIONS,
+        instructions: liveInstructions(moment.language),
         input: [
           {
             type: 'message',
@@ -183,7 +182,7 @@ export async function createLiveSession(
           type: 'responses',
           responses: {
             model: env.DUET_LIVE_BACKEND_MODEL || 'gpt-6-luna',
-            instructions: BACKEND_INSTRUCTIONS,
+            instructions: backendInstructions(moment.language),
             max_output_tokens: 1_200,
             parallel_tool_calls: false,
             reasoning: { effort: 'low' },
@@ -203,6 +202,7 @@ export async function createLiveSession(
 /** A short visual aid for the reveal button. It is never spoken automatically by GPT-Live. */
 export async function translateForLearner(
   text: string,
+  language: Language,
   env: NodeJS.ProcessEnv = process.env
 ): Promise<string> {
   const input = text.trim()
@@ -216,7 +216,7 @@ export async function translateForLearner(
       model: env.DUET_LIVE_BACKEND_MODEL || 'gpt-6-luna',
       store: false,
       instructions:
-        'Translate the Japanese Duet just spoke into concise, natural English for a learner. Return only the translation. Preserve uncertainty and tone; do not add notes, romanisation, labels or quotation marks.',
+        `Translate the ${languageName(language)} Duet just spoke into concise, natural English for a learner. Return only the translation. Preserve uncertainty and tone; do not add notes, romanisation, labels or quotation marks.`,
       input,
       max_output_tokens: 220,
       reasoning: { effort: 'low' }
@@ -229,32 +229,38 @@ export async function translateForLearner(
   }
 }
 
-/** A silent reading aid shown below Japanese transcript text; the voice never reads it by default. */
+/**
+ * A silent reading aid shown below transcript text in a language not written in Latin letters (its
+ * romanisation); the voice never reads it by default.
+ */
 export async function pronounceForLearner(
   text: string,
+  language: Language,
   env: NodeJS.ProcessEnv = process.env
 ): Promise<string> {
   const input = text.trim()
   if (!input || input.length > 2_000) throw new Error('INVALID_PRONUNCIATION_TEXT')
-  const cached = pronunciationCache.get(input)
+  const reading = languageModule(language).reading
+  if (!reading) throw new Error('NO_READING_NEEDED')
+  const key = `${language}:${input}`
+  const cached = pronunciationCache.get(key)
   if (cached) return cached
   if (!env.OPENAI_API_KEY)
-    throw new Error('Add OPENAI_API_KEY to app/.env.local to show Japanese pronunciation.')
+    throw new Error(`Add OPENAI_API_KEY to app/.env.local to show ${reading.name}.`)
 
   const client = new OpenAI({ apiKey: env.OPENAI_API_KEY })
   try {
     const response = await client.responses.create({
       model: env.DUET_LIVE_BACKEND_MODEL || 'gpt-6-luna',
       store: false,
-      instructions:
-        'Convert the Japanese text into readable Modified Hepburn romanisation for an English-speaking learner. Infer kanji readings from context. Use ordinary Latin letters, spaces and punctuation; write long vowels plainly (ou, uu) and doubled consonants accurately. Return only the romanisation. Do not translate, label, explain or add quotation marks.',
+      instructions: reading.instructions,
       input,
       max_output_tokens: 260,
       reasoning: { effort: 'low' }
     })
     const pronunciation = response.output_text.trim()
     if (!pronunciation) throw new Error('EMPTY_PRONUNCIATION')
-    pronunciationCache.set(input, pronunciation)
+    pronunciationCache.set(key, pronunciation)
     if (pronunciationCache.size > 200)
       pronunciationCache.delete(pronunciationCache.keys().next().value as string)
     return pronunciation

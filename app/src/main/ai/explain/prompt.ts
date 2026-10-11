@@ -4,12 +4,13 @@ import { z } from 'zod'
 import type { ChatMessage, Explanation } from '../../../shared/explain'
 import type { Moment } from '../../../shared/moment'
 import type { Delivery } from '../voice/types'
-import { LANGUAGES, type Language } from '../../../shared/types'
+import { languageName } from '../../../shared/languages'
+import { type Language } from '../../../shared/types'
 
 export const EXPLAIN_VERSION = 5
 
 export function explainInstructions(language: Language): string {
-  const name = LANGUAGES[language]
+  const name = languageName(language)
   return `You help an English speaker who is learning ${name} understand one line from a video they are watching, the way a friend who speaks both languages would: what it means here, how it comes across, and why it is said this way. You get the video's title when known, the lines before this one (oldest first, with translations when there are some), the line itself, its English translation when there is one, and sometimes notes on how the line was actually said, from someone who listened to the video's audio. You never get later lines.
 
 Read the line in its situation before answering: who is talking to whom, what just happened, and what the speaker wants. Use the earlier lines for this, not just the line on its own.
@@ -53,7 +54,7 @@ export const ExplanationOutputSchema = z.object({
 export type ExplanationOutput = z.infer<typeof ExplanationOutputSchema>
 
 export function replyInstructions(language: Language): string {
-  const name = LANGUAGES[language]
+  const name = languageName(language)
   return `You are Duet, chatting with an English speaker who is learning ${name} about one line from a video they are watching. You already explained the line to them; now answer their follow-up questions about it, like a friend who speaks both languages and teaches well.
 
 You get the video's title when known, the lines before this one (never later lines), the line and its translation, how it was said when someone listened to the audio, your explanation, and the conversation so far.

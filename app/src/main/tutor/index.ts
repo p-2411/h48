@@ -88,11 +88,11 @@ export class Tutor {
     })
     ipcMain.handle('tutor:translate', (event, text: string) => {
       this.assertTutor(event)
-      return translateForLearner(string(text, 'translation_text', 2_000))
+      return translateForLearner(string(text, 'translation_text', 2_000), this.moment?.language ?? 'ja')
     })
     ipcMain.handle('tutor:pronounce', (event, text: string) => {
       this.assertTutor(event)
-      return pronounceForLearner(string(text, 'pronunciation_text', 2_000))
+      return pronounceForLearner(string(text, 'pronunciation_text', 2_000), this.moment?.language ?? 'ja')
     })
     ipcMain.handle('tutor:execute-tool', (event, request: TutorToolRequest) => {
       this.assertTutor(event)

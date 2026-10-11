@@ -2,11 +2,11 @@
 // line), the two macOS permissions (each step's state live, so the learner sees it take), and what
 // the colours mean. Every choice can be changed later under ⚙ on the strip.
 import { useEffect, useState } from 'react'
-import { mixedLine } from '../../../shared/levels'
-import { LANGUAGES, type AudioPermission, type Language, type Level, type OverlaySettings, type OverlayStatus } from '../../../shared/types'
+import { joinTokens, mixedLine } from '../../../shared/levels'
+import { LANGUAGE_CODES, languageModule, languageName } from '../../../shared/languages'
+import { type AudioPermission, type Language, type Level, type OverlaySettings, type OverlayStatus } from '../../../shared/types'
 import { Words } from '../components/Words'
 import { JOBS, LEVELS } from '../overlay/words'
-import { SAMPLES } from './samples'
 
 const STEPS = ['Language', 'Level', 'Permissions', 'Colours'] as const
 // How often the permission states are read again while that step is open.
@@ -58,7 +58,7 @@ export function Welcome(): React.JSX.Element {
 
   if (!settings) return <main className="welcome" />
   const language = settings.language
-  const sample = SAMPLES[language]
+  const sample = languageModule(language).sample
   const setLanguage = (next: Language): void => {
     window.duet.setLanguage(next)
     setSettings({ ...settings, language: next })
@@ -89,10 +89,10 @@ export function Welcome(): React.JSX.Element {
           <>
             <h2>Which language are you learning?</h2>
             <div className="choices">
-              {(Object.keys(LANGUAGES) as Language[]).map((item) => (
+              {LANGUAGE_CODES.map((item) => (
                 <button key={item} type="button" className="choice" aria-pressed={language === item} onClick={() => setLanguage(item)}>
-                  <b>{LANGUAGES[item]}</b>
-                  <span lang={item}>{SAMPLES[item].source.map((token) => token.text + (token.space ? ' ' : '')).join('')}</span>
+                  <b>{languageName(item)}</b>
+                  <span lang={item}>{joinTokens(languageModule(item).sample.source)}</span>
                 </button>
               ))}
             </div>
@@ -101,8 +101,8 @@ export function Welcome(): React.JSX.Element {
 
         {STEPS[step] === 'Level' && (
           <>
-            <h2>How much {LANGUAGES[language]} in each line?</h2>
-            <p className="muted">Duet swaps some English words for {LANGUAGES[language]} ones. Start with a few; add more as they get easy.</p>
+            <h2>How much {languageName(language)} in each line?</h2>
+            <p className="muted">Duet swaps some English words for {languageName(language)} ones. Start with a few; add more as they get easy.</p>
             <div className="segment wide" role="group" aria-label="Level">
               {LEVELS.map((item) => (
                 <button key={item.level} type="button" aria-pressed={settings.level === item.level} onClick={() => setLevel(item.level)}>

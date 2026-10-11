@@ -2,6 +2,7 @@
 // carries transcripts and delegated tool calls. The API key remains in Electron's main process.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Moment } from '../../../shared/moment'
+import { languageName } from '../../../shared/languages'
 import { LIVE_REPLY_FALLBACK_MS } from './language'
 
 export type TutorLiveStatus =
@@ -74,6 +75,12 @@ export function useLiveTutor(moment?: Moment): {
   offerEnglishHelp: () => void
   enableExplore: () => void
 } {
+  // The language being learnt, by name, for the instructions sent during the session.
+  const name = languageName(moment?.language ?? 'ja')
+  const nameRef = useRef(name)
+  useEffect(() => {
+    nameRef.current = name
+  }, [name])
   const [status, setStatus] = useState<TutorLiveStatus>('idle')
   const [transcripts, setTranscripts] = useState<TranscriptSegment[]>([])
   const [error, setError] = useState<string>()
@@ -245,14 +252,14 @@ export function useLiveTutor(moment?: Moment): {
             event_id: `greeting-${crypto.randomUUID()}`,
             delegation_id: null,
             content:
-              'Greet the learner briefly in English as Duet. Refer naturally to the current Japanese phrase and ask whether they want to understand it or practise saying it. Do not search saved history unless Explore further has been enabled. Then pause and listen.'
+              `Greet the learner briefly in English as Duet. Refer naturally to the current ${nameRef.current} phrase and ask whether they want to understand it or practise saying it. Do not search saved history unless Explore further has been enabled. Then pause and listen.`
           })
           send({
             type: 'session.commentary.append',
             event_id: `welcome-${crypto.randomUUID()}`,
             delegation_id: null,
             content:
-              'Welcome the learner briefly as Duet and offer to understand or practise the current Japanese phrase.'
+              `Welcome the learner briefly as Duet and offer to understand or practise the current ${nameRef.current} phrase.`
           })
           break
         case 'session.input_transcript.delta':
@@ -267,7 +274,7 @@ export function useLiveTutor(moment?: Moment): {
               event_id: `reply-fallback-${crypto.randomUUID()}`,
               delegation_id: null,
               content:
-                "Respond aloud now to the learner's latest completed turn. Begin with a brief, warm acknowledgement that fits what they said. Then answer or continue the practice. If they attempted Japanese and made a meaningful error, give one actionable correction in English first, model the natural Japanese once, and invite a retry. If their meaning was unclear, say so in English and ask them to repeat. Never leave the turn unanswered."
+                `Respond aloud now to the learner's latest completed turn. Begin with a brief, warm acknowledgement that fits what they said. Then answer or continue the practice. If they attempted ${nameRef.current} and made a meaningful error, give one actionable correction in English first, model the natural ${nameRef.current} once, and invite a retry. If their meaning was unclear, say so in English and ask them to repeat. Never leave the turn unanswered.`
             })
             replyFallbackTimer.current = undefined
           }, LIVE_REPLY_FALLBACK_MS)
@@ -326,11 +333,6 @@ export function useLiveTutor(moment?: Moment): {
         (status === 'reconnecting' && !preserveConversation)
       )
         return
-      if (moment.language !== 'ja') {
-        setError('The hack voice tutor currently supports Japanese practice only.')
-        setStatus('error')
-        return
-      }
       manuallyEnded.current = false
       setError(undefined)
       if (!preserveConversation) {
@@ -457,14 +459,14 @@ export function useLiveTutor(moment?: Moment): {
       event_id: `pronunciation-${crypto.randomUUID()}`,
       delegation_id: null,
       content:
-        'The learner requested a focused pronunciation check. Ask them to say the current Japanese phrase. Listen to the live audio, then respond in English with one narrow, actionable observation about intelligibility, timing or clarity. If the audio is unsuitable, say so. Do not score their accent. Model the target naturally once and offer one retry.'
+        `The learner requested a focused pronunciation check. Ask them to say the current ${nameRef.current} phrase. Listen to the live audio, then respond in English with one narrow, actionable observation about intelligibility, timing or clarity. If the audio is unsuitable, say so. Do not score their accent. Model the target naturally once and offer one retry.`
     })
     send({
       type: 'session.commentary.append',
       event_id: `pronunciation-prompt-${crypto.randomUUID()}`,
       delegation_id: null,
       content:
-        'Ask the learner to say the current Japanese phrase once for the pronunciation check, then listen.'
+        `Ask the learner to say the current ${nameRef.current} phrase once for the pronunciation check, then listen.`
     })
   }, [send])
 
@@ -474,7 +476,7 @@ export function useLiveTutor(moment?: Moment): {
       event_id: `english-help-${crypto.randomUUID()}`,
       delegation_id: null,
       content:
-        'The learner has paused after your Japanese reply and has not revealed its English meaning. In one brief English sentence, ask whether they want the meaning, a slower repetition, or a small hint. Do not imply that pausing was a failure. Then listen.'
+        `The learner has paused after your ${nameRef.current} reply and has not revealed its English meaning. In one brief English sentence, ask whether they want the meaning, a slower repetition, or a small hint. Do not imply that pausing was a failure. Then listen.`
     })
   }, [send])
 

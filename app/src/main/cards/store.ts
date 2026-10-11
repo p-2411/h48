@@ -12,6 +12,7 @@ import type {
   CardSource,
   SaveResult
 } from '../../shared/cards'
+import { LANGUAGE_CODES } from '../../shared/languages'
 import { database, transaction } from '../store/db'
 import { ratingName, revive, Scheduler, SCHEDULER_VERSION, serialize, stateName } from './scheduler'
 
@@ -333,7 +334,7 @@ const CardRowSchema = z.object({
   id: nonEmpty,
   revision: integer.min(1),
   type: z.enum(['understand', 'use']),
-  language: z.enum(['es', 'ja', 'ko']),
+  language: z.enum(LANGUAGE_CODES),
   expression: nonEmpty,
   reading: optionalText,
   meaning: nonEmpty,
