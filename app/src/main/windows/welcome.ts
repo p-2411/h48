@@ -1,4 +1,4 @@
-// The first-run window: what Duet does, the language and level, and the two permissions, before
+// The first-run window: what Duet does, the language and level, and (on macOS) the two permissions, before
 // the first video.
 import { BrowserWindow } from 'electron'
 import { loadPage, webPreferences } from './load'

@@ -1,6 +1,7 @@
-// The first run, in four short steps: the language, how much of it in each line (shown on a sample
-// line), the two macOS permissions (each step's state live, so the learner sees it take), and what
-// the colours mean. Every choice can be changed later under ⚙ on the strip.
+// The first run, in short steps: the language, how much of it in each line (shown on a sample line),
+// on macOS the two permissions (each one's state live, so the learner sees it take), and what the
+// colours mean. Windows asks for no permissions, so it skips that step. Every choice can be changed
+// later under ⚙ on the strip.
 import { useEffect, useState } from 'react'
 import { joinTokens, mixedLine } from '../../../shared/levels'
 import { LANGUAGE_CODES, languageModule, languageName } from '../../../shared/languages'
@@ -8,7 +9,9 @@ import { type AudioPermission, type Language, type Level, type OverlaySettings, 
 import { Words } from '../components/Words'
 import { JOBS, LEVELS } from '../overlay/words'
 
-const STEPS = ['Language', 'Level', 'Permissions', 'Colours'] as const
+const STEPS = (['Language', 'Level', 'Permissions', 'Colours'] as const).filter(
+  (step) => step !== 'Permissions' || window.duet.welcome.asksPermissions
+)
 // How often the permission states are read again while that step is open.
 const CHECK_MS = 1500
 

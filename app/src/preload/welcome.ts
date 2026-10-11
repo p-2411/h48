@@ -2,6 +2,8 @@
 import { ipcRenderer } from 'electron'
 
 export const welcomeApi = {
+  /** Only macOS asks for permissions (Accessibility, System Audio Recording); Windows needs none. */
+  asksPermissions: process.platform === 'darwin',
   /** Opens the System Settings pane where a permission is switched on. */
   openSettings: (pane: 'accessibility' | 'audio') => ipcRenderer.send('welcome:open-settings', pane),
   /** Asks for System Audio Recording (the macOS prompt shows the first time only). */
