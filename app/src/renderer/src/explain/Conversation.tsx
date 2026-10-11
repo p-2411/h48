@@ -4,7 +4,9 @@
 // when it ends its turns join the thread, so text picks up where voice left off. Card previews
 // (save, review) wait for the learner's click or answer; "Use my cards" opens saved cards to Duet.
 // Explain renders it with the line as its key, so a new line starts a new conversation (and a new
-// voice hook). The composer renders into `dock`, the page's slot below its scrolling part.
+// voice hook). The composer renders into `dock`, the page's slot below its scrolling part; the
+// mascot (thinking, listening, speaking) into `mascotSlot`, in the page's top bar, and Duet's typed
+// replies fly out of it.
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Language } from '../../../shared/languages'
@@ -58,12 +60,15 @@ export function Conversation({
   language,
   thread: bridge,
   dock,
+  mascotSlot,
   free = false
 }: {
   state: ConversationState
   language: Language
   thread: ThreadBridge
   dock: HTMLElement | null
+  /** Where the mascot goes: the page's top bar. */
+  mascotSlot: HTMLElement | null
   /** A free conversation (Talk): no line, and the cards open to Duet from the start. */
   free?: boolean
 }): React.JSX.Element {
@@ -72,7 +77,7 @@ export function Conversation({
   const box = useRef<HTMLTextAreaElement>(null)
   const end = useRef<HTMLDivElement>(null)
   const section = useRef<HTMLElement>(null)
-  const dockMascot = useRef<HTMLDivElement>(null)
+  const headMascot = useRef<HTMLDivElement>(null)
   const cards = useCardActions(free)
   const endButton = useVoiceHandoff(live, box, bridge.voiceTurns)
   const voiceOn = isVoiceOn(live.status)
@@ -125,10 +130,10 @@ export function Conversation({
       ? last.text
       : undefined
   const { result } = cards
-  // Duet's typed reply arrives: the mascot flies from the dock to become its picture.
+  // Duet's typed reply arrives: the mascot flies from the top bar to become its picture.
   useMascotFlight(
     last?.from === 'duet' && last.via === 'text' ? `c${state.chat.length - 1}` : undefined,
-    dockMascot,
+    headMascot,
     section,
     end
   )
@@ -228,20 +233,19 @@ export function Conversation({
         {cards.actionError && <p className="notice error">{cards.actionError}</p>}
       </div>
 
+      {mascotSlot &&
+        createPortal(
+          <div className="head-mascot" ref={headMascot}>
+            <Mascot
+              state={mascotState(live.status, !!state.replying || !!state.loading, cards.cheering, correcting)}
+              scale={0.16}
+            />
+          </div>,
+          mascotSlot
+        )}
       {dock &&
         createPortal(
           <div className="composer">
-            <div className="composer-mascot" ref={dockMascot}>
-              <Mascot
-                state={mascotState(
-                  live.status,
-                  !!state.replying || !!state.loading,
-                  cards.cheering,
-                  correcting
-                )}
-                scale={voiceOn ? 0.5 : 0.34}
-              />
-            </div>
             {isVoiceOn(live.status) ? (
               <VoiceBar live={live} status={live.status} endButton={endButton} />
             ) : (

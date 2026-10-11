@@ -60,8 +60,8 @@
 .voice-state.speaking i { background: #fff; box-shadow: 0 0 8px #fff; }
 .voice-state.working i, .voice-state.connecting i, .voice-state.reconnecting i, .voice-state.requesting-microphone i { background: #ff9f0a; }
 .btn.mic { padding: 7px 10px; }
-.composer-mascot { display: flex; justify-content: center; }
-.composer-mascot .duet-mascot { transition: width 0.4s var(--ease), height 0.4s var(--ease); }
+/* The mascot in the page's top bar (the panel's tabs row, Talk's title row). */
+.head-mascot { display: flex; align-items: center; }
 .pill.on { background: var(--fill); color: #fff; }
 .pill:disabled { cursor: default; }
 /* The composer, in the dock below the scrolling part of the tab (no backdrop blur: in the panel's
@@ -85,4 +85,3 @@
 .notices:empty { display: contents; }
 
 /* On a short panel the conversation needs the room more than the mascot does. */
-@media (max-height: 600px) { .composer-mascot { display: none; } }

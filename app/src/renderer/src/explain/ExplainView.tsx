@@ -39,11 +39,14 @@ function LineWithQuote({ text, quote }: { text: string; quote?: string }): React
 export function ExplainView({
   state,
   onReplay,
-  onRetry
+  onRetry,
+  mascotSlot
 }: {
   state: ExplainState
   onReplay: () => void
   onRetry: () => void
+  /** The panel's top bar, where the conversation's mascot goes. */
+  mascotSlot: HTMLElement | null
 }): React.JSX.Element {
   const [dock, setDock] = useState<HTMLDivElement | null>(null)
   const { moment, explanation, loading, stage, hearing, error } = state
@@ -154,7 +157,7 @@ export function ExplainView({
           {explanation && (
             <p className="faint">Written by AI ({explanation.model}). It can be wrong.</p>
           )}
-          <Conversation key={moment.takenAt} state={state} language={moment.language} thread={window.duet.explain} dock={dock} />
+          <Conversation key={moment.takenAt} state={state} language={moment.language} thread={window.duet.explain} dock={dock} mascotSlot={mascotSlot} />
         </div>
       </div>
       <div className="explain-dock" ref={setDock} />

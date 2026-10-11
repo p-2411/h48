@@ -14,6 +14,7 @@ export function TalkPage(): React.JSX.Element {
   const [language, setLanguage] = useState<Language>()
   const [error, setError] = useState<string>()
   const [dock, setDock] = useState<HTMLElement | null>(null)
+  const [mascotSlot, setMascotSlot] = useState<HTMLElement | null>(null)
   // A new conversation (New conversation) is a new Conversation, with its own voice session.
   const [round, setRound] = useState(0)
   const failed = useCallback((cause: unknown) => setError(say(cause, 'Could not reach Duet. Try again.')), [])
@@ -56,6 +57,7 @@ export function TalkPage(): React.JSX.Element {
     <main className="home-page home-talk">
       <div className="home-talk-head">
         <h1>Talk</h1>
+        <div className="head-slot" ref={setMascotSlot} />
         {thread && thread.chat.length > 0 && (
           <button type="button" className="btn quiet" onClick={startOver}>
             New conversation
@@ -72,7 +74,7 @@ export function TalkPage(): React.JSX.Element {
                 the cards you saved, and helps you say it better. Type, or press the mic to talk.
               </p>
             )}
-            <Conversation key={round} state={thread} language={language} thread={bridge} dock={dock} free />
+            <Conversation key={round} state={thread} language={language} thread={bridge} dock={dock} mascotSlot={mascotSlot} free />
           </>
         )}
       </div>

@@ -128,6 +128,9 @@
 .home-talk-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
+}
+/* Talk's title, then the mascot beside it; New conversation at the far end. */
+.home-talk-head .btn {
+  margin-left: auto;
 }

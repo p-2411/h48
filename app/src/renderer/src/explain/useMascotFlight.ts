@@ -1,17 +1,17 @@
-// When Duet's typed reply arrives, the mascot that was thinking in the dock flies to the reply and
-// becomes its picture. A copy of it moves and shrinks onto the picture (the mascot itself can't
-// leave the dock: the conversation's scrolling part would clip it), and the dock's mascot fades
-// back in behind it. People who ask for reduced motion see the picture without the flight.
+// When Duet's typed reply arrives, the mascot that was thinking in the top bar flies to the reply and
+// becomes its picture. A copy of it moves and grows onto the picture (the mascot itself can't leave
+// the top bar: the conversation's scrolling part would clip it), and the top bar's mascot fades back
+// in behind it. People who ask for reduced motion see the picture without the flight.
 import { useLayoutEffect, useRef, type RefObject } from 'react'
 import { reducedMotion } from '../components/motion'
 
 const FLIGHT_MS = 560
 const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)'
 
-/** Flies the mascot from `dock` to the picture of turn `turnId` when that turn is new. */
+/** Flies the mascot from `origin` (the top bar's) to the picture of turn `turnId` when that turn is new. */
 export function useMascotFlight(
   turnId: string | undefined,
-  dock: RefObject<HTMLElement | null>,
+  origin: RefObject<HTMLElement | null>,
   thread: RefObject<HTMLElement | null>,
   end: RefObject<HTMLElement | null>
 ): void {
@@ -20,7 +20,7 @@ export function useMascotFlight(
   useLayoutEffect(() => {
     if (!turnId || turnId === flown.current) return
     flown.current = turnId
-    const source = dock.current?.querySelector<HTMLElement>('.duet-mascot')
+    const source = origin.current?.querySelector<HTMLElement>('.duet-mascot')
     const avatar = thread.current?.querySelector<HTMLElement>(
       `[data-turn="${turnId}"] .turn-avatar`
     )
@@ -57,5 +57,5 @@ export function useMascotFlight(
     }
     flight.finished.then(land, land)
     return () => flight.cancel()
-  }, [turnId, dock, thread, end])
+  }, [turnId, origin, thread, end])
 }
