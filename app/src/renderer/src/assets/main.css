@@ -1,171 +1,91 @@
-@import './base.css';
+/* Duet overlay: a dark glass panel floating over video. Black and white, with one kind of colour:
+   the words, each glowing in the colour of its job. Same colours as useduet.io. */
+:root {
+  --panel: rgba(16, 16, 19, 0.86);
+  --line: rgba(255, 255, 255, 0.12);
+  --fg: #fff;
+  --fg-2: #d6d6d6;
+  --text-2: #a6a6a6;
+  --text-3: #767676;
+  --fill: rgba(118, 118, 128, 0.24);
+  --c-n: #4da3ff;
+  --c-v: #ff9f0a;
+  --c-a: #32d74b;
+  --c-p: #da8fff;
+  --c-x: #ff6482;
+  --c-g: #8a8a8e;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; background: transparent; overflow: hidden; }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid #fff; outline-offset: 2px; border-radius: 4px; }
 
-body {
+.panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  color: var(--fg);
+  overflow: hidden;
+}
+
+/* The bar is the handle for moving the window; its controls stay clickable. */
+.bar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background-image: url('./wavy-lines.svg');
-  background-size: cover;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 10px 16px;
+  border-bottom: 1px solid var(--line);
+  -webkit-app-region: drag;
   user-select: none;
 }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand svg { flex: none; }
+.status { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status i { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); flex: none; }
+.status.is-on i { background: #ff453a; box-shadow: 0 0 8px #ff453a; }
+.controls { display: flex; align-items: center; gap: 8px; -webkit-app-region: no-drag; }
+.segment { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--fill); }
+.segment button { min-width: 26px; padding: 3px 6px; border-radius: 6px; font-size: 12px; color: var(--fg-2); }
+.segment button[aria-pressed='true'] { background: #636366; color: #fff; font-weight: 500; }
+.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
+.switch { position: relative; width: 26px; height: 16px; border-radius: 8px; background: var(--fill); transition: background 0.2s; }
+.switch i { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: transform 0.25s var(--ease); }
+.toggle.is-on .switch { background: #fff; }
+.toggle.is-on .switch i { background: #121214; transform: translateX(10px); }
+.close { width: 22px; height: 22px; border-radius: 50%; font-size: 16px; line-height: 1; color: var(--text-2); }
+.close:hover { background: var(--fill); color: #fff; }
 
-code {
-  font-weight: 600;
-  padding: 3px 5px;
-  border-radius: 2px;
-  background-color: var(--color-background-mute);
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Menlo,
-    Consolas,
-    Liberation Mono,
-    monospace;
-  font-size: 85%;
-}
+/* The line. */
+.now { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 14px 20px 18px; min-height: 0; }
+.now p { margin: 0; }
+.mix { font-size: clamp(20px, 3.2vw, 30px); line-height: 1.3; letter-spacing: -0.015em; text-wrap: balance; }
+.mix.plain { color: var(--fg-2); }
+.source { font-size: clamp(15px, 2.1vw, 19px); line-height: 1.4; }
+.english { font-size: 14px; line-height: 1.45; color: var(--text-2); transition: filter 0.22s var(--ease), opacity 0.22s var(--ease); }
+.english.guess { filter: blur(6px); opacity: 0.7; cursor: help; }
+.english.guess:hover, .english.guess:focus-visible { filter: none; opacity: 1; }
+.pending { font-size: 13px; color: var(--text-3); }
+.building { font-size: 13px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.empty { font-size: 14px; color: var(--text-2); text-align: center; }
+.error { font-size: 12px; color: var(--c-x); }
 
-#root {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  margin-bottom: 80px;
-}
+/* Words glow a little in the colour of their job; glue words stay flat. */
+.w { --c: var(--fg); color: var(--c); border-radius: 6px; padding: 0 0.04em; text-shadow: 0 0 14px color-mix(in srgb, var(--c) 60%, transparent); }
+.w[data-t='n'] { --c: var(--c-n); }
+.w[data-t='v'] { --c: var(--c-v); }
+.w[data-t='a'] { --c: var(--c-a); }
+.w[data-t='p'] { --c: var(--c-p); }
+.w[data-t='x'] { --c: var(--c-x); }
+.w[data-t='g'] { --c: var(--c-g); text-shadow: none; }
+/* A word swapped into the other language: a soft tint and a thin border in its colour. */
+.mix .w.sw { padding: 0 0.18em; font-weight: 500; background: color-mix(in srgb, var(--c) 15%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent); }
 
-.logo {
-  margin-bottom: 20px;
-  -webkit-user-drag: none;
-  height: 128px;
-  width: 128px;
-  will-change: filter;
-  transition: filter 300ms;
-}
-
-.logo:hover {
-  filter: drop-shadow(0 0 1.2em #6988e6aa);
-}
-
-.creator {
-  font-size: 14px;
-  line-height: 16px;
-  color: var(--ev-c-text-2);
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
-.text {
-  font-size: 28px;
-  color: var(--ev-c-text-1);
-  font-weight: 700;
-  line-height: 32px;
-  text-align: center;
-  margin: 0 10px;
-  padding: 16px 0;
-}
-
-.tip {
-  font-size: 16px;
-  line-height: 24px;
-  color: var(--ev-c-text-2);
-  font-weight: 600;
-}
-
-.react {
-  background: -webkit-linear-gradient(315deg, #087ea4 55%, #7c93ee);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 700;
-}
-
-.ts {
-  background: -webkit-linear-gradient(315deg, #3178c6 45%, #f0dc4e);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 700;
-}
-
-.actions {
-  display: flex;
-  padding-top: 32px;
-  margin: -6px;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
-
-.action {
-  flex-shrink: 0;
-  padding: 6px;
-}
-
-.action a {
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-  border: 1px solid transparent;
-  text-align: center;
-  font-weight: 600;
-  white-space: nowrap;
-  border-radius: 20px;
-  padding: 0 20px;
-  line-height: 38px;
-  font-size: 14px;
-  border-color: var(--ev-button-alt-border);
-  color: var(--ev-button-alt-text);
-  background-color: var(--ev-button-alt-bg);
-}
-
-.action a:hover {
-  border-color: var(--ev-button-alt-hover-border);
-  color: var(--ev-button-alt-hover-text);
-  background-color: var(--ev-button-alt-hover-bg);
-}
-
-.versions {
-  position: absolute;
-  bottom: 30px;
-  margin: 0 auto;
-  padding: 15px 0;
-  font-family: 'Menlo', 'Lucida Console', monospace;
-  display: inline-flex;
-  overflow: hidden;
-  align-items: center;
-  border-radius: 22px;
-  background-color: #202127;
-  backdrop-filter: blur(24px);
-}
-
-.versions li {
-  display: block;
-  float: left;
-  border-right: 1px solid var(--ev-c-gray-1);
-  padding: 0 20px;
-  font-size: 14px;
-  line-height: 14px;
-  opacity: 0.8;
-  &:last-child {
-    border: none;
-  }
-}
-
-@media (max-width: 720px) {
-  .text {
-    font-size: 20px;
-  }
-}
-
-@media (max-width: 620px) {
-  .versions {
-    display: none;
-  }
-}
-
-@media (max-width: 350px) {
-  .tip,
-  .actions {
-    display: none;
-  }
-}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

@@ -1,0 +1,106 @@
+// Captions: runs the caption reader for this OS and turns the raw text it sees into finished lines.
+//
+// Each OS has its own reader in resources/bin (native/macos for the Mac, native/windows for
+// Windows), and both print the same JSON lines: status updates and caption text changes. The rest
+// of the app only sees CaptionStatus and finished lines, so it never needs to know which OS it is on.
+import { spawn, type ChildProcess } from 'child_process'
+import { EventEmitter } from 'events'
+import { existsSync } from 'fs'
+import { join } from 'path'
+import { app } from 'electron'
+
+export type CaptionStatus = {
+  /** The reader is running and has the OS permission it needs. */
+  trusted: boolean
+  /** Which browser and page the reader is looking at, when it has found one. */
+  browser?: string
+  url?: string
+  /** A caption area was found on that page. */
+  captions?: boolean
+  /** False when the player says this video has no captions at all. */
+  available?: boolean
+  /** Set when the reader could not start, for example on an OS without one yet. */
+  error?: string
+}
+
+export type CaptionLine = { text: string; url?: string; at: number }
+
+// A caption counts as finished when it has stopped changing for this long, or when the next
+// caption is not just a longer version of it (YouTube's auto captions grow word by word).
+const SETTLE_MS = 900
+
+const READERS: Partial<Record<NodeJS.Platform, string>> = {
+  darwin: 'caption-reader-macos',
+  win32: 'caption-reader-windows.exe'
+}
+
+export class CaptionSource extends EventEmitter {
+  private child?: ChildProcess
+  private pending?: CaptionLine
+  private timer?: NodeJS.Timeout
+  private lastSent = ''
+  private buffer = ''
+
+  start(): void {
+    const name = READERS[process.platform]
+    const path = name && join(app.getAppPath(), 'resources', 'bin', name).replace('app.asar', 'app.asar.unpacked')
+    if (!path || !existsSync(path)) {
+      this.emit('status', { trusted: false, error: `No caption reader for ${process.platform} yet.` } satisfies CaptionStatus)
+      return
+    }
+    this.child = spawn(path, [], { stdio: ['ignore', 'pipe', 'pipe'] })
+    this.child.stdout?.setEncoding('utf8')
+    this.child.stdout?.on('data', (chunk: string) => {
+      this.buffer += chunk
+      let newline: number
+      while ((newline = this.buffer.indexOf('\n')) >= 0) {
+        const raw = this.buffer.slice(0, newline).trim()
+        this.buffer = this.buffer.slice(newline + 1)
+        if (raw) this.handle(raw)
+      }
+    })
+    this.child.stderr?.on('data', (chunk) => console.error('[caption reader]', String(chunk).trim()))
+    this.child.on('exit', (code) => {
+      this.emit('status', { trusted: false, error: `Caption reader stopped (code ${code}).` } satisfies CaptionStatus)
+    })
+  }
+
+  stop(): void {
+    clearTimeout(this.timer)
+    this.child?.kill()
+    this.child = undefined
+  }
+
+  private handle(raw: string): void {
+    let message: { type?: string; text?: string; url?: string; at?: number } & CaptionStatus
+    try {
+      message = JSON.parse(raw)
+    } catch {
+      return
+    }
+    if (message.type === 'status') {
+      const { type: _type, ...status } = message
+      this.emit('status', status)
+      return
+    }
+    if (message.type !== 'caption') return
+    const text = (message.text ?? '').trim()
+    const line: CaptionLine = { text, url: message.url, at: message.at ?? Date.now() }
+    // Show what is on screen straight away; the finished line follows once it settles.
+    this.emit('live', line)
+    const previous = this.pending?.text ?? ''
+    if (previous && !text.startsWith(previous)) this.finish()
+    clearTimeout(this.timer)
+    this.pending = text ? line : undefined
+    if (text) this.timer = setTimeout(() => this.finish(), SETTLE_MS)
+  }
+
+  private finish(): void {
+    clearTimeout(this.timer)
+    const line = this.pending
+    this.pending = undefined
+    if (!line || !line.text || line.text === this.lastSent) return
+    this.lastSent = line.text
+    this.emit('line', line)
+  }
+}

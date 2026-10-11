@@ -1,0 +1,200 @@
+// Duet caption reader for macOS.
+//
+// Reads the caption text YouTube and Netflix draw over the video, through the macOS accessibility
+// layer, from Chromium browsers (Chrome, Arc, Edge, Brave). Browsers expose page text this way for
+// screen readers; Duet needs the Accessibility permission (System Settings > Privacy & Security >
+// Accessibility) to read it.
+//
+// Output: one JSON object per line on stdout, the same protocol as the Windows reader:
+//   {"type":"status","trusted":true,"browser":"Google Chrome","url":"https://…","captions":true}
+//   {"type":"caption","text":"…","url":"https://…","browser":"Google Chrome","at":1791701575123}
+// A status line is sent whenever any of its fields change; a caption line whenever the visible
+// caption text changes (an empty text means the caption cleared). Deciding when a line is finished
+// is left to the app.
+//
+// Build: swiftc -O native/macos/CaptionReader.swift -o resources/bin/caption-reader-macos
+
+import ApplicationServices
+import Cocoa
+
+// Chromium-based browsers whose web content is exposed with DOM class names.
+let browsers: [String: String] = [
+  "com.google.Chrome": "Google Chrome",
+  "com.google.Chrome.canary": "Google Chrome Canary",
+  "company.thebrowser.Browser": "Arc",
+  "com.microsoft.edgemac": "Microsoft Edge",
+  "com.brave.Browser": "Brave",
+]
+
+// Where each site draws its captions: the class on the caption container, and the class on the
+// pieces of caption text inside it (nil means "all text inside the container"). Chrome often
+// exposes caption text directly inside the caption window, without the inner span's class, so
+// both sites read all text in the container.
+// `captionsButton` is the player's CC button, whose label says when the video has no captions.
+struct Site { let host: String; let container: String; let segment: String?; let captionsButton: String? }
+let sites = [
+  Site(host: "youtube.com", container: "ytp-caption-window-container", segment: nil, captionsButton: "ytp-subtitles-button"),
+  Site(host: "netflix.com", container: "player-timedtext", segment: nil, captionsButton: nil),
+]
+
+let pollInterval = 0.15
+let searchBudget = 20000  // most nodes visited when looking for the caption container
+
+func emit(_ object: [String: Any]) {
+  guard let data = try? JSONSerialization.data(withJSONObject: object),
+        let line = String(data: data, encoding: .utf8) else { return }
+  print(line)
+  fflush(stdout)
+}
+
+func value(_ element: AXUIElement, _ name: String) -> AnyObject? {
+  var result: AnyObject?
+  return AXUIElementCopyAttributeValue(element, name as CFString, &result) == .success ? result : nil
+}
+func children(_ element: AXUIElement) -> [AXUIElement] { (value(element, kAXChildrenAttribute) as? [AXUIElement]) ?? [] }
+func role(_ element: AXUIElement) -> String { (value(element, kAXRoleAttribute) as? String) ?? "" }
+func classes(_ element: AXUIElement) -> [String] { (value(element, "AXDOMClassList") as? [String]) ?? [] }
+func url(_ element: AXUIElement) -> String? {
+  if let link = value(element, "AXURL") as? URL { return link.absoluteString }
+  return value(element, "AXURL") as? String
+}
+
+// Breadth-first search with a node budget, so a huge page can't stall a poll.
+func find(_ root: AXUIElement, budget: Int, where match: (AXUIElement) -> Bool) -> AXUIElement? {
+  var queue = [root]
+  var visited = 0
+  while !queue.isEmpty && visited < budget {
+    let element = queue.removeFirst()
+    visited += 1
+    if match(element) { return element }
+    queue.append(contentsOf: children(element))
+  }
+  return nil
+}
+
+// The caption's text: the segment pieces joined in order, or every static text inside.
+func captionText(_ container: AXUIElement, site: Site) -> String {
+  var pieces: [String] = []
+  func walk(_ element: AXUIElement, inSegment: Bool) {
+    let isSegment = site.segment.map { classes(element).contains($0) } ?? true
+    if role(element) == kAXStaticTextRole as String, inSegment || isSegment,
+       let text = value(element, kAXValueAttribute) as? String {
+      pieces.append(text)
+    }
+    for child in children(element) { walk(child, inSegment: inSegment || isSegment) }
+  }
+  walk(container, inSegment: site.segment == nil)
+  return pieces.joined(separator: " ")
+    .components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
+}
+
+// What the reader is looking at right now.
+struct Target { let app: AXUIElement; let browser: String; let page: AXUIElement; let url: String; let site: Site }
+
+var enabledApps = Set<pid_t>()
+func target() -> Target? {
+  let running = NSWorkspace.shared.runningApplications.filter { browsers[$0.bundleIdentifier ?? ""] != nil }
+  // Prefer the frontmost browser, then any other.
+  let ordered = running.sorted { a, _ in a.isActive }
+  for app in ordered {
+    let element = AXUIElementCreateApplication(app.processIdentifier)
+    if !enabledApps.contains(app.processIdentifier) {
+      // Chromium builds its web accessibility tree only when asked.
+      AXUIElementSetAttributeValue(element, "AXEnhancedUserInterface" as CFString, kCFBooleanTrue)
+      AXUIElementSetAttributeValue(element, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+      enabledApps.insert(app.processIdentifier)
+    }
+    let windows = (value(element, kAXWindowsAttribute) as? [AXUIElement]) ?? []
+    for window in windows {
+      guard let page = find(window, budget: 600, where: { role($0) == "AXWebArea" }),
+            let address = url(page),
+            let site = sites.first(where: { address.contains($0.host) }) else { continue }
+      return Target(app: element, browser: browsers[app.bundleIdentifier ?? ""] ?? "Browser", page: page, url: address, site: site)
+    }
+  }
+  return nil
+}
+
+var lastStatus: [String: AnyHashable] = [:]
+func status(_ fields: [String: AnyHashable]) {
+  guard fields != lastStatus else { return }
+  lastStatus = fields
+  emit(fields)
+}
+
+let trusted = AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary)
+if !trusted {
+  status(["type": "status", "trusted": false])
+}
+
+// --dump: print what the browser exposes inside the caption area, then exit. For finding where a
+// site keeps its caption text when the reader comes back empty.
+func dump(_ element: AXUIElement, depth: Int = 0) {
+  guard depth < 8 else { return }
+  let indent = String(repeating: "  ", count: depth)
+  let text = [kAXValueAttribute, kAXTitleAttribute, kAXDescriptionAttribute]
+    .compactMap { value(element, $0) as? String }.filter { !$0.isEmpty }
+  print("\(indent)\(role(element)) classes=\(classes(element)) text=\(text)")
+  for child in children(element) { dump(child, depth: depth + 1) }
+}
+if CommandLine.arguments.contains("--dump") {
+  guard AXIsProcessTrusted(), let current = target() else { print("No trusted target page found."); exit(1) }
+  guard let area = find(current.page, budget: searchBudget, where: { classes($0).contains(current.site.container) }) else {
+    print("No caption area on \(current.url)"); exit(1)
+  }
+  dump(area)
+  exit(0)
+}
+
+// False when the player says this video has no captions at all.
+func captionsAvailable(_ page: AXUIElement, site: Site) -> Bool {
+  guard let name = site.captionsButton,
+        let button = find(page, budget: searchBudget, where: { classes($0).contains(name) }) else { return true }
+  let label = [kAXDescriptionAttribute, kAXTitleAttribute, kAXHelpAttribute]
+    .compactMap { value(button, $0) as? String }.joined(separator: " ").lowercased()
+  return !label.contains("unavailable")
+}
+
+var container: AXUIElement?
+var containerURL = ""
+var available = true
+// Set once caption text has appeared on the current video; then the CC label is no longer asked.
+var seenTextOn = ""
+var lastText: String?
+var ticks = 0
+
+Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
+  guard AXIsProcessTrusted() else {
+    status(["type": "status", "trusted": false])
+    return
+  }
+  ticks += 1
+  // Looking up the page is the slow part; do it a few times a second, not every poll.
+  guard let current = target() else {
+    container = nil
+    status(["type": "status", "trusted": true, "captions": false])
+    if lastText != nil && lastText != "" { lastText = ""; emit(["type": "caption", "text": "", "at": Date().timeIntervalSince1970 * 1000]) }
+    return
+  }
+  if container == nil || containerURL != current.url || ticks % 20 == 0 {
+    container = find(current.page, budget: searchBudget) { classes($0).contains(current.site.container) }
+    containerURL = current.url
+    available = seenTextOn == current.url || captionsAvailable(current.page, site: current.site)
+  }
+  status(["type": "status", "trusted": true, "browser": current.browser, "url": current.url,
+          "captions": container != nil, "available": available])
+  let text = container.map { captionText($0, site: current.site) } ?? ""
+  // Caption text on screen proves the video has captions, whatever the CC button's label says.
+  if !text.isEmpty { seenTextOn = current.url }
+  if !text.isEmpty && !available {
+    available = true
+    status(["type": "status", "trusted": true, "browser": current.browser, "url": current.url,
+            "captions": true, "available": true])
+  }
+  if text != lastText {
+    lastText = text
+    emit(["type": "caption", "text": text, "url": current.url, "browser": current.browser, "at": Date().timeIntervalSince1970 * 1000])
+  }
+}
+
+RunLoop.main.run()
