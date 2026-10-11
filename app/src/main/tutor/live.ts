@@ -44,7 +44,7 @@ export const tools: FunctionTool[] = [
     type: 'function',
     name: 'search_cards',
     description:
-      'Search local learning cards only after the learner pressed Explore further and recall has been attempted.',
+      'Search local learning cards only after the learner opens their saved cards to Duet (the Use my cards button) and has attempted recall.',
     strict: true,
     parameters: {
       type: 'object',
@@ -63,7 +63,7 @@ export const tools: FunctionTool[] = [
     type: 'function',
     name: 'open_card',
     description:
-      'After Explore further is enabled, open a known local card and its stored nuance visibly.',
+      'After the learner opens their saved cards to Duet (the Use my cards button), open a known local card and its stored nuance visibly.',
     strict: true,
     parameters: {
       type: 'object',
@@ -161,7 +161,7 @@ export async function createLiveSession(
   env: NodeJS.ProcessEnv = process.env
 ): Promise<TutorSessionAnswer> {
   if (!env.OPENAI_API_KEY)
-    throw new Error('Add OPENAI_API_KEY to app/.env.local to start the voice tutor.')
+    throw new Error('Add OPENAI_API_KEY to app/.env.local to start voice.')
   if (!sdp.trim() || sdp.length > 100_000) throw new Error('INVALID_SDP_OFFER')
 
   const client = openai(env.OPENAI_API_KEY)
@@ -211,7 +211,7 @@ export async function createLiveSession(
     })
     return { sessionId: result.session.id, sdp: result.transport.sdp }
   } catch (error) {
-    throw safeLiveError(error, 'Could not start the voice tutor')
+    throw safeLiveError(error, 'Could not start voice')
   }
 }
 

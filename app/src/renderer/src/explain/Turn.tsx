@@ -1,12 +1,13 @@
 // One turn of the conversation about a line, typed or spoken. Duet's turns in the language being
 // learnt can show their English meaning (on request) and, for languages not written in Latin
-// letters, their romanisation. Memoised, so a streaming voice turn doesn't re-render the others.
+// letters, their romanisation. Memoised on plain values (the thread is rebuilt each render), so a
+// streaming voice turn doesn't re-render the others.
 import { memo } from 'react'
 import { languageName, speaks, type Language } from '../../../shared/languages'
 import { Inline } from '../components/Inline'
+import type { Aid } from './aids'
 
 export type TurnData = { id: string; from: 'learner' | 'duet'; text: string; via?: 'text' | 'voice' }
-export type Aid = { source: string; loading: boolean; text?: string; error?: string; failed?: boolean }
 
 function EyeIcon(): React.JSX.Element {
   return (
@@ -18,44 +19,48 @@ function EyeIcon(): React.JSX.Element {
 }
 
 export const Turn = memo(function Turn({
-  turn,
+  id,
+  from,
+  text,
+  via,
   language,
   revealed,
   meaning,
   reading,
   onReveal,
   onHide
-}: {
-  turn: TurnData
+}: TurnData & {
   language: Language
   revealed: boolean
   meaning?: Aid
   reading?: Aid
-  onReveal: (turn: TurnData) => void
+  onReveal: (id: string, text: string) => void
   onHide: (id: string) => void
 }): React.JSX.Element {
-  const canReveal = turn.from === 'duet' && speaks(language, turn.text)
+  const canReveal = from === 'duet' && speaks(language, text)
+  // After a failed meaning the button offers Meaning again, so one press tries again.
+  const showing = revealed && !meaning?.error
   return (
-    <article className={`turn ${turn.from}`}>
+    <article className={`turn ${from}`}>
       <header className="turn-heading">
         <span className="speaker">
-          {turn.from === 'learner' ? 'You' : 'Duet'}
-          {turn.via === 'voice' && <span className="via"> · spoken</span>}
+          {from === 'learner' ? 'You' : 'Duet'}
+          {via === 'voice' && <span className="via"> · spoken</span>}
         </span>
         {canReveal && (
           <button
             type="button"
-            className={`meaning-button${revealed ? ' is-on' : ''}`}
-            aria-label={revealed ? 'Hide English meaning' : 'Show English meaning'}
-            onClick={() => (revealed ? onHide(turn.id) : onReveal(turn))}
+            className={`meaning-button${showing ? ' is-on' : ''}`}
+            aria-label={showing ? 'Hide English meaning' : 'Show English meaning'}
+            onClick={() => (showing ? onHide(id) : onReveal(id, text))}
           >
             <EyeIcon />
-            {revealed ? 'Hide meaning' : 'Meaning'}
+            {showing ? 'Hide meaning' : 'Meaning'}
           </button>
         )}
       </header>
       <p className="turn-text" lang={canReveal ? language : undefined}>
-        <Inline text={turn.text} />
+        <Inline text={text} />
       </p>
       {canReveal && reading?.text && (
         <p className="turn-reading" aria-label={`${languageName(language)} in Latin letters`}>

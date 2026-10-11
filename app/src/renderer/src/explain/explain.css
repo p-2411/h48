@@ -52,3 +52,6 @@
 .more-explain { display: flex; flex-direction: column; gap: 12px; }
 .more-explain[open] summary { margin-bottom: 10px; }
 .more-explain .part + .part { margin-top: 12px; }
+/* Results and errors under the conversation; one live region, so each new one is read out. */
+.notices { display: flex; flex-direction: column; gap: 10px; }
+.notices:empty { display: contents; }

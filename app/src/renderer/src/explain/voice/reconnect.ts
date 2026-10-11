@@ -1,6 +1,6 @@
 // How many times Duet quietly restores a dropped voice session before it asks the learner.
 
-/** Automatic reconnects allowed in a row before Duet asks the learner to press Reconnect. */
+/** Automatic reconnects allowed in a row before voice stops and the panel offers Try voice again. */
 export const RECONNECT_LIMIT = 3
 
 /** A session that stays up this long counts as healthy, so its next drop starts a fresh count. */

@@ -3,7 +3,7 @@ import { createEmptyCard, fsrs, Rating } from 'ts-fsrs'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { backendInstructions, lineContext, liveInstructions, textInstructions } from '../src/main/tutor/prompts.ts'
-import { ENGLISH_HELP_DELAY_MS, LIVE_REPLY_FALLBACK_MS } from '../src/renderer/src/tutor/timing.ts'
+import { ENGLISH_HELP_DELAY_MS, LIVE_REPLY_FALLBACK_MS } from '../src/renderer/src/explain/voice/timing.ts'
 import { LANGUAGE_CODES, languageModule, speaks } from '../src/shared/languages/index.ts'
 import { joinTokens } from '../src/shared/levels.ts'
 
@@ -66,8 +66,8 @@ for (const language of LANGUAGE_CODES) {
   const text = textInstructions(language)
   if (text.includes('${') || !tutor.corrections.every((line) => text.includes(line)) || !text.includes('explicit confirmation'))
     throw new Error(`${name}: the text conversation's prompt is missing its corrections or its card rules.`)
-  if (!backend.includes('explicitly enabled Explore further'))
-    throw new Error(`${name}: saved learning history is no longer gated behind Explore further.`)
+  if (!backend.includes('only after the learner opens their saved cards to Duet (the Use my cards button)'))
+    throw new Error(`${name}: saved learning history is no longer gated behind Use my cards.`)
   const others = LANGUAGE_CODES.filter((code) => code !== language)
   if (others.some((code) => live.includes(languageModule(code).name)))
     throw new Error(`${name}: its prompt names another language.`)
@@ -87,11 +87,16 @@ if (LIVE_REPLY_FALLBACK_MS < 1_000 || LIVE_REPLY_FALLBACK_MS > 3_000)
 const tutorMain = readFileSync(resolve(import.meta.dirname, '../src/main/tutor/index.ts'), 'utf8')
 if (!tutorMain.includes("if (!this.exploreEnabled) throw new Error('EXPLORE_REQUIRED')"))
   throw new Error(
-    'The trusted app process no longer blocks saved-history tools before Explore further.'
+    'The trusted app process no longer blocks saved-history tools before Use my cards.'
   )
+// Voice reads "Use my cards" from the context it starts with, as text does with each message.
+if (!tutorMain.includes('createLiveSession(offer.sdp, { ...this.context, exploreEnabled: this.exploreEnabled })'))
+  throw new Error('Voice no longer learns that the learner opened their saved cards to Duet.')
+if (!lineContext({ moment: { language: 'ja', line: { id: 1, original: 'x', at: now, state: 'pending' }, earlier: [], video: { site: 'youtube', url: 'fixture:x' }, takenAt: now }, exploreEnabled: true }).includes('savedCardsOpenToDuet'))
+  throw new Error('The line context no longer says the saved cards are open to Duet.')
 
 const liveHook = readFileSync(
-  resolve(import.meta.dirname, '../src/renderer/src/tutor/useLiveTutor.ts'),
+  resolve(import.meta.dirname, '../src/renderer/src/explain/voice/useLiveTutor.ts'),
   'utf8'
 )
 if (

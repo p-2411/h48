@@ -1,8 +1,9 @@
 // Browser-side GPT-Live transport. WebRTC carries microphone/model audio while the data channel
 // carries transcripts and delegated tool calls. The API key remains in Electron's main process.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Moment } from '../../../shared/moment'
-import { languageName } from '../../../shared/languages'
+import type { Moment } from '../../../../shared/moment'
+import { languageName } from '../../../../shared/languages'
+import { say } from '../../components/errors'
 import { LIVE_REPLY_FALLBACK_MS } from './timing'
 import { nextReconnectAttempt, RECONNECT_LIMIT } from './reconnect'
 
@@ -17,6 +18,20 @@ export type TutorLiveStatus =
   | 'ending'
   | 'ended'
   | 'error'
+
+/** Voice is on: the panel shows the voice bar in place of the message box. */
+export type VoiceOnStatus = Exclude<TutorLiveStatus, 'idle' | 'ended' | 'error'>
+
+export function isVoiceOn(status: TutorLiveStatus): status is VoiceOnStatus {
+  return status !== 'idle' && status !== 'ended' && status !== 'error'
+}
+
+/** The session is up, so its controls (mute, check pronunciation) work. */
+export function isConnected(status: TutorLiveStatus): boolean {
+  return status === 'listening' || status === 'speaking' || status === 'working'
+}
+
+export type LiveTutor = ReturnType<typeof useLiveTutor>
 
 export type TranscriptSegment = {
   id: string
@@ -42,10 +57,12 @@ type LiveEvent = {
 const PLAYBACK_BLOCKED =
   'Duet is speaking, but your system blocked playback. Press Hear Duet to retry.'
 
-function message(error: unknown): string {
-  if (error instanceof DOMException && error.name === 'NotAllowedError')
-    return 'Microphone access was denied. Allow it in system settings, then try again.'
-  return error instanceof Error ? error.message : 'The voice tutor could not start.'
+const MICROPHONE_DENIED =
+  'Duet can’t use the microphone. Allow it in your system settings, then try voice again.'
+
+/** The browser refused the microphone: only the learner can change that, in system settings. */
+function microphoneDenied(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'NotAllowedError'
 }
 
 function waitForIce(connection: RTCPeerConnection): Promise<void> {
@@ -66,6 +83,8 @@ export function useLiveTutor(moment?: Moment): {
   status: TutorLiveStatus
   transcripts: TranscriptSegment[]
   error?: string
+  /** The last start failed because the microphone was refused. */
+  microphoneBlocked: boolean
   muted: boolean
   tutorMuted: boolean
   speakerBlocked: boolean
@@ -77,7 +96,6 @@ export function useLiveTutor(moment?: Moment): {
   retryTutorAudio: () => void
   requestPronunciationCheck: () => void
   offerEnglishHelp: () => void
-  enableExplore: () => void
 } {
   // The language being learnt, by name, for the instructions sent during the session. A session
   // can't start without a moment, so the neutral fallback is never sent.
@@ -89,6 +107,7 @@ export function useLiveTutor(moment?: Moment): {
   const [status, setStatus] = useState<TutorLiveStatus>('idle')
   const [transcripts, setTranscripts] = useState<TranscriptSegment[]>([])
   const [error, setError] = useState<string>()
+  const [microphoneBlocked, setMicrophoneBlocked] = useState(false)
   const [muted, setMuted] = useState(false)
   const [tutorMuted, setTutorMuted] = useState(false)
   const [speakerBlocked, setSpeakerBlocked] = useState(false)
@@ -103,7 +122,6 @@ export function useLiveTutor(moment?: Moment): {
   const outputSettledTimer = useRef<number | undefined>(undefined)
   const reconnectTimer = useRef<number | undefined>(undefined)
   const disconnectTimer = useRef<number | undefined>(undefined)
-  const activeMoment = useRef<number | undefined>(undefined)
   const reconnectAttempts = useRef(0)
   // When the current session said it started, so a long healthy session earns fresh reconnects.
   const healthySince = useRef<number | undefined>(undefined)
@@ -148,7 +166,7 @@ export function useLiveTutor(moment?: Moment): {
     )
     reconnectAttempts.current = attempt
     if (attempt > RECONNECT_LIMIT) {
-      setError('Duet could not restore the voice connection. Press Reconnect to try again.')
+      setError('Duet could not restore the voice connection. Try voice again when you’re ready.')
       release('error')
       return
     }
@@ -175,21 +193,6 @@ export function useLiveTutor(moment?: Moment): {
     },
     [release]
   )
-
-  useEffect(() => {
-    const next = moment?.takenAt
-    if (activeMoment.current !== undefined && activeMoment.current !== next) {
-      manuallyEnded.current = true
-      window.clearTimeout(reconnectTimer.current)
-      reconnectTimer.current = undefined
-      release('ended')
-      // The old conversation was about the old phrase.
-      setTranscripts([])
-      setUsageSeconds(0)
-      setError(undefined)
-    }
-    activeMoment.current = next
-  }, [moment?.takenAt, release])
 
   const appendTranscript = useCallback(
     (role: TranscriptSegment['role'], delta: string, startMs: number, endMs: number): void => {
@@ -343,7 +346,7 @@ export function useLiveTutor(moment?: Moment): {
           else reconnect()
           break
         case 'error':
-          setError(event.error?.message || 'The voice session reported an error.')
+          setError(say(event.error?.message, 'Voice stopped because of an error. Try voice again.'))
           release('error')
           break
       }
@@ -362,12 +365,13 @@ export function useLiveTutor(moment?: Moment): {
         return
       manuallyEnded.current = false
       setError(undefined)
+      setMicrophoneBlocked(false)
       if (!preserveConversation) {
         setTranscripts([])
         setUsageSeconds(0)
       }
       handledCalls.current.clear()
-      // End, a new moment or a reconnect releases the session while this attempt may still be
+      // End, leaving the line or a reconnect releases the session while this attempt may still be
       // waiting. After each wait, an outdated attempt stops its own microphone and connection.
       const run = generation.current
       const stale = (): boolean => generation.current !== run
@@ -423,7 +427,7 @@ export function useLiveTutor(moment?: Moment): {
           try {
             handleEvent(JSON.parse(String(data)) as LiveEvent)
           } catch {
-            setError('The voice tutor sent an unreadable event.')
+            setError('Voice stopped: Duet sent something the app could not read.')
             release('error')
           }
         })
@@ -442,7 +446,8 @@ export function useLiveTutor(moment?: Moment): {
       } catch (cause) {
         // A released attempt fails as its connection closes; that isn't the learner's problem.
         if (stale()) return abandon()
-        setError(message(cause))
+        setMicrophoneBlocked(microphoneDenied(cause))
+        setError(microphoneDenied(cause) ? MICROPHONE_DENIED : say(cause, 'Voice could not start.'))
         release('error')
       }
     },
@@ -500,16 +505,6 @@ export function useLiveTutor(moment?: Moment): {
     playSpeaker()
   }, [playSpeaker])
 
-  const enableExplore = useCallback((): void => {
-    send({
-      type: 'session.instructions.append',
-      event_id: `explore-${crypto.randomUUID()}`,
-      delegation_id: null,
-      content:
-        'The learner explicitly enabled Explore further. You may now search saved cards and earlier encounters when relevant. First ask them to blurt what they remember; only then search and open the best matching card with its stored nuance. Do not dump unrelated history.'
-    })
-  }, [send])
-
   const requestPronunciationCheck = useCallback((): void => {
     send({
       type: 'session.instructions.append',
@@ -541,6 +536,7 @@ export function useLiveTutor(moment?: Moment): {
     status,
     transcripts,
     error,
+    microphoneBlocked,
     muted,
     tutorMuted,
     speakerBlocked,
@@ -551,7 +547,6 @@ export function useLiveTutor(moment?: Moment): {
     toggleTutorAudio,
     retryTutorAudio,
     requestPronunciationCheck,
-    offerEnglishHelp,
-    enableExplore
+    offerEnglishHelp
   }
 }

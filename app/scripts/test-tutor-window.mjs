@@ -4,8 +4,8 @@ import {
   HEALTHY_SESSION_MS,
   nextReconnectAttempt,
   RECONNECT_LIMIT
-} from '../src/renderer/src/tutor/reconnect.ts'
-import { TURN_SETTLE_MS } from '../src/renderer/src/tutor/timing.ts'
+} from '../src/renderer/src/explain/voice/reconnect.ts'
+import { TURN_SETTLE_MS } from '../src/renderer/src/explain/voice/timing.ts'
 
 const now = 1_000_000
 

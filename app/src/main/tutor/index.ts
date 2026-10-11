@@ -120,7 +120,8 @@ export class Tutor {
       if (!this.context) throw new Error('Open Explain on a line before starting voice.')
       if (typeof offer?.sdp !== 'string') throw new Error('INVALID_SDP_OFFER')
       this.player.hold('tutor')
-      return createLiveSession(offer.sdp, this.context)
+      // Voice reads "Use my cards" from its context when it starts (the button is hidden in voice).
+      return createLiveSession(offer.sdp, { ...this.context, exploreEnabled: this.exploreEnabled })
     })
     ipcMain.on('tutor:voice-ended', (event) => {
       if (this.isTutor(event.sender)) this.player.release('tutor')
@@ -383,7 +384,7 @@ export class Tutor {
     const result: TutorActionResult = {
       actionId,
       kind: 'reviewed-card',
-      message: `Review saved as ${rating}.`,
+      message: `Review saved: ${rating[0].toUpperCase()}${rating.slice(1)}.`,
       card
     }
     this.send('tutor:action-result', result)
