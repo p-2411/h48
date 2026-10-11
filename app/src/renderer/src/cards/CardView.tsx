@@ -18,14 +18,20 @@ export function CardView({
 }): React.JSX.Element {
   const [editing, setEditing] = useState<CardContent>()
   const [error, setError] = useState<string>()
+  const [busy, setBusy] = useState(false)
 
+  // One action at a time: the buttons are off while it runs, so "Save as new card" pressed twice
+  // still makes one card.
   const run = async (work: () => Promise<unknown>): Promise<void> => {
+    setBusy(true)
     setError(undefined)
     try {
       await work()
       setEditing(undefined)
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'That did not work.')
+    } finally {
+      setBusy(false)
     }
   }
   const video = card.source.kind === 'video' ? card.source.moment : undefined
@@ -43,7 +49,7 @@ export function CardView({
             <button
               type="button"
               className="btn primary"
-              disabled={!cardReady(editing)}
+              disabled={busy || !cardReady(editing)}
               onClick={() => run(() => window.duet.cards.update(card.id, editing))}
             >
               Save
@@ -51,12 +57,17 @@ export function CardView({
             <button
               type="button"
               className="btn"
-              disabled={!cardReady(editing)}
+              disabled={busy || !cardReady(editing)}
               onClick={() => run(() => window.duet.cards.saveAsNew(card.id, editing))}
             >
               Save as new card
             </button>
-            <button type="button" className="btn quiet" onClick={() => setEditing(undefined)}>
+            <button
+              type="button"
+              className="btn quiet"
+              disabled={busy}
+              onClick={() => setEditing(undefined)}
+            >
               Cancel
             </button>
           </div>
@@ -176,7 +187,12 @@ export function CardView({
       )}
       {error && <p className="notice error">{error}</p>}
       <div className="row">
-        <button type="button" className="btn" onClick={() => setEditing(contentOf(card))}>
+        <button
+          type="button"
+          className="btn"
+          disabled={busy}
+          onClick={() => setEditing(contentOf(card))}
+        >
           Edit
         </button>
         {video && (
@@ -196,6 +212,7 @@ export function CardView({
         <button
           type="button"
           className="btn"
+          disabled={busy}
           onClick={() => run(() => window.duet.cards.setPaused(card.id, !card.paused))}
         >
           {card.paused ? 'Resume reviews' : 'Pause reviews'}
@@ -203,6 +220,7 @@ export function CardView({
         <button
           type="button"
           className="btn danger"
+          disabled={busy}
           onClick={() =>
             run(async () => {
               await window.duet.cards.remove(card.id)

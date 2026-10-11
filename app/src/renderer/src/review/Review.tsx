@@ -188,7 +188,7 @@ export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
           {queue.nextDueAt && <p className="muted">Next card is due {when(queue.nextDueAt)}.</p>}
           <div className="row">
             {queue.canUndo && (
-              <button type="button" className="btn quiet" onClick={() => act(() => window.duet.cards.undo())}>
+              <button type="button" className="btn quiet" disabled={busy} onClick={() => act(() => window.duet.cards.undo())}>
                 Undo last rating
               </button>
             )}
