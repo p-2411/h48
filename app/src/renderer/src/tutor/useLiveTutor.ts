@@ -292,11 +292,7 @@ export function useLiveTutor(moment?: Moment): {
           setStatus('listening')
           appendTranscript('learner', event.delta ?? '', event.start_ms ?? 0, event.end_ms ?? 0)
           // Tell main the learner just spoke, so the voice model can't confirm a save without them.
-          // The preload gains learnerTurn on another branch; until then this does nothing.
-          if (event.delta)
-            (
-              window.duet.tutor as typeof window.duet.tutor & { learnerTurn?: () => void }
-            ).learnerTurn?.()
+          if (event.delta) window.duet.tutor.learnerTurn()
           window.clearTimeout(replyFallbackTimer.current)
           replyFallbackTimer.current = window.setTimeout(() => {
             setStatus('working')
