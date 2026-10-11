@@ -1,7 +1,7 @@
 // One card: its content, where it came from, when it's due, its review history, and what can be
 // done with it. Editing keeps the schedule; a change to what is tested becomes a new card.
 // Shown with key={card.id}, so another card starts with a fresh view.
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CardDetail } from '../../../shared/cards'
 import { languageName } from '../../../shared/languages'
 import { say } from '../components/errors'
@@ -20,10 +20,30 @@ export function CardView({
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
+  // A button turned off while it runs loses focus (Pause, say); once it is back on, it gets focus
+  // back, unless focus has gone somewhere else meanwhile.
+  const pressed = useRef<HTMLElement | null>(null)
+  useEffect(() => {
+    if (busy || !pressed.current) return
+    if (pressed.current.isConnected && document.activeElement === document.body)
+      pressed.current.focus()
+    pressed.current = null
+  }, [busy])
+  // Leaving the editor (Cancel or a save) puts focus back on Edit, not at the top of the window.
+  const editButton = useRef<HTMLButtonElement>(null)
+  const wasEditing = useRef(false)
+  useEffect(() => {
+    if (wasEditing.current && !editing) editButton.current?.focus()
+    wasEditing.current = editing
+  }, [editing])
 
   // One action at a time: the buttons are off while it runs, so "Save as new card" pressed twice
-  // still makes one card.
+  // still makes one card. The ref also stops a second press that comes before the buttons turn off.
+  const running = useRef(false)
   const run = async (work: () => Promise<unknown>): Promise<void> => {
+    if (running.current) return
+    running.current = true
+    pressed.current = document.activeElement as HTMLElement | null
     setBusy(true)
     setError(undefined)
     try {
@@ -32,6 +52,7 @@ export function CardView({
     } catch (failure) {
       setError(say(failure, 'That did not work.'))
     } finally {
+      running.current = false
       setBusy(false)
     }
   }
@@ -132,17 +153,20 @@ export function CardView({
           <summary>
             Review history ({card.reviews.filter((review) => !review.undone).length})
           </summary>
-          {card.reviews.map((review) => (
-            <p key={review.id} className={review.undone ? 'faint' : undefined}>
-              {when(review.reviewedAt)} · {review.rating}
-              {review.undone ? ' (undone)' : ` · next ${when(review.dueAfter)}`}
-            </p>
-          ))}
+          <div className="history">
+            {card.reviews.map((review) => (
+              <p key={review.id} className={review.undone ? 'faint' : undefined}>
+                {when(review.reviewedAt)} · {review.rating}
+                {review.undone ? ' (undone)' : ` · next ${when(review.dueAfter)}`}
+              </p>
+            ))}
+          </div>
         </details>
       )}
       {error && <p className="notice error">{error}</p>}
       <div className="row">
         <button
+          ref={editButton}
           type="button"
           className="btn"
           disabled={busy}

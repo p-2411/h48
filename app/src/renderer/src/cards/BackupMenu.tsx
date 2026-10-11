@@ -1,6 +1,6 @@
 // The ⋯ menu in My cards: back up, restore and export. Each asks for a file; what happened goes to
 // `onNotice`, as an error when it failed. Choosing no file says nothing.
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { say } from '../components/errors'
 import { restoredText } from './backup'
 
@@ -12,6 +12,32 @@ export function BackupMenu({
   onNotice: (notice: Notice) => void
 }): React.JSX.Element {
   const [open, setOpen] = useState(false)
+  const wrap = useRef<HTMLDivElement>(null)
+  const toggle = useRef<HTMLButtonElement>(null)
+
+  // Closed by Escape or a choice, focus goes back to ⋯; closed by a click elsewhere, it stays
+  // where that click put it.
+  const close = (): void => {
+    setOpen(false)
+    toggle.current?.focus()
+  }
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return
+      setOpen(false)
+      toggle.current?.focus()
+    }
+    const onPointer = (event: PointerEvent): void => {
+      if (!wrap.current?.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('pointerdown', onPointer)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('pointerdown', onPointer)
+    }
+  }, [open])
 
   async function file<T>(
     work: () => Promise<T | undefined>,
@@ -26,8 +52,9 @@ export function BackupMenu({
   }
 
   return (
-    <div className="menu-wrap">
+    <div className="menu-wrap" ref={wrap}>
       <button
+        ref={toggle}
         type="button"
         className="btn quiet"
         aria-expanded={open}
@@ -37,7 +64,7 @@ export function BackupMenu({
         ⋯
       </button>
       {open && (
-        <div className="menu" role="menu" onClick={() => setOpen(false)}>
+        <div className="menu" role="menu" onClick={close}>
           <button
             type="button"
             role="menuitem"

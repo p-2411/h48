@@ -1,6 +1,7 @@
 // Review: the next due card, recall first, then reveal and rate. Ratings and what they mean are
 // always shown; the interval on each button comes from the scheduler and is exactly what saving
 // that rating will do.
+import { useEffect, useRef } from 'react'
 import type { Card, Rating } from '../../../shared/cards'
 import { clock, when } from '../components/time'
 import { ReviewSettings } from './ReviewSettings'
@@ -85,6 +86,11 @@ function Scene({ card }: { card: Card }): React.JSX.Element | null {
 export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
   const session = useReviewSession()
   const { queue, revealed, busy, error, act, settings } = session
+  // Reveal answer goes away once pressed, so focus moves on to the first rating.
+  const firstRating = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (revealed) firstRating.current?.focus()
+  }, [revealed])
 
   if (session.loadError)
     return (
@@ -122,9 +128,10 @@ export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
             <>
               <Answer card={next.card} />
               <div className="ratings">
-                {RATINGS.map(({ rating, label, meaning }) => (
+                {RATINGS.map(({ rating, label, meaning }, index) => (
                   <button
                     key={rating}
+                    ref={index === 0 ? firstRating : undefined}
                     type="button"
                     className={`btn rate ${rating}`}
                     title={meaning}
@@ -190,7 +197,11 @@ export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
       )}
 
       {settings && (
-        <ReviewSettings settings={settings} onChange={session.setSettings} onSave={session.saveSettings} />
+        <ReviewSettings
+          settings={settings}
+          onChange={session.setSettings}
+          onSave={session.saveSettings}
+        />
       )}
     </section>
   )

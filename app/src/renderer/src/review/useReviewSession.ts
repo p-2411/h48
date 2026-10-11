@@ -1,6 +1,6 @@
 // The review session behind the Review tab: the queue, whether the answer is shown, the settings,
 // and each action (rate, skip, undo), one at a time.
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReviewQueue, ReviewSettings } from '../../../shared/cards'
 import { say } from '../components/errors'
 import { mightHaveNoCards } from './queue'
@@ -44,8 +44,13 @@ export function useReviewSession(): ReviewSession {
     setRevealed(false)
   }, [])
 
+  // One action at a time (a double-click undoes one rating, not two). The buttons are off while
+  // busy; the ref also stops a second press that comes before they turn off.
+  const running = useRef(false)
   const act = useCallback(
     async (work: () => Promise<ReviewQueue>) => {
+      if (running.current) return
+      running.current = true
       setBusy(true)
       setError(undefined)
       try {
@@ -55,6 +60,7 @@ export function useReviewSession(): ReviewSession {
         // The queue may have moved on (a card no longer due); show where it is now.
         await window.duet.cards.reviewQueue().then(show, () => undefined)
       } finally {
+        running.current = false
         setBusy(false)
       }
     },

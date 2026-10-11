@@ -1,4 +1,5 @@
 // All cards: search, filters, and the list (newest first).
+import { useRef } from 'react'
 import type { CardQuery } from '../../../shared/cards'
 import { stateLabel } from './labels'
 import type { CardLibrary } from './useCardLibrary'
@@ -13,9 +14,16 @@ const SHOW: { value: NonNullable<CardQuery['show']>; label: string }[] = [
 export function CardList({ library }: { library: CardLibrary }): React.JSX.Element {
   const { cards, query, setQuery: onQuery, selected, setSelected: onSelect, error, retry } = library
   const filtered = !!(query.search || (query.show && query.show !== 'all') || query.type)
+  const search = useRef<HTMLInputElement>(null)
+  // The Clear button goes away with the filters, so focus goes to the (now empty) search.
+  const clear = (): void => {
+    onQuery({ show: 'all' })
+    search.current?.focus()
+  }
   return (
     <aside className="list">
       <input
+        ref={search}
         className="search"
         type="search"
         placeholder="Search expressions, meanings, notes"
@@ -53,7 +61,16 @@ export function CardList({ library }: { library: CardLibrary }): React.JSX.Eleme
           Loading…
         </p>
       ) : cards.length === 0 ? (
-        <p className="faint">{filtered ? 'No cards match.' : 'No cards yet. Save one from Explain.'}</p>
+        filtered ? (
+          <div className="faint row">
+            <span>No cards match.</span>
+            <button type="button" className="btn quiet" onClick={clear}>
+              Clear search and filters
+            </button>
+          </div>
+        ) : (
+          <p className="faint">No cards yet. Save one from Explain.</p>
+        )
       ) : (
         <ul>
           {cards.map((card) => (

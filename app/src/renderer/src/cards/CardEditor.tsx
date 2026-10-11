@@ -1,6 +1,6 @@
 // Editing a saved card. Save keeps its review schedule; Save as new card starts a new card (for a
 // change to what it tests). The caller runs the save and shows its error.
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CardContent, CardDetail } from '../../../shared/cards'
 import { CardForm } from './CardForm'
 import { cardReady, contentOf } from './content'
@@ -21,8 +21,11 @@ export function CardEditor({
   onCancel: () => void
 }): React.JSX.Element {
   const [value, setValue] = useState(() => contentOf(card))
+  // Opened from Edit: start in the first field (the expression).
+  const box = useRef<HTMLElement>(null)
+  useEffect(() => box.current?.querySelector<HTMLElement>('input, textarea')?.focus(), [])
   return (
-    <section className="detail">
+    <section className="detail" ref={box}>
       <CardForm value={value} onChange={setValue} lang={card.language}>
         <p className="faint">
           Save keeps the review schedule. If you changed what the card tests, save it as a new card
