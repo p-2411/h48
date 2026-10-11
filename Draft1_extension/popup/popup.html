@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Duet</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="../icons/icon48.png" width="36" height="36" alt="">
+    <div><b>Duet</b><small>Learn Spanish with YouTube</small></div>
+  </header>
+
+  <section class="group">
+    <label class="row"><span>Show Duet on YouTube</span><input type="checkbox" id="enabled" role="switch"></label>
+    <label class="row"><span>Guess first <small>Blur English until you hover</small></span><input type="checkbox" id="guess" role="switch"></label>
+  </section>
+
+  <section class="group">
+    <div class="row col">
+      <span>How much Spanish <small id="levelNote"></small></span>
+      <input type="range" id="level" min="1" max="5" step="1">
+    </div>
+    <div class="row">
+      <span>Panel position</span>
+      <select id="dock"><option value="side">Beside video</option><option value="below">Under video</option></select>
+    </div>
+  </section>
+
+  <section class="group stats">
+    <div><b id="saved">0</b><small>words saved</small></div>
+    <div><b id="known">0</b><small>words known</small></div>
+  </section>
+
+  <button id="demo" class="primary">Open the demo clip</button>
+  <p class="foot">Works on any video with captions. The demo clip (Sintel, CC BY) has full human translations.</p>
+  <script src="popup.js"></script>
+</body>
+</html>

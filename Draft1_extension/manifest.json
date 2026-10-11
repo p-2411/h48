@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Duet — Learn Spanish with YouTube",
+  "short_name": "Duet",
+  "version": "0.1.0",
+  "description": "Mixes Spanish into what you watch, colour-coded word by word, then quizzes you on the words you save.",
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": { "default_popup": "popup/popup.html", "default_title": "Duet", "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png" } },
+  "permissions": ["storage"],
+  "host_permissions": ["https://www.youtube.com/*"],
+  "content_scripts": [{
+    "matches": ["https://www.youtube.com/*"],
+    "js": ["src/lexicon.js", "src/data-sintel.js", "src/content.js"],
+    "run_at": "document_idle"
+  }],
+  "web_accessible_resources": [{ "resources": ["src/panel.css"], "matches": ["https://www.youtube.com/*"] }]
+}
