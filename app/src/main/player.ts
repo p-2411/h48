@@ -33,6 +33,12 @@ export class Player extends EventEmitter {
     return this.clock.playing
   }
 
+  /** Whether Duet has seen the play state at all. On Netflix it can't while the player's controls
+   * are hidden, until they first show. */
+  get stateKnown(): boolean {
+    return this.clock.known
+  }
+
   /** Seconds into the video, or undefined while unknown or during an ad. */
   now(): number | undefined {
     return this.clock.now()

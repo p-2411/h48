@@ -14,7 +14,8 @@ function statusText(status: OverlayStatus, language: Language): string {
   if (status.source === 'audio') return `Listening to the video in ${browser}`
   if (status.captionsMatch === false && status.captions) return `These captions aren’t in ${LANGUAGES[language]}. Choose ${LANGUAGES[language]} in the player`
   if (status.available === false) return 'This video has no captions. Try another video'
-  if (!status.captions) return 'Turn on captions in the player'
+  // Without captions, Duet starts listening to the video after a few seconds.
+  if (!status.captions) return 'Turn on captions, or Duet will listen'
   return `Reading ${status.siteName ?? 'the video'} in ${browser}`
 }
 

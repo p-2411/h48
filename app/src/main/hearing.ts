@@ -112,7 +112,9 @@ export class Hearing {
   /** Call every half second or so. */
   tick(now = Date.now()): void {
     const { watcher, player, audio, speech } = this.parts
-    const wanted = !!speech && watcher.needsHearing && player.playing
+    // Playing, or no way to tell (Netflix with its controls hidden): then the audio itself decides,
+    // as pieces with no speech in them are skipped before anything is transcribed.
+    const wanted = !!speech && watcher.needsHearing && (player.playing || !player.stateKnown)
     // Hearing a video with no captions is something the learner is plainly using Duet for, so this
     // is a fair moment to ask for the permission (once).
     if (wanted && audio.permission === 'not-asked' && !this.asked) {
