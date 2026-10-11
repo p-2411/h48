@@ -92,7 +92,7 @@ browser ──(accessibility)──▶ caption reader ──JSON lines──▶ 
 | `src/main/ai/voice/`                   | Voice models (speech↔text), same pattern.                                                                                            |
 | `src/main/windows/`, `ipc/`, `tray.ts` | Windows, each window's IPC, the menu bar icon.                                                                                       |
 | `src/preload/`                         | `window.duet`: one file per window or feature (`overlay`, `panel`, `explain`, `cards`, `tutor`, `welcome`).                          |
-| `src/renderer/`                        | One HTML page per window; `src/overlay/`, `src/panel/`, `src/tutor/`, `src/cards/`, `src/welcome/`, shared `components/`, `styles/`. |
+| `src/renderer/`                        | One HTML page per window; `src/overlay/`, `src/panel/`, `src/explain/` (with `voice/`), `src/cards/`, `src/welcome/`, `components/`. |
 | `src/shared/`                          | Types used by both sides: lines, settings, levels, `moment.ts`, `explain.ts`, `cards.ts`.                                            |
 
 ## Moments

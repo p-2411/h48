@@ -85,6 +85,8 @@ export function Conversation({ state, moment }: { state: ExplainState; moment: M
       {/* Results and errors are announced; the turns and the composer are not, so streaming voice
           doesn't flood a screen reader. Always rendered, so a new notice is read out. */}
       <div className="notices" role="status">
+        {/* Duet's typed reply, for screen readers (spoken voice turns are heard already). */}
+        <span className="sr-only">{last?.from === 'duet' && last.via === 'text' ? `Duet: ${last.text}` : ''}</span>
         {result && (
           <div className="notice row">
             <span>{result.message}</span>
