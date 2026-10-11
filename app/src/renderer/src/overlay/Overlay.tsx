@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'rea
 import type { SaveResult } from '../../../shared/cards'
 import { AnimatePresence, motion } from 'motion/react'
 import { ErrorBoundary } from '../components/ErrorBoundary'
-import { fadeUp, GLIDE, pop } from '../components/motion'
+import { EASE_IN, EASE_OUT, fadeUp, GLIDE, pop } from '../components/motion'
 import { Icon } from '../components/Icon'
 import { say } from '../components/errors'
 import { LevelSlider } from './LevelSlider'
@@ -251,9 +251,30 @@ export function Overlay(): React.JSX.Element {
         >
           <Icon name="mascot" filled />
         </button>
+        {/* Glowing behind the strip while a checkpoint is offered, and on while it's being done;
+            it glides with the strip. */}
+        <AnimatePresence>
+          {(offer || checkpoint) && (
+            <motion.div
+              key="glow"
+              className="strip-glow"
+              aria-hidden="true"
+              layout
+              transition={GLIDE}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { duration: 0.3, ease: EASE_OUT } }}
+              exit={{ opacity: 0, transition: { duration: 0.5, ease: EASE_IN } }}
+            >
+              {/* Its four layers: the stroke on the edge, then three glows, wider and softer (overlay.css). */}
+              <span className="glow-layer" />
+              <span className="glow-layer" />
+              <span className="glow-layer" />
+              <span className="glow-layer" />
+            </motion.div>
+          )}
+        </AnimatePresence>
         <motion.div
-          // Glowing while a checkpoint is offered, and on while it's being done. Its size glides to
-          // each line's (the radius is given here so it stays round while it does).
+          // Its size glides to each line's (the radius is given here so it stays round while it does).
           layout
           transition={GLIDE}
           style={{ borderRadius: 18 }}
