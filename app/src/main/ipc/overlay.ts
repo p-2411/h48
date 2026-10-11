@@ -8,6 +8,7 @@
 //   duet:save          stars a line, or one of its words (by pair) → SaveResult
 //   duet:unsave        undoes a star (deletes that card)
 //   duet:replay        goes back to a line in the video
+//   duet:hovered-word  the pointer rested on a word of a line (the watch log notes it)
 //   duet:play-on       plays the video that Wait is holding
 //   duet:solid         the pointer is over Duet (take clicks) or not (let them through to the video)
 //   duet:drag          the learner drags the subtitles: start, end (placement.ts moves the window)
@@ -30,6 +31,7 @@ type Actions = {
   saveLine: (lineId?: number, pair?: number) => SaveResult | undefined
   unsave: (cardId: string) => void
   replayLine: (lineId?: number) => void
+  hoveredWord: (lineId: number, text: string) => void
   playOn: () => void
   setShortcut: (keys: string) => string | undefined
   drag: (phase: 'start' | 'end') => void
@@ -71,6 +73,10 @@ export function connectOverlay(
   ipcMain.handle('duet:save', (_, lineId?: number, pair?: number) => actions.saveLine(lineId, pair))
   ipcMain.on('duet:unsave', (_, cardId: string) => actions.unsave(cardId))
   ipcMain.on('duet:replay', (_, lineId?: number) => actions.replayLine(lineId))
+  // From the page, so untrusted: hoveredWord checks the line and the word itself.
+  ipcMain.on('duet:hovered-word', (_, lineId: number, text: string) =>
+    actions.hoveredWord(lineId, text)
+  )
   ipcMain.on('duet:play-on', () => actions.playOn())
   // The window lets clicks through to the video except where Duet is drawn (see windows/overlay.ts).
   ipcMain.on('duet:solid', (_, solid: boolean) => {

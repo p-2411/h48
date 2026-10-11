@@ -1,13 +1,19 @@
 // The line on the strip: the mixed line, whose words answer back. Hovering a word shows its popup:
 // its partner in the other language, a star for the word and Explain for the line.
 // Hovering the strip shows the original and the English under the mixed line.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { joinTokens, mixedLine } from '../../../shared/levels'
 import type { OverlayLine, OverlaySettings, Token } from '../../../shared/types'
-import { JOBS, pairOf } from './words'
+import { hoverOn, JOBS, pairOf } from './words'
 import { Icon } from '../components/Icon'
 
+// A word counts as looked at (for the watch log) once the pointer rests on it this long; passing
+// over words on the way somewhere doesn't count.
+const HOVER_DWELL_MS = 300
+
 type Hover = { pair: number; job: Token['job']; left: number }
+/** A hover, with the line it was on (see hoverOn). */
+type LineHover = Hover & { lineId: number }
 
 function Tokens({
   tokens,
@@ -54,8 +60,19 @@ export function LineView({
   starred: (pair?: number) => boolean
   onStar: (pair?: number) => void
 }): React.JSX.Element {
-  const [hover, setHover] = useState<Hover>()
+  const [lineHover, setHover] = useState<LineHover>()
+  const hover = hoverOn(lineHover, line.id)
   const ready = line.state === 'ready' ? line.processed : undefined
+  const word = hover && ready ? pairOf(ready, hover.pair) : undefined
+  const hoveredText = word?.source
+  useEffect(() => {
+    if (!hoveredText) return
+    const timer = window.setTimeout(
+      () => window.duet.hoveredWord(line.id, hoveredText),
+      HOVER_DWELL_MS
+    )
+    return () => window.clearTimeout(timer)
+  }, [line.id, hoveredText])
   if (!ready)
     return (
       <div className="line">
@@ -64,7 +81,6 @@ export function LineView({
         </p>
       </div>
     )
-  const word = hover && pairOf(ready, hover.pair)
   return (
     <div className="line" onMouseLeave={() => setHover(undefined)}>
       {hover && word && (
@@ -95,7 +111,10 @@ export function LineView({
         </div>
       )}
       <p className="mix" lang={settings.level === 5 ? settings.language : undefined}>
-        <Tokens tokens={mixedLine(ready, settings.level)} onHover={setHover} />
+        <Tokens
+          tokens={mixedLine(ready, settings.level)}
+          onHover={(next) => setHover(next && { ...next, lineId: line.id })}
+        />
       </p>
       <div className="more">
         {settings.level < 5 && (

@@ -97,9 +97,9 @@ export class Watcher extends EventEmitter {
     return this._status
   }
 
-  /** The video open in the browser, if any. */
-  get currentVideo(): { site: Source['site']; id: string } | undefined {
-    return this.video && { site: this.video.source.site, id: this.video.id }
+  /** The video open in the browser, if any: its site, the site's id for it, URL and title. */
+  get currentVideo(): { site: Source['site']; id: string; url: string; title?: string } | undefined {
+    return this.video && { site: this.video.source.site, id: this.video.id, url: this.video.url, title: this.video.title }
   }
 
   /** Whether a line (read or heard) is in the language being learnt; lines that aren't are left

@@ -1,6 +1,6 @@
 // Duet's local database: one SQLite file in the app's data folder, using Node's built-in SQLite (no
 // native add-on to rebuild). Everything the learner keeps lives here: settings, cards and their
-// review history. Nothing is synced anywhere.
+// review history, and the watch log (src/main/watchlog). Nothing is synced anywhere.
 //
 // The schema only moves forward: each migration runs once, in order, and PRAGMA user_version
 // records how far a database has got. Never edit a migration that has shipped; add a new one.
@@ -60,6 +60,54 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX reviews_card ON reviews (card_id, reviewed_at);
   CREATE INDEX reviews_day ON reviews (study_day);
+  `,
+  // 2: the watch log: videos watched, lines met, what the learner did with words, and each study
+  // day's activity (for the daily session, checkpoints and the streak).
+  `
+  CREATE TABLE videos (
+    id            TEXT PRIMARY KEY,  -- site:videoId, e.g. youtube:eRsGyueVLvQ
+    site          TEXT NOT NULL,
+    url           TEXT NOT NULL,
+    title         TEXT,
+    language      TEXT NOT NULL,     -- the language being learnt when last watched
+    position      REAL,              -- seconds into the video where the learner left off
+    watched_ms    INTEGER NOT NULL DEFAULT 0,
+    first_watched INTEGER NOT NULL,
+    last_watched  INTEGER NOT NULL
+  );
+  CREATE INDEX videos_recent ON videos (last_watched);
+
+  -- Lines the learner met (on screen and translated), for the most recent videos only.
+  CREATE TABLE lines (
+    id          INTEGER PRIMARY KEY,
+    video_id    TEXT NOT NULL REFERENCES videos (id) ON DELETE CASCADE,
+    language    TEXT NOT NULL,
+    start       REAL,              -- seconds into the video, when known
+    original    TEXT NOT NULL,
+    translation TEXT,
+    processed   TEXT,              -- JSON: the processed line (translation and word pairs)
+    met_at      INTEGER NOT NULL
+  );
+  CREATE INDEX lines_video ON lines (video_id, original);
+
+  CREATE TABLE word_events (
+    id        INTEGER PRIMARY KEY,
+    video_id  TEXT,                -- null for a card not from a video
+    language  TEXT NOT NULL,
+    kind      TEXT NOT NULL CHECK (kind IN ('hovered', 'saved', 'explained', 'missed')),
+    text      TEXT NOT NULL,       -- the word or expression (a starred line: the whole line); the line for 'explained'
+    line      TEXT,                -- the line it was in
+    start     REAL,                -- where that line is in the video, when known
+    at        INTEGER NOT NULL
+  );
+  CREATE INDEX word_events_recent ON word_events (video_id, kind, text, at);
+
+  CREATE TABLE days (
+    day              TEXT PRIMARY KEY,  -- the study day (rolls over at 04:00)
+    watched_ms       INTEGER NOT NULL DEFAULT 0,
+    session_done     INTEGER NOT NULL DEFAULT 0,
+    checkpoints_done INTEGER NOT NULL DEFAULT 0
+  );
   `
 ]
 
@@ -71,7 +119,9 @@ export function database(): DatabaseSync {
   // Wait up to 2 s if another connection is writing, instead of failing at once.
   db = new DatabaseSync(join(app.getPath('userData'), 'duet.db'), { timeout: 2000 })
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;')
-  const { user_version: version } = db.prepare('PRAGMA user_version').get() as { user_version: number }
+  const { user_version: version } = db.prepare('PRAGMA user_version').get() as {
+    user_version: number
+  }
   for (let index = version; index < MIGRATIONS.length; index++) {
     transaction(() => {
       db!.exec(MIGRATIONS[index])
@@ -97,7 +147,8 @@ export function transaction<T>(work: () => T): T {
 
 /** A saved setting, or undefined when it is missing or its JSON is damaged. */
 export function readSetting<T>(key: string): T | undefined {
-  const row = database().prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined
+  const row = database().prepare('SELECT value FROM settings WHERE key = ?').get(key) as
+    { value: string } | undefined
   if (!row) return undefined
   try {
     return JSON.parse(row.value) as T
@@ -109,6 +160,8 @@ export function readSetting<T>(key: string): T | undefined {
 /** Saves a setting as JSON, replacing any earlier value. */
 export function writeSetting(key: string, value: unknown): void {
   database()
-    .prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value')
+    .prepare(
+      'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value'
+    )
     .run(key, JSON.stringify(value))
 }

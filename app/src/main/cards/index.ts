@@ -8,7 +8,8 @@
 //   export-backup, export-text, restore-backup                       files
 //   open, replay, practise, review                                   going elsewhere
 //   cards:changed  ← sent to the My cards window when cards change
-// The class also emits "changed" (with the due counts) for the overlay's badge.
+// The class also emits "changed" (with the due counts) for the overlay's badge, and "saved" (the
+// new card) when a card is saved, for the watch log.
 import { EventEmitter } from 'events'
 import { dialog, ipcMain, type BrowserWindow } from 'electron'
 import { readFile, writeFile } from 'fs/promises'
@@ -193,10 +194,12 @@ export class Cards extends EventEmitter {
     return { due, newAvailable }
   }
 
-  /** Saves a card; the same card already saved is found instead, unless `again` saves it anyway. */
+  /** Saves a card; the same card already saved is found instead, unless `again` saves it anyway.
+   * Emits "saved" with a newly saved card (the watch log records it). */
   saveDraft(draft: CardDraft, { again }: { again?: boolean } = {}): SaveResult {
     const result = this.store.save(draft, this.scheduler, { again })
     this.changed()
+    if ('saved' in result) this.emit('saved', result.saved)
     return result
   }
 

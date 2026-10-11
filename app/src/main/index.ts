@@ -41,6 +41,8 @@ import { Welcome } from './welcome'
 import { Shortcut } from './shortcut'
 import { WaitForTranslation } from './wait'
 import { Watcher } from './watcher'
+import { WatchLog } from './watchlog'
+import { connectWatchLog } from './watchlog/connect'
 import { createOverlay, toggleOverlay } from './windows/overlay'
 
 // In development, settings such as OPENAI_API_KEY can live in app/.env.local (git-ignored).
@@ -129,6 +131,7 @@ app.whenReady().then(() => {
     // "Pause while explaining": the video waits while the panel is open (see Player for who wins).
     if (settings.current.pauseForHelp) player.hold('explain')
     explain.open(moment)
+    logLink.explained(moment)
   }
   panel.on('closed', () => player.release('explain'))
   settings.on('change', (_, changed) => {
@@ -136,6 +139,17 @@ app.whenReady().then(() => {
   })
 
   const overlay = createOverlay(settings)
+  // The watch log: videos, lines met, words and study days, for the daily session, checkpoints and
+  // the streak (src/main/watchlog). Watching counts only while the strip is shown.
+  const watchLog = new WatchLog()
+  const logLink = connectWatchLog(watchLog, {
+    watcher,
+    player,
+    settings,
+    cards,
+    shown: () => !overlay.isDestroyed() && overlay.isVisible()
+  })
+  app.on('before-quit', () => logLink.finish())
   // Shows or hides the overlay from anywhere; the keys are a setting (⚙ on the strip).
   const shortcut = new Shortcut(settings.current.shortcut, () => toggleOverlay(overlay))
   const showScript = (): void => panel.show('script')
@@ -152,6 +166,7 @@ app.whenReady().then(() => {
       return draft ? cards.saveDraft(draft) : undefined
     },
     unsave: (cardId) => cards.remove(cardId),
+    hoveredWord: (lineId, text) => logLink.hovered(lineId, text),
     replayLine: (lineId) => {
       const moment = watcher.moment(lineId)
       if (moment) replayMoment(moment)
@@ -192,6 +207,7 @@ app.whenReady().then(() => {
     watcher.tick()
     wait.tick()
     player.sample()
+    logLink.tick()
     watcher.setPlayback({
       playing: player.playing,
       waiting: player.isHeldBy('wait'),

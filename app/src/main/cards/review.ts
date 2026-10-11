@@ -12,33 +12,14 @@
 // it never adds an opposite rating.
 import type { Card, Rating, ReviewQueue, ReviewSettings } from '../../shared/cards'
 import { database, transaction } from '../store/db'
+import { studyDay, studyDayEnd } from '../study-day'
 import { revive, ratingNumber, Scheduler, serialize, type Outcome } from './scheduler'
 import { sourceKey, type CardRow, type CardStore, type ReviewRow } from './store'
 
-// The study day rolls over at 04:00 local time, so a late-night session counts as the same day.
-const ROLLOVER_HOUR = 4
 // Outcomes worked out when a card was shown are saved only if rated soon after.
 const SHOWN_FOR_MS = 10 * 60_000
 // Cards that can be reviewed: not deleted and not paused.
 const LIVE = 'deleted_at IS NULL AND paused = 0'
-
-function studyDayStart(now: number): Date {
-  const start = new Date(now)
-  if (start.getHours() < ROLLOVER_HOUR) start.setDate(start.getDate() - 1)
-  start.setHours(ROLLOVER_HOUR, 0, 0, 0)
-  return start
-}
-
-export function studyDay(now: number): string {
-  const start = studyDayStart(now)
-  return `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`
-}
-
-function studyDayEnd(now: number): number {
-  const end = studyDayStart(now)
-  end.setDate(end.getDate() + 1)
-  return end.getTime()
-}
 
 /** "<1 min", "10 min", "3 h", "4 d", "2 mo", "1.5 y": how long until a due date. */
 export function interval(ms: number): string {

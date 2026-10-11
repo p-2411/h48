@@ -1,5 +1,5 @@
 // Plain facts the strip shows about words and levels, in the learner's terms.
-import { joinTokens } from '../../../shared/levels'
+import { pairText } from '../../../shared/levels'
 import type { Level, ProcessedLine, WordJob } from '../../../shared/types'
 
 export const JOBS: Record<WordJob, string> = {
@@ -23,7 +23,17 @@ export const LEVELS: { level: Level; name: string; adds: string }[] = [
 /** The two sides of a pair: the words in the language learnt and their English partner. */
 export function pairOf(line: ProcessedLine, pair: number): { source: string; english: string } {
   return {
-    source: joinTokens(line.source.filter((token) => token.pair === pair)),
-    english: joinTokens(line.english.filter((token) => token.pair === pair))
+    source: pairText(line.source, pair),
+    english: pairText(line.english, pair)
   }
+}
+
+/** The hover, if it is on this line. A hover outlives its line (the pointer can rest on the strip
+ * while the next line comes, with no new mouseenter), and the next line's word with the same pair
+ * number was never pointed at. */
+export function hoverOn<T extends { lineId: number }>(
+  hover: T | undefined,
+  lineId: number
+): T | undefined {
+  return hover?.lineId === lineId ? hover : undefined
 }

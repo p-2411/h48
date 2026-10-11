@@ -3,6 +3,7 @@
 // Run: npx jiti scripts/test-overlay.mjs
 import { chooseLine } from '../src/renderer/src/overlay/useOverlay.ts'
 import { statusDot } from '../src/renderer/src/overlay/notice.ts'
+import { hoverOn } from '../src/renderer/src/overlay/words.ts'
 import { upgradeSettings } from '../src/main/upgrade-settings.ts'
 
 const line = (id, state) => ({ id, original: `line ${id}`, at: id, state })
@@ -71,6 +72,13 @@ check(
 )
 check(tone({ ...running, trusted: false }) === 'error', 'a missing permission should be red')
 check(tone({ trusted: true }) === 'off', 'with no video the dot should be grey')
+
+// A hover belongs to its line: the pointer can rest on the strip while the next line comes, and the
+// next line's word with the same pair number was never pointed at.
+const resting = { lineId: 1, pair: 2 }
+check(hoverOn(resting, 1) === resting, 'a hover on the line shown stays')
+check(hoverOn(resting, 2) === undefined, 'a hover from the line before is dropped')
+check(hoverOn(undefined, 1) === undefined, 'no hover, none')
 
 // "Pause while explaining" became on by default; settings saved before then are brought up once.
 check(

@@ -14,7 +14,15 @@ export type MixedToken = Token & { swapped: boolean }
 
 /** Writes tokens out as they appear in the line: text, then a space where one follows. */
 export function joinTokens(tokens: Token[]): string {
-  return tokens.map((token) => token.text + (token.space ? ' ' : '')).join('').trim()
+  return tokens
+    .map((token) => token.text + (token.space ? ' ' : ''))
+    .join('')
+    .trim()
+}
+
+/** One pair's words in a line, written out: what the strip names for a word (its popup, a hover). */
+export function pairText(tokens: Token[], pair: number): string {
+  return joinTokens(tokens.filter((token) => token.pair === pair))
 }
 
 export function mixedLine(line: ProcessedLine, level: Level): MixedToken[] {

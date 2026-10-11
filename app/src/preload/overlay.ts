@@ -45,6 +45,9 @@ export const overlayApi = {
   unsave: (cardId: string) => ipcRenderer.send('duet:unsave', cardId),
   /** Goes back to a line in the video (the one on screen when no id is given). */
   replay: (lineId?: number) => ipcRenderer.send('duet:replay', lineId),
+  /** The pointer rested on a word of a line (for the watch log). */
+  hoveredWord: (lineId: number, text: string) =>
+    ipcRenderer.send('duet:hovered-word', lineId, text),
   /** Plays the video Wait is holding for a line. */
   playOn: () => ipcRenderer.send('duet:play-on'),
   /** Whether the pointer is over something of Duet's (take clicks) or not (let them through). */
