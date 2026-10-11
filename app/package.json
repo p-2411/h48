@@ -1,13 +1,14 @@
 {
-  "name": "app",
-  "version": "1.0.0",
-  "description": "An Electron application with React and TypeScript",
+  "name": "duet",
+  "version": "0.1.0",
+  "description": "Duet Japanese nuance, voice practice and contextual review",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "Duet",
+  "homepage": "https://useduet.io",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
+    "test:smoke": "node scripts/smoke-db.mjs",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
@@ -22,7 +23,8 @@
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
-    "@electron-toolkit/utils": "^4.0.0"
+    "@electron-toolkit/utils": "^4.0.0",
+    "ts-fsrs": "5.4.2"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
