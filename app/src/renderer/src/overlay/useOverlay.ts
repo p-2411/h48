@@ -2,7 +2,7 @@
 // lines and the line to show. A line still being translated never replaces one that is ready: the
 // strip keeps the last translated line (through gaps between lines too) until the next is ready.
 import { useEffect, useMemo, useState } from 'react'
-import type { DueCounts, OverlayLine, OverlaySettings, OverlayStatus } from '../../../shared/types'
+import { type DueCounts, type OverlayLine, type OverlaySettings, type OverlayStatus, DEFAULT_SETTINGS } from '../../../shared/types'
 
 export type OverlayState = {
   settings: OverlaySettings
@@ -16,7 +16,6 @@ export type OverlayState = {
   building: string
 }
 
-const DEFAULTS: OverlaySettings = { language: 'es', level: 2, guessFirst: true, waitForTranslation: true, pauseForHelp: false, onboarded: false, shortcut: 'Alt+Shift+D' }
 
 /** The line the strip last showed, and the video and language it belongs to. */
 export type Shown = { id: number; url?: string; language: string }
@@ -42,7 +41,7 @@ export function chooseLine(
 }
 
 export function useOverlay(): OverlayState {
-  const [settings, setSettings] = useState<OverlaySettings>(DEFAULTS)
+  const [settings, setSettings] = useState<OverlaySettings>(DEFAULT_SETTINGS)
   const [status, setStatus] = useState<OverlayStatus>({ trusted: false })
   const [due, setDue] = useState<DueCounts>({ due: 0, newAvailable: 0 })
   const [lines, setLines] = useState<OverlayLine[]>([])

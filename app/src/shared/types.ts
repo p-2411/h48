@@ -113,6 +113,17 @@ export type OverlaySettings = {
   panelBounds?: { x: number; y: number; width: number; height: number }
 }
 
+/** Settings before the learner changes any: Spanish, a few words swapped in. */
+export const DEFAULT_SETTINGS: OverlaySettings = {
+  language: 'es',
+  level: 2,
+  guessFirst: true,
+  waitForTranslation: true,
+  pauseForHelp: false,
+  onboarded: false,
+  shortcut: 'Alt+Shift+D'
+}
+
 /** Whether Duet may hear the browser's sound (macOS System Audio Recording); 'unavailable' when
  * this computer has no audio reader. */
 export type AudioPermission = 'granted' | 'denied' | 'not-asked' | 'unknown' | 'unavailable'

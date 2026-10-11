@@ -2,15 +2,14 @@
 // rather than being told by whoever changed it. Saved in the local database, so they survive a
 // restart; a setting added later simply starts at its default.
 import { EventEmitter } from 'events'
-import type { OverlaySettings } from '../shared/types'
+import { type OverlaySettings, DEFAULT_SETTINGS } from '../shared/types'
 import { database } from './store/db'
 
 const KEY = 'overlay'
 
-const DEFAULTS: OverlaySettings = { language: 'es', level: 2, guessFirst: true, waitForTranslation: true, pauseForHelp: false, onboarded: false, shortcut: 'Alt+Shift+D' }
 
 export class Settings extends EventEmitter {
-  private value: OverlaySettings = { ...DEFAULTS, ...load() }
+  private value: OverlaySettings = { ...DEFAULT_SETTINGS, ...load() }
 
   get current(): OverlaySettings {
     return this.value
