@@ -1,0 +1,76 @@
+/*
+ * Native <dialog> open/close motion. Utilities cannot express the discrete
+ * `display`/`overlay` transitions or @starting-style for ::backdrop, so they live here.
+ *
+ * Phones (< 640px): a bottom sheet that slides up.
+ * Wider screens: a centred card that rises and fades in.
+ */
+
+.dialog {
+  --sheet-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  translate: 0 100%;
+  transition:
+    translate 360ms var(--sheet-ease),
+    opacity 240ms ease,
+    overlay 360ms allow-discrete,
+    display 360ms allow-discrete;
+}
+
+.dialog[open] {
+  translate: 0 0;
+}
+
+@starting-style {
+  .dialog[open] {
+    translate: 0 100%;
+  }
+}
+
+.dialog::backdrop {
+  background-color: rgb(29 36 51 / 0);
+  transition:
+    background-color 300ms ease,
+    overlay 360ms allow-discrete,
+    display 360ms allow-discrete;
+}
+
+.dialog[open]::backdrop {
+  background-color: rgb(29 36 51 / 0.42);
+}
+
+@starting-style {
+  .dialog[open]::backdrop {
+    background-color: rgb(29 36 51 / 0);
+  }
+}
+
+@media (min-width: 640px) {
+  .dialog {
+    translate: 0 16px;
+    opacity: 0;
+  }
+
+  .dialog[open] {
+    translate: 0 0;
+    opacity: 1;
+  }
+
+  @starting-style {
+    .dialog[open] {
+      translate: 0 16px;
+      opacity: 0;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog,
+  .dialog::backdrop {
+    transition: none;
+  }
+
+  .dialog,
+  .dialog[open] {
+    translate: none;
+  }
+}
