@@ -23,7 +23,7 @@ Electron app itself) the first time: System Settings › Privacy & Security › 
 open a YouTube video in Chrome, Arc, Edge or Brave. Option+Shift+D shows or hides the overlay; the
 menu bar icon has the rest.
 
-Checks before you push: `npm run typecheck` and `npm run lint`. There is no test runner yet.
+Checks before you push: `npm run typecheck`, `npm run lint`, and `npm run test:tutor`.
 
 ## How a line gets on screen
 
@@ -39,11 +39,11 @@ browser ──(accessibility)──▶ caption reader ──JSON lines──▶ 
                          ipc/overlay.ts ──▶ overlay window (React)
 ```
 
-1. **Caption reader** (`native/macos/CaptionReader.swift`, built to `resources/bin/`) watches the
-   browser through the OS accessibility layer and prints JSON lines: which page is open, the
-   caption text on screen, and the player's time and play state. It also takes `pause`/`play`/`seek`
-   on stdin and drives the player's own controls. Rebuild both native readers after changing them:
-   `npm run build:native`.
+1. **Caption reader** (`native/macos/CaptionReader.swift` and
+   `native/windows/CaptionReader.cs`, built to `resources/bin/`) watches the browser through each
+   OS accessibility layer and prints the same JSON lines: which page is open, the caption text on
+   screen, and the player's time and play state. It also takes `pause`/`play`/`seek` on stdin and
+   drives the player's own controls. `npm run build:native` builds the reader for the current OS.
 2. **Watcher** (`src/main/watcher.ts`) keeps one **LineSession** per video and language. The page's
    **source** (`src/main/sources/`) says which video it is and whether the site offers a transcript:
    YouTube does, so captions don't need to be on; Netflix doesn't, so lines come from the screen.
@@ -52,32 +52,33 @@ browser ──(accessibility)──▶ caption reader ──JSON lines──▶ 
 4. **Line model** (`src/main/ai/lines/`) returns the translation plus matching phrases; `align.ts`
    turns those into coloured word tokens. `src/shared/levels.ts` builds the mixed line from them.
 5. **Player** (`player.ts`) turns the reader's whole seconds into a smooth position (`clock.ts`) and
-   owns pausing: features *hold* and *release* the video, never press play/pause themselves.
+   owns pausing: features _hold_ and _release_ the video, never press play/pause themselves.
 
 ## Where things live
 
-| Path | What |
-| --- | --- |
-| `src/main/index.ts` | Builds the pieces and connects them. Keep it short. |
-| `src/main/captions.ts` | Runs the caption reader for this OS; turns its output into events. |
-| `src/main/watcher.ts`, `session.ts` | Video → lines → processed lines. |
-| `src/main/sources/` | One file per video site (`youtube.ts`, `netflix.ts`) behind the `Source` interface. |
-| `src/main/store/db.ts` | The local SQLite database (settings, cards, reviews) and its migrations. |
-| `src/main/explain/` | Explain that: the window and its request. |
-| `src/main/cards/` | Cards: `store.ts` (collection), `scheduler.ts` (ts-fsrs), `review.ts` (queue, rating, undo), `index.ts` (IPC, My cards window). |
-| `src/main/replay.ts` | Going back to a moment: seek the open video, or open it at that point. |
-| `src/main/audio.ts`, `listen.ts` | The audio reader (last minute of the browser's sound) and hearing one line for Explain. |
-| `native/macos/AudioReader/` | The audio reader: a Core Audio process tap on the browser, with its own Info.plist and permission. |
-| `src/main/player.ts`, `clock.ts` | Video position and the play/pause holds. |
-| `src/main/wait.ts` | "Wait": holds the video while the line on screen is still translating. |
-| `src/main/settings.ts` | The learner's settings, saved in the database; listen for `change`. |
-| `src/main/tutor/` | Voice tutor, main-process side. |
-| `src/main/ai/` | Text models: `structured.ts` is what every provider does (`providers/`); tasks (`lines/`, `explain/`) are written once on top of it. |
-| `src/main/ai/voice/` | Voice models (speech↔text), same pattern. |
-| `src/main/windows/`, `ipc/`, `tray.ts` | Windows, each window's IPC, the menu bar icon. |
-| `src/preload/` | `window.duet`: one file per window or feature (`overlay`, `tutor`, `explain`, `cards`). |
-| `src/renderer/` | One HTML page per window; `src/overlay/`, `src/tutor/`, `src/explain/`, `src/cards/`, shared `components/` and `styles/`. |
-| `src/shared/` | Types used by both sides: lines, settings, levels, `moment.ts`, `explain.ts`, `cards.ts`. |
+| Path                                   | What                                                                                                                                 |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/main/index.ts`                    | Builds the pieces and connects them. Keep it short.                                                                                  |
+| `src/main/captions.ts`                 | Runs the caption reader for this OS; turns its output into events.                                                                   |
+| `src/main/watcher.ts`, `session.ts`    | Video → lines → processed lines.                                                                                                     |
+| `src/main/sources/`                    | One file per video site (`youtube.ts`, `netflix.ts`) behind the `Source` interface.                                                  |
+| `src/main/store/db.ts`                 | The local SQLite database (settings, cards, reviews) and its migrations.                                                             |
+| `src/main/explain/`                    | Explain that: the window and its request.                                                                                            |
+| `src/main/cards/`                      | Cards: `store.ts` (collection), `scheduler.ts` (ts-fsrs), `review.ts` (queue, rating, undo), `index.ts` (IPC, My cards window).      |
+| `src/main/replay.ts`                   | Going back to a moment: seek the open video, or open it at that point.                                                               |
+| `src/main/audio.ts`, `listen.ts`       | The audio reader (last minute of the browser's sound) and hearing one line for Explain.                                              |
+| `native/macos/AudioReader/`            | The audio reader: a Core Audio process tap on the browser, with its own Info.plist and permission.                                   |
+| `native/windows/CaptionReader.cs`      | The Windows UI Automation reader for Chrome, Edge, Brave and Arc.                                                                    |
+| `src/main/player.ts`, `clock.ts`       | Video position and the play/pause holds.                                                                                             |
+| `src/main/wait.ts`                     | "Wait": holds the video while the line on screen is still translating.                                                               |
+| `src/main/settings.ts`                 | The learner's settings, saved in the database; listen for `change`.                                                                  |
+| `src/main/tutor/`                      | Voice tutor, main-process side.                                                                                                      |
+| `src/main/ai/`                         | Text models: `structured.ts` is what every provider does (`providers/`); tasks (`lines/`, `explain/`) are written once on top of it. |
+| `src/main/ai/voice/`                   | Voice models (speech↔text), same pattern.                                                                                            |
+| `src/main/windows/`, `ipc/`, `tray.ts` | Windows, each window's IPC, the menu bar icon.                                                                                       |
+| `src/preload/`                         | `window.duet`: one file per window or feature (`overlay`, `tutor`, `explain`, `cards`).                                              |
+| `src/renderer/`                        | One HTML page per window; `src/overlay/`, `src/tutor/`, `src/explain/`, `src/cards/`, shared `components/` and `styles/`.            |
+| `src/shared/`                          | Types used by both sides: lines, settings, levels, `moment.ts`, `explain.ts`, `cards.ts`.                                            |
 
 ## Moments
 
@@ -147,21 +148,20 @@ the delivery, not only the words.
 - The window exists (`windows/tutor.ts`, `src/renderer/src/tutor/`) and opens on a moment from the
   menu bar ("Talk about this line") or `window.duet.openTutor()` in the overlay. It holds the video
   while open (`tutor/index.ts`).
-- Speech to text and text to speech work through `createVoiceModels()` in `ai/voice/` (OpenAI
-  `gpt-4o-transcribe` and `gpt-4o-mini-tts` by default; override with `DUET_STT_MODEL`,
-  `DUET_TTS_MODEL`, `DUET_TTS_VOICE`). Measured: a short sentence took ~6.5 s to synthesise whole
-  and ~2.4 s to transcribe, so stream speech for conversation. The realtime models
-  (`gpt-realtime-*`) are an option too.
-- Run model calls in the main process (keys stay there), pass audio over `tutor:*` IPC. Record in
-  the page with `getUserMedia`; macOS asks for the microphone on first use. Ask only when the learner
-  first presses record.
-- Pronunciation: the spec says scored feedback can't ship until experts have checked its accuracy
-  per sound property. Start with record, replay and compare with a reference; label generated
-  audio as generated.
+- The conversation uses `gpt-live-1` over WebRTC. The renderer owns microphone and playback; the
+  main process exchanges the SDP offer with OpenAI, so `OPENAI_API_KEY` never enters the page.
+- GPT-Live delegates correction reasoning and card tools to `gpt-6-luna`. Override the voice with
+  `DUET_LIVE_VOICE` or the backend with `DUET_LIVE_BACKEND_MODEL` in `.env.local`.
+- The tutor uses the same `duet.db`, card collection and FSRS scheduler as Explain and My cards.
+  Saves and reviews are prepared first, then committed only after explicit voice or UI confirmation.
+- `DUET_DEMO_FIXTURES=1` seeds two labelled Japanese cards into an empty database. Leave it unset in
+  ordinary use. Raw audio and full voice transcripts are not stored locally.
+- Pronunciation checks are explicit, narrow and qualitative. They do not provide an accent score or
+  claim that every sound is correct.
 
 ## Conventions
 
-- Comments say *why*, in plain words, at the top of each file and above anything non-obvious.
+- Comments say _why_, in plain words, at the top of each file and above anything non-obvious.
 - Dependencies are pinned to exact versions at least two weeks old.
 - Model-facing types live in `src/main/ai`; types the windows render live in `src/shared`.
 - Never print or commit keys.

@@ -8,9 +8,12 @@ import { SaveCard } from './SaveCard'
 
 // Why the explanation could not draw on the audio, when it couldn't.
 const HEARING: Partial<Record<HearingNote, string>> = {
-  asking: 'Allow System Audio Recording when macOS asks, and Duet will hear how the next lines are said.',
-  'not-allowed': 'Duet can’t hear the video. Allow it in System Settings › Privacy & Security › Screen & System Audio Recording.',
-  'not-kept': 'This line played too long ago for Duet to hear it, so the explanation goes by the words.',
+  asking:
+    'Allow System Audio Recording when macOS asks, and Duet will hear how the next lines are said.',
+  'not-allowed':
+    'Duet can’t hear the video. Allow it in System Settings › Privacy & Security › Screen & System Audio Recording.',
+  'not-kept':
+    'This line played too long ago for Duet to hear it, so the explanation goes by the words.',
   unclear: 'Duet couldn’t make out the speech in this line, so the explanation goes by the words.'
 }
 
@@ -24,7 +27,8 @@ export function ExplainView({
   onRetry: () => void
 }): React.JSX.Element {
   const { moment, explanation, loading, stage, hearing, error } = state
-  if (!moment) return <p className="muted center">Press Explain in the overlay while a line is on screen.</p>
+  if (!moment)
+    return <p className="muted center">Press Explain in the overlay while a line is on screen.</p>
   const processed = moment.line.processed
   const position = moment.video.position
   return (
@@ -55,7 +59,10 @@ export function ExplainView({
             <h2 className="label">
               Explanation
               {explanation.heard && (
-                <span className="heard" title={`Includes how it was said, from the audio (spoken in ${explanation.heard.spokenLanguage})`}>
+                <span
+                  className="heard"
+                  title={`Includes how it was said, from the audio (spoken in ${explanation.heard.spokenLanguage})`}
+                >
                   heard
                 </span>
               )}
@@ -116,9 +123,14 @@ export function ExplainView({
             Replay
           </button>
         )}
+        <button type="button" className="btn" onClick={() => window.duet.openTutor(moment.line.id)}>
+          Talk about this
+        </button>
         {explanation && <SaveCard key={moment.takenAt} moment={moment} explanation={explanation} />}
       </div>
-      {explanation && <p className="faint">Written by AI ({explanation.model}). It can be wrong.</p>}
+      {explanation && (
+        <p className="faint">Written by AI ({explanation.model}). It can be wrong.</p>
+      )}
     </div>
   )
 }

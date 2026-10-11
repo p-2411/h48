@@ -8,6 +8,8 @@
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
+    "test:tutor": "node --experimental-strip-types scripts/smoke-tutor.mjs",
+    "test:native-reader": "node scripts/smoke-native-reader.mjs",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
@@ -15,7 +17,7 @@
     "dev": "electron-vite dev",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
-    "build:native": "swiftc -O native/macos/CaptionReader.swift -o resources/bin/caption-reader-macos && swiftc -O native/macos/AudioReader/*.swift -o resources/bin/audio-reader-macos -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist -Xlinker native/macos/AudioReader/Info.plist && codesign -s - -f -i io.useduet.audio-reader resources/bin/audio-reader-macos",
+    "build:native": "node scripts/build-native.mjs",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",

@@ -43,6 +43,15 @@ export function Line({
       )}
       {building && <p className="building">{building}</p>}
       {modelError && line && <p className="error">{modelError}</p>}
+      {line && (
+        <button
+          type="button"
+          className="talk-button"
+          onClick={() => window.duet.openTutor(line.id)}
+        >
+          <span aria-hidden="true">●</span> Converse
+        </button>
+      )}
     </main>
   )
 }

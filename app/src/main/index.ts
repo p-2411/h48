@@ -46,6 +46,29 @@ const SHORTCUT = 'Alt+Shift+D'
 // How often the line on screen follows the video.
 const TICK_MS = 100
 
+function demoMoment(): Moment {
+  return {
+    language: 'ja',
+    line: {
+      id: -1,
+      original: 'ていうか、別にそういうつもりじゃなかったんだけど。',
+      at: Date.now(),
+      state: 'ready'
+    },
+    earlier: [
+      { original: '（デモ用の例文）', translation: 'Labelled demo fixture.' },
+      { original: '怒ってるの？', translation: 'Are you angry?' }
+    ],
+    video: {
+      site: 'youtube',
+      url: 'fixture:duet-japanese-nuance',
+      title: 'Labelled Duet demo',
+      position: 42
+    },
+    takenAt: Date.now()
+  }
+}
+
 let tray: Tray | undefined
 
 // One Duet at a time: a second copy would read the same captions and write the same database.
@@ -80,7 +103,6 @@ app.whenReady().then(() => {
   const player = new Player((command) => captions.command(command))
   const watcher = new Watcher(captions, player, settings, models?.lines, modelError)
   const wait = new WaitForTranslation(player, settings, () => watcher.currentLine)
-  const tutor = new Tutor(player)
   const replayMoment = (moment: Moment): void => replay(moment, { watcher, player })
   const panel = new Panel({ watcher, replay: replayMoment })
   const explain = new Explain(models?.explainer, replayMoment, panel, (moment, signal) =>
@@ -88,11 +110,19 @@ app.whenReady().then(() => {
   )
   // Listen to the browser only while a video is being watched in it.
   watcher.on('status', (status) => audio.listen(watcher.currentVideo ? status.bundle : undefined))
-  const cards = new Cards({ replay: replayMoment, practise: (moment) => tutor.open(moment) })
+  const tutorRef: { current?: Tutor } = {}
+  const cards = new Cards({
+    replay: replayMoment,
+    practise: (moment) => tutorRef.current?.open(moment, { autoStart: true })
+  })
+  const tutor = new Tutor(player, cards)
+  tutorRef.current = tutor
+  if (process.env.DUET_DEMO_FIXTURES === '1') cards.seedDemoFixtures(demoMoment())
   // Each opens on a line: the one on screen when no id is given.
-  const openTutor = (lineId?: number): void => {
-    const moment = watcher.moment(lineId)
-    if (moment) tutor.open(moment)
+  const openTutor = (lineId?: number, autoStart = false): void => {
+    const moment =
+      watcher.moment(lineId) ?? (process.env.DUET_DEMO_FIXTURES === '1' ? demoMoment() : undefined)
+    if (moment) tutor.open(moment, { autoStart })
   }
   const explainLine = (lineId?: number): void => {
     const moment = watcher.moment(lineId)
@@ -110,6 +140,9 @@ app.whenReady().then(() => {
     openTutor: () => openTutor(),
     openCards: () => cards.open()
   })
+  // The labelled fixture mode is for demos on machines without a caption reader; open its tutor
+  // immediately so the flow is visible without finding the tray menu first.
+  if (process.env.DUET_DEMO_FIXTURES === '1') setTimeout(() => openTutor(), 300)
   if (!globalShortcut.register(SHORTCUT, () => toggleOverlay(overlay)))
     console.error(`[duet] could not register ${SHORTCUT}; another app may be using it`)
 

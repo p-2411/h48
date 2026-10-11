@@ -24,7 +24,7 @@ export function connectOverlay(
   }: {
     watcher: Watcher
     settings: Settings
-    openTutor: (lineId?: number) => void
+    openTutor: (lineId?: number, autoStart?: boolean) => void
     explainLine: (lineId?: number) => void
     showScript: () => void
   }
@@ -42,8 +42,10 @@ export function connectOverlay(
   ipcMain.on('duet:set-language', (_, language: Language) => settings.update({ language }))
   ipcMain.on('duet:set-level', (_, level: Level) => settings.update({ level }))
   ipcMain.on('duet:set-guess-first', (_, guessFirst: boolean) => settings.update({ guessFirst }))
-  ipcMain.on('duet:set-wait', (_, waitForTranslation: boolean) => settings.update({ waitForTranslation }))
-  ipcMain.on('duet:open-tutor', (_, lineId?: number) => openTutor(lineId))
+  ipcMain.on('duet:set-wait', (_, waitForTranslation: boolean) =>
+    settings.update({ waitForTranslation })
+  )
+  ipcMain.on('duet:open-tutor', (_, lineId?: number) => openTutor(lineId, true))
   ipcMain.on('duet:explain', (_, lineId?: number) => explainLine(lineId))
   ipcMain.on('duet:script', () => showScript())
   ipcMain.on('duet:hide', () => overlay.hide())

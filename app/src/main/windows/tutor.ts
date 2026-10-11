@@ -4,5 +4,5 @@ import type { BrowserWindow } from 'electron'
 import { createSideWindow } from './side'
 
 export function createTutorWindow(): BrowserWindow {
-  return createSideWindow('tutor', 'Duet tutor', { width: 440, height: 680 })
+  return createSideWindow('tutor', 'Duet', { width: 560, height: 760 })
 }

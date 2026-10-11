@@ -9,7 +9,13 @@ import { cardReady, contentOf } from '../components/cards'
 import { clock, when } from '../components/time'
 import { stateLabel } from './labels'
 
-export function CardView({ card, onDeleted }: { card: CardDetail; onDeleted: (id: string) => void }): React.JSX.Element {
+export function CardView({
+  card,
+  onDeleted
+}: {
+  card: CardDetail
+  onDeleted: (id: string) => void
+}): React.JSX.Element {
   const [editing, setEditing] = useState<CardContent>()
   const [error, setError] = useState<string>()
 
@@ -28,13 +34,26 @@ export function CardView({ card, onDeleted }: { card: CardDetail; onDeleted: (id
     return (
       <section className="detail">
         <CardForm value={editing} onChange={setEditing} lang={card.language}>
-          <p className="faint">Save keeps the review schedule. If you changed what the card tests, save it as a new card instead.</p>
+          <p className="faint">
+            Save keeps the review schedule. If you changed what the card tests, save it as a new
+            card instead.
+          </p>
           {error && <p className="notice error">{error}</p>}
           <div className="row">
-            <button type="button" className="btn primary" disabled={!cardReady(editing)} onClick={() => run(() => window.duet.cards.update(card.id, editing))}>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={!cardReady(editing)}
+              onClick={() => run(() => window.duet.cards.update(card.id, editing))}
+            >
               Save
             </button>
-            <button type="button" className="btn" disabled={!cardReady(editing)} onClick={() => run(() => window.duet.cards.saveAsNew(card.id, editing))}>
+            <button
+              type="button"
+              className="btn"
+              disabled={!cardReady(editing)}
+              onClick={() => run(() => window.duet.cards.saveAsNew(card.id, editing))}
+            >
               Save as new card
             </button>
             <button type="button" className="btn quiet" onClick={() => setEditing(undefined)}>
@@ -49,12 +68,17 @@ export function CardView({ card, onDeleted }: { card: CardDetail; onDeleted: (id
     <section className="detail">
       <div className="card-box">
         <p className="faint">
-          {card.type === 'understand' ? 'Understand' : 'Use it'} · {LANGUAGES[card.language]} · {stateLabel(card)}
+          {card.type === 'understand' ? 'Understand' : 'Use it'} · {LANGUAGES[card.language]} ·{' '}
+          {stateLabel(card)}
         </p>
         <p className="big" lang={card.language}>
           {card.expression}
         </p>
-        {card.reading && <p className="muted" lang={card.language}>{card.reading}</p>}
+        {card.reading && (
+          <p className="muted" lang={card.language}>
+            {card.reading}
+          </p>
+        )}
         <p>{card.meaning}</p>
       </div>
       <dl className="facts">
@@ -83,7 +107,12 @@ export function CardView({ card, onDeleted }: { card: CardDetail; onDeleted: (id
           {video ? (
             <>
               <span lang={card.language}>{video.line.original}</span>
-              {video.video.position !== undefined && <span className="faint"> · {video.video.site} {clock(video.video.position)}</span>}
+              {video.video.position !== undefined && (
+                <span className="faint">
+                  {' '}
+                  · {video.video.site} {clock(video.video.position)}
+                </span>
+              )}
             </>
           ) : (
             'The tutor (not from a video)'
@@ -98,6 +127,29 @@ export function CardView({ card, onDeleted }: { card: CardDetail; onDeleted: (id
           </>
         )}
       </dl>
+      {card.explanation && (
+        <section className="nuance-box" aria-label="Saved nuance analysis">
+          <span className="label">Nuance analysis</span>
+          <p>{card.explanation.meaning}</p>
+          {card.explanation.notice && (
+            <p>
+              <strong>Notice:</strong> {card.explanation.notice.text}
+            </p>
+          )}
+          {card.explanation.why && (
+            <p>
+              <strong>Why:</strong> {card.explanation.why}
+            </p>
+          )}
+          {card.explanation.alternative && (
+            <p>
+              <strong>Alternative:</strong> {card.explanation.alternative.expression} —{' '}
+              {card.explanation.alternative.changes}
+            </p>
+          )}
+          {card.explanation.limitation && <p className="faint">{card.explanation.limitation}</p>}
+        </section>
+      )}
       {video && video.earlier.length > 0 && (
         <details>
           <summary>Original context ({video.earlier.length} lines before)</summary>
@@ -111,7 +163,9 @@ export function CardView({ card, onDeleted }: { card: CardDetail; onDeleted: (id
       )}
       {card.reviews.length > 0 && (
         <details>
-          <summary>Review history ({card.reviews.filter((review) => !review.undone).length})</summary>
+          <summary>
+            Review history ({card.reviews.filter((review) => !review.undone).length})
+          </summary>
           {card.reviews.map((review) => (
             <p key={review.id} className={review.undone ? 'faint' : undefined}>
               {when(review.reviewedAt)} · {review.rating}
@@ -130,12 +184,20 @@ export function CardView({ card, onDeleted }: { card: CardDetail; onDeleted: (id
             <button type="button" className="btn" onClick={() => window.duet.cards.replay(card.id)}>
               Replay source
             </button>
-            <button type="button" className="btn" onClick={() => window.duet.cards.practise(card.id)}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => window.duet.cards.practise(card.id)}
+            >
               Practise with tutor
             </button>
           </>
         )}
-        <button type="button" className="btn" onClick={() => run(() => window.duet.cards.setPaused(card.id, !card.paused))}>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => run(() => window.duet.cards.setPaused(card.id, !card.paused))}
+        >
           {card.paused ? 'Resume reviews' : 'Pause reviews'}
         </button>
         <button
