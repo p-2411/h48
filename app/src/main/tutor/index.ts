@@ -2,7 +2,7 @@
 // changes pass through this class so the voice model cannot bypass confirmation or FSRS rules.
 import { randomUUID } from 'node:crypto'
 import { ipcMain, type BrowserWindow, type IpcMainInvokeEvent } from 'electron'
-import type { CardDraft } from '../../shared/cards'
+import { RATINGS, type CardDraft } from '../../shared/cards'
 import type { Moment } from '../../shared/moment'
 import type {
   PendingTutorAction,
@@ -24,7 +24,10 @@ type PendingAction =
 type LastAction = { kind: 'saved-card' | 'reviewed-card'; cardId: string }
 
 const ACTION_LIFETIME_MS = 5 * 60_000
-const RATINGS = new Set<ReviewRating>(['again', 'hard', 'good', 'easy'])
+
+function isRating(value: unknown): value is ReviewRating {
+  return (RATINGS as readonly unknown[]).includes(value)
+}
 
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value))
@@ -203,8 +206,8 @@ export class Tutor {
           return this.output({ status: 'rating_required', action })
         }
         case 'commit_review': {
-          const rating = string(args.rating, 'rating', 10) as ReviewRating
-          if (!RATINGS.has(rating)) throw new Error('INVALID_REVIEW_RATING')
+          const rating = string(args.rating, 'rating', 10)
+          if (!isRating(rating)) throw new Error('INVALID_REVIEW_RATING')
           return this.output(this.confirmAction(string(args.actionId, 'action_id', 100), rating))
         }
         case 'undo_last_action':
@@ -291,7 +294,7 @@ export class Tutor {
       return result
     }
 
-    if (!rating || !RATINGS.has(rating)) throw new Error('INVALID_REVIEW_RATING')
+    if (!isRating(rating)) throw new Error('INVALID_REVIEW_RATING')
     const card = this.cards.rateTutorReview(
       action.cardId,
       action.expectedRevision,

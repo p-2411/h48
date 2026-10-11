@@ -3,6 +3,7 @@
 // the preload boundary.
 import OpenAI from 'openai'
 import type { FunctionTool } from 'openai/resources/live/live'
+import { RATINGS } from '../../shared/cards'
 import type { Moment } from '../../shared/moment'
 import type { TutorSessionAnswer } from '../../shared/tutor'
 import { languageModule, languageName, type Language } from '../../shared/languages'
@@ -113,7 +114,7 @@ const tools: FunctionTool[] = [
       type: 'object',
       properties: {
         actionId: { type: 'string' },
-        rating: { type: 'string', enum: ['again', 'hard', 'good', 'easy'] }
+        rating: { type: 'string', enum: [...RATINGS] }
       },
       required: ['actionId', 'rating'],
       additionalProperties: false

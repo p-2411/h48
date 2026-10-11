@@ -47,7 +47,10 @@ export type Card = CardDraft & {
   updatedAt: number
 }
 
-export type Rating = 'again' | 'hard' | 'good' | 'easy'
+/** The four review ratings, worst to best. The main process checks ratings against this list. */
+export const RATINGS = ['again', 'hard', 'good', 'easy'] as const
+
+export type Rating = (typeof RATINGS)[number]
 
 export type CardReview = { id: string; rating: Rating; reviewedAt: number; undone: boolean; dueAfter: number }
 
