@@ -222,7 +222,10 @@
    both); the mascot and New conversation at the top. */
 .home-talk { align-items: center; padding-bottom: 0; overflow: hidden; }
 .home-talk > * { width: 100%; max-width: 640px; }
-.home-talk-head { display: flex; align-items: center; gap: 12px; }
-.home-talk-head .btn { margin-left: auto; }
+/* Duet centred at the head, New conversation at the right. */
+.home-talk-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
+.home-talk-head .head-slot { grid-column: 2; display: flex; justify-content: center; }
+.home-talk-head .btn { grid-column: 3; justify-self: end; }
+.home-talk-intro { text-align: center; }
 /* No line above the message box here: the page has room enough to set it apart. */
 .home-talk .composer { border-top: none; }

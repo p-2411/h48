@@ -386,14 +386,20 @@ await test('14: a word is recorded as used only when Duet offered it, once per l
   await learnerTurn(fromTutor, '昨日、')
   const madeUp = await tool('record_word_use', { word: '行く', sentence: '明日、海に行きます。', correct: true })
   expect(madeUp.error === 'SENTENCE_NOT_HEARD', `a sentence the learner never said: ${JSON.stringify(madeUp)}`)
-  // Voice hears a turn in pieces; the sentence is checked against them together, spaces and
-  // punctuation aside.
-  await learnerTurn(fromTutor, '公園に 行きました')
+  // Voice hears a turn in pieces (the turn's first, then the rest as heard); the sentence is checked
+  // against them together, spaces and punctuation aside, and the pieces are one turn.
+  const heard = (text) => electron.listeners.get('tutor:heard')?.(fromTutor, text)
+  await learnerTurn(fromTutor, '昨日、')
+  heard('公園に ')
+  heard('行きました')
   const used = await tool('record_word_use', { word: '行く', sentence: '昨日、公園に行きました。', correct: true })
   expect(used.ok !== false && used.status === 'recorded', `recorded: ${JSON.stringify(used)}`)
   expect(JSON.stringify(uses) === JSON.stringify([['ja', 'ja:行く', 'use', true, '昨日、公園に行きました。']]), `noted: ${JSON.stringify(uses)}`)
   const twice = await tool('record_word_use', { word: '行く', sentence: '昨日、公園に行きました。', correct: true })
   expect(twice.error === 'LEARNER_TURN_REQUIRED' && uses.length === 1, 'the same word twice in one turn is one use')
+  heard('また 公園に 行きました')
+  const pieces = await tool('record_word_use', { word: '行く', sentence: 'また公園に行きました。', correct: true })
+  expect(pieces.error === 'LEARNER_TURN_REQUIRED' && uses.length === 1, `more pieces of the same turn are not a new turn: ${JSON.stringify(pieces)}`)
   const other = await tool('record_word_use', { word: '食べる', sentence: '食べた', correct: true })
   expect(other.error === 'WORD_NOT_OFFERED', 'a word not offered is refused')
   tutor.open({ kind: 'free', language: 'ja', level: 3 }, panel)

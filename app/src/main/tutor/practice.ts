@@ -36,10 +36,15 @@ export class PracticeWords {
     this.openedTurn = this.turns
   }
 
-  /** The learner spoke or wrote; `text` is what they said (voice tells it in pieces). */
+  /** The learner began a turn (spoke or wrote); `text` is what they said, or its first piece. */
   learnerTurn(text?: string): void {
     this.turns++
-    if (text) this.heard = (this.heard + plain(text)).slice(-HEARD_CHARS)
+    if (text) this.hear(text)
+  }
+
+  /** More of the turn the learner is in, as voice hears it. */
+  hear(text: string): void {
+    this.heard = (this.heard + plain(text)).slice(-HEARD_CHARS)
   }
 
   /** The words for Duet to weave in. */

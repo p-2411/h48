@@ -123,6 +123,8 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
   const handledCalls = useRef(new Set<string>())
   const closeTimer = useRef<number | undefined>(undefined)
   const replyFallbackTimer = useRef<number | undefined>(undefined)
+  // The learner is mid-turn (they spoke since Duet last did): their words go to main as more of it.
+  const learnerSpeaking = useRef(false)
   const outputSettledTimer = useRef<number | undefined>(undefined)
   const reconnectTimer = useRef<number | undefined>(undefined)
   const disconnectTimer = useRef<number | undefined>(undefined)
@@ -300,9 +302,13 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
           window.clearTimeout(outputSettledTimer.current)
           setStatus('listening')
           appendTranscript('learner', event.delta ?? '', event.start_ms ?? 0, event.end_ms ?? 0)
-          // Tell main the learner just spoke (and what), so the voice model can't confirm a save, or
-          // record a word used, without them.
-          if (event.delta) window.duet.tutor.learnerTurn(event.delta)
+          // Tell main the learner is speaking (and what), so the voice model can't confirm a save, or
+          // record a word used, without them: a turn when they start, the rest as heard.
+          if (event.delta) {
+            if (learnerSpeaking.current) window.duet.tutor.heard(event.delta)
+            else window.duet.tutor.learnerTurn(event.delta)
+            learnerSpeaking.current = true
+          }
           window.clearTimeout(replyFallbackTimer.current)
           replyFallbackTimer.current = window.setTimeout(() => {
             setStatus('working')
@@ -317,6 +323,8 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
           }, LIVE_REPLY_FALLBACK_MS)
           break
         case 'session.output_transcript.delta':
+          // Duet answering ends the learner's turn: their next words start a new one.
+          learnerSpeaking.current = false
           window.clearTimeout(replyFallbackTimer.current)
           window.clearTimeout(outputSettledTimer.current)
           replyFallbackTimer.current = undefined
@@ -400,6 +408,7 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
         if (stale()) return abandon()
         microphone.current = stream
         setStatus('connecting')
+        learnerSpeaking.current = false
         peer = new RTCPeerConnection()
         connection.current = peer
         const current = peer

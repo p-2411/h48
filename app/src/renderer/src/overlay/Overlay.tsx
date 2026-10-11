@@ -131,6 +131,14 @@ export function Overlay(): React.JSX.Element {
     )
   }
 
+  // The word's colour changing is the answer; one that couldn't change says so.
+  const ignore = (wordKey: string, ignored: boolean): void => {
+    if (!settings) return
+    window.duet.knowledge
+      .setIgnored(settings.language, wordKey, ignored)
+      .catch((error) => setToast({ text: say(error, ignored ? 'Could not leave that word out. Try again.' : 'Could not bring that word back. Try again.') }))
+  }
+
   const undo = ({ kind, cardId, key: starKey }: NonNullable<Toast['undo']>): void => {
     setToast(undefined)
     if (kind === 'unsave') {
@@ -302,6 +310,7 @@ export function Overlay(): React.JSX.Element {
                   settings={settings}
                   starred={(pair) => !!stars[key(pair)]}
                   onStar={star}
+                  onIgnore={ignore}
                   expanded={hovered || settingsOpen}
                 />
               ) : (

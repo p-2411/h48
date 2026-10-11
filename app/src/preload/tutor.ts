@@ -37,8 +37,10 @@ export const tutorApi = {
     invoke<TutorActionResult>('tutor:undo'),
   /** Call on each finished learner transcript. Only a learner turn after a preview lets the voice
    * model commit that save or rating; the model's own turns never count. */
-  /** The learner spoke; `heard` is what they said (a piece of it), when known. */
+  /** The learner began a turn; `heard` is its first piece, when known. */
   learnerTurn: (heard?: string) => ipcRenderer.send('tutor:learner-turn', heard),
+  /** More of the learner's turn, as heard. */
+  heard: (text: string) => ipcRenderer.send('tutor:heard', text),
   onCard: (listener: (card: TutorCard) => void) => subscribe('tutor:card', listener),
   onPendingAction: (listener: (action: PendingTutorAction) => void) =>
     subscribe('tutor:pending-action', listener),

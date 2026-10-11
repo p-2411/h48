@@ -64,6 +64,7 @@ export function Conversation({
   thread: bridge,
   dock,
   mascotSlot,
+  mascotScale = 0.16,
   free = false,
   startVoice = false
 }: {
@@ -71,8 +72,9 @@ export function Conversation({
   language: Language
   thread: ThreadBridge
   dock: HTMLElement | null
-  /** Where the mascot goes: the page's top bar. */
+  /** Where the mascot goes: the page's top bar, at this times its full size. */
   mascotSlot: HTMLElement | null
+  mascotScale?: number
   /** A free conversation (Talk): no line, and the cards open to Duet from the start. */
   free?: boolean
   /** Starts voice as it opens (Talk opened from the hub's mic). */
@@ -265,7 +267,7 @@ export function Conversation({
           <div className="head-mascot" ref={headMascot}>
             <Mascot
               state={mascotState(live.status, !!state.replying || !!state.loading, cards.cheering, correcting)}
-              scale={0.16}
+              scale={mascotScale}
             />
           </div>,
           mascotSlot

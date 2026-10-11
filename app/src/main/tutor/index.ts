@@ -18,7 +18,7 @@
 // IPC (all "tutor:*", from the window that owns the conversation; window.duet.tutor in src/preload/tutor.ts):
 //   tutor:start-session / tutor:voice-ended   voice starts (holding the video) and ends
 //   tutor:set-explore, tutor:translate, tutor:romanise, tutor:execute-tool, tutor:confirm-action,
-//   tutor:undo, tutor:learner-turn
+//   tutor:undo, tutor:learner-turn, tutor:heard
 //   tutor:pending-action / tutor:action-result / tutor:card   ← sent to that window
 import { randomUUID } from 'node:crypto'
 import { ipcMain, type WebContents } from 'electron'
@@ -160,10 +160,15 @@ export class Tutor {
       this.assertTutor(event)
       return this.confirmAction(actionId, rating)
     })
-    // The learner spoke (with what was heard, when the window has it). Only this lets the voice
-    // model commit a preview.
+    // The learner began a spoken turn (with what was heard first, when the window has it), and the
+    // rest of it as it is heard. Only these let the voice model commit a preview.
     ipcMain.on('tutor:learner-turn', (event, heard: unknown) => {
       if (this.isTutor(event.sender)) this.noteLearnerTurn(typeof heard === 'string' ? heard.slice(0, MAX_HEARD) : undefined)
+    })
+    ipcMain.on('tutor:heard', (event, heard: unknown) => {
+      if (!this.isTutor(event.sender) || typeof heard !== 'string') return
+      this.lastLearnerTurnAt = Date.now()
+      this.practice.hear(heard.slice(0, MAX_HEARD))
     })
     ipcMain.handle('tutor:undo', (event) => {
       this.assertTutor(event)

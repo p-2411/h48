@@ -5,13 +5,14 @@
 // the English.
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { STATE_LABELS, type WordState } from '../../../shared/knowledge'
-import { joinTokens, mixedLine, pairReading, written } from '../../../shared/levels'
-import type { OverlayLine, OverlaySettings, Token, WordScript } from '../../../shared/types'
+import { STATE_LABELS } from '../../../shared/knowledge'
+import { joinTokens, mixedLine, pairReading } from '../../../shared/levels'
+import type { OverlayLine, OverlaySettings, Token } from '../../../shared/types'
 import { hoverOn, JOBS, pairOf } from './words'
 import { Icon } from '../components/Icon'
 import { DURATION, EASE_IN, EASE_OUT, pop } from '../components/motion'
 import { useWordStates } from '../components/useWordStates'
+import { Words } from '../components/Words'
 
 // A word counts as looked at (for the watch log) once the pointer rests on it this long; passing
 // over words on the way somewhere doesn't count.
@@ -24,61 +25,20 @@ type Hover = { pair: number; job: Token['job']; left: number }
 /** A hover, with the line it was on (see hoverOn). */
 type LineHover = Hover & { lineId: number }
 
-function Tokens({
-  tokens,
-  script,
-  state,
-  onHover,
-  onLeave
-}: {
-  tokens: (Token & { swapped?: boolean })[]
-  /** How the swapped-in words are written: their own script, or their reading. */
-  script: WordScript
-  /** A swapped-in word's rung on the knowledge ladder, by its pair: its colour. */
-  state: (pair: number | null) => WordState
-  onHover: (hover: Hover | undefined) => void
-  /** The pointer left a word: its popup closes, unless the pointer goes into it. */
-  onLeave: () => void
-}): React.JSX.Element {
-  return (
-    <>
-      {tokens.map((token, index) => (
-        <span key={index}>
-          <span
-            className={`w${token.swapped ? ' sw' : ''}${token.pair !== null ? ' live' : ''}`}
-            data-k={token.swapped ? state(token.pair) : undefined}
-            onMouseEnter={(event) => {
-              if (token.pair === null) return
-              const box = event.currentTarget.getBoundingClientRect()
-              const dock = event.currentTarget.closest('.dock')!.getBoundingClientRect()
-              onHover({
-                pair: token.pair,
-                job: token.job,
-                left: box.left - dock.left + box.width / 2
-              })
-            }}
-            onMouseLeave={token.pair === null ? undefined : onLeave}
-          >
-            {token.swapped ? written(token, script) : token.text}
-          </span>
-          {token.space ? ' ' : ''}
-        </span>
-      ))}
-    </>
-  )
-}
-
 export function LineView({
   line,
   settings,
   starred,
   onStar,
+  onIgnore,
   expanded
 }: {
   line: OverlayLine
   settings: OverlaySettings
   starred: (pair?: number) => boolean
   onStar: (pair?: number) => void
+  /** Leaves a word out of colours and practice (by its key), or brings it back. */
+  onIgnore: (key: string, ignored: boolean) => void
   /** The strip is hovered (or its settings are open): the whole line and the English show under it,
    * opening and closing smoothly so the strip's size never jumps. */
   expanded: boolean
@@ -163,11 +123,7 @@ export function LineView({
                 type="button"
                 className="pill"
                 title={hoveredState === 'ignored' ? 'Colour and practise this word again' : 'Leave this word out of colours and practice'}
-                onClick={() =>
-                  window.duet.knowledge
-                    .setIgnored(settings.language, hoveredWord.key, hoveredState !== 'ignored')
-                    .catch((error) => console.error('[duet] could not leave out or bring back that word', error))
-                }
+                onClick={() => onIgnore(hoveredWord.key, hoveredState !== 'ignored')}
               >
                 {hoveredState === 'ignored' ? 'Bring back' : 'Ignore'}
               </button>
@@ -177,12 +133,17 @@ export function LineView({
       )}
       </AnimatePresence>
       <p className="mix" lang={settings.level === 5 ? settings.language : undefined}>
-        <Tokens
+        <Words
           tokens={mixedLine(ready, settings.level, (pair) => stateOf(ready, pair))}
           script={settings.wordScript}
-          state={(pair) => stateOf(ready, pair)}
+          state={(pair, token) => (token.swapped ? stateOf(ready, pair) : undefined)}
           onLeave={leave}
-          onHover={(next) => setHover(next && { ...next, lineId: line.id })}
+          onEnter={(token, element) => {
+            // The card opens over the word, centred on it, within the strip.
+            const box = element.getBoundingClientRect()
+            const dock = element.closest('.dock')!.getBoundingClientRect()
+            setHover({ pair: token.pair, job: token.job, left: box.left - dock.left + box.width / 2, lineId: line.id })
+          }}
         />
       </p>
       <AnimatePresence initial={false}>

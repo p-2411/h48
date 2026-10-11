@@ -4,13 +4,16 @@
 // Opened from the hub's Talk tile, it sends the message typed there, or starts voice.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ThreadState } from '../../../shared/explain'
-import { languageName, type Language } from '../../../shared/languages'
+import type { Language } from '../../../shared/languages'
 import { say } from '../components/errors'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { Conversation } from '../explain/Conversation'
 import type { ThreadBridge } from '../explain/thread'
 import { LoadState } from '../components/LoadState'
 import type { TalkStart } from './tiles/TalkTile'
+
+// The mascot at the head of Talk: big enough to see it listen, think and speak (420 x 190 at full size).
+const TALK_MASCOT_SCALE = 0.3
 
 export function TalkPage({ start }: { start?: TalkStart }): React.JSX.Element {
   const [thread, setThread] = useState<ThreadState>()
@@ -70,8 +73,10 @@ export function TalkPage({ start }: { start?: TalkStart }): React.JSX.Element {
 
   return (
     <main className="home-page home-talk">
+      {/* Duet at the head of the conversation, as in a messaging app (the page's name is for screen
+          readers): it wakes up as the page opens, then shows what it is doing. */}
       <div className="home-talk-head">
-        <h1>Talk</h1>
+        <h1 className="sr-only">Talk</h1>
         <div className="head-slot" ref={setMascotSlot} />
         {thread && thread.chat.length > 0 && (
           <button type="button" className="btn quiet" onClick={startOver}>
@@ -89,13 +94,22 @@ export function TalkPage({ start }: { start?: TalkStart }): React.JSX.Element {
         {thread && language && (
           <>
             {thread.chat.length === 0 && (
-              <p className="muted">
-                Say anything in {languageName(language)}, or in English if you get stuck. Duet answers at your level, can look at
-                the cards you saved, and helps you say it better. Type, or press the mic to talk.
+              <p className="muted home-talk-intro">
+                Duet answers at your level, can look at the cards you saved, and helps you say it better. Type, or press the mic to
+                talk.
               </p>
             )}
             <ErrorBoundary key={round} what="The conversation">
-              <Conversation state={thread} language={language} thread={bridge} dock={dock} mascotSlot={mascotSlot} free startVoice={start?.voice} />
+              <Conversation
+                state={thread}
+                language={language}
+                thread={bridge}
+                dock={dock}
+                mascotSlot={mascotSlot}
+                mascotScale={TALK_MASCOT_SCALE}
+                free
+                startVoice={start?.voice}
+              />
             </ErrorBoundary>
           </>
         )}
