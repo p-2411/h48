@@ -14,6 +14,8 @@ import { EASE_IN, EASE_OUT, fadeUp, GLIDE, pop } from '../components/motion'
 import { Icon } from '../components/Icon'
 import { say } from '../components/errors'
 import { LevelSlider } from './LevelSlider'
+import { useLevelStep } from './useLevelStep'
+import { WheelSteps } from './wheel'
 import { LineView } from './LineView'
 import { actionable, quiet, statusDot } from './notice'
 import type { CheckpointView, Offer } from '../../../shared/checkpoints'
@@ -58,6 +60,9 @@ export function Overlay(): React.JSX.Element {
   const dock = useRef<HTMLDivElement>(null)
   useRoomAbove(dock)
   const { settings, status, current, building, translating, fit, loaded } = useOverlay()
+  // Two fingers dragged right or left on the strip move the level one step (the level circle shows it).
+  const level = useLevelStep(settings.level)
+  const stripSwipes = useRef(new WheelSteps({ sideways: true }))
   const [settingsOpen, setSettingsOpen] = useState(false)
   // The pointer is on Duet: the strip shows more of the line (in React, so its size change glides).
   const [hovered, setHovered] = useState(false)
@@ -179,7 +184,7 @@ export function Overlay(): React.JSX.Element {
       >
         <AnimatePresence>{settingsOpen && <SettingsPopover key="settings" settings={settings} />}</AnimatePresence>
         <div className="actions" role="toolbar" aria-label="Line actions">
-          <LevelSlider settings={settings} />
+          <LevelSlider settings={settings} tug={level.tug} onStep={level.step} />
           <span className="spacer" />
           <button
             type="button"
@@ -285,6 +290,7 @@ export function Overlay(): React.JSX.Element {
             startDrag(event)
           }}
           onClick={openCheckpoint}
+          onWheel={(event) => level.step(stripSwipes.current.step(event.deltaY, event.deltaX, event.timeStamp))}
         >
           <i
             className={`dot ${dot.tone}`}
