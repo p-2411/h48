@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'rea
 import type { SaveResult } from '../../../shared/cards'
 import { AnimatePresence, motion } from 'motion/react'
 import { ErrorBoundary } from '../components/ErrorBoundary'
-import { EASE_IN, EASE_OUT, fadeUp, GLIDE, pop } from '../components/motion'
+import { DURATION, EASE_IN, EASE_OUT, fadeUp, GLIDE, pop, SPRING } from '../components/motion'
 import { Icon } from '../components/Icon'
 import { say } from '../components/errors'
 import { LevelSlider } from './LevelSlider'
@@ -28,6 +28,10 @@ import { useRoomAbove } from './useRoomAbove'
 import { useStripTalk } from './useStripTalk'
 
 const TOAST_MS = 5000
+// Pointing at a strip that offers a checkpoint opens it after this long (a pointer passing over doesn't).
+const POINTING_MS = 250
+// The checkpoint card's content fades this quickly (seconds), before it folds and after it opens.
+const QUICK_FADE = 0.08
 
 /** How a broken checkpoint or talk bubble says so, in its place above the strip. */
 const popped = (message: React.ReactNode): React.ReactNode => <div className="strip-crash">{message}</div>
@@ -73,21 +77,34 @@ export function Overlay(): React.JSX.Element {
   // A checkpoint offered (the strip glows; a click opens it) and the one open.
   const [offer, setOffer] = useState<Offer | null>(null)
   const [checkpoint, setCheckpoint] = useState<CheckpointView>()
+  // The checkpoint's card is still folding back into the strip (the strip's top corners stay square
+  // until it has gone, so the glow never shows between them).
+  const [folding, setFolding] = useState(false)
   useEffect(() => window.duet.checkpoint.onOffer(setOffer), [])
   useEffect(() => window.duet.checkpoint.onClosed(() => setCheckpoint(undefined)), [])
   // Where the pointer went down on the strip, so a click can be told from a drag.
   const pressedAt = useRef<{ x: number; y: number }>(undefined)
-  // A checkpoint opening: a second click (a double-click) waits for the first.
+  // A checkpoint opening: a second ask (the pointer coming back, a click) waits for the first.
   const opening = useRef(false)
-  const openCheckpoint = (event: React.MouseEvent<HTMLElement>): void => {
-    const pressed = pressedAt.current
-    const moved = pressed ? Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) > 4 : true
-    if (!offer || checkpoint || opening.current || moved || (event.target as Element).closest(NOT_FOR_DRAGGING)) return
+  const askCheckpoint = (): void => {
+    if (!offer || checkpoint || opening.current) return
     opening.current = true
     window.duet.checkpoint
       .open()
       .then(setCheckpoint, (cause) => setToast({ text: say(cause, 'That checkpoint has gone.') }))
       .finally(() => (opening.current = false))
+  }
+  // While one is offered, pointing at the glowing strip is opting in: after a moment (so a pointer
+  // only passing over doesn't), the question grows out of it, in place of the usual hover (no
+  // actions row, no longer line). A click opens it at once.
+  const pointing = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(pointing.current), [])
+  const openCheckpoint = (event: React.MouseEvent<HTMLElement>): void => {
+    const pressed = pressedAt.current
+    const moved = pressed ? Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) > 4 : true
+    if (moved || (event.target as Element).closest(NOT_FOR_DRAGGING)) return
+    window.clearTimeout(pointing.current)
+    askCheckpoint()
   }
 
   useEffect(() => {
@@ -178,10 +195,16 @@ export function Overlay(): React.JSX.Element {
     >
       <div
         ref={dock}
-        className={`dock${settingsOpen ? ' pinned' : ''}`}
+        className={`dock${settingsOpen ? ' pinned' : ''}${offer || checkpoint ? ' asking' : ''}`}
         data-solid
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={() => {
+          setHovered(true)
+          if (offer && !checkpoint) pointing.current = window.setTimeout(askCheckpoint, POINTING_MS)
+        }}
+        onMouseLeave={() => {
+          setHovered(false)
+          window.clearTimeout(pointing.current)
+        }}
         onContextMenu={(event) => {
           event.preventDefault()
           window.duet.showMenu()
@@ -234,16 +257,9 @@ export function Overlay(): React.JSX.Element {
           </button>
         </div>
 
-        {/* Each opens out of the strip and goes back into it, in its own boundary: one that breaks
+        {/* It opens out of the strip and goes back into it, in its own boundary: one that breaks
             says so above the strip, which goes on. */}
         <AnimatePresence>
-          {checkpoint && (
-            <motion.div key="checkpoint" className="checkpoint" data-solid role="dialog" aria-label="Checkpoint" style={{ x: '-50%' }} {...pop()}>
-              <ErrorBoundary what="The checkpoint" frame={popped}>
-                <Checkpoint view={checkpoint} onClose={() => setCheckpoint(undefined)} onError={(text) => setToast({ text })} />
-              </ErrorBoundary>
-            </motion.div>
-          )}
           {talk.talking && talk.about && (
             <motion.div key="talk" className="talk-bubble" data-solid role="dialog" aria-label="Talking with Duet" style={{ x: '-50%' }} {...pop()}>
               <ErrorBoundary what="Talking with Duet" frame={popped}>
@@ -286,13 +302,50 @@ export function Overlay(): React.JSX.Element {
             </motion.div>
           )}
         </AnimatePresence>
+        {/* An open checkpoint grows up out of the strip, the two one shape (the glow around both),
+            and folds back into it when done; one that breaks says so above the strip. */}
+        <AnimatePresence onExitComplete={() => setFolding(false)}>
+          {checkpoint && (
+            <motion.div
+              key="checkpoint"
+              className="checkpoint"
+              data-solid
+              role="dialog"
+              aria-label="Checkpoint"
+              // The card stays solid while it grows and folds (were it see-through, the glow behind
+              // would show through it); its content fades in once it opens, and out first as it folds.
+              initial={{ height: 0 }}
+              animate={{ height: 'auto', transition: SPRING }}
+              exit={{ height: 0, transition: { duration: DURATION.base, ease: EASE_IN, delay: QUICK_FADE } }}
+              onAnimationStart={() => setFolding(true)}
+            >
+              <motion.div
+                className="checkpoint-body"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, transition: { duration: DURATION.fast, delay: QUICK_FADE } }}
+                exit={{ opacity: 0, transition: { duration: QUICK_FADE } }}
+              >
+                <ErrorBoundary what="The checkpoint" frame={popped}>
+                  <Checkpoint view={checkpoint} onClose={() => setCheckpoint(undefined)} onError={(text) => setToast({ text })} />
+                </ErrorBoundary>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <motion.div
-          // Its size glides to each line's (the radius is given here so it stays round while it does).
+          // Its size glides to each line's (the corners are given here so they stay round while it
+          // does); under an open checkpoint, until its card has folded away, its top corners meet the
+          // card's.
           layout
           transition={GLIDE}
-          style={{ borderRadius: 18 }}
+          style={{
+            borderTopLeftRadius: checkpoint || folding ? 0 : 18,
+            borderTopRightRadius: checkpoint || folding ? 0 : 18,
+            borderBottomLeftRadius: 18,
+            borderBottomRightRadius: 18
+          }}
           className={`strip${offer || checkpoint ? ' glow' : ''}`}
-          title={offer && !checkpoint ? 'A quick checkpoint: click the strip' : undefined}
+          title={offer && !checkpoint ? 'A quick checkpoint: point at the strip' : undefined}
           onPointerDown={(event) => {
             pressedAt.current = { x: event.clientX, y: event.clientY }
             startDrag(event)
@@ -317,7 +370,7 @@ export function Overlay(): React.JSX.Element {
                   starred={(pair) => !!stars[key(pair)]}
                   onStar={star}
                   onIgnore={ignore}
-                  expanded={hovered || settingsOpen}
+                  expanded={(hovered || settingsOpen) && !offer && !checkpoint}
                 />
               ) : (
                 <p className="idle">

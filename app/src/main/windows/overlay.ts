@@ -12,7 +12,8 @@ import { loadPage, webPreferences } from './load'
 import { OVERLAY, overlayBounds, stripOnScreen } from './overlay-size'
 
 export { OVERLAY } from './overlay-size'
-const BOTTOM_GAP = 40
+// With no place saved, the strip's bottom sits this far above the bottom of the screen's work area.
+const STRIP_ABOVE_BOTTOM = 46
 
 /**
  * Where the overlay rests with no video in view: where the learner last dragged it, if its strip is
@@ -27,7 +28,7 @@ export function restingBounds(settings: Settings): Rectangle {
   const { workArea } = screen.getPrimaryDisplay()
   return {
     x: Math.round(workArea.x + (workArea.width - OVERLAY.width) / 2),
-    y: Math.round(workArea.y + workArea.height - OVERLAY.height - BOTTOM_GAP),
+    y: Math.round(workArea.y + workArea.height - STRIP_ABOVE_BOTTOM + OVERLAY.padding - OVERLAY.height),
     width: OVERLAY.width,
     height: OVERLAY.height
   }

@@ -101,6 +101,10 @@ check(upgradeSettings(undefined) === undefined, 'no saved settings should stay n
 
 // The strip can go as high as the screen: near the top, the window is cut shorter from its top
 // (macOS keeps windows below the menu bar), so the strip at its bottom stays where it was put.
+// Below the strip, room for the checkpoint glow's full reach (about 40px); the window is taller by
+// as much, so the strip's bottom stays 554px below the window's top and saved places don't move.
+check(OVERLAY.padding >= 40, 'room below the strip for the glow')
+check(OVERLAY.height - OVERLAY.padding === 554, 'the strip sits where it did in a saved place')
 const low = overlayBounds(100, 400, 25)
 check(low.y === 400 && low.height === OVERLAY.height, 'well below the top: the whole window')
 const high = overlayBounds(100, -300, 25)

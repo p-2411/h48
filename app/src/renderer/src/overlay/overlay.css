@@ -1,11 +1,13 @@
 /* The overlay: a subtitle-sized strip at the bottom of a transparent window. The window's empty
    space lets clicks through to the video (see useSolid); the strip, its actions, the word popup
    and the settings sit above it when reached for. */
-.stage { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 64px 6px; }
+/* The room below the strip (44px) is for the checkpoint glow's full reach; it is OVERLAY.padding in
+   src/main/windows/overlay-size.ts, which places the window by it. */
+.stage { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 64px 44px; }
 .dock { position: relative; max-width: 100%; display: flex; flex-direction: column; align-items: center; }
 
 /* Duet's surfaces: nearly opaque dark glass, as macOS draws its HUDs. */
-.strip, .settings, .act {
+.strip, .settings, .act, .checkpoint {
   --glass: rgba(30, 30, 32, 0.92);
   --glass-edge: rgba(255, 255, 255, 0.1);
 }
@@ -22,8 +24,10 @@
 .mix { font-size: 24px; line-height: 1.3; letter-spacing: -0.012em; text-wrap: balance; }
 .mix.plain { color: var(--fg-2); }
 /* Under the line while the strip is hovered: it opens to its height and closes back (LineView), so
-   the strip grows and shrinks smoothly; its gap above is padding, inside what opens. */
-.more { display: flex; flex-direction: column; gap: 2px; padding-top: 4px; overflow: hidden; }
+   the strip grows and shrinks smoothly; its gap above is padding, inside what opens. It hides what's
+   outside it while it does, so 10px of room on the other sides (taken back by the margins) lets the
+   blurred English blur out softly instead of being cut. */
+.more { display: flex; flex-direction: column; gap: 2px; padding: 4px 10px 10px; margin: 0 -10px -10px; overflow: hidden; }
 .source { font-size: 16px; line-height: 1.4; }
 .english { font-size: 13.5px; line-height: 1.45; color: var(--text-2); transition: filter 0.2s var(--ease), opacity 0.2s var(--ease); }
 .english.guess { filter: blur(5px); opacity: 0.7; cursor: help; }
@@ -99,8 +103,8 @@
   font-size: 13px;
 }
 /* Bridges the gap down past the strip's edge to its words, so the pointer can go from a word up to
-   the popup (LineView also waits a moment before closing it). */
-.popup::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 16px; }
+   the popup; resting on it closes the popup after a moment, as leaving does (LineView). */
+.popup-bridge { position: absolute; left: 0; right: 0; top: 100%; height: 16px; }
 .popup b { font-size: 17px; font-weight: 600; }
 .popup .reading { font-size: 12.5px; font-style: italic; color: #555; }
 .popup .job { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #555; }
@@ -186,8 +190,20 @@
   .glow-layer { animation: none; --glow-reach: var(--reach-from); }
 }
 .strip.glow { cursor: pointer; }
-/* An open checkpoint, just above the strip (where a word's card opens), over the actions row. */
-.checkpoint { position: absolute; z-index: 5; bottom: calc(100% + 6px); left: 50%; transform-origin: bottom center; width: min(440px, 100%); max-height: min(440px, calc(var(--room, 446px) - 12px)); overflow-y: auto; }
+/* An open checkpoint grows up out of the strip: the card sits flush on it, exactly as wide as the
+   strip (it takes the row's width and never adds to it, so the strip never has to glide wider and the
+   two move as one), its top corners round and the strip's square, so the two are one shape inside
+   the glow. While one is offered or open the hover row stays away (pointing at the strip opens it
+   instead). The challenge inside keeps its own content (components/challenges) on the card's glass. */
+.strip-row:has(.checkpoint) { display: flex; flex-direction: column; align-items: stretch; }
+.checkpoint {
+  position: relative; overflow: hidden; width: 0; min-width: 100%;
+  border-radius: 18px 18px 0 0; background: var(--glass); border: 0.5px solid var(--glass-edge); border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+.checkpoint-body { max-height: min(400px, calc(var(--room, 446px) - 60px)); overflow-y: auto; }
+.checkpoint .challenge { padding: 14px 20px 12px; border: 0; border-radius: 0; background: none; }
+.checkpoint + .strip { border-top-color: transparent; }
+.dock.asking .actions { display: none; }
 /* Talking to Duet: the mascot button left of the strip (quiet until reached for), and while talking
    the mascot just above the subtitles, with small subtitles of what it heard and said. */
 /* The button hangs just left of the strip, outside it, so the actions row and the cards above

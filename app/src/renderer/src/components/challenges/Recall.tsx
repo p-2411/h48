@@ -23,7 +23,16 @@ export function Recall({ challenge, api, onNext }: { challenge: RecallView; api:
       setChecking(false)
     }
   }
-  const blank = result ? result.answer : '＿＿＿'
+  // Until answered, the blank is an empty space a word wide (its line is the blank's underline; a
+  // screen reader hears "blank"); then the answer chosen.
+  const blank = result ? (
+    result.answer
+  ) : (
+    <>
+      {'\u3000\u3000'}
+      <span className="sr-only">blank</span>
+    </>
+  )
   return (
     <section className="challenge" aria-label="Recall a word">
       <span className="challenge-label">Which word goes here?</span>

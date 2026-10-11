@@ -4,10 +4,12 @@
 // be tested without Electron.
 import type { Rectangle } from 'electron'
 
-/** The window's size, and the space below the strip inside it (the stage's bottom padding). */
-export const OVERLAY = { width: 900, height: 560, padding: 6 }
-// However high the strip goes, the window keeps this much: the strip, and a little room above it.
-const LEAST_HEIGHT = 140
+/** The window's size, and the space below the strip inside it (the stage's bottom padding,
+ * overlay.css): room for the checkpoint glow's full reach. */
+export const OVERLAY = { width: 900, height: 598, padding: 44 }
+// However high the strip goes, the window keeps this much: the strip, a little room above it, and
+// the room below it.
+const LEAST_HEIGHT = 178
 // The strip's own height, roughly, for telling whether it is on a screen.
 const STRIP_HEIGHT = 100
 
@@ -24,6 +26,6 @@ export function fullTop(bounds: Rectangle): number {
 
 /** Whether the strip of an overlay whose full-height top-left is `place` is on one of `screens`. */
 export function stripOnScreen(place: { x: number; y: number }, screens: Rectangle[]): boolean {
-  const middle = { x: place.x + OVERLAY.width / 2, y: place.y + OVERLAY.height - STRIP_HEIGHT / 2 }
+  const middle = { x: place.x + OVERLAY.width / 2, y: place.y + OVERLAY.height - OVERLAY.padding - STRIP_HEIGHT / 2 }
   return screens.some((area) => middle.x >= area.x && middle.x <= area.x + area.width && middle.y >= area.y && middle.y <= area.y + area.height)
 }

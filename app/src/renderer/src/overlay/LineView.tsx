@@ -17,8 +17,9 @@ import { Words } from '../components/Words'
 // A word counts as looked at (for the watch log) once the pointer rests on it this long; passing
 // over words on the way somewhere doesn't count.
 const HOVER_DWELL_MS = 300
-// Leaving a word (or the line) closes its popup only after this long, so the pointer can cross the
-// strip's edge on its way up into the popup; entering the popup or another word keeps one open.
+// Leaving a word (or the line), or resting in the gap above it, closes its popup only after this long,
+// so the pointer can cross the strip's edge on its way up into the popup; entering the popup or
+// another word keeps one open.
 const LEAVE_GRACE_MS = 250
 
 type Hover = { pair: number; job: Token['job']; left: number }
@@ -95,6 +96,16 @@ export function LineView({
           onMouseEnter={() => setHover(lineHover)}
           onMouseLeave={leave}
         >
+          {/* The gap down to the word: crossing it on the way up keeps the card, but resting in it
+              closes the card as leaving does. */}
+          <span
+            className="popup-bridge"
+            aria-hidden="true"
+            onMouseEnter={leave}
+            onMouseLeave={(event) => {
+              if (event.currentTarget.parentElement?.contains(event.relatedTarget as Node)) setHover(lineHover)
+            }}
+          />
           <span className="card-labels">
             <span className="job">{JOBS[hover.job]}</span>
             {hoveredState && (
