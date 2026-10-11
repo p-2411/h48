@@ -1,4 +1,4 @@
-// Data that crosses the tutor window's preload boundary. Keep provider-specific Live events out of
+// Data that crosses the preload boundary for the conversation about a line (the side panel). Keep provider-specific Live events out of
 // this file: the renderer owns those, while these types describe only Duet's trusted app actions.
 import type { CardDetail, Rating } from './cards'
 

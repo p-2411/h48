@@ -28,6 +28,9 @@ export interface LanguageModule {
     speech: string[]
     /** What learners of it most often get wrong, so corrections look there first. */
     corrections: string[]
+    /** How the learner's delivery can mislead a native listener (intonation, stress, tone), for voice,
+     * which hears the learner. */
+    delivery: string[]
   }
 }
 

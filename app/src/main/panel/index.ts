@@ -62,6 +62,11 @@ export class Panel extends EventEmitter {
     }
   }
 
+  /** Whether a message came from the panel's page (the only page allowed to talk to the tutor). */
+  owns(sender: Electron.WebContents): boolean {
+    return !!this.window && !this.window.isDestroyed() && sender === this.window.webContents
+  }
+
   send(channel: string, payload: unknown): void {
     if (this.window && !this.window.isDestroyed()) this.window.webContents.send(channel, payload)
   }

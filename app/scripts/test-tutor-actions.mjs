@@ -81,10 +81,16 @@ function moment(original = `テスト${++lineId}`) {
 
 const nothing = () => undefined
 const cards = new Cards({ replay: nothing, practise: nothing, openReview: nothing })
-const tutor = new Tutor({ hold: nothing, release: nothing }, cards)
-tutor.open(moment())
-const tutorWindow = electron.windows.at(-1)
-const fromTutor = { sender: tutorWindow.webContents }
+// The side panel the conversation lives in: only its page may talk to the tutor.
+const { EventEmitter } = await import('node:events')
+const panelPage = { sent: [] }
+const panel = Object.assign(new EventEmitter(), {
+  owns: (sender) => sender === panelPage,
+  send: (channel, value) => panelPage.sent.push([channel, value])
+})
+const tutor = new Tutor({ hold: nothing, release: nothing }, cards, panel)
+tutor.open({ moment: moment() })
+const fromTutor = { sender: panelPage }
 const fromElsewhere = { sender: {} }
 
 const call = (channel, ...args) => electron.handlers.get(channel)(fromTutor, ...args)
@@ -119,7 +125,7 @@ async function savedCard(overrides) {
 }
 /** Opens the tutor on a moment with Explore further on (opening turns it off). */
 async function openOn(line = moment()) {
-  tutor.open(line)
+  tutor.open({ moment: line })
   await call('tutor:set-explore', true)
 }
 const cardCount = () => database().prepare('SELECT COUNT(*) n FROM cards WHERE deleted_at IS NULL').get().n
@@ -280,7 +286,7 @@ await test('8: a start-session offer without an SDP string is refused', async ()
   expect(error?.message === 'INVALID_SDP_OFFER', `start-session gave ${error?.message}`)
 })
 
-tutorWindow.close()
+panel.emit('closed')
 database().close()
 rmSync(folder, { recursive: true, force: true })
 if (failures) {

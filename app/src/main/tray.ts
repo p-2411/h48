@@ -7,7 +7,6 @@ type Actions = {
   toggleOverlay: () => void
   showScript: () => void
   explainLine: () => void
-  openTutor: () => void
   openCards: () => void
   openWelcome: () => void
 }
@@ -16,7 +15,6 @@ export function createTray({
   toggleOverlay,
   showScript,
   explainLine,
-  openTutor,
   openCards,
   openWelcome
 }: Actions): Tray {
@@ -27,7 +25,6 @@ export function createTray({
       { label: 'Show or hide Duet', click: toggleOverlay },
       { label: 'Script', click: showScript },
       { label: 'Explain this line', click: explainLine },
-      { label: 'Converse about this line', click: openTutor },
       { label: 'My cards', click: openCards },
       { type: 'separator' },
       { label: 'Welcome and permissions…', click: openWelcome },

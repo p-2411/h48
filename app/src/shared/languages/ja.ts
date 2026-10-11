@@ -23,6 +23,11 @@ export const ja: LanguageModule = {
       'Particles (は against が, に against で, を).',
       'Politeness level: plain against です/ます forms, and keeping one level through a sentence.',
       'Verb and adjective forms (て-form, past, negative), and long vowels or doubled consonants that change the word.'
+    ],
+    delivery: [
+      'Pitch accent can change the word (はし: bridge or chopsticks); English-style stress sounds foreign.',
+      'Sentence-final particles carry the tone: a rising か asks, ね seeks agreement, a hard よ can sound pushy.',
+      'Polite speech is said softly and evenly; said clipped or loud, polite words can still sound curt.'
     ]
   }
 }

@@ -97,19 +97,6 @@ export function Overlay(): React.JSX.Element {
         <div className="actions" role="toolbar" aria-label="Line actions">
           <LevelMeter settings={settings} />
           <span className="spacer" />
-          <button
-            type="button"
-            className="act icon"
-            disabled={!current}
-            title="Converse about this line"
-            aria-label="Converse about this line"
-            onClick={() => window.duet.openTutor(current?.id)}
-          >
-            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
-              <path d="M8 3 1.5 6 8 9l6.5-3L8 3Z" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-              <path d="M4 7.3v3.2c0 .9 1.8 1.9 4 1.9s4-1 4-1.9V7.3M14.5 6v3.5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-            </svg>
-          </button>
           <button type="button" className="act primary" disabled={!current} onClick={() => window.duet.explainLine(current?.id)}>
             Explain
           </button>

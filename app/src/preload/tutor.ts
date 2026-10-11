@@ -1,7 +1,7 @@
-// The tutor page's bridge to the main process (src/main/tutor). Add the tutor's calls here, all on
-// "tutor:*" channels.
+// The conversation's bridge to the main process (src/main/tutor), used by the side panel's Explain
+// tab for voice, card previews and the learning tools. All on "tutor:*" channels; main answers only
+// the side panel.
 import { ipcRenderer } from 'electron'
-import type { Moment } from '../shared/moment'
 import type {
   PendingTutorAction,
   ReviewRating,
@@ -15,17 +15,13 @@ import type {
 import { subscribe } from './subscribe'
 
 export const tutorApi = {
-  /** The moment the tutor was opened on. */
-  getMoment: (): Promise<Moment | undefined> => ipcRenderer.invoke('tutor:get-moment'),
-  getAutoStart: (): Promise<boolean> => ipcRenderer.invoke('tutor:get-auto-start'),
-  /** The tutor was opened again on another moment. */
-  onMoment: (listener: (moment: Moment) => void) => subscribe('tutor:moment', listener),
-  onAutoStart: (listener: (autoStart: boolean) => void) => subscribe('tutor:auto-start', listener),
   /** Unlocks saved-card/history tools only after the learner explicitly asks to explore. */
   setExplore: (enabled: boolean): Promise<boolean> =>
     ipcRenderer.invoke('tutor:set-explore', enabled),
+  /** Starts voice on the line Explain is open on; the video waits until voiceEnded. */
   startSession: (offer: TutorSessionOffer): Promise<TutorSessionAnswer> =>
     ipcRenderer.invoke('tutor:start-session', offer),
+  voiceEnded: () => ipcRenderer.send('tutor:voice-ended'),
   /** The English meaning of one of Duet's turns in the language learnt; the voice never speaks it. */
   translate: (text: string): Promise<string> => ipcRenderer.invoke('tutor:translate', text),
   /** A turn written in Latin letters (Hepburn, Revised Romanization), for languages not written in them. */
@@ -42,6 +38,5 @@ export const tutorApi = {
   onPendingAction: (listener: (action: PendingTutorAction) => void) =>
     subscribe('tutor:pending-action', listener),
   onActionResult: (listener: (result: TutorActionResult) => void) =>
-    subscribe('tutor:action-result', listener),
-  close: () => ipcRenderer.send('tutor:close')
+    subscribe('tutor:action-result', listener)
 }

@@ -133,7 +133,7 @@ same context. `watcher.moment(lineId?)` takes one.
 
 - **Explain** (on the strip's hover row, on a line in Script, or "Explain this line" in the menu bar)
   opens the side panel's Explain tab on the line: what it means here and how it comes across, with
-  more under "More", Replay, Converse, Save card and a chat about the line.
+  more under "More", Replay and Save card, then the conversation about the line (below).
 - **Save card** fills an editable card from the explanation; the same line, target and type is
   caught as a duplicate. **My cards** (menu bar) lists, searches, edits, pauses, deletes (with undo),
   backs up and restores cards, and runs **review** with FSRS (`ts-fsrs` 5.4.2): due learning cards,
@@ -162,22 +162,27 @@ the delivery, not only the words.
   original actor's.
 - Windows needs its own audio reader (WASAPI process loopback); until then Explain works from the words.
 
-## Voice tutor
+## The conversation about a line (text or voice)
 
-- The window (`windows/tutor.ts`, `src/renderer/src/tutor/`) opens on a moment from the strip's
-  graduation cap, Converse in Explain, or "Practise" on a card, and starts talking at once; "Converse
-  about this line" in the menu bar opens it without starting. It holds the video while open
-  (`tutor/index.ts`). It teaches every language in `src/shared/languages/`: the teaching policy is
-  shared and each language brings its own speech and correction sections.
-- The conversation uses `gpt-live-1` over WebRTC. The renderer owns microphone and playback; the
-  main process exchanges the SDP offer with OpenAI, so `OPENAI_API_KEY` never enters the page.
-- GPT-Live delegates correction reasoning and card tools to `gpt-6-luna`, which also writes the
-  Meaning reveal and the romanisation. Override the voice with `DUET_LIVE_VOICE` or that model with
+- Explain is the way in, from the strip, a line in Script, "Explain this line" in the menu bar, or
+  "Practise" on a card. Under the explanation is one conversation with Duet, typed by default; the mic
+  switches it to voice, and ending voice brings its turns back into the thread, so either mode picks
+  up where the other left off (`src/renderer/src/explain/Conversation.tsx`, `src/main/tutor/`).
+- Both modes get the same line context (`tutor/prompts.ts` `lineContext`): the line and the lines
+  before it, how it was said in the video (when Duet heard it), the explanation, and the conversation
+  so far. Voice also hears the learner, so it can judge pronunciation and tone. It teaches every
+  language in `src/shared/languages/`: the policy is shared, each language brings its own speech and
+  correction sections.
+- Text replies come from `gpt-6-luna` through the Responses API with the card tools (`tutor/text.ts`).
+  Voice uses `gpt-live-1` over WebRTC, delegating reasoning and the same tools to `gpt-6-luna`; the
+  renderer owns microphone and playback, and the main process exchanges the SDP offer, so
+  `OPENAI_API_KEY` never enters the page. The video waits while voice is live. `gpt-6-luna` also writes
+  the Meaning reveal and the romanisation. Override the voice with `DUET_LIVE_VOICE` or that model with
   `DUET_LIVE_BACKEND_MODEL` in `.env.local`.
-- The tutor uses the same `duet.db`, card collection and FSRS scheduler as Explain and My cards.
-  Saves and reviews are prepared first, then committed only after explicit voice or UI confirmation.
+- Duet uses the same `duet.db`, card collection and FSRS scheduler as My cards. Saves and reviews are
+  previewed first and committed only by the learner: a click, or a reply after the preview.
 - `DUET_DEMO_FIXTURES=1` (demos only, `main/demo.ts`) seeds two labelled Japanese cards into an empty
-  `duet.db`, opens the tutor at launch, and uses a Japanese demo line when no line is on screen.
+  `duet.db`, opens Explain at launch, and uses a Japanese demo line when no line is on screen.
   Raw audio and full voice transcripts are not stored locally.
 - Pronunciation checks are explicit, narrow and qualitative. They do not provide an accent score or
   claim that every sound is correct.

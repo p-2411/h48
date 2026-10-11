@@ -23,6 +23,11 @@ export const ko: LanguageModule = {
       'Particles (은/는 against 이/가, 을/를, 에 against 에서).',
       'Speech level: 해요체 against 반말 or 합니다체, and keeping one level with the same person.',
       'Verb endings and tense, and sounds that change the word (plain, tense and aspirated consonants).'
+    ],
+    delivery: [
+      'Endings carry the tone: the same sentence is a question or a statement by intonation alone (a rising 요 asks, a falling one states).',
+      'A flat, clipped delivery can make 반말 sound rude; friendly 해요체 has a softer rise at the end.',
+      'Syllables are even; English-style stress on one syllable sounds foreign.'
     ]
   }
 }

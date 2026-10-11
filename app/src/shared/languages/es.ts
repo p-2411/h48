@@ -26,6 +26,11 @@ export const es: LanguageModule = {
       'Gender and number agreement (el/la, -o/-a, plurals).',
       'Ser against estar, and por against para.',
       'Verb forms: the person and tense, preterite against imperfect, and the subjunctive where it is needed.'
+    ],
+    delivery: [
+      'Yes/no questions rise at the end and statements fall; said flat, a question sounds like a statement.',
+      'Stress falls on the marked or expected syllable; moved, it can change the word (papa, papá) or the tense (hablo, habló).',
+      'Warmth and politeness come through intonation; a flat or clipped delivery can make friendly words sound curt.'
     ]
   }
 }

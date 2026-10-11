@@ -1,7 +1,7 @@
 // The Explain that task on top of any StructuredModel. The reply is checked against the line before
 // it is shown: a quote that is not in the line loses its highlight rather than pointing at words
 // that are not there.
-import type { ChatMessage, Explanation } from '../../../shared/explain'
+import type { Explanation } from '../../../shared/explain'
 import type { Moment } from '../../../shared/moment'
 import type { StructuredModel } from '../structured'
 import type { Delivery } from '../voice/types'
@@ -9,10 +9,7 @@ import {
   EXPLAIN_VERSION,
   ExplanationOutputSchema,
   explainInput,
-  explainInstructions,
-  ReplyOutputSchema,
-  replyInput,
-  replyInstructions
+  explainInstructions
 } from './prompt'
 
 export class Explainer {
@@ -49,27 +46,5 @@ export class Explainer {
       model: this.model.name,
       version: EXPLAIN_VERSION
     }
-  }
-
-  /** Answers the learner's follow-up about the line, with the explanation and the conversation so far. */
-  async reply(
-    moment: Moment,
-    explanation: Explanation,
-    delivery: Delivery | undefined,
-    chat: ChatMessage[],
-    question: string,
-    signal?: AbortSignal
-  ): Promise<string> {
-    const output = await this.model.complete(
-      {
-        instructions: replyInstructions(moment.language),
-        input: replyInput(moment, explanation, delivery, chat, question),
-        schema: ReplyOutputSchema,
-        name: `explain_reply_${moment.language}`,
-        pace: 'careful'
-      },
-      signal
-    )
-    return output.reply.trim()
   }
 }

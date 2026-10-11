@@ -1,0 +1,528 @@
+/* Duet, the mascot: two glass sockets (the halves of the logo) with line-eyes, brows and a mouth.
+   The face is drawn at 420 x 190 and scaled to fit (--scale); data-state picks what it does. The
+   glass sockets flex with the eyes instead of behaving like rigid frames. */
+.duet-mascot {
+  --duet-white: #ffffff;
+  --scale: 1;
+  position: relative;
+  flex: none;
+  width: calc(420px * var(--scale));
+  height: calc(190px * var(--scale));
+  color: var(--duet-white);
+}
+.duet-mascot .mascot-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 420px;
+  height: 190px;
+  display: grid;
+  place-items: center;
+  transform: scale(var(--scale));
+  transform-origin: top left;
+}
+.duet-mascot .mascot-canvas::before {
+  position: absolute;
+  width: 360px;
+  height: 190px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  filter: blur(44px);
+  content: '';
+  animation: duet-breathe 4.8s ease-in-out infinite;
+}
+/* The full-size mascot on its own dark stage (the welcome window). */
+.mascot-stage {
+  display: grid;
+  place-items: center;
+  padding: 24px 0;
+  border-radius: 28px;
+  background: radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.09), transparent 38%), #050505;
+  overflow: hidden;
+}
+
+.duet-mascot .duet-face {
+  position: relative;
+  z-index: 2;
+  width: 420px;
+  height: 190px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  filter: drop-shadow(0 0 24px rgba(255, 255, 255, 0.14));
+}
+
+.duet-mascot .socket {
+  position: relative;
+  width: 160px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 29px;
+  background:
+    radial-gradient(circle at 26% 8%, rgba(255, 255, 255, 0.34), transparent 42%),
+    linear-gradient(152deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.045) 48%, rgba(255, 255, 255, 0.11)),
+    rgba(255, 255, 255, 0.045);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    inset 10px 0 24px rgba(255, 255, 255, 0.035),
+    inset 0 -14px 28px rgba(255, 255, 255, 0.035),
+    0 1px 0 rgba(255, 255, 255, 0.14),
+    0 0 28px rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(22px) saturate(140%);
+  transform-origin: center;
+  transition:
+    width 480ms cubic-bezier(0.16, 1, 0.3, 1),
+    height 480ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-radius 480ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 480ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 420ms ease;
+}
+.duet-mascot .socket::after {
+  position: absolute;
+  inset: 5px 12px auto;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(rgba(255, 255, 255, 0.23), transparent);
+  filter: blur(5px);
+  content: '';
+  pointer-events: none;
+}
+.duet-mascot .socket::before {
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 78% 88%, rgba(255, 255, 255, 0.1), transparent 36%),
+    linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.075) 50%, transparent 68%);
+  content: '';
+  pointer-events: none;
+}
+
+.duet-mascot .eye {
+  position: relative;
+  z-index: 1;
+  width: 48px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--duet-white);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.42);
+  transform-origin: center;
+  transition:
+    width 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    height 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-radius 360ms ease,
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.duet-mascot .brow {
+  --brow-shift: 0px;
+  --brow-tilt: 0deg;
+  position: absolute;
+  z-index: 3;
+  top: 38px;
+  width: 29px;
+  height: 9px;
+  border-top: 3px solid rgba(255, 255, 255, 0.82);
+  border-radius: 50% 50% 0 0;
+  background: transparent;
+  box-shadow: 0 0 9px rgba(255, 255, 255, 0.2);
+  opacity: 0;
+  transform: translateX(-50%) translateY(4px) scaleX(0.82) scaleY(0.72);
+  transform-origin: center bottom;
+  transition:
+    opacity 420ms ease,
+    width 560ms cubic-bezier(0.16, 1, 0.3, 1),
+    height 560ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 560ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.duet-mascot .brow-left { left: 28.8%; }
+.duet-mascot .brow-right { left: 71.2%; }
+
+.duet-mascot .mouth {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  width: 34px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transform: translateX(-50%) translateY(3px) scale(0.76);
+  transform-origin: center;
+  transition: opacity 240ms ease, transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.duet-mascot .mouth-core {
+  width: 18px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--duet-white);
+  box-shadow: 0 0 11px rgba(255, 255, 255, 0.34);
+  transform-origin: center;
+  transition:
+    width 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    height 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-radius 360ms ease,
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    background 240ms ease,
+    box-shadow 240ms ease;
+}
+
+.duet-mascot .particle-field {
+  position: absolute;
+  z-index: 1;
+  inset: 14% 9%;
+  pointer-events: none;
+}
+.duet-mascot .particle {
+  position: absolute;
+  width: var(--particle-size, 3px);
+  height: var(--particle-size, 3px);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 0 9px rgba(255, 255, 255, 0.44);
+  opacity: 0;
+  animation: duet-particle-drift var(--particle-speed, 6.8s) ease-in-out var(--particle-delay, 0s) infinite;
+}
+.duet-mascot .particle:nth-child(1) { left: 7%; top: 56%; --particle-delay: -1.1s; }
+.duet-mascot .particle:nth-child(2) { left: 18%; top: 18%; --particle-size: 2px; --particle-speed: 8s; --particle-delay: -4.4s; }
+.duet-mascot .particle:nth-child(3) { left: 31%; top: 79%; --particle-size: 2px; --particle-delay: -3.2s; }
+.duet-mascot .particle:nth-child(4) { left: 44%; top: 10%; --particle-size: 2px; --particle-speed: 7.6s; --particle-delay: -5.5s; }
+.duet-mascot .particle:nth-child(5) { left: 57%; top: 83%; --particle-delay: -2.6s; }
+.duet-mascot .particle:nth-child(6) { left: 70%; top: 16%; --particle-size: 2px; --particle-speed: 7.9s; --particle-delay: -6.1s; }
+.duet-mascot .particle:nth-child(7) { left: 83%; top: 72%; --particle-size: 2px; --particle-delay: -0.5s; }
+.duet-mascot .particle:nth-child(8) { left: 94%; top: 39%; --particle-speed: 8.4s; --particle-delay: -3.8s; }
+
+.duet-mascot .sound-ring {
+  position: absolute;
+  width: 370px;
+  height: 124px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Opening: the Duet mark (two solid rounded halves, offset) separates, turns to glass and resolves
+   into the idle face. */
+.duet-mascot[data-state='opening'] .socket {
+  background-image: none;
+  background-color: var(--duet-white);
+  border-color: var(--duet-white);
+}
+.duet-mascot[data-state='opening'] .socket:first-of-type {
+  z-index: 1;
+  animation: duet-open-left 2.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.duet-mascot[data-state='opening'] .socket:nth-of-type(2) {
+  z-index: 2;
+  animation: duet-open-right 2.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.duet-mascot[data-state='opening'] .eye { animation: duet-open-eyes 2.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.duet-mascot[data-state='opening'] .mouth { animation: duet-open-mouth 2.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.duet-mascot[data-state='opening'] .socket::before,
+.duet-mascot[data-state='opening'] .socket::after { animation: duet-open-sheen 2.35s ease forwards; }
+
+/* Idle: each socket drifts on its own around calm line-eyes and a flat mouth. */
+.duet-mascot[data-state='idle'] .eye { animation: duet-idle-blink 5.4s ease-in-out infinite; }
+.duet-mascot[data-state='idle'] .socket:first-of-type { animation: duet-socket-idle-left 5.2s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='idle'] .socket:nth-of-type(2) { animation: duet-socket-idle-right 5.2s cubic-bezier(0.45, 0, 0.55, 1) -2.6s infinite; }
+.duet-mascot[data-state='idle'] .mouth {
+  opacity: 0.82;
+  transform: translateX(-50%) translateY(0) scale(1);
+  animation: duet-idle-mouth 5.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.duet-mascot[data-state='idle'] .mouth-core {
+  width: 23px;
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--duet-white);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.28);
+}
+
+.duet-mascot[data-state='listening'] .eye,
+.duet-mascot[data-state='thinking'] .eye,
+.duet-mascot[data-state='speaking'] .eye {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+/* Listening: sockets and pupils nod together, with a small smile. */
+.duet-mascot[data-state='listening'] .mouth { opacity: 0.82; transform: translateX(-50%) translateY(0) scale(1); }
+.duet-mascot[data-state='listening'] .mouth-core {
+  width: 22px;
+  height: 9px;
+  border: solid var(--duet-white);
+  border-width: 0 0 3px;
+  border-radius: 0 0 999px 999px;
+  background: transparent;
+  box-shadow: 0 4px 9px rgba(255, 255, 255, 0.1);
+  animation: duet-listen-smile 1.9s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.duet-mascot[data-state='listening'] .brow { opacity: 0.3; animation: duet-listen-brow 1.9s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='listening'] .eye { animation: duet-listen-nod-eyes 1.9s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='listening'] .socket:first-of-type,
+.duet-mascot[data-state='listening'] .socket:nth-of-type(2) { animation: duet-socket-listen-nod 1.9s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='listening'] .sound-ring { animation: duet-ring 1.8s ease-out infinite; }
+
+/* Thinking: the pupils glance up together; the sockets stay balanced and curious. */
+.duet-mascot[data-state='thinking'] .eye { animation: duet-thinking-look 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='thinking'] .brow { opacity: 0.44; animation: duet-thinking-brow 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='thinking'] .brow-left { --brow-shift: -3px; --brow-tilt: -3deg; }
+.duet-mascot[data-state='thinking'] .brow-right { --brow-shift: 2px; --brow-tilt: 2deg; }
+.duet-mascot[data-state='thinking'] .socket:first-of-type { animation: duet-socket-think-left 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='thinking'] .socket:nth-of-type(2) { animation: duet-socket-think-right 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='thinking'] .mouth { opacity: 0.75; transform: translateX(-50%) translateY(0) scale(1); }
+.duet-mascot[data-state='thinking'] .mouth-core {
+  width: 11px;
+  height: 11px;
+  border: 3px solid var(--duet-white);
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.24);
+  animation: duet-thought-mouth 2.4s ease-in-out infinite;
+}
+
+/* Speaking: small pupil movements, a natural blink, restrained glass motion. */
+.duet-mascot[data-state='speaking'] .eye {
+  width: 18px;
+  height: 18px;
+  animation: duet-speak-eye-natural 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.duet-mascot[data-state='speaking'] .socket:first-of-type { animation: duet-socket-speak-left 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='speaking'] .socket:nth-of-type(2) { animation: duet-socket-speak-right 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='speaking'] .mouth { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+.duet-mascot[data-state='speaking'] .mouth-core {
+  width: 20px;
+  height: 6px;
+  border-radius: 999px;
+  animation: duet-talk-soft 840ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+/* Success: balanced sockets rise with bright celebratory line-eyes. */
+.duet-mascot[data-state='success'] .eye {
+  width: 42px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--duet-white);
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.55);
+  animation: duet-success-eye 1.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+.duet-mascot[data-state='success'] .eye-left { transform: translateY(-4px) rotate(7deg); }
+.duet-mascot[data-state='success'] .eye-right { transform: translateY(-4px) rotate(-7deg); }
+.duet-mascot[data-state='success'] .socket:first-of-type { animation: duet-socket-success-left 1.5s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+.duet-mascot[data-state='success'] .socket:nth-of-type(2) { animation: duet-socket-success-right 1.5s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+.duet-mascot[data-state='success'] .socket {
+  border-width: 3px;
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -10px 22px rgba(255, 255, 255, 0.055),
+    0 0 30px rgba(255, 255, 255, 0.2);
+}
+.duet-mascot[data-state='success'] .mouth { opacity: 1; transform: translateX(-50%) translateY(-1px) scale(1); }
+.duet-mascot[data-state='success'] .mouth-core {
+  width: 26px;
+  height: 12px;
+  border: solid var(--duet-white);
+  border-width: 0 0 4px;
+  border-radius: 0 0 999px 999px;
+  background: transparent;
+  box-shadow: 0 5px 10px rgba(255, 255, 255, 0.13);
+  animation: duet-success-mouth 1.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+/* Gentle correction: a slow blink and a steady smile keep it peaceful and encouraging. */
+.duet-mascot[data-state='correction'] .socket:first-of-type { animation: duet-socket-correction-left 3.8s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='correction'] .socket:nth-of-type(2) { animation: duet-socket-correction-right 3.8s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.duet-mascot[data-state='correction'] .socket {
+  border-color: rgba(255, 255, 255, 0.76);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    inset 0 -10px 22px rgba(255, 255, 255, 0.035),
+    0 0 24px rgba(255, 255, 255, 0.13);
+}
+.duet-mascot[data-state='correction'] .eye {
+  width: 42px;
+  height: 9px;
+  animation: duet-correction-eyes 3.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.duet-mascot[data-state='correction'] .brow { opacity: 0.22; transform: translateX(-50%) translateY(1px) scaleX(0.9) scaleY(0.82); }
+.duet-mascot[data-state='correction'] .mouth { opacity: 0.76; transform: translateX(-50%) translateY(0) scale(1); }
+.duet-mascot[data-state='correction'] .mouth-core {
+  width: 21px;
+  height: 8px;
+  border: solid var(--duet-white);
+  border-width: 0 0 3px;
+  border-radius: 0 0 999px 999px;
+  background: transparent;
+  box-shadow: 0 4px 9px rgba(255, 255, 255, 0.1);
+}
+
+@keyframes duet-breathe {
+  50% { transform: scale(1.1); opacity: 0.62; }
+}
+@keyframes duet-open-left {
+  0%, 18% { height: 94px; border-radius: 31px; background-color: var(--duet-white); border-color: var(--duet-white); transform: translate(34px, -25px) scaleX(0.98); }
+  52% { height: 88px; border-radius: 31px; background-color: rgba(255, 255, 255, 0.78); border-color: rgba(255, 255, 255, 0.94); transform: translate(17px, -11px) scaleX(0.99); }
+  80% { height: 78px; border-radius: 30px; background-color: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.82); transform: translate(-1px, 1px) scaleX(1.018); }
+  100% { height: 76px; border-radius: 29px; background-color: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.72); transform: none; }
+}
+@keyframes duet-open-right {
+  0%, 18% { height: 94px; border-radius: 31px; background-color: var(--duet-white); border-color: var(--duet-white); transform: translate(-34px, 25px) scaleX(0.98); }
+  52% { height: 88px; border-radius: 31px; background-color: rgba(255, 255, 255, 0.78); border-color: rgba(255, 255, 255, 0.94); transform: translate(-17px, 11px) scaleX(0.99); }
+  80% { height: 78px; border-radius: 30px; background-color: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.82); transform: translate(1px, -1px) scaleX(1.018); }
+  100% { height: 76px; border-radius: 29px; background-color: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.72); transform: none; }
+}
+@keyframes duet-open-eyes {
+  0%, 58% { opacity: 0; transform: scaleX(0.12); }
+  78% { opacity: 0.72; transform: scaleX(0.88); }
+  90%, 100% { opacity: 1; transform: scaleX(1); }
+}
+@keyframes duet-open-mouth {
+  0%, 78% { opacity: 0; transform: translateX(-50%) translateY(4px) scaleX(0.32); }
+  92%, 100% { opacity: 0.82; transform: translateX(-50%) translateY(0) scaleX(1); }
+}
+@keyframes duet-open-sheen {
+  0%, 32% { opacity: 0; }
+  72% { opacity: 0.45; }
+  100% { opacity: 1; }
+}
+@keyframes duet-socket-idle-left {
+  0%, 100% { height: 76px; border-radius: 29px 33px 28px 31px; transform: translateY(0) rotate(0) scaleX(0.99); }
+  50% { height: 73px; border-radius: 34px 28px 32px 27px; transform: translateY(-1px) rotate(-0.4deg) scaleX(1.012); }
+}
+@keyframes duet-socket-idle-right {
+  0%, 100% { height: 74px; border-radius: 33px 29px 31px 27px; transform: translateY(-1px) rotate(0.35deg) scaleX(1.01); }
+  50% { height: 77px; border-radius: 27px 34px 26px 32px; transform: translateY(1px) rotate(0) scaleX(0.99); }
+}
+@keyframes duet-socket-listen-nod {
+  0%, 18%, 100% { height: 77px; border-radius: 32px; transform: translateY(-2px) scaleX(1.01); }
+  42% { height: 72px; border-radius: 29px 29px 34px 34px; transform: translateY(6px) scaleX(1.025); }
+  67% { height: 81px; border-radius: 35px 35px 30px 30px; transform: translateY(-6px) scaleX(0.995); }
+  82% { height: 76px; border-radius: 31px; transform: translateY(0) scaleX(1); }
+}
+@keyframes duet-socket-think-left {
+  0%, 100% { height: 74px; border-radius: 32px 29px 33px 28px; transform: translateY(0) rotate(-0.3deg) scaleX(0.998); }
+  50% { height: 78px; border-radius: 34px 32px 31px 34px; transform: translateY(-2px) rotate(0.3deg) scaleX(1.01); }
+}
+@keyframes duet-socket-think-right {
+  0%, 100% { height: 76px; border-radius: 29px 32px 28px 33px; transform: translateY(-1px) rotate(0.3deg) scaleX(1.002); }
+  50% { height: 78px; border-radius: 32px 34px 34px 31px; transform: translateY(-2px) rotate(-0.3deg) scaleX(1.01); }
+}
+@keyframes duet-socket-speak-left {
+  0%, 100% { height: 75px; border-radius: 31px 29px 30px 28px; transform: translateY(0) rotate(-0.2deg) scaleX(0.998); }
+  48% { height: 78px; border-radius: 29px 33px 28px 32px; transform: translateY(-2px) rotate(-0.45deg) scaleX(1.012); }
+}
+@keyframes duet-socket-speak-right {
+  0%, 100% { height: 76px; border-radius: 29px 31px 28px 30px; transform: translateY(-1px) rotate(0.2deg) scaleX(1.002); }
+  48% { height: 78px; border-radius: 33px 29px 32px 28px; transform: translateY(-2px) rotate(0.45deg) scaleX(1.012); }
+}
+@keyframes duet-socket-success-left {
+  0%, 100% { height: 74px; border-radius: 36px 31px 34px 30px; transform: translateY(-2px) rotate(-0.7deg) scaleX(1.015); }
+  42% { height: 68px; border-radius: 39px 34px 37px 32px; transform: translateY(-8px) rotate(-1.2deg) scaleX(1.045); }
+  66% { height: 76px; border-radius: 34px 33px 32px 31px; transform: translateY(-3px) rotate(-0.3deg) scaleX(1.005); }
+}
+@keyframes duet-socket-success-right {
+  0%, 100% { height: 74px; border-radius: 31px 36px 30px 34px; transform: translateY(-2px) rotate(0.7deg) scaleX(1.015); }
+  42% { height: 68px; border-radius: 34px 39px 32px 37px; transform: translateY(-8px) rotate(1.2deg) scaleX(1.045); }
+  66% { height: 76px; border-radius: 33px 34px 31px 32px; transform: translateY(-3px) rotate(0.3deg) scaleX(1.005); }
+}
+@keyframes duet-socket-correction-left {
+  0%, 100% { height: 74px; border-radius: 32px 29px 31px 28px; transform: translateY(1px) rotate(-0.25deg) scaleX(0.995); }
+  50% { height: 77px; border-radius: 35px 31px 33px 30px; transform: translateY(-1px) rotate(0.2deg) scaleX(1.01); }
+}
+@keyframes duet-socket-correction-right {
+  0%, 100% { height: 74px; border-radius: 29px 32px 28px 31px; transform: translateY(1px) rotate(0.25deg) scaleX(0.995); }
+  50% { height: 77px; border-radius: 31px 35px 30px 33px; transform: translateY(-1px) rotate(-0.2deg) scaleX(1.01); }
+}
+@keyframes duet-particle-drift {
+  0%, 100% { opacity: 0; transform: translate3d(0, 6px, 0) scale(0.72); }
+  28% { opacity: 0.18; }
+  55% { opacity: 0.42; transform: translate3d(4px, -5px, 0) scale(1); }
+  78% { opacity: 0.12; }
+}
+@keyframes duet-idle-blink {
+  0%, 42%, 48%, 100% { transform: scaleX(1); }
+  45% { transform: scaleX(0.42); }
+}
+@keyframes duet-idle-mouth {
+  0%, 100% { opacity: 0.76; transform: translateX(-50%) translateY(1px) scaleX(0.92); }
+  50% { opacity: 0.9; transform: translateX(-50%) translateY(-1px) scaleX(1.06); }
+}
+@keyframes duet-listen-nod-eyes {
+  0%, 18%, 100% { transform: translateY(-2px) scale(1); box-shadow: 0 0 16px rgba(255, 255, 255, 0.42); }
+  42% { transform: translateY(7px) scaleY(0.9); box-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
+  67% { transform: translateY(-7px) scale(1.06); box-shadow: 0 0 24px rgba(255, 255, 255, 0.58); }
+  82% { transform: translateY(0) scale(1); box-shadow: 0 0 18px rgba(255, 255, 255, 0.46); }
+}
+@keyframes duet-listen-smile {
+  0%, 18%, 100% { transform: translateY(-1px) scaleX(0.96); }
+  42% { transform: translateY(2px) scaleX(1.02); }
+  67% { transform: translateY(-2px) scaleX(1.05); }
+  82% { transform: translateY(0) scaleX(1); }
+}
+@keyframes duet-listen-brow {
+  0%, 18%, 100% { width: 27px; height: 8px; transform: translateX(-50%) translateY(1px) scaleX(0.88) scaleY(0.78); opacity: 0.24; }
+  42% { width: 26px; height: 7px; transform: translateX(-50%) translateY(4px) scaleX(0.9) scaleY(0.72); opacity: 0.2; }
+  67% { width: 31px; height: 11px; transform: translateX(-50%) translateY(-3px) scaleX(0.98) scaleY(1); opacity: 0.36; }
+  82% { width: 29px; height: 9px; transform: translateX(-50%) translateY(0) scaleX(0.92) scaleY(0.86); opacity: 0.3; }
+}
+@keyframes duet-thinking-brow {
+  0%, 100% { width: 27px; height: 8px; transform: translateX(-50%) translateX(var(--brow-shift)) translateY(1px) rotate(var(--brow-tilt)) scaleX(0.9) scaleY(0.8); }
+  48% { width: 31px; height: 12px; transform: translateX(-50%) translateX(var(--brow-shift)) translateY(-3px) rotate(var(--brow-tilt)) scaleX(0.98) scaleY(1); }
+  72% { width: 29px; height: 10px; transform: translateX(-50%) translateX(var(--brow-shift)) translateY(-1px) rotate(var(--brow-tilt)) scaleX(0.94) scaleY(0.9); }
+}
+@keyframes duet-ring {
+  0% { opacity: 0; transform: scale(0.68); }
+  25% { opacity: 0.5; }
+  100% { opacity: 0; transform: scale(1.1); }
+}
+@keyframes duet-thinking-look {
+  0%, 18%, 100% { transform: translate(4px, -4px) scale(0.96); }
+  45%, 65% { transform: translate(10px, -7px) scale(1); }
+  78% { transform: translate(7px, -5px) scale(0.98); }
+}
+@keyframes duet-speak-eye-natural {
+  0%, 20%, 100% { transform: translate(0, 0) scale(1); }
+  38%, 58% { transform: translate(4px, -1px) scale(1); }
+  68% { transform: translate(2px, 0) scaleY(0.42); }
+  74% { transform: translate(1px, 0) scale(1); }
+}
+@keyframes duet-thought-mouth {
+  0%, 100% { transform: scale(0.82) translateY(2px); }
+  50% { transform: scale(1.08) translateY(-1px); }
+}
+@keyframes duet-talk-soft {
+  0%, 100% { width: 18px; height: 5px; border-radius: 999px; transform: translateY(1px) scaleX(1); }
+  35% { width: 21px; height: 8px; border-radius: 50%; transform: translateY(0) scaleX(1.02); }
+  68% { width: 16px; height: 6px; border-radius: 999px; transform: translateY(1px) scaleX(0.96); }
+}
+@keyframes duet-correction-eyes {
+  0%, 38%, 100% { transform: scaleX(1); opacity: 0.96; }
+  44% { transform: scaleX(0.45); opacity: 0.9; }
+  50% { transform: scaleX(1); opacity: 1; }
+}
+@keyframes duet-success-eye {
+  0%, 100% { width: 42px; opacity: 1; }
+  45% { width: 34px; opacity: 0.92; }
+  62% { width: 45px; opacity: 1; }
+}
+@keyframes duet-success-mouth {
+  0%, 100% { transform: scaleX(0.9) translateY(1px); }
+  50% { transform: scaleX(1.08) translateY(-1px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .duet-mascot *,
+  .duet-mascot *::before,
+  .duet-mascot *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}

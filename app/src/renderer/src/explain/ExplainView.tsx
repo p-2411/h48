@@ -1,12 +1,11 @@
-// The explanation of one line. It opens with the line itself (the words worth noticing lit up in
-// it), Replay, Converse (the voice tutor on this line) and Save card, then one short paragraph:
-// what it means here and how it comes across.
-// The reasoning, an alternative and any doubt fold under "More"; the conversation about the line
-// follows. One component with no window of its own, so it can move into the tutor's window.
+// The explanation of one line, and the conversation about it. It opens with the line itself (the
+// words worth noticing lit up in it), Replay and Save card, then one short paragraph: what it means
+// here and how it comes across. The reasoning, an alternative and any doubt fold under "More"; the
+// conversation with Duet follows, in text or voice (Conversation.tsx).
 import type { ExplainState, HearingNote } from '../../../shared/explain'
 import { languageName } from '../../../shared/languages'
 import { clock } from '../components/time'
-import { Chat } from './Chat'
+import { Conversation } from './Conversation'
 import { SaveCard } from './SaveCard'
 
 // Why the explanation could not draw on the audio, when it couldn't.
@@ -65,9 +64,6 @@ export function ExplainView({
               ↺ Replay
             </button>
           )}
-          <button type="button" className="btn quiet" onClick={() => window.duet.explain.converse()}>
-            Converse
-          </button>
           {explanation && <SaveCard key={moment.takenAt} moment={moment} explanation={explanation} />}
         </div>
       </section>
@@ -135,7 +131,7 @@ export function ExplainView({
       )}
 
       {explanation && <p className="faint">Written by AI ({explanation.model}). It can be wrong.</p>}
-      {explanation && <Chat chat={state.chat} replying={state.replying} error={state.chatError} lang={moment.language} />}
+      <Conversation key={moment.takenAt} state={state} moment={moment} />
     </div>
   )
 }

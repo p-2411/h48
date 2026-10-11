@@ -1,15 +1,23 @@
-// Main-process owner of the tutor window, GPT-Live handshake and local learning tools. All state
-// changes pass through this class so the voice model cannot bypass confirmation or FSRS rules.
+// The conversation about a line, main-process side: the side panel's Explain tab talks to Duet in
+// text or voice. It holds the line context (the line, how it was said, the explanation, the
+// conversation so far), answers text messages (text.ts), starts voice sessions (live.ts), and runs
+// the learning tools both use. All card changes pass through this class, so neither model can get
+// round confirmation or FSRS rules.
 //
 // A save or a rating is two steps: prepare (a visible preview) and commit. The learner commits by
-// clicking in the tutor window. The voice model can commit only when the learner spoke after the
-// preview appeared: the tutor window reports each learner turn ("tutor:learner-turn"), and a
-// commit tool call with no learner turn since the preview is refused. So the model can not
-// confirm its own preview.
+// clicking in the panel. A model can commit only when the learner spoke or wrote after the preview
+// appeared: each text message, and each spoken turn the panel reports ("tutor:learner-turn"),
+// counts; a commit tool call with none since the preview is refused. So a model can not confirm its
+// own preview.
+//
+// IPC (all "tutor:*", from the side panel only; window.duet.tutor in src/preload/tutor.ts):
+//   tutor:start-session / tutor:voice-ended   voice starts (holding the video) and ends
+//   tutor:set-explore, tutor:translate, tutor:romanise, tutor:execute-tool, tutor:confirm-action,
+//   tutor:undo, tutor:learner-turn
+//   tutor:pending-action / tutor:action-result / tutor:card   ← sent to the panel
 import { randomUUID } from 'node:crypto'
-import { ipcMain, type BrowserWindow, type WebContents } from 'electron'
+import { ipcMain, type WebContents } from 'electron'
 import { RATINGS, type CardDraft } from '../../shared/cards'
-import type { Moment } from '../../shared/moment'
 import type {
   PendingTutorAction,
   ReviewRating,
@@ -20,9 +28,11 @@ import type {
 } from '../../shared/tutor'
 import type { Cards } from '../cards'
 import { StaleReviewError } from '../cards/review'
+import type { Panel } from '../panel'
 import type { Player } from '../player'
-import { createTutorWindow } from '../windows/tutor'
 import { createLiveSession, romaniseForLearner, translateForLearner } from './live'
+import type { LineContext } from './prompts'
+import { replyInText } from './text'
 
 type PendingAction =
   | { id: string; kind: 'save-card'; preparedAt: number; expiresAt: number; draft: CardDraft }
@@ -85,39 +95,43 @@ function safeError(error: unknown): string {
 }
 
 export class Tutor {
-  private window?: BrowserWindow
-  private moment?: Moment
-  private autoStart = false
+  private context?: LineContext
   private exploreEnabled = false
   private readonly pending = new Map<string, PendingAction>()
   private lastAction?: LastAction
-  // When the learner last spoke, as the tutor window reports it. 0: not yet.
+  // When the learner last spoke or wrote. 0: not yet.
   private lastLearnerTurnAt = 0
 
   constructor(
     private readonly player: Player,
-    private readonly cards: Cards
+    private readonly cards: Cards,
+    private readonly panel: Panel
   ) {
-    ipcMain.handle('tutor:get-moment', () => this.moment)
-    ipcMain.handle('tutor:get-auto-start', () => this.autoStart)
+    // Closing the panel ends the conversation: its previews, its undo and any hold on the video.
+    panel.on('closed', () => this.reset())
     ipcMain.handle('tutor:set-explore', (event, enabled: boolean) => {
       this.assertTutor(event)
       this.exploreEnabled = enabled === true
       return this.exploreEnabled
     })
+    // Voice holds the video while it is live, so Duet and the video don't talk over each other.
     ipcMain.handle('tutor:start-session', (event, offer: TutorSessionOffer) => {
       this.assertTutor(event)
-      if (!this.moment) throw new Error('Open the tutor on a line before starting voice.')
+      if (!this.context) throw new Error('Open Explain on a line before starting voice.')
       if (typeof offer?.sdp !== 'string') throw new Error('INVALID_SDP_OFFER')
-      return createLiveSession(offer.sdp, this.moment)
+      this.player.hold('tutor')
+      return createLiveSession(offer.sdp, this.context)
+    })
+    ipcMain.on('tutor:voice-ended', (event) => {
+      if (this.isTutor(event.sender)) this.player.release('tutor')
     })
     ipcMain.handle('tutor:translate', (event, text: string) => {
       this.assertTutor(event)
-      return translateForLearner(string(text, 'translation_text', 2_000), this.requireMoment().language)
+      return translateForLearner(string(text, 'translation_text', 2_000), this.requireContext().moment.language)
     })
     ipcMain.handle('tutor:romanise', (event, text: string) => {
       this.assertTutor(event)
-      return romaniseForLearner(string(text, 'reading_text', 2_000), this.requireMoment().language)
+      return romaniseForLearner(string(text, 'reading_text', 2_000), this.requireContext().moment.language)
     })
     ipcMain.handle('tutor:execute-tool', (event, request: TutorToolRequest) => {
       this.assertTutor(event)
@@ -136,51 +150,50 @@ export class Tutor {
       this.assertTutor(event)
       return this.undoLastAction()
     })
-    ipcMain.on('tutor:close', (event) => {
-      if (event.sender === this.window?.webContents) this.window.close()
-    })
   }
 
-  /** Opens the tutor on a frozen moment, or moves the existing tutor to the new moment. */
-  open(moment: Moment, { autoStart = false }: { autoStart?: boolean } = {}): void {
-    this.moment = moment
-    this.autoStart = autoStart
+  /** A new conversation, on the line Explain opened: earlier previews, undo and Explore end. */
+  open(context: LineContext): void {
+    this.reset()
+    this.context = context
+  }
+
+  /** What Explain learnt about the line since (how it was said, the explanation, new messages). */
+  update(change: Partial<Omit<LineContext, 'moment'>>): void {
+    if (this.context) this.context = { ...this.context, ...change }
+  }
+
+  /** Duet's text reply to the learner's message. Writing counts as the learner's turn. */
+  reply(message: string): Promise<string> {
+    const context = this.requireContext()
+    this.lastLearnerTurnAt = Date.now()
+    return replyInText({ ...context, exploreEnabled: this.exploreEnabled }, message, async (name, args) => (await this.executeTool({ callId: randomUUID(), name, arguments: args })).output)
+  }
+
+  private reset(): void {
+    this.context = undefined
     this.exploreEnabled = false
     this.pending.clear()
     this.lastAction = undefined
     this.cards.resetTutorReview()
-    this.player.hold('tutor')
-    if (this.window && !this.window.isDestroyed()) {
-      this.window.webContents.send('tutor:moment', moment)
-      this.window.webContents.send('tutor:auto-start', autoStart)
-      this.window.show()
-      return
-    }
-    const window = (this.window = createTutorWindow())
-    window.on('closed', () => {
-      this.window = undefined
-      this.pending.clear()
-      this.lastAction = undefined
-      this.cards.resetTutorReview()
-      this.player.release('tutor')
-    })
+    this.player.release('tutor')
   }
 
   private isTutor(sender: WebContents): boolean {
-    return !!this.window && !this.window.isDestroyed() && sender === this.window.webContents
+    return this.panel.owns(sender)
   }
 
   private assertTutor(event: { sender: WebContents }): void {
     if (!this.isTutor(event.sender)) throw new Error('UNTRUSTED_TUTOR_CALLER')
   }
 
-  private requireMoment(): Moment {
-    if (!this.moment) throw new Error('MOMENT_NOT_FOUND')
-    return this.moment
+  private requireContext(): LineContext {
+    if (!this.context) throw new Error('MOMENT_NOT_FOUND')
+    return this.context
   }
 
   private send(channel: string, value: unknown): void {
-    if (this.window && !this.window.isDestroyed()) this.window.webContents.send(channel, value)
+    this.panel.send(channel, value)
   }
 
   private output(value: unknown): TutorToolResult {
@@ -194,7 +207,7 @@ export class Tutor {
       const args = object(request.arguments ?? {})
       switch (request.name) {
         case 'get_current_moment': {
-          const moment = this.requireMoment()
+          const { moment } = this.requireContext()
           return this.output({
             selectedLine: moment.line.original,
             translation: moment.line.processed?.translation,
@@ -226,7 +239,7 @@ export class Tutor {
           const sourceKind =
             args.source === 'video' ? 'video' : args.source === 'tutor' ? 'tutor' : undefined
           if (!sourceKind) throw new Error('INVALID_SOURCE')
-          const moment = this.requireMoment()
+          const { moment } = this.requireContext()
           const draft: CardDraft = {
             type: 'understand',
             expression: string(args.expression, 'expression', 500),

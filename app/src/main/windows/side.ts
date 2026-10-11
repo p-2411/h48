@@ -1,5 +1,5 @@
 // A side window: an ordinary window at the right edge of the screen, beside the video, kept above
-// other windows so it is not lost behind the browser. The tutor and the side panel are side windows.
+// other windows so it is not lost behind the browser. The side panel is one.
 // One can open where it was last left (when that is still on a screen), and can be drawn in the
 // macOS sidebar material, as the strip is drawn in dark glass.
 import { BrowserWindow, screen, type Rectangle } from 'electron'

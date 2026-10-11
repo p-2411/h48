@@ -1,62 +1,91 @@
-// Explain that, main-process side: shows the side panel's Explain tab on a moment, listens to how the
-// line was said (when it can), and asks the model about it; then the learner can chat about the
-// line. Opening it on another line abandons the requests for the old one (and starts a new
-// conversation), so an answer always belongs to the line on show; closing the panel abandons them too.
+// Explain that, main-process side: the side panel's Explain tab on a moment. It listens to how the
+// line was said (when it can) and asks the model to explain it; the explanation is Duet's first
+// message, and the conversation about the line follows, in text or voice, with the tutor (src/main/
+// tutor), which gets the same line context: the line, how it was said, the explanation and the
+// conversation so far. Opening Explain on another line abandons the requests for the old one and
+// starts a new conversation, so an answer always belongs to the line on show; closing the panel
+// abandons them too.
 //
 // IPC (all "explain:*"; the page reaches them through window.duet.explain in src/preload/explain.ts):
-//   explain:get-state  → ExplainState
-//   explain:state      ← sent whenever it changes
-//   explain:retry      asks again for the same moment
-//   explain:replay     goes back to the moment in the video
-//   explain:converse   opens the voice tutor on the moment, talking at once
-//   explain:ask        a follow-up question about the line
+//   explain:get-state    → ExplainState
+//   explain:state        ← sent whenever it changes
+//   explain:retry        asks again for the same moment
+//   explain:replay       goes back to the moment in the video
+//   explain:ask          the learner's message in the text conversation
+//   explain:voice-turns  turns of a voice conversation that just ended, to keep in the thread
 import { ipcMain } from 'electron'
-import type { ExplainState, HearingNote } from '../../shared/explain'
+import type { ChatMessage, ExplainState, HearingNote } from '../../shared/explain'
 import type { Moment } from '../../shared/moment'
 import { ModelError, type Explainer } from '../ai'
 import type { Delivery } from '../ai/voice'
 import type { Panel } from '../panel'
+import type { Tutor } from '../tutor'
+
+// Bounds on what the panel may hand over from a voice conversation.
+const MAX_VOICE_TURNS = 200
+const MAX_TURN_LENGTH = 4_000
+
+type Options = {
+  explainer?: Explainer
+  replay: (moment: Moment) => void
+  panel: Panel
+  tutor: Tutor
+  hear: (moment: Moment, signal: AbortSignal) => Promise<{ delivery?: Delivery; note: HearingNote }>
+}
+
+/** Voice turns from the panel, kept only when well formed. */
+function voiceTurns(value: unknown): ChatMessage[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .slice(0, MAX_VOICE_TURNS)
+    .filter(
+      (turn): turn is ChatMessage =>
+        !!turn && (turn.from === 'learner' || turn.from === 'duet') && typeof turn.text === 'string' && !!turn.text.trim()
+    )
+    .map((turn) => ({ from: turn.from, text: turn.text.trim().slice(0, MAX_TURN_LENGTH), via: 'voice' }))
+}
 
 export class Explain {
   private state: ExplainState = { loading: false, chat: [] }
   private request?: AbortController
-  // How the line was said, kept for the conversation about it.
-  private delivery?: Delivery
 
-  constructor(
-    private explainer: Explainer | undefined,
-    private moments: { replay: (moment: Moment) => void; converse: (moment: Moment) => void },
-    private panel: Panel,
-    private hear: (moment: Moment, signal: AbortSignal) => Promise<{ delivery?: Delivery; note: HearingNote }>
-  ) {
+  constructor(private readonly options: Options) {
+    const { panel } = options
     ipcMain.handle('explain:get-state', () => this.state)
     ipcMain.on('explain:retry', () => this.state.moment && this.ask(this.state.moment))
-    ipcMain.on('explain:replay', () => this.state.moment && this.moments.replay(this.state.moment))
-    // The moment on show, not a line looked up again: after a video or language switch it is gone.
-    ipcMain.on('explain:converse', () => this.state.moment && this.moments.converse(this.state.moment))
-    ipcMain.on('explain:ask', (_, question: string) => this.followUp(String(question ?? '').trim()))
+    ipcMain.on('explain:replay', () => this.state.moment && options.replay(this.state.moment))
+    ipcMain.on('explain:ask', (event, message: string) => {
+      if (panel.owns(event.sender)) this.followUp(String(message ?? '').trim())
+    })
+    ipcMain.on('explain:voice-turns', (event, turns: unknown) => {
+      if (!panel.owns(event.sender)) return
+      const added = voiceTurns(turns)
+      if (added.length) this.setChat([...this.state.chat, ...added])
+    })
     panel.on('closed', () => this.request?.abort())
   }
 
   open(moment: Moment): void {
-    this.panel.show('explain')
+    this.options.panel.show('explain')
     this.ask(moment)
   }
 
   private ask(moment: Moment): void {
+    const { explainer, tutor, hear } = this.options
     this.request?.abort()
-    this.delivery = undefined
-    if (!this.explainer) return this.set({ moment, loading: false, chat: [], error: 'Add an API key to use Explain.' })
-    const explainer = this.explainer
+    tutor.open({ moment })
+    if (!explainer) return this.set({ moment, loading: false, chat: [], error: 'Add an API key to use Explain.' })
     const request = (this.request = new AbortController())
     this.set({ moment, loading: true, stage: 'listening', chat: [] })
-    this.hear(moment, request.signal)
+    hear(moment, request.signal)
       .then(async ({ delivery, note }) => {
         if (request.signal.aborted) return
-        this.delivery = delivery
+        tutor.update({ delivery })
         this.set({ moment, loading: true, stage: 'explaining', hearing: note, chat: [] })
         const explanation = await explainer.explain(moment, delivery, request.signal)
-        if (!request.signal.aborted) this.set({ moment, explanation, loading: false, hearing: note, chat: [] })
+        if (request.signal.aborted) return
+        tutor.update({ explanation })
+        this.set({ moment, explanation, loading: false, hearing: note, chat: [] })
       })
       .catch((error) => {
         if (request.signal.aborted) return
@@ -65,23 +94,31 @@ export class Explain {
       })
   }
 
-  /** A follow-up question in the conversation about the line on show. */
-  private followUp(question: string): void {
-    const { moment, explanation, chat, replying } = this.state
-    if (!question || !moment || !explanation || replying || !this.explainer) return
+  /** The learner's message in the text conversation about the line on show. */
+  private followUp(message: string): void {
+    const { moment, replying } = this.state
+    if (!message || !moment || replying) return
     const request = this.request
-    this.update({ chat: [...chat, { from: 'learner', text: question }], replying: true, chatError: undefined })
-    this.explainer
-      .reply(moment, explanation, this.delivery, chat, question, request?.signal)
+    // The tutor's context holds the conversation before this message; the message goes with it.
+    this.options.tutor.update({ conversation: this.state.chat })
+    this.update({ chat: [...this.state.chat, { from: 'learner', text: message, via: 'text' }], replying: true, chatError: undefined })
+    this.options.tutor
+      .reply(message)
       .then((reply) => {
-        if (request?.signal.aborted) return
-        this.update({ chat: [...this.state.chat, { from: 'duet', text: reply }], replying: false })
+        if (request?.signal.aborted || this.state.moment !== moment) return
+        this.update({ replying: false })
+        this.setChat([...this.state.chat, { from: 'duet', text: reply, via: 'text' }])
       })
-      .catch((error) => {
-        if (request?.signal.aborted) return
-        if (!(error instanceof ModelError)) console.error('[duet] reply failed', error)
-        this.update({ replying: false, chatError: error instanceof ModelError ? error.message : 'Could not answer that.' })
+      .catch((error: Error) => {
+        if (request?.signal.aborted || this.state.moment !== moment) return
+        this.update({ replying: false, chatError: error.message || 'Could not answer that.' })
       })
+  }
+
+  /** The thread changed: show it, and give it to the tutor for the next message or voice session. */
+  private setChat(chat: ChatMessage[]): void {
+    this.options.tutor.update({ conversation: chat })
+    this.update({ chat })
   }
 
   private update(change: Partial<ExplainState>): void {
@@ -90,6 +127,6 @@ export class Explain {
 
   private set(state: ExplainState): void {
     this.state = state
-    this.panel.send('explain:state', state)
+    this.options.panel.send('explain:state', state)
   }
 }

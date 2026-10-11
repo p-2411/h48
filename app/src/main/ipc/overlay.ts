@@ -14,7 +14,6 @@
 //   duet:drag          the learner drags the subtitles: start, end (placement.ts moves the window)
 //   duet:focus         takes the keyboard, while the learner presses new show/hide keys
 //   duet:set-shortcut  new show/hide keys → why not, if they can't be had
-//   duet:open-tutor    opens the tutor on a line (the one on screen when no id is given) and starts talking
 //   duet:hide          hides the overlay
 //   duet:status / duet:settings / duet:line / duet:current / duet:live / duet:due   ← updates
 //   duet:fit           ← how wide the strip may be, to stay inside the video (none: as wide as it likes)
@@ -28,7 +27,6 @@ type Actions = {
   watcher: Watcher
   settings: Settings
   due: () => DueCounts
-  openTutor: (lineId?: number, autoStart?: boolean) => void
   explainLine: (lineId?: number) => void
   showScript: () => void
   saveLine: (lineId?: number, pair?: number) => SaveResult | undefined
@@ -64,7 +62,6 @@ export function connectOverlay(
   ipcMain.on('duet:set', (_, change: Partial<Pick<OverlaySettings, 'pauseForHelp'>>) =>
     settings.update({ pauseForHelp: change.pauseForHelp })
   )
-  ipcMain.on('duet:open-tutor', (_, lineId?: number) => actions.openTutor(lineId, true))
   ipcMain.on('duet:explain', (_, lineId?: number) => actions.explainLine(lineId))
   ipcMain.on('duet:script', () => actions.showScript())
   ipcMain.handle('duet:save', (_, lineId?: number, pair?: number) => actions.saveLine(lineId, pair))

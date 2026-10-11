@@ -47,6 +47,5 @@ export const overlayApi = {
   /** Explains a line; the line on screen when no id is given. */
   explainLine: (lineId?: number) => ipcRenderer.send('duet:explain', lineId),
   /** Opens the voice tutor on a line; the line on screen when no id is given. */
-  openTutor: (lineId?: number) => ipcRenderer.send('duet:open-tutor', lineId),
   hide: () => ipcRenderer.send('duet:hide')
 }

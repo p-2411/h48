@@ -7,7 +7,7 @@
 //   panel/          the side panel beside the video: Script, Explain and Review tabs
 //   explain/        Explain that: the side panel's Explain tab and its request
 //   cards/          saved cards, My cards and FSRS review
-//   tutor/          the voice tutor's window and work
+//   tutor/          the conversation about a line (text and voice) and its card tools
 //   sources/        each video site (YouTube, Netflix); store/ the local database
 //   ipc/overlay.ts  the overlay's IPC; windows/ the windows; tray.ts the menu bar icon
 //   ai/             the models (lines, explain, voice), one file per provider
@@ -103,28 +103,22 @@ app.whenReady().then(() => {
   const hear = (moment: Moment, signal: AbortSignal): ReturnType<typeof hearLine> =>
     hearLine(moment, { audio, player, listener: voice?.listener }, signal)
   const demo = demoEnabled()
-  // The tutor and My cards share one collection: the tutor reads and saves cards, and practising a
-  // card opens the tutor on it. The tutor needs the cards, so it is made after them.
-  const tutorRef: { current?: Tutor } = {}
-  const converse = (moment: Moment): void => tutorRef.current?.open(moment, { autoStart: true })
-  const explain = new Explain(models?.explainer, { replay: replayMoment, converse }, panel, hear)
   // Listen to the browser only while a video is being watched in it.
   watcher.on('status', (status) => audio.listen(watcher.currentVideo ? status.bundle : undefined))
+  // Practising a card opens Explain, and its conversation, on the card's moment.
   const cards = new Cards({
     replay: replayMoment,
-    practise: converse,
+    practise: (moment) => explain.open(moment),
     openReview: () => panel.show('review')
   })
-  const tutor = new Tutor(player, cards)
-  tutorRef.current = tutor
+  // Explain and the conversation about a line are one: the explanation first, then text or voice
+  // with the tutor, which reads and saves cards in the same collection as My cards.
+  const tutor = new Tutor(player, cards, panel)
+  const explain = new Explain({ explainer: models?.explainer, replay: replayMoment, panel, tutor, hear })
   if (demo) cards.seedDemoFixtures(demoMoment())
-  // Each opens on a line: the one on screen when no id is given.
-  const openTutor = (lineId?: number, autoStart = false): void => {
-    const moment = watcher.moment(lineId) ?? (demo ? demoMoment() : undefined)
-    if (moment) tutor.open(moment, { autoStart })
-  }
+  // Opens Explain on a line: the one on screen when no id is given (in demo mode, the demo line).
   const explainLine = (lineId?: number): void => {
-    const moment = watcher.moment(lineId)
+    const moment = watcher.moment(lineId) ?? (demo ? demoMoment() : undefined)
     if (!moment) return
     // "Pause while explaining": the video waits while the panel is open (see Player for who wins).
     if (settings.current.pauseForHelp) player.hold('explain')
@@ -143,7 +137,6 @@ app.whenReady().then(() => {
     watcher,
     settings,
     due: () => cards.counts(),
-    openTutor,
     explainLine,
     showScript,
     // A star on the strip: the whole line, or one of its words.
@@ -181,12 +174,11 @@ app.whenReady().then(() => {
     toggleOverlay: () => toggleOverlay(overlay),
     showScript,
     explainLine: () => explainLine(),
-    openTutor: () => openTutor(),
     openCards: () => cards.open(),
     openWelcome: () => welcome.open(true)
   })
-  // In demo mode the tutor opens at once, so the flow shows without finding the tray menu first.
-  if (demo) setTimeout(() => openTutor(), 300)
+  // In demo mode Explain opens at once on the demo line, so the flow shows without a video.
+  if (demo) setTimeout(() => explainLine(), 300)
 
   // Videos with neither a transcript nor captions: lines from the audio.
   const hearing = new Hearing({ watcher, player, audio, speech: voice?.speechToText, settings })

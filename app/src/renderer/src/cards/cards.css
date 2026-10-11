@@ -1,5 +1,5 @@
 /* My cards: a header (Review, and backup and export under ⋯), then the list and the card open, each
-   on a panel of the same monochrome glass as Converse. */
+   on a panel of monochrome glass. */
 html, body, #root { min-height: 100%; background: #000; }
 .my-cards {
   min-height: 100%; display: flex; flex-direction: column; gap: 14px; padding: 22px 26px 26px;

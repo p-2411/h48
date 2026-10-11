@@ -1,26 +1,26 @@
 // Creates GPT-Live WebRTC sessions in the trusted Electron main process. The renderer supplies only
 // an SDP offer and receives only the SDP answer/session id, so the project API key never crosses
-// the preload boundary.
+// the preload boundary. The client, the backend model, the tools and the error messages here are
+// shared with text replies (text.ts).
 import OpenAI from 'openai'
 import type { FunctionTool } from 'openai/resources/live/live'
 import { RATINGS } from '../../shared/cards'
-import type { Moment } from '../../shared/moment'
 import type { TutorSessionAnswer } from '../../shared/tutor'
 import { languageModule, languageName, type Language } from '../../shared/languages'
-import { backendInstructions, liveInstructions, momentContext } from './prompts'
+import { backendInstructions, lineContext, liveInstructions, type LineContext } from './prompts'
 
 const readingCache = new Map<string, string>()
 
 // One client per API key: a new client for each call would set up its connection again.
 let cachedClient: { apiKey: string; client: OpenAI } | undefined
 
-function openai(apiKey: string): OpenAI {
+export function openai(apiKey: string): OpenAI {
   if (cachedClient?.apiKey !== apiKey) cachedClient = { apiKey, client: new OpenAI({ apiKey }) }
   return cachedClient.client
 }
 
 /** The text model behind the voice: it runs the tools, and it translates and romanises. */
-function backendModel(env: NodeJS.ProcessEnv): string {
+export function backendModel(env: NodeJS.ProcessEnv): string {
   return env.DUET_LIVE_BACKEND_MODEL || 'gpt-6-luna'
 }
 
@@ -31,7 +31,7 @@ const emptyObject = {
   additionalProperties: false
 } as const
 
-const tools: FunctionTool[] = [
+export const tools: FunctionTool[] = [
   {
     type: 'function',
     name: 'get_current_moment',
@@ -137,14 +137,14 @@ const tools: FunctionTool[] = [
     type: 'function',
     name: 'undo_last_action',
     description:
-      'Undo the latest save or review performed in this tutor window after the learner asks to undo.',
+      'Undo the latest save or review made in this conversation after the learner asks to undo.',
     strict: true,
     parameters: emptyObject
   }
 ]
 
 /** An error the learner can read. `context` says what failed, such as "Could not translate". */
-function safeLiveError(error: unknown, context: string): Error {
+export function safeLiveError(error: unknown, context: string): Error {
   if (error instanceof OpenAI.AuthenticationError || error instanceof OpenAI.PermissionDeniedError)
     return new Error('The OpenAI project key was rejected or does not have GPT-Live access.')
   if (error instanceof OpenAI.RateLimitError)
@@ -157,7 +157,7 @@ function safeLiveError(error: unknown, context: string): Error {
 
 export async function createLiveSession(
   sdp: string,
-  moment: Moment,
+  context: LineContext,
   env: NodeJS.ProcessEnv = process.env
 ): Promise<TutorSessionAnswer> {
   if (!env.OPENAI_API_KEY)
@@ -165,18 +165,19 @@ export async function createLiveSession(
   if (!sdp.trim() || sdp.length > 100_000) throw new Error('INVALID_SDP_OFFER')
 
   const client = openai(env.OPENAI_API_KEY)
+  const { language } = context.moment
   try {
     const result = await client.live.create({
       session: {
         model: 'gpt-live-1',
         store: false,
         audio: { output: { voice: env.DUET_LIVE_VOICE || 'marin' } },
-        instructions: liveInstructions(moment.language),
+        instructions: liveInstructions(language),
         input: [
           {
             type: 'message',
             role: 'developer',
-            content: [{ type: 'input_text', text: `Current Duet moment: ${momentContext(moment)}` }]
+            content: [{ type: 'input_text', text: `Line context: ${lineContext(context)}` }]
           }
         ],
         client: {
@@ -197,7 +198,7 @@ export async function createLiveSession(
           type: 'responses',
           responses: {
             model: backendModel(env),
-            instructions: backendInstructions(moment.language),
+            instructions: backendInstructions(language),
             max_output_tokens: 1_200,
             parallel_tool_calls: false,
             reasoning: { effort: 'low' },

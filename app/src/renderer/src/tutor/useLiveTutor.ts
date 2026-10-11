@@ -277,14 +277,14 @@ export function useLiveTutor(moment?: Moment): {
             event_id: `greeting-${crypto.randomUUID()}`,
             delegation_id: null,
             content:
-              `Greet the learner briefly in English as Duet. Refer naturally to the current ${nameRef.current} phrase and ask whether they want to understand it or practise saying it. Do not search saved history unless Explore further has been enabled. Then pause and listen.`
+              `The learner switched to voice to talk about the line in the context. If the conversation so far is empty, greet them briefly in English as Duet and ask whether they want to practise saying the line or talk about it; otherwise pick up where the conversation left off, in one short sentence, without repeating the explanation. Do not search saved cards unless the learner opened them to Duet. Then pause and listen.`
           })
           send({
             type: 'session.commentary.append',
             event_id: `welcome-${crypto.randomUUID()}`,
             delegation_id: null,
             content:
-              `Welcome the learner briefly as Duet and offer to understand or practise the current ${nameRef.current} phrase.`
+              `Greet the learner briefly as Duet, or pick up the conversation where it left off.`
           })
           break
         case 'session.input_transcript.delta':
@@ -453,7 +453,7 @@ export function useLiveTutor(moment?: Moment): {
     startRef.current = connect
   }, [connect])
 
-  // Starts from the learner (Converse, Reconnect) get a fresh set of automatic reconnects; the
+  // Starts from the learner (the mic button) get a fresh set of automatic reconnects; the
   // automatic ones go straight to connect() so the limit holds.
   const start = useCallback(
     (preserveConversation = false): Promise<void> => {

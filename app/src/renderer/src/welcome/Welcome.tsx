@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { joinTokens, mixedLine } from '../../../shared/levels'
 import { LANGUAGE_CODES, languageModule, languageName } from '../../../shared/languages'
 import { type AudioPermission, type Language, type Level, type OverlaySettings, type OverlayStatus } from '../../../shared/types'
+import { Mascot } from '../components/Mascot'
 import { Words } from '../components/Words'
 import { JOBS, LEVELS } from '../overlay/words'
 
@@ -76,6 +77,11 @@ export function Welcome(): React.JSX.Element {
   return (
     <main className="welcome">
       <header>
+        {step === 0 && (
+          <div className="mascot-stage">
+            <Mascot state="idle" scale={0.72} />
+          </div>
+        )}
         <h1>Welcome to Duet</h1>
         <p className="muted">Learn a language from what you already watch. Duet sits over YouTube and Netflix like subtitles.</p>
         <ol className="steps" aria-label="Steps">

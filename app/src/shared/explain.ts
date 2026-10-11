@@ -29,8 +29,9 @@ export type Explanation = {
  * this computer. */
 export type HearingNote = 'heard' | 'asking' | 'not-allowed' | 'not-kept' | 'unclear' | 'off'
 
-/** One message in the conversation about a line, after the explanation. */
-export type ChatMessage = { from: 'learner' | 'duet'; text: string }
+/** One message in the conversation about a line, after the explanation: typed, or a turn of a voice
+ * conversation, kept once that conversation ends. */
+export type ChatMessage = { from: 'learner' | 'duet'; text: string; via?: 'text' | 'voice' }
 
 /** What the Explain tab shows: the moment, the explanation once it arrives, and the conversation
  * about the line that follows it. */

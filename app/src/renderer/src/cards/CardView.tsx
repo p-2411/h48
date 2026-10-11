@@ -189,7 +189,7 @@ export function CardView({
               className="btn"
               onClick={() => window.duet.cards.practise(card.id)}
             >
-              Practise with tutor
+              Practise in Explain
             </button>
           </>
         )}

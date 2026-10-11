@@ -9,8 +9,8 @@ export const explainApi = {
   onState: (listener: (state: ExplainState) => void) => subscribe('explain:state', listener),
   retry: () => ipcRenderer.send('explain:retry'),
   replay: () => ipcRenderer.send('explain:replay'),
-  /** Opens the voice tutor on the line being explained. */
-  converse: () => ipcRenderer.send('explain:converse'),
-  /** A follow-up question about the line. */
-  ask: (question: string) => ipcRenderer.send('explain:ask', question)
+  /** Turns of a voice conversation that just ended, to keep in the thread. */
+  voiceTurns: (turns: { from: 'learner' | 'duet'; text: string }[]) => ipcRenderer.send('explain:voice-turns', turns),
+  /** The learner's message in the text conversation about the line. */
+  ask: (message: string) => ipcRenderer.send('explain:ask', message)
 }

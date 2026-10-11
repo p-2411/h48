@@ -12,7 +12,7 @@
 
 /* The strip: as small as the line it carries. Its background drags it anywhere. */
 .strip {
-  position: relative; max-width: min(860px, var(--fit, 860px)); min-width: 352px; padding: 10px 46px 12px 20px; border-radius: 18px;
+  position: relative; max-width: min(860px, var(--fit, 860px)); min-width: 320px; padding: 10px 46px 12px 20px; border-radius: 18px;
   background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg);
   display: flex; flex-direction: column; gap: 6px; user-select: none;
 }

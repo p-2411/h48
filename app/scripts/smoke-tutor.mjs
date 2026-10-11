@@ -2,7 +2,7 @@
 import { createEmptyCard, fsrs, Rating } from 'ts-fsrs'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { backendInstructions, liveInstructions, momentContext } from '../src/main/tutor/prompts.ts'
+import { backendInstructions, lineContext, liveInstructions, textInstructions } from '../src/main/tutor/prompts.ts'
 import { ENGLISH_HELP_DELAY_MS, LIVE_REPLY_FALLBACK_MS } from '../src/renderer/src/tutor/timing.ts'
 import { LANGUAGE_CODES, languageModule, speaks } from '../src/shared/languages/index.ts'
 import { joinTokens } from '../src/shared/levels.ts'
@@ -24,16 +24,22 @@ for (const [rating, grade] of Object.entries({
     throw new Error(`Missing a valid FSRS outcome for ${rating}.`)
 }
 
-const context = momentContext({
-  language: 'ja',
-  line: { id: 1, original: 'そんなつもりじゃなかった。', at: now, state: 'pending' },
-  earlier: [{ original: '怒ってるの？', translation: 'Are you angry?' }],
-  video: { site: 'youtube', url: 'fixture:tutor-smoke', position: 42 },
-  takenAt: now
+// Text and voice get the same line context: the line, how it was said, the explanation and the
+// conversation so far.
+const context = lineContext({
+  moment: {
+    language: 'ja',
+    line: { id: 1, original: 'そんなつもりじゃなかった。', at: now, state: 'pending' },
+    earlier: [{ original: '怒ってるの？', translation: 'Are you angry?' }],
+    video: { site: 'youtube', url: 'fixture:tutor-smoke', position: 42 },
+    takenAt: now
+  },
+  delivery: { description: 'Flat and defensive, a little hurt.', spokenLanguage: 'Japanese' },
+  explanation: { meaning: 'A defensive denial.', card: { expression: '', meaning: '', target: '', situation: '' }, model: 'test', version: 1 },
+  conversation: [{ from: 'learner', text: 'Is this rude?' }]
 })
-
-if (!context.includes('そんなつもりじゃなかった。'))
-  throw new Error('The selected line was not included in the live-session context.')
+for (const [what, text] of [['line', 'そんなつもりじゃなかった。'], ['tone', 'Flat and defensive'], ['explanation', 'A defensive denial.'], ['conversation', 'Is this rude?']])
+  if (!context.includes(text)) throw new Error(`The line context is missing the ${what}.`)
 // Every language gets the whole teaching policy, with its own speech and correction sections.
 for (const language of LANGUAGE_CODES) {
   const { name, tutor } = languageModule(language)
@@ -53,8 +59,13 @@ for (const language of LANGUAGE_CODES) {
     throw new Error(`${name}: Duet no longer answers each completed learner turn.`)
   if (!live.includes('roughly 80%') || !tutor.speech.every((line) => live.includes(line)))
     throw new Error(`${name}: the speech policy is missing its slower pace or its own pronunciation lines.`)
+  if (!tutor.delivery.length || !tutor.delivery.every((line) => live.includes(line)))
+    throw new Error(`${name}: the voice prompt is missing what to listen for in the learner's delivery.`)
   if (!tutor.corrections.every((line) => live.includes(line) && backend.includes(line)))
     throw new Error(`${name}: the prompts are missing its correction focus.`)
+  const text = textInstructions(language)
+  if (text.includes('${') || !tutor.corrections.every((line) => text.includes(line)) || !text.includes('explicit confirmation'))
+    throw new Error(`${name}: the text conversation's prompt is missing its corrections or its card rules.`)
   if (!backend.includes('explicitly enabled Explore further'))
     throw new Error(`${name}: saved learning history is no longer gated behind Explore further.`)
   const others = LANGUAGE_CODES.filter((code) => code !== language)
