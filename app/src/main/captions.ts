@@ -101,7 +101,13 @@ export class CaptionSource extends EventEmitter {
       return
     }
     if (message.type !== 'caption') return
-    const text = (message.text ?? '').trim()
+    // Sound tags ([música de suspense], (risas)) aren't speech; a line of only those is no line.
+    const text = (message.text ?? '')
+      .replace(/\[[^\]]*\]|\([^)]*\)/g, ' ')
+      .replace(/(^|\s)-\s*(?=-|$)/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^-\s*$/, '')
     const previous = this.pending?.text ?? ''
     // A caption that grows word by word keeps the time it first appeared.
     const growing = previous && text.startsWith(previous)
