@@ -8,5 +8,7 @@ export const explainApi = {
   getState: () => invoke<ExplainState>('explain:get-state'),
   onState: (listener: (state: ExplainState) => void) => subscribe('explain:state', listener),
   retry: () => ipcRenderer.send('explain:retry'),
-  replay: () => ipcRenderer.send('explain:replay')
+  replay: () => ipcRenderer.send('explain:replay'),
+  /** A follow-up question about the line. */
+  ask: (question: string) => ipcRenderer.send('explain:ask', question)
 }

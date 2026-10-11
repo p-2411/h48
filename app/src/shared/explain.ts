@@ -29,7 +29,11 @@ export type Explanation = {
  * this computer. */
 export type HearingNote = 'heard' | 'asking' | 'not-allowed' | 'not-kept' | 'unclear' | 'off'
 
-/** What the Explain tab shows: the moment, and the explanation once it arrives. */
+/** One message in the conversation about a line, after the explanation. */
+export type ChatMessage = { from: 'learner' | 'duet'; text: string }
+
+/** What the Explain tab shows: the moment, the explanation once it arrives, and the conversation
+ * about the line that follows it. */
 export type ExplainState = {
   moment?: Moment
   explanation?: Explanation
@@ -38,4 +42,8 @@ export type ExplainState = {
   stage?: 'listening' | 'explaining'
   hearing?: HearingNote
   error?: string
+  chat: ChatMessage[]
+  /** Duet is writing a reply. */
+  replying?: boolean
+  chatError?: string
 }

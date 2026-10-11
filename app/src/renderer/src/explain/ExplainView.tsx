@@ -1,9 +1,10 @@
 // The explanation of one line: what it means here and the one thing worth noticing, with Replay
-// and Save card. One component with no window of its own, so it can move into the tutor's window.
+// and Save card, then a conversation about the line. One component with no window of its own, so it can move into the tutor's window.
 import type { ExplainState, HearingNote } from '../../../shared/explain'
 import { LANGUAGES } from '../../../shared/types'
 import { clock } from '../components/time'
 import { Words } from '../components/Words'
+import { Chat } from './Chat'
 import { SaveCard } from './SaveCard'
 
 // Why the explanation could not draw on the audio, when it couldn't.
@@ -119,6 +120,7 @@ export function ExplainView({
         {explanation && <SaveCard key={moment.takenAt} moment={moment} explanation={explanation} />}
       </div>
       {explanation && <p className="faint">Written by AI ({explanation.model}). It can be wrong.</p>}
+      {explanation && <Chat chat={state.chat} replying={state.replying} error={state.chatError} lang={moment.language} />}
     </div>
   )
 }
