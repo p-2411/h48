@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Moment } from '../../../shared/moment'
 import { languageName } from '../../../shared/languages'
 import { LIVE_REPLY_FALLBACK_MS } from './timing'
+import { nextReconnectAttempt, RECONNECT_LIMIT } from './reconnect'
 
 export type TutorLiveStatus =
   | 'idle'
@@ -66,7 +67,7 @@ export function useLiveTutor(moment?: Moment): {
   tutorMuted: boolean
   speakerBlocked: boolean
   usageSeconds: number
-  start: () => Promise<void>
+  start: (preserveConversation?: boolean) => Promise<void>
   end: () => void
   toggleMicrophone: () => void
   toggleTutorAudio: () => void
@@ -100,10 +101,16 @@ export function useLiveTutor(moment?: Moment): {
   const disconnectTimer = useRef<number | undefined>(undefined)
   const activeMoment = useRef<number | undefined>(undefined)
   const reconnectAttempts = useRef(0)
+  // When the current session said it started, so a long healthy session earns fresh reconnects.
+  const healthySince = useRef<number | undefined>(undefined)
+  // Bumped on every release, so a start() still awaiting the microphone or network knows to stop.
+  const generation = useRef(0)
   const manuallyEnded = useRef(false)
   const startRef = useRef<(preserveConversation?: boolean) => Promise<void>>(async () => undefined)
 
   const release = useCallback((next: TutorLiveStatus = 'ended') => {
+    generation.current += 1
+    healthySince.current = undefined
     window.clearTimeout(closeTimer.current)
     window.clearTimeout(replyFallbackTimer.current)
     window.clearTimeout(outputSettledTimer.current)
@@ -114,10 +121,14 @@ export function useLiveTutor(moment?: Moment): {
     disconnectTimer.current = undefined
     microphone.current?.getTracks().forEach((track) => track.stop())
     microphone.current = null
-    channel.current?.close()
+    // Clear each ref before closing it, so its close events know this was on purpose and don't
+    // start a reconnect that would hide the real error.
+    const events = channel.current
     channel.current = null
-    connection.current?.close()
+    events?.close()
+    const peer = connection.current
     connection.current = null
+    peer?.close()
     if (speaker.current) speaker.current.srcObject = null
     speaker.current = null
     setMuted(false)
@@ -126,9 +137,13 @@ export function useLiveTutor(moment?: Moment): {
 
   const reconnect = useCallback((): void => {
     if (manuallyEnded.current || reconnectTimer.current !== undefined) return
-    const attempt = reconnectAttempts.current + 1
+    const attempt = nextReconnectAttempt(
+      reconnectAttempts.current,
+      healthySince.current,
+      Date.now()
+    )
     reconnectAttempts.current = attempt
-    if (attempt > 3) {
+    if (attempt > RECONNECT_LIMIT) {
       setError('Duet could not restore the voice connection. Press Reconnect to try again.')
       release('error')
       return
@@ -136,7 +151,7 @@ export function useLiveTutor(moment?: Moment): {
     // Mark recovery as scheduled before closing the old channel, whose close event can fire at once.
     reconnectTimer.current = -1
     release('reconnecting')
-    setError(`Voice connection interrupted. Reconnecting (${attempt}/3)…`)
+    setError(`Voice connection interrupted. Reconnecting (${attempt}/${RECONNECT_LIMIT})…`)
     reconnectTimer.current = window.setTimeout(
       () => {
         reconnectTimer.current = undefined
@@ -163,6 +178,10 @@ export function useLiveTutor(moment?: Moment): {
       window.clearTimeout(reconnectTimer.current)
       reconnectTimer.current = undefined
       release('ended')
+      // The old conversation was about the old phrase.
+      setTranscripts([])
+      setUsageSeconds(0)
+      setError(undefined)
     }
     activeMoment.current = next
   }, [moment?.takenAt, release])
@@ -211,6 +230,7 @@ export function useLiveTutor(moment?: Moment): {
     async (item: NonNullable<LiveEvent['event']>['item']): Promise<void> => {
       if (!item?.call_id || !item.name || handledCalls.current.has(item.call_id)) return
       handledCalls.current.add(item.call_id)
+      const events = channel.current
       setStatus('working')
       let args: unknown = {}
       try {
@@ -229,6 +249,8 @@ export function useLiveTutor(moment?: Moment): {
       } catch {
         output = JSON.stringify({ error: 'APP_TOOL_UNAVAILABLE' })
       }
+      // The session ended or reconnected while the app worked, so this answer has nowhere to go.
+      if (channel.current !== events) return
       send({
         type: 'response.item.create',
         event_id: `tool-${crypto.randomUUID()}`,
@@ -244,7 +266,7 @@ export function useLiveTutor(moment?: Moment): {
     (event: LiveEvent): void => {
       switch (event.type) {
         case 'session.started':
-          reconnectAttempts.current = 0
+          healthySince.current = Date.now()
           setError(undefined)
           setStatus('listening')
           send({
@@ -324,7 +346,7 @@ export function useLiveTutor(moment?: Moment): {
     [appendTranscript, handleToolCall, reconnect, release, send]
   )
 
-  const start = useCallback(
+  const connect = useCallback(
     async (preserveConversation = false): Promise<void> => {
       if (
         !moment ||
@@ -338,48 +360,61 @@ export function useLiveTutor(moment?: Moment): {
       if (!preserveConversation) {
         setTranscripts([])
         setUsageSeconds(0)
-        reconnectAttempts.current = 0
       }
       handledCalls.current.clear()
+      // End, a new moment or a reconnect releases the session while this attempt may still be
+      // waiting. After each wait, an outdated attempt stops its own microphone and connection.
+      const run = generation.current
+      const stale = (): boolean => generation.current !== run
+      let stream: MediaStream | undefined
+      let peer: RTCPeerConnection | undefined
+      const abandon = (): void => {
+        stream?.getTracks().forEach((track) => track.stop())
+        peer?.close()
+      }
       try {
         setStatus('requesting-microphone')
-        const stream = await navigator.mediaDevices.getUserMedia({
+        stream = await navigator.mediaDevices.getUserMedia({
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
         })
+        if (stale()) return abandon()
         microphone.current = stream
         setStatus('connecting')
-        const peer = new RTCPeerConnection()
+        peer = new RTCPeerConnection()
         connection.current = peer
+        const current = peer
         const audio = new Audio()
         audio.autoplay = true
         audio.muted = tutorMuted
         audio.volume = 1
         audio.setAttribute('playsinline', '')
         speaker.current = audio
-        peer.addEventListener('track', ({ streams, track }) => {
+        current.addEventListener('track', ({ streams, track }) => {
           audio.srcObject = streams[0] ?? new MediaStream([track])
           playSpeaker()
           track.addEventListener('unmute', playSpeaker)
         })
-        peer.addEventListener('connectionstatechange', () => {
-          if (peer.connectionState === 'connected') {
+        current.addEventListener('connectionstatechange', () => {
+          // A released connection's state changes are expected; only the live one may reconnect.
+          if (connection.current !== current) return
+          if (current.connectionState === 'connected') {
             window.clearTimeout(disconnectTimer.current)
             disconnectTimer.current = undefined
-            reconnectAttempts.current = 0
-          } else if (peer.connectionState === 'failed') {
+          } else if (current.connectionState === 'failed') {
             reconnect()
-          } else if (peer.connectionState === 'disconnected') {
+          } else if (current.connectionState === 'disconnected') {
             window.clearTimeout(disconnectTimer.current)
             disconnectTimer.current = window.setTimeout(reconnect, 1_200)
           }
         })
-        for (const track of stream.getAudioTracks()) peer.addTrack(track, stream)
-        const events = peer.createDataChannel('oai-events')
+        for (const track of stream.getAudioTracks()) current.addTrack(track, stream)
+        const events = current.createDataChannel('oai-events')
         channel.current = events
         events.addEventListener('close', () => {
-          if (!manuallyEnded.current) reconnect()
+          if (channel.current === events && !manuallyEnded.current) reconnect()
         })
         events.addEventListener('message', ({ data }) => {
+          if (channel.current !== events) return
           try {
             handleEvent(JSON.parse(String(data)) as LiveEvent)
           } catch {
@@ -387,14 +422,21 @@ export function useLiveTutor(moment?: Moment): {
             release('error')
           }
         })
-        const offer = await peer.createOffer()
-        await peer.setLocalDescription(offer)
-        await waitForIce(peer)
-        const sdp = peer.localDescription?.sdp
+        const offer = await current.createOffer()
+        if (stale()) return abandon()
+        await current.setLocalDescription(offer)
+        if (stale()) return abandon()
+        await waitForIce(current)
+        if (stale()) return abandon()
+        const sdp = current.localDescription?.sdp
         if (!sdp) throw new Error('Could not prepare the microphone connection.')
         const answer = await window.duet.tutor.startSession({ sdp })
-        await peer.setRemoteDescription({ type: 'answer', sdp: answer.sdp })
+        if (stale()) return abandon()
+        await current.setRemoteDescription({ type: 'answer', sdp: answer.sdp })
+        if (stale()) return abandon()
       } catch (cause) {
+        // A released attempt fails as its connection closes; that isn't the learner's problem.
+        if (stale()) return abandon()
         setError(message(cause))
         release('error')
       }
@@ -403,8 +445,18 @@ export function useLiveTutor(moment?: Moment): {
   )
 
   useEffect(() => {
-    startRef.current = start
-  }, [start])
+    startRef.current = connect
+  }, [connect])
+
+  // Starts from the learner (Converse, Reconnect) get a fresh set of automatic reconnects; the
+  // automatic ones go straight to connect() so the limit holds.
+  const start = useCallback(
+    (preserveConversation = false): Promise<void> => {
+      reconnectAttempts.current = 0
+      return connect(preserveConversation)
+    },
+    [connect]
+  )
 
   const end = useCallback((): void => {
     manuallyEnded.current = true
