@@ -1,4 +1,4 @@
-// The side panel beside the video: Script, Explain and Review tabs.
+// The side panel beside the video: Script, Explain and Review tabs. The window's own buttons close it.
 import { ExplainView } from '../explain/ExplainView'
 import { Review } from '../review/Review'
 import { Script } from './Script'
@@ -22,9 +22,6 @@ export function Panel(): React.JSX.Element {
             Review
           </button>
         </div>
-        <button type="button" className="close" aria-label="Close" onClick={() => window.duet.panel.close()}>
-          ×
-        </button>
       </header>
       {tab === 'script' ? (
         <Script script={script} current={current} />

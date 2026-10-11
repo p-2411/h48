@@ -109,6 +109,8 @@ export type OverlaySettings = {
   shortcut: string
   /** Where the learner dragged the subtitles to (the overlay window's top-left), if anywhere. */
   overlayPosition?: { x: number; y: number }
+  /** Where the side panel was last left, and its size. */
+  panelBounds?: { x: number; y: number; width: number; height: number }
 }
 
 /** Whether Duet may hear the browser's sound (macOS System Audio Recording); 'unavailable' when

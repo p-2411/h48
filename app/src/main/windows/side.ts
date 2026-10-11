@@ -1,21 +1,34 @@
 // A side window: an ordinary window at the right edge of the screen, beside the video, kept above
-// other windows so it is not lost behind the browser. The tutor and Explain windows are side windows.
-import { BrowserWindow, screen } from 'electron'
+// other windows so it is not lost behind the browser. The tutor and the side panel are side windows.
+// One can open where it was last left (when that is still on a screen), and can be drawn in the
+// macOS sidebar material, as the strip is drawn in dark glass.
+import { BrowserWindow, screen, type Rectangle } from 'electron'
 import { loadPage, webPreferences, type Page } from './load'
 
 const EDGE_GAP = 24
 
-export function createSideWindow(page: Page, title: string, { width, height }: { width: number; height: number }): BrowserWindow {
+type Options = { width: number; height: number; bounds?: Rectangle; glass?: boolean }
+
+/** Whether the middle of a rectangle is on one of the screens. */
+export function onScreen({ x, y, width, height }: Rectangle): boolean {
+  const middle = { x: x + width / 2, y: y + height / 2 }
+  return screen.getAllDisplays().some(({ workArea: area }) => middle.x >= area.x && middle.x <= area.x + area.width && middle.y >= area.y && middle.y <= area.y + area.height)
+}
+
+export function createSideWindow(page: Page, title: string, { width, height, bounds, glass }: Options): BrowserWindow {
   const { workArea } = screen.getPrimaryDisplay()
+  const place =
+    bounds && onScreen(bounds)
+      ? bounds
+      : { width, height, x: workArea.x + workArea.width - width - EDGE_GAP, y: workArea.y + Math.round((workArea.height - height) / 2) }
   const window = new BrowserWindow({
-    width,
-    height,
-    x: workArea.x + workArea.width - width - EDGE_GAP,
-    y: workArea.y + Math.round((workArea.height - height) / 2),
+    ...place,
     minWidth: 360,
     minHeight: 480,
     title,
-    backgroundColor: '#101013',
+    ...(glass
+      ? { vibrancy: 'sidebar' as const, visualEffectState: 'active' as const, backgroundColor: '#00000000', titleBarStyle: 'hiddenInset' as const }
+      : { backgroundColor: '#101013' }),
     alwaysOnTop: true,
     fullscreenable: false,
     show: false,

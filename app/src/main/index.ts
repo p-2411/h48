@@ -10,7 +10,7 @@
 //   sources/        each video site (YouTube, Netflix); store/ the local database
 //   ipc/overlay.ts  the overlay's IPC; windows/ the windows; tray.ts the menu bar icon
 //   ai/             the models (lines, voice), one file per provider
-import { app, globalShortcut, type Tray } from 'electron'
+import { app, globalShortcut, nativeTheme, type Tray } from 'electron'
 import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import type { Moment } from '../shared/moment'
@@ -57,6 +57,8 @@ const primary = app.requestSingleInstanceLock()
 if (!primary) app.quit()
 
 app.whenReady().then(() => {
+  // Duet is dark only: the side panel's macOS material stays dark when the Mac is in light mode.
+  nativeTheme.themeSource = 'dark'
   if (!primary) return
   electronApp.setAppUserModelId('io.useduet.app')
   // An overlay app lives in the menu bar, not the Dock.
@@ -91,7 +93,7 @@ app.whenReady().then(() => {
   )
   const tutor = new Tutor(player)
   const replayMoment = (moment: Moment): void => replay(moment, { watcher, player })
-  const panel = new Panel({ watcher, replay: replayMoment })
+  const panel = new Panel({ watcher, settings, replay: replayMoment })
   const explain = new Explain(models?.explainer, replayMoment, panel, (moment, signal) =>
     hearLine(moment, { audio, player, listener: voice?.listener }, signal)
   )
