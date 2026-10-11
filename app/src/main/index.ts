@@ -61,6 +61,8 @@ import { Checkpoints } from './checkpoints'
 import { openAISceneJudge } from './checkpoints/scenes'
 import { isFrom } from './windows/from'
 import { createOverlay, toggleOverlay } from './windows/overlay'
+import appIcon from '../../resources/icon.png?asset'
+import { dataFolder } from './data-folder'
 
 // In development, settings such as OPENAI_API_KEY can live in app/.env.local (git-ignored).
 if (is.dev) {
@@ -77,6 +79,10 @@ const HEARING_TICK_MS = 500
 
 let tray: Tray | undefined
 
+// The data stays where it has always been, whatever the app is called (before anything reads it);
+// a folder given on the command line (--user-data-dir, a test or preview copy) is kept.
+if (!app.commandLine.hasSwitch('user-data-dir')) app.setPath('userData', dataFolder(app.getPath('appData')))
+
 // One Duet at a time: a second copy would read the same captions and write the same database.
 const primary = app.requestSingleInstanceLock()
 if (!primary) app.quit()
@@ -86,6 +92,9 @@ app.whenReady().then(() => {
   nativeTheme.themeSource = 'dark'
   if (!primary) return
   electronApp.setAppUserModelId('io.useduet.app')
+  // Run from source, the app is Electron's own binary: give its Dock icon Duet's (a built app has it
+  // in its bundle, build/icon.icns).
+  if (is.dev && process.platform === 'darwin') app.dock?.setIcon(appIcon)
   app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 
   let models: Models | undefined

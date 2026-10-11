@@ -10,6 +10,8 @@ import { levelAt } from '../src/renderer/src/overlay/levels.ts'
 import { upgradeSettings } from '../src/main/upgrade-settings.ts'
 import { settingsChange } from '../src/main/ipc/settings-change.ts'
 import { OVERLAY, overlayBounds, stripOnScreen } from '../src/main/windows/overlay-size.ts'
+import { dataFolder } from '../src/main/data-folder.ts'
+import { readFileSync } from 'node:fs'
 
 const line = (id, state) => ({ id, original: `line ${id}`, at: id, state })
 const here = { url: 'https://youtube.com/watch?v=a', language: 'es' }
@@ -136,4 +138,9 @@ check(strip.step(2, -60, 1900) === -1, 'later, a swipe left: one step down')
 check(levelAt(0) === 0 && levelAt(25) === 0, 'the first place is Auto')
 check(levelAt(26) === 1 && levelAt(60) === 2 && levelAt(155) === 5, 'each 26 px is the next level')
 check(levelAt(-40) === 0 && levelAt(400) === 5, 'dragged past either end: the end level')
+// The app is called Duet, but its data stays in the folder it has always had ("app"): renaming it
+// must not leave the learner's cards and words behind.
+check(JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).productName === 'Duet', 'the app is called Duet')
+check(dataFolder('/Users/x/Library/Application Support') === '/Users/x/Library/Application Support/app', 'its data stays in the app folder')
+
 console.log('Overlay line choice, status dot and settings upgrade tests passed.')

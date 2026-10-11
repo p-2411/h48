@@ -2,6 +2,9 @@
 // (where Settings live; quick ones are also in the strip's ⚙).
 import { Menu, nativeImage, Tray } from 'electron'
 import icon from '../../resources/icon.png?asset'
+// On macOS, the Duet mark as a template (one colour, which macOS sets for a light or dark menu bar;
+// the @2x beside it is loaded for Retina screens). Windows' tray shows the app icon.
+import trayTemplate from '../../resources/trayTemplate.png?asset'
 
 type Actions = {
   openHome: () => void
@@ -20,7 +23,9 @@ export function createTray({
   openCards,
   openWelcome
 }: Actions): Tray {
-  const tray = new Tray(nativeImage.createFromPath(icon).resize({ width: 18, height: 18 }))
+  const tray = new Tray(
+    process.platform === 'darwin' ? nativeImage.createFromPath(trayTemplate) : nativeImage.createFromPath(icon).resize({ width: 16, height: 16 })
+  )
   tray.setToolTip('Duet')
   tray.setContextMenu(
     Menu.buildFromTemplate([

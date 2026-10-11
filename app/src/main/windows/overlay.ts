@@ -52,9 +52,10 @@ export function createOverlay(settings: Settings): BrowserWindow {
     // see-through window for covered, and the throttling would stall them half-way.
     webPreferences: { ...webPreferences, backgroundThrottling: false }
   })
-  // Above fullscreen apps and on every desktop/space.
+  // Above fullscreen apps and on every desktop/space. Electron would otherwise make the whole app a
+  // background one for this (no Dock icon, no app menu); as a panel the strip doesn't need it.
   overlay.setAlwaysOnTop(true, 'screen-saver')
-  overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true })
   overlay.setIgnoreMouseEvents(true, { forward: true })
 
   loadPage(overlay, 'index')
