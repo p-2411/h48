@@ -14,12 +14,15 @@ export type Holder = 'wait' | 'tutor'
 
 // How long the reader has to report that a pause or play Duet asked for has happened.
 const COMMAND_MS = 1500
+// How far back the record of video time against real time goes (the audio reader keeps a minute).
+const HISTORY_MS = 70_000
 
 export class Player extends EventEmitter {
   private clock = new PlayerClock()
   private holders = new Set<Holder>()
   private resumeOnRelease = false
   private expected?: { playing: boolean; timer: NodeJS.Timeout }
+  private history: { at: number; position: number }[] = []
 
   /** `command` asks the page to pause, play or seek (see CaptionSource.command). */
   constructor(private command: (command: PlayerCommand) => void) {
@@ -35,9 +38,31 @@ export class Player extends EventEmitter {
     return this.clock.now()
   }
 
+  /** Notes where the video is now, so a point in the video can later be matched to when it played
+   * (for cutting a line out of the audio). Call often. */
+  sample(at = Date.now()): void {
+    const position = this.clock.now(at)
+    if (position !== undefined && this.clock.playing) this.history.push({ at, position })
+    while (this.history.length && this.history[0].at < at - HISTORY_MS) this.history.shift()
+  }
+
+  /** When (ms since 1970) the video last played the given point, or undefined if not recently. */
+  playedAt(seconds: number): number | undefined {
+    for (let index = this.history.length - 1; index > 0; index--) {
+      const before = this.history[index - 1]
+      const after = this.history[index]
+      // Only a stretch of ordinary playback between the two samples, not a seek.
+      const continuous = Math.abs(after.position - before.position - (after.at - before.at) / 1000) < 0.5
+      if (continuous && before.position <= seconds && seconds <= after.position)
+        return before.at + (seconds - before.position) * 1000
+    }
+    return undefined
+  }
+
   /** A new video: forget the old position, and any holds (they belonged to the old video). */
   reset(): void {
     this.clock.reset()
+    this.history = []
     this.clearExpected()
     this.holders.clear()
     this.resumeOnRelease = false

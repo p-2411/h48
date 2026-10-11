@@ -15,9 +15,12 @@ import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import type { Moment } from '../shared/moment'
 import { createModels, type Models } from './ai'
+import { createVoiceModels, type DeliveryListener } from './ai/voice'
+import { AudioSource } from './audio'
 import { CaptionSource } from './captions'
 import { Cards } from './cards'
 import { Explain } from './explain'
+import { hearLine } from './listen'
 import { Panel } from './panel'
 import { connectOverlay } from './ipc/overlay'
 import { Player } from './player'
@@ -64,15 +67,27 @@ app.whenReady().then(() => {
     modelError = error instanceof Error ? error.message : String(error)
   }
 
+  let listener: DeliveryListener | undefined
+  try {
+    listener = createVoiceModels().listener
+  } catch {
+    // No voice provider: Explain works from the words alone.
+  }
+
   const settings = new Settings()
   const captions = new CaptionSource()
+  const audio = new AudioSource()
   const player = new Player((command) => captions.command(command))
   const watcher = new Watcher(captions, player, settings, models?.lines, modelError)
   const wait = new WaitForTranslation(player, settings, () => watcher.currentLine)
   const tutor = new Tutor(player)
   const replayMoment = (moment: Moment): void => replay(moment, { watcher, player })
   const panel = new Panel({ watcher, replay: replayMoment })
-  const explain = new Explain(models?.explainer, replayMoment, panel)
+  const explain = new Explain(models?.explainer, replayMoment, panel, (moment, signal) =>
+    hearLine(moment, { audio, player, listener }, signal)
+  )
+  // Listen to the browser only while a video is being watched in it.
+  watcher.on('status', (status) => audio.listen(watcher.currentVideo ? status.bundle : undefined))
   const cards = new Cards({ replay: replayMoment, practise: (moment) => tutor.open(moment) })
   // Each opens on a line: the one on screen when no id is given.
   const openTutor = (lineId?: number): void => {
@@ -101,12 +116,15 @@ app.whenReady().then(() => {
   setInterval(() => {
     watcher.tick()
     wait.tick()
+    player.sample()
   }, TICK_MS)
   captions.start()
+  audio.start()
 
   app.on('will-quit', () => {
     globalShortcut.unregisterAll()
     captions.stop()
+    audio.stop()
     tray?.destroy()
   })
 })

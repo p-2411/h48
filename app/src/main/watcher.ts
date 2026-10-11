@@ -28,7 +28,7 @@ import { sourceFor, type Source } from './sources'
 const SESSIONS_KEPT = 12
 
 /** The video open in the browser. */
-type Video = { source: Source; id: string; url: string }
+type Video = { source: Source; id: string; url: string; title?: string }
 
 export class Watcher extends EventEmitter {
   private _status: OverlayStatus = { trusted: false }
@@ -51,8 +51,10 @@ export class Watcher extends EventEmitter {
       this.setStatus({ ...change, error: change.error, site: source?.site, siteName: source?.name, controls: source?.controls })
       const id = change.url ? source?.videoId(change.url) : undefined
       if (source && id && change.url) {
+        const title = change.title ? source.videoTitle(change.title) : undefined
+        if (this.video?.id === id && this.video.source === source && title) this.video.title = title
         if (id !== this.video?.id || source !== this.video.source) {
-          this.video = { source, id, url: change.url }
+          this.video = { source, id, url: change.url, title }
           player.reset()
           this.open()
         }
@@ -109,7 +111,7 @@ export class Watcher extends EventEmitter {
     return {
       language: this.settings.current.language,
       ...taken,
-      video: { site: video.source.site, url: video.url, id: video.id, position: taken.line.start ?? this.player.now() },
+      video: { site: video.source.site, url: video.url, id: video.id, title: video.title, position: taken.line.start ?? this.player.now() },
       takenAt: Date.now()
     }
   }

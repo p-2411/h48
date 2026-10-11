@@ -15,7 +15,11 @@ export type CaptionStatus = {
   trusted: boolean
   /** Which browser and page the reader is looking at, when it has found one. */
   browser?: string
+  /** The browser's app id (macOS bundle id), for listening to its sound. */
+  bundle?: string
   url?: string
+  /** The browser window's title (on YouTube, the video's title and the site's name). */
+  title?: string
   /** A caption area was found on that page. */
   captions?: boolean
   /** False when the player says this video has no captions at all. */
@@ -87,8 +91,8 @@ export class CaptionSource extends EventEmitter {
       return
     }
     if (message.type === 'status') {
-      const { trusted, browser, url, captions, available, error } = message
-      this.emit('status', { trusted, browser, url, captions, available, error } satisfies CaptionStatus)
+      const { trusted, browser, bundle, url, title, captions, available, error } = message
+      this.emit('status', { trusted, browser, bundle, url, title, captions, available, error } satisfies CaptionStatus)
       return
     }
     if (message.type === 'time') {

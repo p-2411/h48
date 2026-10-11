@@ -65,6 +65,8 @@ export type OverlayStatus = {
   /** The caption reader is running with the permission it needs. */
   trusted: boolean
   browser?: string
+  /** The browser's app id (macOS bundle id), for listening to its sound. */
+  bundle?: string
   url?: string
   captions?: boolean
   /** The site of the page being read, and what Duet can do with its player. */

@@ -29,9 +29,10 @@ const CHUNK_MAX = 12
 // instead of "blade" alone or in twos, "blade" every time in threes).
 const FIRST_CHUNK = 3
 
-// The context frozen with a moment (the spec's starting budget).
-const MOMENT_SECONDS = 20
-const MOMENT_CHARS = 1500
+// The context frozen with a moment. The spec's starting budget (20 s, 1,500 characters) was too
+// little to read tone and who is talking to whom; this is still well inside one request.
+const MOMENT_SECONDS = 120
+const MOMENT_CHARS = 4000
 
 // Line ids are unique across sessions, so the overlay never mixes up lines from two of them.
 let nextId = 1

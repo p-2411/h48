@@ -41,9 +41,9 @@ browser ──(accessibility)──▶ caption reader ──JSON lines──▶ 
 
 1. **Caption reader** (`native/macos/CaptionReader.swift`, built to `resources/bin/`) watches the
    browser through the OS accessibility layer and prints JSON lines: which page is open, the
-   caption text on screen, and the player's time and play state. It also takes `pause`/`play` on
-   stdin and presses the player's own button. Rebuild after changing it:
-   `swiftc -O native/macos/CaptionReader.swift -o resources/bin/caption-reader-macos`.
+   caption text on screen, and the player's time and play state. It also takes `pause`/`play`/`seek`
+   on stdin and drives the player's own controls. Rebuild both native readers after changing them:
+   `npm run build:native`.
 2. **Watcher** (`src/main/watcher.ts`) keeps one **LineSession** per video and language. The page's
    **source** (`src/main/sources/`) says which video it is and whether the site offers a transcript:
    YouTube does, so captions don't need to be on; Netflix doesn't, so lines come from the screen.
@@ -66,6 +66,8 @@ browser ──(accessibility)──▶ caption reader ──JSON lines──▶ 
 | `src/main/explain/` | Explain that: the window and its request. |
 | `src/main/cards/` | Cards: `store.ts` (collection), `scheduler.ts` (ts-fsrs), `review.ts` (queue, rating, undo), `index.ts` (IPC, My cards window). |
 | `src/main/replay.ts` | Going back to a moment: seek the open video, or open it at that point. |
+| `src/main/audio.ts`, `listen.ts` | The audio reader (last minute of the browser's sound) and hearing one line for Explain. |
+| `native/macos/AudioReader/` | The audio reader: a Core Audio process tap on the browser, with its own Info.plist and permission. |
 | `src/main/player.ts`, `clock.ts` | Video position and the play/pause holds. |
 | `src/main/wait.ts` | "Wait": holds the video while the line on screen is still translating. |
 | `src/main/settings.ts` | The learner's settings, saved in the database; listen for `change`. |
@@ -80,7 +82,8 @@ browser ──(accessibility)──▶ caption reader ──JSON lines──▶ 
 ## Moments
 
 A **moment** (`src/shared/moment.ts`) is a line the learner picked, frozen with the lines just
-before it (20 seconds, at most 1,500 characters, never later lines) and where it came from.
+before it (2 minutes, at most 4,000 characters, never later lines) and where it came from (site,
+video id, title, position).
 Everything that helps with a line (the tutor, pronunciation, later Explain that and cards) starts
 from one, so they all see the same context. `watcher.moment(lineId?)` takes one.
 
@@ -117,6 +120,26 @@ from one, so they all see the same context. `watcher.moment(lineId?)` takes one.
   then due reviews, then new cards within the daily allowance (10, study day from 04:00). A rating
   is one transaction with the scheduler state before and after; undo restores the state before.
 - Cards live in `duet.db` in the app's data folder, on this computer only.
+
+## Hearing the video
+
+Explain listens to how a line was said, so Tone can come from the delivery, not only the words.
+
+- The **audio reader** (`native/macos/AudioReader`, macOS 14.2+) taps only the browser's sound with a
+  Core Audio process tap while a video is being watched, and keeps the last minute in memory. Nothing
+  is written to disk; a clip leaves it only when Explain asks for one line.
+- It needs **System Audio Recording**. It runs as its own responsible process with an Info.plist built
+  into the binary (`io.useduet.audio-reader`), so the prompt and the setting belong to it. Duet asks on
+  the first Explain, not at launch. Without permission macOS hands over silence, which Duet treats as
+  "couldn't hear". Ad-hoc builds change identity on every rebuild, so macOS may ask again.
+- `player.ts` records video time against real time, so a transcript line's start and end can be found
+  in the recording (`playedAt`). Lines read from the screen use the moment they appeared.
+- The **listener** (`ai/voice`, `gpt-audio-1.5` by default, `DUET_LISTEN_MODEL`) gets the sound only,
+  never the subtitle: given the text, it reported English speech as Spanish and stress on words nobody
+  said. It answers through a forced tool call (the audio models don't take a response schema), with
+  the language it actually heard. On a subtitled or dubbed video Explain then says the delivery is the
+  original actor's.
+- Windows needs its own audio reader (WASAPI process loopback); until then Explain works from the words.
 
 ## Voice tutor: starting points
 

@@ -6,13 +6,14 @@
 //   DUET_STT_MODEL       speech to text; default gpt-4o-transcribe
 //   DUET_TTS_MODEL       text to speech; default gpt-4o-mini-tts
 //   DUET_TTS_VOICE       default marin
+//   DUET_LISTEN_MODEL    hears how a video's line is said, for Explain; default gpt-audio-1.5
 //   OPENAI_API_KEY
-import { OpenAISpeechToText, OpenAITextToSpeech } from './openai'
-import type { SpeechToText, TextToSpeech } from './types'
+import { OpenAIDeliveryListener, OpenAISpeechToText, OpenAITextToSpeech } from './openai'
+import type { DeliveryListener, SpeechToText, TextToSpeech } from './types'
 
 export * from './types'
 
-export type VoiceModels = { speechToText: SpeechToText; textToSpeech: TextToSpeech }
+export type VoiceModels = { speechToText: SpeechToText; textToSpeech: TextToSpeech; listener: DeliveryListener }
 
 export function createVoiceModels(env: NodeJS.ProcessEnv = process.env): VoiceModels {
   const provider = env.DUET_VOICE_PROVIDER?.toLowerCase() ?? 'openai'
@@ -21,7 +22,8 @@ export function createVoiceModels(env: NodeJS.ProcessEnv = process.env): VoiceMo
       if (!env.OPENAI_API_KEY) throw new Error('Add OPENAI_API_KEY to app/.env.local for the voice tutor.')
       return {
         speechToText: new OpenAISpeechToText(env.DUET_STT_MODEL || 'gpt-4o-transcribe', env.OPENAI_API_KEY),
-        textToSpeech: new OpenAITextToSpeech(env.DUET_TTS_MODEL || 'gpt-4o-mini-tts', env.DUET_TTS_VOICE || 'marin', env.OPENAI_API_KEY)
+        textToSpeech: new OpenAITextToSpeech(env.DUET_TTS_MODEL || 'gpt-4o-mini-tts', env.DUET_TTS_VOICE || 'marin', env.OPENAI_API_KEY),
+        listener: new OpenAIDeliveryListener(env.DUET_LISTEN_MODEL || 'gpt-audio-1.5', env.OPENAI_API_KEY)
       }
     default:
       throw new Error(`Unknown voice provider "${provider}". Supported: openai.`)

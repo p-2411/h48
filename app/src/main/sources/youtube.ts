@@ -28,6 +28,8 @@ export const youtube: Source = {
     }
   },
   fetchTranscript,
+  // "(3) Sintel - YouTube": drop the notification count and the site's name.
+  videoTitle: (windowTitle) => windowTitle.replace(/^\(\d+\)\s*/, '').replace(/\s*[-–]\s*YouTube.*$/, '').trim() || undefined,
   controls: { playPause: true, seek: true },
   linkAt: (id, seconds) => `https://www.youtube.com/watch?v=${encodeURIComponent(id)}&t=${Math.max(0, Math.floor(seconds))}s`
 }

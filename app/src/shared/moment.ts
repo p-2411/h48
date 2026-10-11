@@ -10,12 +10,14 @@ export type Moment = {
   language: Language
   /** The line picked, with its translation and word pairs when they are ready. */
   line: OverlayLine
-  /** Lines just before it, oldest first: the last 20 seconds, at most 1,500 characters. Later
+  /** Lines just before it, oldest first: the last 2 minutes, at most 4,000 characters. Later
    * lines are never included, so nothing is spoiled. */
   earlier: MomentLine[]
   video: {
     site: Site
     url?: string
+    /** The video's title, when the site shows it. */
+    title?: string
     /** The site's own id for the video (YouTube's v= parameter, Netflix's watch id). */
     id?: string
     /** Seconds into the video where the line starts, when known. */

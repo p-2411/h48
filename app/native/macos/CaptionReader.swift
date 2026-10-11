@@ -6,7 +6,7 @@
 // Accessibility) to read it.
 //
 // Output: one JSON object per line on stdout, the same protocol as the Windows reader:
-//   {"type":"status","trusted":true,"browser":"Google Chrome","url":"https://…","captions":true}
+//   {"type":"status","trusted":true,"browser":"Google Chrome","bundle":"com.google.Chrome","url":"https://…","title":"…","captions":true}
 //   {"type":"caption","text":"…","url":"https://…","browser":"Google Chrome","at":1791701575123}
 //   {"type":"time","t":112,"playing":true,"ad":false,"url":"https://…","at":1791701575123}
 // A status line is sent whenever any of its fields change; a caption line whenever the visible
@@ -125,7 +125,7 @@ func captionText(_ container: AXUIElement, site: Site) -> String {
 }
 
 // What the reader is looking at right now.
-struct Target { let app: AXUIElement; let browser: String; let page: AXUIElement; let url: String; let site: Site }
+struct Target { let app: AXUIElement; let browser: String; let bundle: String; let page: AXUIElement; let url: String; let title: String; let site: Site }
 
 var enabledApps = Set<pid_t>()
 func target() -> Target? {
@@ -145,7 +145,8 @@ func target() -> Target? {
       guard let page = find(window, budget: 600, where: { role($0) == "AXWebArea" }),
             let address = url(page),
             let site = sites.first(where: { address.contains($0.host) }) else { continue }
-      return Target(app: element, browser: browsers[app.bundleIdentifier ?? ""] ?? "Browser", page: page, url: address, site: site)
+      return Target(app: element, browser: browsers[app.bundleIdentifier ?? ""] ?? "Browser", bundle: app.bundleIdentifier ?? "", page: page, url: address,
+                    title: (value(window, kAXTitleAttribute) as? String) ?? "", site: site)
     }
   }
   return nil
@@ -231,15 +232,15 @@ Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
     containerURL = current.url
     available = seenTextOn == current.url || captionsAvailable(current.page, site: current.site)
   }
-  status(["type": "status", "trusted": true, "browser": current.browser, "url": current.url,
-          "captions": container != nil, "available": available])
+  status(["type": "status", "trusted": true, "browser": current.browser, "bundle": current.bundle, "url": current.url,
+          "title": current.title, "captions": container != nil, "available": available])
   let text = container.map { captionText($0, site: current.site) } ?? ""
   // Caption text on screen proves the video has captions, whatever the CC button's label says.
   if !text.isEmpty { seenTextOn = current.url }
   if !text.isEmpty && !available {
     available = true
-    status(["type": "status", "trusted": true, "browser": current.browser, "url": current.url,
-            "captions": true, "available": true])
+    status(["type": "status", "trusted": true, "browser": current.browser, "bundle": current.bundle, "url": current.url,
+            "title": current.title, "captions": true, "available": true])
   }
   if let bar = progress, let seconds = number(bar, kAXValueAttribute) {
     let modes = player.map(classes) ?? []

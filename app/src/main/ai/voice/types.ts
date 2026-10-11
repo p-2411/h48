@@ -22,6 +22,22 @@ export interface SpeechToText {
   transcribe(audio: AudioClip, language: Language, signal?: AbortSignal): Promise<{ text: string }>
 }
 
+/** How a line was said, as heard in the video's audio. */
+export type Delivery = {
+  /** A few sentences on the delivery: emotion, attitude, emphasis, pace. */
+  description: string
+  /** The language actually spoken, in English ("Spanish"). On a subtitled or dubbed video it differs
+   * from the line's language, and the description then can't speak to the line's own words. */
+  spokenLanguage: string
+}
+
+/** Listens to a line from a video and describes how it is said, for Explain's tone. */
+export interface DeliveryListener {
+  readonly name: string
+  /** How the line is delivered, or undefined when the speech can't be made out. */
+  describe(audio: AudioClip, line: { original: string; language: Language }, signal?: AbortSignal): Promise<Delivery | undefined>
+}
+
 export interface TextToSpeech {
   readonly name: string
   /** Generated speech. Generated audio is never a checked pronunciation reference: label it. */

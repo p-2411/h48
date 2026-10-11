@@ -21,6 +21,8 @@ export interface Source {
   fetchTranscript?(videoId: string, language: Language, signal?: AbortSignal): Promise<TranscriptLine[] | undefined>
   /** What the caption reader can do with this site's player. */
   readonly controls: { playPause: boolean; seek: boolean }
+  /** The video's title from the browser window's title, or undefined when it doesn't show one. */
+  videoTitle(windowTitle: string): string | undefined
   /** An address that opens the video at a point, for going back to a saved moment. */
   linkAt(videoId: string, seconds: number): string
 }

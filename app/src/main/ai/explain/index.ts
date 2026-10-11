@@ -4,6 +4,7 @@
 import type { Explanation } from '../../../shared/explain'
 import type { Moment } from '../../../shared/moment'
 import type { StructuredModel } from '../structured'
+import type { Delivery } from '../voice/types'
 import { EXPLAIN_VERSION, ExplanationOutputSchema, explainInput, explainInstructions } from './prompt'
 
 export class Explainer {
@@ -13,11 +14,12 @@ export class Explainer {
     return this.model.name
   }
 
-  async explain(moment: Moment, signal?: AbortSignal): Promise<Explanation> {
+  /** `delivery` is how the line was said, when it could be heard. */
+  async explain(moment: Moment, delivery?: Delivery, signal?: AbortSignal): Promise<Explanation> {
     const output = await this.model.complete(
       {
         instructions: explainInstructions(moment.language),
-        input: explainInput(moment),
+        input: explainInput(moment, delivery),
         schema: ExplanationOutputSchema,
         name: `explain_${moment.language}`,
         pace: 'careful'
@@ -28,6 +30,8 @@ export class Explainer {
     const inLine = (text: string): boolean => !!text.trim() && line.includes(text.trim().toLocaleLowerCase())
     return {
       meaning: output.meaning,
+      tone: output.tone ?? undefined,
+      heard: delivery ? { spokenLanguage: delivery.spokenLanguage } : undefined,
       notice: output.notice
         ? { text: output.notice.text, quote: inLine(output.notice.quote) ? output.notice.quote.trim() : undefined }
         : undefined,

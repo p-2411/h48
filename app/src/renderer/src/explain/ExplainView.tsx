@@ -1,10 +1,18 @@
 // The explanation of one line: what it means here and the one thing worth noticing, with Replay
 // and Save card. One component with no window of its own, so it can move into the tutor's window.
-import type { ExplainState } from '../../../shared/explain'
+import type { ExplainState, HearingNote } from '../../../shared/explain'
 import { LANGUAGES } from '../../../shared/types'
 import { clock } from '../components/time'
 import { Words } from '../components/Words'
 import { SaveCard } from './SaveCard'
+
+// Why the tone could not draw on the audio, when it couldn't.
+const HEARING: Partial<Record<HearingNote, string>> = {
+  asking: 'Allow System Audio Recording when macOS asks, and Duet will hear how the next lines are said.',
+  'not-allowed': 'Duet can’t hear the video. Allow it in System Settings › Privacy & Security › Screen & System Audio Recording.',
+  'not-kept': 'This line played too long ago for Duet to hear it, so the tone comes from the words.',
+  unclear: 'Duet couldn’t make out the speech in this line, so the tone comes from the words.'
+}
 
 export function ExplainView({
   state,
@@ -15,7 +23,7 @@ export function ExplainView({
   onReplay: () => void
   onRetry: () => void
 }): React.JSX.Element {
-  const { moment, explanation, loading, error } = state
+  const { moment, explanation, loading, stage, hearing, error } = state
   if (!moment) return <p className="muted center">Press Explain in the overlay while a line is on screen.</p>
   const processed = moment.line.processed
   const position = moment.video.position
@@ -32,7 +40,7 @@ export function ExplainView({
         </p>
       </section>
 
-      {loading && <p className="muted">Explaining…</p>}
+      {loading && <p className="muted">{stage === 'listening' ? 'Listening…' : 'Explaining…'}</p>}
       {error && (
         <div className="notice error row">
           <span>{error}</span>
@@ -47,6 +55,20 @@ export function ExplainView({
             <h2 className="label">Meaning here</h2>
             <p>{explanation.meaning}</p>
           </section>
+          {explanation.tone && (
+            <section className="part">
+              <h2 className="label">
+                Tone
+                {explanation.heard && (
+                  <span className="heard" title={`From the audio, spoken in ${explanation.heard.spokenLanguage}`}>
+                    heard
+                  </span>
+                )}
+              </h2>
+              <p>{explanation.tone}</p>
+            </section>
+          )}
+          {hearing && HEARING[hearing] && <p className="faint">{HEARING[hearing]}</p>}
           {explanation.notice && (
             <section className="part">
               <h2 className="label">What to notice</h2>

@@ -5,6 +5,10 @@ import type { Moment } from './moment'
 export type Explanation = {
   /** What the line means here, in context. */
   meaning: string
+  /** How it comes across (register, attitude) and what that says about the speakers. */
+  tone?: string
+  /** Set when the tone also draws on the line's audio: the language actually spoken in it. */
+  heard?: { spokenLanguage: string }
   /** The one thing most worth noticing; `quote` is the exact words of the line it is about, when they
    * could be found in the line. */
   notice?: { text: string; quote?: string }
@@ -21,10 +25,18 @@ export type Explanation = {
   version: number
 }
 
-/** What the Explain window shows: the moment, and the explanation once it arrives. */
+/** Whether Explain could hear the line: heard; asking for the permission (first time); not allowed;
+ * the line played too long ago (or not at all); the speech couldn't be made out; or no audio on
+ * this computer. */
+export type HearingNote = 'heard' | 'asking' | 'not-allowed' | 'not-kept' | 'unclear' | 'off'
+
+/** What the Explain tab shows: the moment, and the explanation once it arrives. */
 export type ExplainState = {
   moment?: Moment
   explanation?: Explanation
   loading: boolean
+  /** While loading: listening to the line, then explaining it. */
+  stage?: 'listening' | 'explaining'
+  hearing?: HearingNote
   error?: string
 }
