@@ -91,8 +91,9 @@ h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text
   .hero h1,.hero-copy{position:relative;z-index:1}
   .hero-body{display:block;margin-top:clamp(24px,4vh,40px)}
   /* The video, in its whole browser frame, is a big backdrop: the heading and its line sit right on
-     top of it. site.js drifts it slower than the page as you scroll. */
-  .hero .hero-demo{position:absolute;z-index:0;left:-3vw;right:-3vw;top:max(48px,7vh);width:auto;opacity:.6;will-change:transform,opacity}
+     top of it. Its edges line up with the header pill (the same gutter from the screen edge on both
+     sides, at every width). site.js drifts it slower than the page as you scroll. */
+  .hero .hero-demo{--gutter:clamp(16px,3vw,36px);position:absolute;z-index:0;left:50%;right:auto;width:calc(100vw - 2 * var(--gutter));margin-left:calc(var(--gutter) - 50vw);top:max(48px,7vh);opacity:.6;will-change:transform,opacity}
 }
 
 /* The sticky email bar: one glass pill, centred at the bottom of the screen on every page view.
