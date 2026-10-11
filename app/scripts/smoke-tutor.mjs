@@ -3,7 +3,7 @@ import { createEmptyCard, fsrs, Rating } from 'ts-fsrs'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { backendInstructions, liveInstructions, momentContext } from '../src/main/tutor/prompts.ts'
-import { ENGLISH_HELP_DELAY_MS, LIVE_REPLY_FALLBACK_MS } from '../src/renderer/src/tutor/language.ts'
+import { ENGLISH_HELP_DELAY_MS, LIVE_REPLY_FALLBACK_MS } from '../src/renderer/src/tutor/timing.ts'
 import { LANGUAGE_CODES, languageModule, speaks } from '../src/shared/languages/index.ts'
 import { joinTokens } from '../src/shared/levels.ts'
 
