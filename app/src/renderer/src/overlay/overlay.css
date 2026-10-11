@@ -32,6 +32,9 @@
 
 /* Words: swapped ones a little heavier (their colour already marks them); the hovered one lit. */
 .mix .w.sw { font-weight: 500; }
+/* Words left in English are all one plain light grey, so only the swapped words (the ones
+   being learned) carry colour. */
+.mix .w:not(.sw) { --c: #b4b4b8; color: var(--c); text-shadow: none; }
 .w.live { cursor: pointer; border-radius: 5px; }
 .mix .w.live:hover { background: color-mix(in srgb, var(--c, #fff) 28%, transparent); }
 
