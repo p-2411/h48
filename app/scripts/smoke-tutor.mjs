@@ -56,11 +56,9 @@ for (const language of LANGUAGE_CODES) {
     throw new Error(`${name}: the prompts are missing its correction focus.`)
   if (!backend.includes('explicitly enabled Explore further'))
     throw new Error(`${name}: saved learning history is no longer gated behind Explore further.`)
-  if (other(language).some((code) => live.includes(languageModule(code).name)))
+  const others = LANGUAGE_CODES.filter((code) => code !== language)
+  if (others.some((code) => live.includes(languageModule(code).name)))
     throw new Error(`${name}: its prompt names another language.`)
-}
-function other(language) {
-  return LANGUAGE_CODES.filter((code) => code !== language)
 }
 
 // The Meaning button shows for turns in the language, not for English ones.
