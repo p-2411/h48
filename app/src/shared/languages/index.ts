@@ -9,7 +9,7 @@ import { OTHER_LATIN } from './others'
 
 export type { LanguageModule, Recognition } from './module'
 
-export const LANGUAGE_MODULES = { es, ja, ko } satisfies Record<string, LanguageModule>
+const LANGUAGE_MODULES = { es, ja, ko } satisfies Record<string, LanguageModule>
 
 export type Language = keyof typeof LANGUAGE_MODULES
 
