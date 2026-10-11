@@ -23,11 +23,22 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 16px 0 84px;
+  padding: 0 16px 0 96px;
   -webkit-app-region: drag;
 }
 .home-bar button { -webkit-app-region: no-drag; }
+.home-mark { display: grid; place-items: center; color: #fff; }
 .home-brand { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+/* The language learnt: its name opens a short menu of the languages. */
+.language-menu { position: relative; -webkit-app-region: no-drag; }
+.language-name { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px; font-size: 13px; color: var(--text-2); }
+.language-name:hover, .language-name[aria-expanded='true'] { color: #fff; background: var(--fill); }
+.language-list {
+  position: absolute; left: 0; top: calc(100% + 6px); z-index: 20; min-width: 160px; padding: 5px; border-radius: 12px; transform-origin: top left;
+  display: flex; flex-direction: column; background: #1f1f23; border: 1px solid var(--line); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+.language-list button { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 10px; border-radius: 8px; font-size: 13px; text-align: left; }
+.language-list button:hover, .language-list button:focus-visible { background: var(--fill); outline: none; }
 .home-gear {
   width: 30px;
   height: 30px;
@@ -165,7 +176,7 @@
 /* An open page, over the hub: ‹ Home beside the window buttons; the page's top drags the window. */
 .home-open { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; min-height: 0; }
 .home-open::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 52px; -webkit-app-region: drag; }
-.home-back { position: absolute; z-index: 1; top: 11px; left: 84px; -webkit-app-region: no-drag; }
+.home-back { position: absolute; z-index: 1; top: 11px; left: 96px; -webkit-app-region: no-drag; }
 .home-open > .notice { margin: 64px 26px 0; }
 
 /* A page: a column under the top bar that scrolls on its own. */
@@ -218,7 +229,7 @@
 .settings-group .glass { align-items: stretch; gap: 12px; }
 .settings-group .btn { align-self: flex-start; }
 
-/* Talk: the conversation in a centred column, the message box at the bottom (explain.css draws
+/* Talk: the conversation surface Explain uses too, in a centred column (explain.css draws
    both); the mascot and New conversation at the top. */
 .home-talk { align-items: center; padding-bottom: 0; overflow: hidden; }
 .home-talk > * { width: 100%; max-width: 640px; }
@@ -226,6 +237,4 @@
 .home-talk-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
 .home-talk-head .head-slot { grid-column: 2; display: flex; justify-content: center; }
 .home-talk-head .btn { grid-column: 3; justify-self: end; }
-.home-talk-intro { text-align: center; }
 /* No line above the message box here: the page has room enough to set it apart. */
-.home-talk .composer { border-top: none; }

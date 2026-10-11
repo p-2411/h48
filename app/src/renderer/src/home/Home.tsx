@@ -6,11 +6,11 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { HomePlace } from '../../../shared/home'
-import { languageName } from '../../../shared/languages'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { Icon } from '../components/Icon'
 import { DURATION, EASE_IN, fadeUp } from '../components/motion'
 import { useSettings } from '../components/useSettings'
+import { LanguageMenu } from './LanguageMenu'
 import { SettingsPage } from './SettingsPage'
 import { TalkPage } from './TalkPage'
 import { TalkTile, type TalkStart } from './tiles/TalkTile'
@@ -153,8 +153,11 @@ export function Home(): React.JSX.Element {
   return (
     <div className={`home stage-${stage}`} ref={root}>
       <header className="home-bar" inert={hidden}>
+        <span className="home-mark" aria-hidden="true">
+          <Icon name="mascot" filled size={18} />
+        </span>
         <span className="home-brand">Duet</span>
-        {language && <span className="faint">{languageName(language)}</span>}
+        {language && <LanguageMenu language={language} />}
         <span className="spacer" />
         <button type="button" className="home-gear" aria-label="Settings" onClick={(event) => open({ page: 'settings' }, event.currentTarget)}>
           <Icon name="settings" size={15} />

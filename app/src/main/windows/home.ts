@@ -13,7 +13,14 @@ export function createHomeWindow(): BrowserWindow {
     minHeight: 520,
     title: 'Duet',
     ...(glass
-      ? { vibrancy: 'sidebar' as const, visualEffectState: 'active' as const, backgroundColor: '#00000000', titleBarStyle: 'hiddenInset' as const }
+      ? {
+          vibrancy: 'sidebar' as const,
+          visualEffectState: 'active' as const,
+          backgroundColor: '#00000000',
+          titleBarStyle: 'hiddenInset' as const,
+          // The window buttons' middle on the top bar's (52px tall, home.css), level with Duet.
+          trafficLightPosition: { x: 20, y: 20 }
+        }
       : { backgroundColor: '#101013' }),
     show: false,
     webPreferences

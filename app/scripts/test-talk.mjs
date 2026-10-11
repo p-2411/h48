@@ -191,10 +191,11 @@ try {
   const panelSent = []
   const panel = { owns: (sender) => sender === panelPage, send: (channel, value) => panelSent.push([channel, value]), show: () => {}, on: () => {} }
   const explainTutor = fakeTutor()
+  const explainOpened = []
   const explain = new Explain({
     panel,
     replay: () => {},
-    tutor: { open: () => {}, end: () => {}, update: () => {}, forWindow: () => explainTutor },
+    tutor: { open: (context) => explainOpened.push(context), end: () => {}, update: () => {}, forWindow: () => explainTutor },
     hear: async () => ({ note: { heard: false } }),
     explainer: { explain: async () => ({ meaning: 'Let’s go.' }) }
   })
@@ -205,6 +206,8 @@ try {
   assert.equal(shown.explanation?.meaning, 'Let’s go.', 'the line is explained as usual')
   assert.deepEqual(shown.chat.map((turn) => turn.text), ['行こうって？', '"Let\'s go."'], 'and the strip’s turns are in the thread, kept through the explaining')
   assert.equal(shown.chat[0].via, 'voice')
+  // As in Talk, the saved cards are open to Duet from the start (there's no "Use my cards" to press).
+  assert.equal(explainOpened.at(-1)?.exploreEnabled, true, 'Explain opens with the saved cards open to Duet')
 
   // Try again after a failed explanation asks for it again and keeps the conversation (the strip's
   // turns, here); an error that can't be fixed by asking again offers no Try again.

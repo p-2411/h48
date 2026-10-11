@@ -1,16 +1,37 @@
-/* The Explain tab. */
+/* The conversation surface Talk and Explain share (ChatSurface.tsx): a column that scrolls, above a
+   dock with the suggestions and the message bar. */
 .explain-tab { display: flex; flex-direction: column; }
-.explain-scroll { flex: 1; min-height: 0; overflow: auto; padding-bottom: 16px; }
-.explain-dock { flex: none; }
-.explain { display: flex; flex-direction: column; gap: 16px; }
-.explain .line { font-size: 22px; line-height: 1.35; }
-.explain .part { display: flex; flex-direction: column; gap: 6px; line-height: 1.5; }
-.explain .quote { align-self: flex-start; padding: 3px 9px; border-radius: 7px; background: var(--fill); font-size: 15px; }
+.chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.chat-scroll { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 14px; padding-bottom: 16px; }
+.chat-dock { flex: none; }
 .center { text-align: center; margin-top: 40%; }
-.explain .heard { margin-left: 8px; padding: 1px 6px; border-radius: 5px; background: rgba(50, 215, 75, 0.16); color: #7ee28f; font-size: 11px; letter-spacing: 0.04em; }
-/* The conversation as messages: the learner's in blue on the right, Duet's in grey on the left with
-   the mascot as its picture; the last bubble of a run has a tail. Consecutive turns from the same
-   side sit closer. */
+
+/* Explain's line card: the line large, the words worth noticing glowing in their rung's colour, on
+   glass with a faint indigo glow of its own. */
+.line-card { position: relative; isolation: isolate; overflow: hidden; gap: 8px; flex: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035)); border-color: rgba(255, 255, 255, 0.11); }
+.line-card::before { content: ''; position: absolute; z-index: -1; left: -25%; top: -70%; width: 75%; height: 140%; border-radius: 50%;
+  background: #5e5ce6; filter: blur(46px); opacity: 0.35; pointer-events: none; }
+.line-card .line { font-size: 22px; line-height: 1.35; letter-spacing: -0.01em; }
+/* Inside Duet's messages: the explanation's parts, and the label on one that was heard. */
+.bubble .lead { color: #fff; }
+.bubble .lead ~ p { color: var(--fg-2); }
+.bubble p { margin: 0; line-height: 1.5; }
+.bubble p + p { margin-top: 6px; }
+.chat .part { display: flex; flex-direction: column; gap: 6px; line-height: 1.5; }
+.chat .quote { align-self: flex-start; padding: 3px 9px; border-radius: 7px; background: var(--fill); font-size: 15px; }
+.chat .heard { margin-left: 8px; padding: 1px 6px; border-radius: 5px; background: rgba(50, 215, 75, 0.16); color: #7ee28f; font-size: 11px; letter-spacing: 0.04em; }
+/* Duet at work: three dots, one after another. */
+.typing { color: var(--text-2); }
+.typing-dots { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+.typing-dots i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: typing 1.2s infinite ease-in-out; }
+.typing-dots i:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typing { 0%, 60%, 100% { opacity: 0.25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) { .typing-dots i { animation: none; opacity: 0.6; } }
+/* The conversation as messages: the learner's in white on the right, Duet's in a lighter grey than the
+   window on the left; the last bubble of a run has a tail. Consecutive
+   turns from the same side sit closer. */
 .conversation { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
 .turn { max-width: 86%; display: flex; align-items: flex-end; gap: 6px; }
 .turn.duet { align-self: flex-start; }
@@ -18,8 +39,8 @@
 .turn.duet + .turn.duet, .turn.learner + .turn.learner { margin-top: -7px; }
 .turn-body { min-width: 0; display: flex; flex-direction: column; }
 .bubble { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 7px 12px; border-radius: 18px; line-height: 1.4; color: #fff; }
-.turn.learner .bubble { background: #0071e3; }
-.turn.duet .bubble { background: #3a3a3c; }
+.turn.learner .bubble { background: #fff; color: #111; }
+.turn.duet .bubble { background: #2c2c30; }
 .bubble.has-tail::after { content: ''; position: absolute; bottom: 0; width: 12px; height: 16px; background: inherit;
   clip-path: path('M0 0 H5 C5 8 7 13 12 16 C7 16.5 3 15 0 12 Z'); }
 .turn.learner .bubble.has-tail { border-bottom-right-radius: 6px; }
@@ -35,17 +56,6 @@
 .turn.learner .turn-foot { justify-content: flex-end; }
 .meaning-button { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 999px; font-size: 12px; color: var(--text-2); }
 .meaning-button:hover, .meaning-button.is-on { color: #fff; background: var(--fill); }
-/* Duet's picture: the mascot, still, in a dark circle; kept as an empty space beside the other
-   bubbles of a run, so they line up. Lifted above the foot so it sits beside the bubble. */
-.turn-avatar { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #1c1c1e; border: 0.5px solid var(--line); }
-.turn-avatar:empty { background: none; border-color: transparent; }
-.turn:has(.turn-foot) .turn-avatar { margin-bottom: 23px; }
-.turn-avatar .particle-field, .turn-avatar .sound-ring, .turn-avatar .mascot-canvas::before { display: none; }
-.turn-avatar .duet-mascot, .turn-avatar .duet-mascot * { animation: none !important; }
-/* The mascot flying from the dock to a new reply's picture (useMascotFlight.ts). */
-.duet-mascot.mascot-flight { position: fixed; z-index: 1000; margin: 0; pointer-events: none; transform-origin: top left; }
-.mascot-flight .particle-field { display: none; }
-
 /* A card preview waiting for the learner, or a card Duet opened. */
 .action-card { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(255, 255, 255, 0.04); }
 .action-card p { margin: 0; }
@@ -59,23 +69,27 @@
 .voice-state.listening i { background: #32d74b; box-shadow: 0 0 8px #32d74b; }
 .voice-state.speaking i { background: #fff; box-shadow: 0 0 8px #fff; }
 .voice-state.working i, .voice-state.connecting i, .voice-state.reconnecting i, .voice-state.requesting-microphone i { background: #ff9f0a; }
-.btn.mic { padding: 7px 10px; }
 /* The mascot in the page's top bar (the panel's tabs row, Talk's title row). */
 .head-mascot { display: flex; align-items: center; }
 .pill.on { background: var(--fill); color: #fff; }
 .pill:disabled { cursor: default; }
-/* The composer, in the dock below the scrolling part of the tab (no backdrop blur: in the panel's
-   vibrancy window it has nothing to sample and paints black). */
-.composer { display: flex; flex-direction: column; gap: 8px; padding: 10px 0 12px; border-top: 1px solid var(--line); }
-.pill { padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; color: var(--fg-2); }
+/* The composer, in the dock below the scrolling part (no backdrop blur: in the panel's vibrancy
+   window it has nothing to sample and paints black): the suggestions, then the message bar, one pill
+   with the message box, the mic and Send in it. */
+.composer { display: flex; flex-direction: column; gap: 8px; padding: 8px 0 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; color: var(--fg-2); background: rgba(255, 255, 255, 0.03); }
 .pill:hover { background: var(--fill); color: #fff; }
-.input-row { display: flex; gap: 8px; align-items: flex-end; }
-.input-row textarea { flex: 1; min-width: 0; overflow-wrap: anywhere; resize: none; max-height: 120px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.04); color: var(--fg); font: inherit; font-size: 14px; line-height: 1.4; field-sizing: content; }
-.input-row textarea::placeholder { color: var(--text-2); }
-.input-row textarea:focus { outline: none; border-color: rgba(255, 255, 255, 0.4); }
-.explain .line mark { background: rgba(255, 214, 10, 0.22); color: inherit; border-radius: 4px; padding: 0 2px; }
-.explain .lead { font-size: 15.5px; line-height: 1.55; }
+.message-bar { display: flex; align-items: flex-end; gap: 6px; padding: 5px 5px 5px 15px; border-radius: 22px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); }
+.message-bar:focus-within { border-color: rgba(255, 255, 255, 0.35); }
+.message-bar textarea { flex: 1; min-width: 0; align-self: center; overflow-wrap: anywhere; resize: none; max-height: 120px; padding: 6px 0; border: 0; background: none;
+  color: var(--fg); font: inherit; font-size: 14px; line-height: 1.4; field-sizing: content; outline: none; }
+.message-bar textarea::placeholder { color: var(--text-3); }
+.bar-mic, .bar-send { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; }
+.bar-mic { background: var(--fill); color: #fff; }
+.bar-mic:hover { background: rgba(118, 118, 128, 0.36); }
+.bar-send { background: #fff; color: #111; }
+.bar-send:disabled { opacity: 0.3; }
 .more-explain { display: flex; flex-direction: column; gap: 12px; }
 .more-explain[open] summary { margin-bottom: 10px; }
 .more-explain .part + .part { margin-top: 12px; }

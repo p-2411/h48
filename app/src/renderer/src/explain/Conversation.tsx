@@ -2,11 +2,10 @@
 // (Talk in the home base); `thread` says which one it is in the main process. It is one thread: typed
 // messages go to Duet in text; the mic switches to a voice conversation with the same context, and
 // when it ends its turns join the thread, so text picks up where voice left off. Card previews
-// (save, review) wait for the learner's click or answer; "Use my cards" opens saved cards to Duet.
+// (save, review) wait for the learner's click or answer; the saved cards are open to Duet in both.
 // Explain renders it with the line as its key, so a new line starts a new conversation (and a new
 // voice hook). The composer renders into `dock`, the page's slot below its scrolling part; the
-// mascot (thinking, listening, speaking) into `mascotSlot`, in the page's top bar, and Duet's typed
-// replies fly out of it.
+// mascot (thinking, listening, speaking) into `mascotSlot`, in the page's top bar.
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { createPortal } from 'react-dom'
@@ -19,7 +18,6 @@ import { Composer } from './Composer'
 import type { ConversationState, ThreadBridge } from './thread'
 import { Turn, type TurnData } from './Turn'
 import { useCardActions } from './useCardActions'
-import { useMascotFlight } from './useMascotFlight'
 import { useTurnAids } from './useTurnAids'
 import { useEnglishHelp, useVoiceHandoff } from './useVoiceHandoff'
 import { VoiceBar } from './VoiceBar'
@@ -84,9 +82,7 @@ export function Conversation({
   const [draft, setDraft] = useState('')
   const box = useRef<HTMLTextAreaElement>(null)
   const end = useRef<HTMLDivElement>(null)
-  const section = useRef<HTMLElement>(null)
-  const headMascot = useRef<HTMLDivElement>(null)
-  const cards = useCardActions(free)
+  const cards = useCardActions()
   const endButton = useVoiceHandoff(live, box, bridge.voiceTurns)
   const voiceOn = isVoiceOn(live.status)
   // Voice asked for on opening starts once (not again when StrictMode runs effects twice).
@@ -145,16 +141,9 @@ export function Conversation({
       ? last.text
       : undefined
   const { result } = cards
-  // Duet's typed reply arrives: the mascot flies from the top bar to become its picture.
-  useMascotFlight(
-    last?.from === 'duet' && last.via === 'text' ? `c${state.chat.length - 1}` : undefined,
-    headMascot,
-    section,
-    end
-  )
 
   return (
-    <section className="conversation" aria-label="Conversation with Duet" ref={section}>
+    <section className="conversation" aria-label="Conversation with Duet">
       {/* New turns rise in; those there when it opens, and voice turns joining the thread after voice
           (they were shown as they were spoken), don't. */}
       <AnimatePresence initial={false}>
@@ -166,7 +155,7 @@ export function Conversation({
           from={turn.from}
           text={turn.text}
           via={turn.via}
-          avatar={turn.from === 'duet' && thread[index + 1]?.from !== 'duet'}
+          tail={turn.from === 'duet' && thread[index + 1]?.from !== 'duet'}
           language={language}
           revealed={aids.revealed.has(turn.id)}
           meaning={aids.meanings[turn.id]}
@@ -264,7 +253,7 @@ export function Conversation({
 
       {mascotSlot &&
         createPortal(
-          <div className="head-mascot" ref={headMascot}>
+          <div className="head-mascot">
             <Mascot
               state={mascotState(live.status, !!state.replying || !!state.loading, cards.cheering, correcting)}
               scale={mascotScale}
@@ -284,8 +273,6 @@ export function Conversation({
                 onDraft={setDraft}
                 language={language}
                 replying={!!state.replying}
-                explore={cards.explore}
-                onOpenCards={cards.openCards}
                 onStartVoice={() => void bridge.claim().catch(() => undefined).then(() => live.start())}
                 onSend={bridge.ask}
                 free={free}

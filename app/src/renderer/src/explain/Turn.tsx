@@ -1,6 +1,5 @@
 // One turn of the conversation about a line, typed or spoken, as a message bubble: the learner's on
-// the right, Duet's on the left with the mascot as its picture (on the last of a run of Duet's
-// turns). Duet's turns in the language being learnt can show their English meaning (on request)
+// the right, Duet's on the left (the last of a run of Duet's turns has a tail). Duet's turns in the language being learnt can show their English meaning (on request)
 // and, for languages not written in Latin letters, their romanisation. Memoised on plain values
 // (the thread is rebuilt each render), so a streaming voice turn doesn't re-render the others.
 import { motion } from 'motion/react'
@@ -8,7 +7,6 @@ import { memo } from 'react'
 import { languageName, speaks, type Language } from '../../../shared/languages'
 import { Icon } from '../components/Icon'
 import { Inline } from '../components/Inline'
-import { Mascot } from '../components/Mascot'
 import { fadeUp } from '../components/motion'
 import type { Aid } from './aids'
 
@@ -19,15 +17,13 @@ export type TurnData = {
   via?: 'text' | 'voice'
 }
 
-// The mascot in a message's picture: 420 x 190 drawn at 22 px wide, in a 30 px circle.
-const AVATAR_SCALE = 22 / 420
 
 export const Turn = memo(function Turn({
   id,
   from,
   text,
   via,
-  avatar,
+  tail,
   language,
   revealed,
   meaning,
@@ -36,8 +32,8 @@ export const Turn = memo(function Turn({
   onHide,
   enter = true
 }: TurnData & {
-  /** Shows Duet's picture beside this turn (the last of a run of Duet's turns). */
-  avatar?: boolean
+  /** The bubble has a tail (the last of a run of Duet's turns). */
+  tail?: boolean
   language: Language
   revealed: boolean
   meaning?: Aid
@@ -53,13 +49,8 @@ export const Turn = memo(function Turn({
   const spoken = via === 'voice'
   return (
     <motion.article className={`turn ${from}`} data-turn={id} {...fadeUp(6)} initial={enter ? fadeUp(6).initial : false}>
-      {from === 'duet' && (
-        <div className="turn-avatar" aria-hidden="true">
-          {avatar && <Mascot state="idle" scale={AVATAR_SCALE} opening={false} />}
-        </div>
-      )}
       <div className="turn-body">
-        <div className={`bubble${avatar || from === 'learner' ? ' has-tail' : ''}`}>
+        <div className={`bubble${tail || from === 'learner' ? ' has-tail' : ''}`}>
           <span className="sr-only">{from === 'learner' ? 'You' : 'Duet'}: </span>
           <p className="turn-text" lang={canReveal ? language : undefined}>
             <Inline text={text} />
