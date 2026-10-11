@@ -2,18 +2,32 @@
 // updates, change settings.
 import { ipcRenderer } from 'electron'
 import type { SaveResult } from '../shared/cards'
-import type { DueCounts, Language, Level, OverlayLine, OverlaySettings, OverlayStatus } from '../shared/types'
+import type {
+  DueCounts,
+  Language,
+  Level,
+  OverlayLine,
+  OverlaySettings,
+  OverlayStatus
+} from '../shared/types'
 import { invoke } from './invoke'
 import { subscribe } from './subscribe'
 
 export const overlayApi = {
-  getState: () => invoke<{ settings: OverlaySettings; status: OverlayStatus; due: DueCounts; fit: number | null }>('duet:get-state'),
+  getState: () =>
+    invoke<{
+      settings: OverlaySettings
+      status: OverlayStatus
+      due: DueCounts
+      fit: number | null
+    }>('duet:get-state'),
   /** Cards ready to review, whenever that changes. */
   onDue: (listener: (due: DueCounts) => void) => subscribe('duet:due', listener),
   onStatus: (listener: (status: OverlayStatus) => void) => subscribe('duet:status', listener),
   /** How wide the strip may be to stay inside the video; null when it can be as wide as it likes. */
   onFit: (listener: (maxWidth: number | null) => void) => subscribe('duet:fit', listener),
-  onSettings: (listener: (settings: OverlaySettings) => void) => subscribe('duet:settings', listener),
+  onSettings: (listener: (settings: OverlaySettings) => void) =>
+    subscribe('duet:settings', listener),
   /** The caption text on screen right now, before the line has finished. */
   onLive: (listener: (text: string) => void) => subscribe('duet:live', listener),
   onLine: (listener: (line: OverlayLine) => void) => subscribe('duet:line', listener),
@@ -25,13 +39,12 @@ export const overlayApi = {
   setWaitForTranslation: (on: boolean) => ipcRenderer.send('duet:set-wait', on),
   setPauseForHelp: (on: boolean) => ipcRenderer.send('duet:set', { pauseForHelp: on }),
   /** Stars a line (the one on screen when no id is given), or one of its words by pair number. */
-  save: (lineId?: number, pair?: number) => invoke<SaveResult | undefined>('duet:save', lineId, pair),
+  save: (lineId?: number, pair?: number) =>
+    invoke<SaveResult | undefined>('duet:save', lineId, pair),
   /** Takes a star back: deletes the card it made. */
   unsave: (cardId: string) => ipcRenderer.send('duet:unsave', cardId),
   /** Goes back to a line in the video (the one on screen when no id is given). */
   replay: (lineId?: number) => ipcRenderer.send('duet:replay', lineId),
-  /** Opens Review in the side panel. */
-  openReview: () => ipcRenderer.send('duet:review'),
   /** Plays the video Wait is holding for a line. */
   playOn: () => ipcRenderer.send('duet:play-on'),
   /** Whether the pointer is over something of Duet's (take clicks) or not (let them through). */

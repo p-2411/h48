@@ -1,26 +1,30 @@
-// The overlay's state, kept in step with the main process: settings, status, cards due, recent
-// lines and the line to show. A line still being translated never replaces one that is ready: the
+// The overlay's state, kept in step with the main process: settings, status, recent lines and the
+// line to show. A line still being translated never replaces one that is ready: the
 // strip keeps the last translated line (through gaps between lines too) until the next is ready.
 import { useEffect, useMemo, useState } from 'react'
-import { type DueCounts, type OverlayLine, type OverlaySettings, type OverlayStatus, DEFAULT_SETTINGS } from '../../../shared/types'
+import {
+  type OverlayLine,
+  type OverlaySettings,
+  type OverlayStatus,
+  DEFAULT_SETTINGS
+} from '../../../shared/types'
 
 export type OverlayState = {
   settings: OverlaySettings
   status: OverlayStatus
-  /** Cards to review now (due plus new still allowed today). */
-  due: number
   /** The line to show: the one on screen once it is translated, until then the last one that was. */
   current?: OverlayLine
   /** Caption text on screen that is not yet a finished line (only when reading the screen, and
    * only while there is no line to show). */
   building: string
+  /** The line on screen is still being translated (the strip shows the one before meanwhile). */
+  translating: boolean
   /** How wide the strip may be to stay inside the video; null when it can be as wide as it likes. */
   fit: number | null
   /** The first state has arrived from the main process. Until then the defaults stand in, and the
    * strip says nothing about them (no false "needs permission" flash). */
   loaded: boolean
 }
-
 
 /** The line the strip last showed, and the video and language it belongs to. */
 export type Shown = { id: number; url?: string; language: string }
@@ -36,7 +40,8 @@ export function chooseLine(
   shown: Shown | undefined,
   here: { url?: string; language: string }
 ): { current?: OverlayLine; next?: Shown } {
-  const same = (item?: Shown): boolean => !!item && item.url === here.url && item.language === here.language
+  const same = (item?: Shown): boolean =>
+    !!item && item.url === here.url && item.language === here.language
   if (onScreen && onScreen.state !== 'pending') {
     const next = shown?.id === onScreen.id && same(shown) ? shown : { id: onScreen.id, ...here }
     return { current: onScreen, next }
@@ -48,7 +53,6 @@ export function chooseLine(
 export function useOverlay(): OverlayState {
   const [settings, setSettings] = useState<OverlaySettings>(DEFAULT_SETTINGS)
   const [status, setStatus] = useState<OverlayStatus>({ trusted: false })
-  const [due, setDue] = useState<DueCounts>({ due: 0, newAvailable: 0 })
   const [lines, setLines] = useState<OverlayLine[]>([])
   const [live, setLive] = useState('')
   const [currentId, setCurrentId] = useState<number | null>(null)
@@ -61,7 +65,6 @@ export function useOverlay(): OverlayState {
       .then((state) => {
         setSettings(state.settings)
         setStatus(state.status)
-        setDue(state.due)
         setFit(state.fit)
       })
       // Without the first state the strip still works on its defaults, and updates fill it in.
@@ -71,7 +74,6 @@ export function useOverlay(): OverlayState {
       window.duet.onFit(setFit),
       window.duet.onStatus(setStatus),
       window.duet.onSettings(setSettings),
-      window.duet.onDue(setDue),
       window.duet.onLive(setLive),
       window.duet.onCurrent(setCurrentId),
       window.duet.onLine((line) =>
@@ -86,8 +88,19 @@ export function useOverlay(): OverlayState {
 
   const onScreen = useMemo(() => lines.find((line) => line.id === currentId), [lines, currentId])
   const [shown, setShown] = useState<Shown>()
-  const { current, next } = chooseLine(onScreen, lines, shown, { url: status.url, language: settings.language })
+  const { current, next } = chooseLine(onScreen, lines, shown, {
+    url: status.url,
+    language: settings.language
+  })
   if (next !== shown) setShown(next)
   const building = !current && status.source !== 'transcript' ? live : ''
-  return { settings, status, due: due.due + due.newAvailable, current, building, fit, loaded }
+  return {
+    settings,
+    status,
+    current,
+    building,
+    translating: onScreen?.state === 'pending',
+    fit,
+    loaded
+  }
 }

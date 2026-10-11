@@ -10,14 +10,12 @@ import { Icon } from '../components/Icon'
 import { say } from '../components/errors'
 import { LevelMeter } from './LevelMeter'
 import { LineView } from './LineView'
-import { actionable, quiet } from './notice'
+import { actionable, quiet, statusDot } from './notice'
 import { SettingsPopover } from './SettingsPopover'
 import { useOverlay } from './useOverlay'
 import { useSolid } from './useSolid'
 
 const TOAST_MS = 5000
-// Paused this long with cards due, the strip suggests a review.
-const NUDGE_AFTER_MS = 15_000
 
 // Undo on a toast: takes back a star just given (`unsave`), or brings back the card a star just
 // removed (`restore`; a removed card is kept for 30 s, longer than the toast shows).
@@ -43,28 +41,17 @@ function startDrag(event: PointerEvent<HTMLElement>): void {
 
 export function Overlay(): React.JSX.Element {
   useSolid()
-  const { settings, status, due, current, building, fit, loaded } = useOverlay()
+  const { settings, status, current, building, translating, fit, loaded } = useOverlay()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [toast, setToast] = useState<Toast>()
   // Stars given in this run, by line and word ("12:3", or "12:line"), so they show as saved.
   const [stars, setStars] = useState<Record<string, string>>({})
-  const [pausedLong, setPausedLong] = useState(false)
 
   useEffect(() => {
     if (!toast) return
     const timer = setTimeout(() => setToast(undefined), TOAST_MS)
     return () => clearTimeout(timer)
   }, [toast])
-
-  // The review nudge: the video has stayed paused for a while.
-  useEffect(() => {
-    if (status.playing || !status.url) return
-    const timer = setTimeout(() => setPausedLong(true), NUDGE_AFTER_MS)
-    return () => {
-      clearTimeout(timer)
-      setPausedLong(false)
-    }
-  }, [status.playing, status.url])
 
   const key = (pair?: number): string => `${current?.id}:${pair ?? 'line'}`
   // A star in progress: a second press waits for the first to finish.
@@ -124,7 +111,14 @@ export function Overlay(): React.JSX.Element {
   const notice = loaded ? actionable(status, settings.language) : undefined
   const state = quiet(status, settings.language)
   const ready = current?.state === 'ready'
-  const nudge = pausedLong && due > 0 && !notice
+  // Before the first state arrives the dot stays grey, like the notices stay quiet.
+  const dot = loaded
+    ? statusDot(status, settings.language, {
+        translating,
+        failed: current?.state === 'failed',
+        building: !!building
+      })
+    : { tone: 'off', text: state.text }
 
   return (
     <div
@@ -176,19 +170,12 @@ export function Overlay(): React.JSX.Element {
         </div>
 
         <div className="strip" onPointerDown={startDrag}>
-          <div className="corner">
-            {due > 0 && (
-              <button
-                type="button"
-                className="due"
-                onClick={() => window.duet.openReview()}
-                title="Review the cards due"
-              >
-                {due} due
-              </button>
-            )}
-            <i className={`dot${state.on ? ' on' : ''}`} title={state.text} />
-          </div>
+          <i
+            className={`dot ${dot.tone}`}
+            title={dot.text}
+            role="img"
+            aria-label={`Status: ${dot.text}`}
+          />
 
           {current ? (
             <LineView
@@ -212,21 +199,6 @@ export function Overlay(): React.JSX.Element {
                   {notice.action.label}
                 </button>
               )}
-            </p>
-          )}
-          {nudge && (
-            <p className="notice">
-              <span>
-                Review {due} {due === 1 ? 'card' : 'cards'} · about{' '}
-                {Math.max(1, Math.round(due * 0.4))} min
-              </span>
-              <button
-                type="button"
-                className="act primary"
-                onClick={() => window.duet.openReview()}
-              >
-                Review
-              </button>
             </p>
           )}
           {toast && (

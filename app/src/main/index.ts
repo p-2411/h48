@@ -114,7 +114,13 @@ app.whenReady().then(() => {
   // Explain and the conversation about a line are one: the explanation first, then text or voice
   // with the tutor, which reads and saves cards in the same collection as My cards.
   const tutor = new Tutor(player, cards, panel)
-  const explain = new Explain({ explainer: models?.explainer, replay: replayMoment, panel, tutor, hear })
+  const explain = new Explain({
+    explainer: models?.explainer,
+    replay: replayMoment,
+    panel,
+    tutor,
+    hear
+  })
   if (demo) cards.seedDemoFixtures(demoMoment())
   // Opens Explain on a line: the one on screen when no id is given (in demo mode, the demo line).
   const explainLine = (lineId?: number): void => {
@@ -150,7 +156,6 @@ app.whenReady().then(() => {
       const moment = watcher.moment(lineId)
       if (moment) replayMoment(moment)
     },
-    openReview: () => panel.show('review'),
     setShortcut: (keys) => {
       const error = shortcut.change(keys)
       if (!error) settings.update({ shortcut: keys })
@@ -187,7 +192,11 @@ app.whenReady().then(() => {
     watcher.tick()
     wait.tick()
     player.sample()
-    watcher.setPlayback({ playing: player.playing, waiting: player.isHeldBy('wait'), audio: audio.permission })
+    watcher.setPlayback({
+      playing: player.playing,
+      waiting: player.isHeldBy('wait'),
+      audio: audio.permission
+    })
   }, TICK_MS)
   setInterval(() => hearing.tick(), HEARING_TICK_MS)
   // Once per video: is it spoken in the language being learnt, or are its subtitles a translation?

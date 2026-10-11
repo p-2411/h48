@@ -4,11 +4,15 @@
 import { EventEmitter } from 'events'
 import { DEFAULT_SETTINGS, type OverlaySettings } from '../shared/types'
 import { readSetting, writeSetting } from './store/db'
+import { upgradeSettings } from './upgrade-settings'
 
 const KEY = 'overlay'
 
 export class Settings extends EventEmitter {
-  private value: OverlaySettings = { ...DEFAULT_SETTINGS, ...readSetting<Partial<OverlaySettings>>(KEY) }
+  private value: OverlaySettings = {
+    ...DEFAULT_SETTINGS,
+    ...upgradeSettings(readSetting<Partial<OverlaySettings>>(KEY))
+  }
 
   get current(): OverlaySettings {
     return this.value
@@ -17,7 +21,9 @@ export class Settings extends EventEmitter {
   /** Emits "change" with the new settings and only the fields that changed. */
   update(change: Partial<OverlaySettings>): void {
     const changed = Object.fromEntries(
-      Object.entries(change).filter(([key, value]) => this.value[key as keyof OverlaySettings] !== value)
+      Object.entries(change).filter(
+        ([key, value]) => this.value[key as keyof OverlaySettings] !== value
+      )
     ) as Partial<OverlaySettings>
     if (!Object.keys(changed).length) return
     this.value = { ...this.value, ...changed }

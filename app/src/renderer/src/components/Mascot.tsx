@@ -3,6 +3,7 @@
 // the opening and keeps still.
 import { useEffect, useState } from 'react'
 import './mascot.css'
+import { reducedMotion } from './motion'
 
 export type MascotState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'success' | 'correction'
 
@@ -19,13 +20,18 @@ const LABEL: Record<MascotState | 'opening', string> = {
   correction: 'gently correcting'
 }
 
-function reducedMotion(): boolean {
-  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
-}
-
-/** The mascot at `scale` times its full size (420 x 190). */
-export function Mascot({ state, scale = 1 }: { state: MascotState; scale?: number }): React.JSX.Element {
-  const [opening, setOpening] = useState(() => !reducedMotion())
+/** The mascot at `scale` times its full size (420 x 190); `opening: false` skips the opening (a
+ * message's avatar). */
+export function Mascot({
+  state,
+  scale = 1,
+  opening: opens = true
+}: {
+  state: MascotState
+  scale?: number
+  opening?: boolean
+}): React.JSX.Element {
+  const [opening, setOpening] = useState(() => opens && !reducedMotion())
   useEffect(() => {
     if (!opening) return
     const timer = window.setTimeout(() => setOpening(false), OPENING_MS)
@@ -33,7 +39,13 @@ export function Mascot({ state, scale = 1 }: { state: MascotState; scale?: numbe
   }, [opening])
   const shown = opening ? 'opening' : state
   return (
-    <div className="duet-mascot" data-state={shown} style={{ '--scale': scale } as React.CSSProperties} role="img" aria-label={`Duet, ${LABEL[shown]}`}>
+    <div
+      className="duet-mascot"
+      data-state={shown}
+      style={{ '--scale': scale } as React.CSSProperties}
+      role="img"
+      aria-label={`Duet, ${LABEL[shown]}`}
+    >
       <div className="mascot-canvas" aria-hidden="true">
         <div className="particle-field">
           {Array.from({ length: 8 }, (_, index) => (

@@ -101,7 +101,7 @@ export type OverlaySettings = {
   guessFirst: boolean
   /** Pause the video while the line on screen is still being translated. */
   waitForTranslation: boolean
-  /** Pause the video while Explain is open (off by default: Duet never pauses the show unasked). */
+  /** Pause the video while Explain is open (on by default, so the line stays put while it is talked about). */
   pauseForHelp: boolean
   /** The first-run screens have been seen. */
   onboarded: boolean
@@ -111,6 +111,8 @@ export type OverlaySettings = {
   overlayPosition?: { x: number; y: number }
   /** Where the side panel was last left, and its size. */
   panelBounds?: { x: number; y: number; width: number; height: number }
+  /** Which defaults saved settings have been brought up to (see SETTINGS_VERSION in main/settings.ts). */
+  version?: number
 }
 
 /** Settings before the learner changes any: Spanish, a few words swapped in. */
@@ -119,9 +121,10 @@ export const DEFAULT_SETTINGS: OverlaySettings = {
   level: 2,
   guessFirst: true,
   waitForTranslation: true,
-  pauseForHelp: false,
+  pauseForHelp: true,
   onboarded: false,
-  shortcut: 'Alt+Shift+D'
+  shortcut: 'Alt+Shift+D',
+  version: 2
 }
 
 /** Whether Duet may hear the browser's sound (macOS System Audio Recording); 'unavailable' when

@@ -14,6 +14,7 @@ import { CardPreview, OpenedCard } from './CardPreview'
 import { Composer } from './Composer'
 import { Turn, type TurnData } from './Turn'
 import { useCardActions } from './useCardActions'
+import { useMascotFlight } from './useMascotFlight'
 import { useTurnAids } from './useTurnAids'
 import { useEnglishHelp, useVoiceHandoff } from './useVoiceHandoff'
 import { VoiceBar } from './VoiceBar'
@@ -65,6 +66,8 @@ export function Conversation({
   const [draft, setDraft] = useState('')
   const box = useRef<HTMLTextAreaElement>(null)
   const end = useRef<HTMLDivElement>(null)
+  const section = useRef<HTMLElement>(null)
+  const dockMascot = useRef<HTMLDivElement>(null)
   const cards = useCardActions()
   const endButton = useVoiceHandoff(live, box)
   const voiceOn = isVoiceOn(live.status)
@@ -117,16 +120,24 @@ export function Conversation({
       ? last.text
       : undefined
   const { result } = cards
+  // Duet's typed reply arrives: the mascot flies from the dock to become its picture.
+  useMascotFlight(
+    last?.from === 'duet' && last.via === 'text' ? `c${state.chat.length - 1}` : undefined,
+    dockMascot,
+    section,
+    end
+  )
 
   return (
-    <section className="conversation" aria-label="Conversation with Duet">
-      {thread.map((turn) => (
+    <section className="conversation" aria-label="Conversation with Duet" ref={section}>
+      {thread.map((turn, index) => (
         <Turn
           key={turn.id}
           id={turn.id}
           from={turn.from}
           text={turn.text}
           via={turn.via}
+          avatar={turn.from === 'duet' && thread[index + 1]?.from !== 'duet'}
           language={language}
           revealed={aids.revealed.has(turn.id)}
           meaning={aids.meanings[turn.id]}
@@ -135,7 +146,6 @@ export function Conversation({
           onHide={aids.hide}
         />
       ))}
-      {state.replying && <p className="turn duet muted">…</p>}
 
       {cards.card && <OpenedCard card={cards.card} onClose={cards.closeCard} />}
       {cards.pending && (
@@ -151,9 +161,14 @@ export function Conversation({
       {/* Results and errors are announced; the turns and the composer are not, so streaming voice
           doesn't flood a screen reader. Always rendered, so a new notice is read out. */}
       <div className="notices" role="status">
-        {/* Duet's typed reply, for screen readers (spoken voice turns are heard already). */}
+        {/* Duet writing, then its typed reply, for screen readers (the mascot shows it thinking;
+            spoken voice turns are heard already). */}
         <span className="sr-only">
-          {last?.from === 'duet' && last.via === 'text' ? `Duet: ${last.text}` : ''}
+          {state.replying
+            ? 'Duet is replying…'
+            : last?.from === 'duet' && last.via === 'text'
+              ? `Duet: ${last.text}`
+              : ''}
         </span>
         {result && (
           <div className="notice row">
@@ -211,7 +226,7 @@ export function Conversation({
       {dock &&
         createPortal(
           <div className="composer">
-            <div className="composer-mascot">
+            <div className="composer-mascot" ref={dockMascot}>
               <Mascot
                 state={mascotState(
                   live.status,

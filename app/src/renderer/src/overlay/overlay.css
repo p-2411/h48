@@ -38,13 +38,14 @@
 .w.live { cursor: pointer; border-radius: 5px; }
 .mix .w.live:hover { background: color-mix(in srgb, var(--c, #fff) 28%, transparent); }
 
-/* Top-right corner: cards due, and the quiet status dot (its words on hover). */
-.corner { position: absolute; top: 9px; right: 10px; display: flex; align-items: center; gap: 7px; }
-/* The "N due" badge needs room of its own, or it covers the line's last word. */
-.strip:has(.due) { padding-right: 86px; }
-.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
-.dot.on { background: #32d74b; box-shadow: 0 0 6px #32d74b; }
-.due { font-size: 11px; font-weight: 600; color: #111; background: #fff; border-radius: 999px; padding: 2px 7px; }
+/* Top-right: the status dot, its words on hover. Green: lines coming through. Pulsing yellow: a
+   line translating or forming. Red: something is wrong (the strip says what). Grey: nothing yet. */
+.dot { position: absolute; top: 9px; right: 10px; width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
+.dot.ok { background: #32d74b; box-shadow: 0 0 6px #32d74b; }
+.dot.busy { background: #ffd60a; box-shadow: 0 0 6px #ffd60a; animation: dot-pulse 1.2s ease-in-out infinite; }
+.dot.error { background: #ff453a; box-shadow: 0 0 6px #ff453a; }
+@keyframes dot-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .dot.busy { animation: none; } }
 
 /* Actions: above the strip's right end, only while the pointer is on Duet (or the settings are
    open). Their row spans the strip's whole width, and its bottom padding bridges the gap to the
@@ -79,14 +80,16 @@
 .act.on { background: #fff; color: #111; }
 .act:disabled { opacity: 0.4; cursor: default; }
 
-/* A word's popup, above it and above the actions row. */
+/* A word's popup, just above the strip, over the actions row. */
 .popup {
   /* Centred on its word, but kept inside the strip so a first or last word's popup doesn't leave the window. */
-  position: absolute; z-index: 3; bottom: calc(100% + 40px); left: clamp(140px, var(--x), calc(100% - 140px));
+  position: absolute; z-index: 3; bottom: calc(100% + 6px); left: clamp(140px, var(--x), calc(100% - 140px));
   transform: translateX(-50%); width: max-content; max-width: 280px;
   background: #fff; color: #111; border-radius: 12px; padding: 9px 12px; display: flex; flex-direction: column; gap: 2px;
   font-size: 13px;
 }
+/* Bridges the gap down to the strip, so the pointer can go from the word to the popup. */
+.popup::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 8px; }
 .popup b { font-size: 17px; font-weight: 600; }
 .popup .job { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: color-mix(in srgb, var(--c, #555) 70%, #111); }
 .popup .job[data-t='n'] { --c: var(--c-n); } .popup .job[data-t='v'] { --c: var(--c-v); } .popup .job[data-t='a'] { --c: var(--c-a); }

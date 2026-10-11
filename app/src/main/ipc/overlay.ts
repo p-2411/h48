@@ -8,7 +8,6 @@
 //   duet:save          stars a line, or one of its words (by pair) → SaveResult
 //   duet:unsave        undoes a star (deletes that card)
 //   duet:replay        goes back to a line in the video
-//   duet:review        opens the side panel on Review
 //   duet:play-on       plays the video that Wait is holding
 //   duet:solid         the pointer is over Duet (take clicks) or not (let them through to the video)
 //   duet:drag          the learner drags the subtitles: start, end (placement.ts moves the window)
@@ -31,7 +30,6 @@ type Actions = {
   saveLine: (lineId?: number, pair?: number) => SaveResult | undefined
   unsave: (cardId: string) => void
   replayLine: (lineId?: number) => void
-  openReview: () => void
   playOn: () => void
   setShortcut: (keys: string) => string | undefined
   drag: (phase: 'start' | 'end') => void
@@ -53,11 +51,18 @@ export function connectOverlay(
   watcher.on('live', (text) => send('duet:live', text))
   settings.on('change', (current) => send('duet:settings', current))
 
-  ipcMain.handle('duet:get-state', () => ({ settings: settings.current, status: watcher.status, due: actions.due(), fit: actions.fit() ?? null }))
+  ipcMain.handle('duet:get-state', () => ({
+    settings: settings.current,
+    status: watcher.status,
+    due: actions.due(),
+    fit: actions.fit() ?? null
+  }))
   ipcMain.on('duet:set-language', (_, language: Language) => settings.update({ language }))
   ipcMain.on('duet:set-level', (_, level: Level) => settings.update({ level }))
   ipcMain.on('duet:set-guess-first', (_, guessFirst: boolean) => settings.update({ guessFirst }))
-  ipcMain.on('duet:set-wait', (_, waitForTranslation: boolean) => settings.update({ waitForTranslation }))
+  ipcMain.on('duet:set-wait', (_, waitForTranslation: boolean) =>
+    settings.update({ waitForTranslation })
+  )
   ipcMain.on('duet:set', (_, change: Partial<Pick<OverlaySettings, 'pauseForHelp'>>) =>
     settings.update({ pauseForHelp: change.pauseForHelp })
   )
@@ -66,7 +71,6 @@ export function connectOverlay(
   ipcMain.handle('duet:save', (_, lineId?: number, pair?: number) => actions.saveLine(lineId, pair))
   ipcMain.on('duet:unsave', (_, cardId: string) => actions.unsave(cardId))
   ipcMain.on('duet:replay', (_, lineId?: number) => actions.replayLine(lineId))
-  ipcMain.on('duet:review', () => actions.openReview())
   ipcMain.on('duet:play-on', () => actions.playOn())
   // The window lets clicks through to the video except where Duet is drawn (see windows/overlay.ts).
   ipcMain.on('duet:solid', (_, solid: boolean) => {
@@ -74,6 +78,11 @@ export function connectOverlay(
   })
   ipcMain.handle('duet:set-shortcut', (_, keys: string) => actions.setShortcut(String(keys)))
   ipcMain.on('duet:focus', () => overlay.isDestroyed() || overlay.focus())
-  ipcMain.on('duet:drag', (_, phase: 'start' | 'end') => actions.drag(phase === 'start' ? 'start' : 'end'))
-  return { sendDue: (due) => send('duet:due', due), sendFit: (maxWidth) => send('duet:fit', maxWidth ?? null) }
+  ipcMain.on('duet:drag', (_, phase: 'start' | 'end') =>
+    actions.drag(phase === 'start' ? 'start' : 'end')
+  )
+  return {
+    sendDue: (due) => send('duet:due', due),
+    sendFit: (maxWidth) => send('duet:fit', maxWidth ?? null)
+  }
 }

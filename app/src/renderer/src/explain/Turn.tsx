@@ -1,12 +1,14 @@
-// One turn of the conversation about a line, typed or spoken. Duet's turns in the language being
-// learnt can show their English meaning (on request) and, for languages not written in Latin
-// letters, their romanisation. Memoised on plain values (the thread is rebuilt each render), so a
-// streaming voice turn doesn't re-render the others.
+// One turn of the conversation about a line, typed or spoken, as a message bubble: the learner's on
+// the right, Duet's on the left with the mascot as its picture (on the last of a run of Duet's
+// turns). Duet's turns in the language being learnt can show their English meaning (on request)
+// and, for languages not written in Latin letters, their romanisation. Memoised on plain values
+// (the thread is rebuilt each render), so a streaming voice turn doesn't re-render the others.
 import { memo } from 'react'
 import { languageName, speaks, type Language } from '../../../shared/languages'
-import { Inline } from '../components/Inline'
-import type { Aid } from './aids'
 import { Icon } from '../components/Icon'
+import { Inline } from '../components/Inline'
+import { Mascot } from '../components/Mascot'
+import type { Aid } from './aids'
 
 export type TurnData = {
   id: string
@@ -15,11 +17,15 @@ export type TurnData = {
   via?: 'text' | 'voice'
 }
 
+// The mascot in a message's picture: 420 x 190 drawn at 22 px wide, in a 30 px circle.
+export const AVATAR_SCALE = 22 / 420
+
 export const Turn = memo(function Turn({
   id,
   from,
   text,
   via,
+  avatar,
   language,
   revealed,
   meaning,
@@ -27,6 +33,8 @@ export const Turn = memo(function Turn({
   onReveal,
   onHide
 }: TurnData & {
+  /** Shows Duet's picture beside this turn (the last of a run of Duet's turns). */
+  avatar?: boolean
   language: Language
   revealed: boolean
   meaning?: Aid
@@ -37,40 +45,50 @@ export const Turn = memo(function Turn({
   const canReveal = from === 'duet' && speaks(language, text)
   // After a failed meaning the button offers Meaning again, so one press tries again.
   const showing = revealed && !meaning?.error
+  const spoken = via === 'voice'
   return (
-    <article className={`turn ${from}`}>
-      <header className="turn-heading">
-        <span className="speaker">
-          {from === 'learner' ? 'You' : 'Duet'}
-          {via === 'voice' && <span className="via"> · spoken</span>}
-        </span>
-        {canReveal && (
-          <button
-            type="button"
-            className={`meaning-button${showing ? ' is-on' : ''}`}
-            aria-label={showing ? 'Hide English meaning' : 'Show English meaning'}
-            onClick={() => (showing ? onHide(id) : onReveal(id, text))}
-          >
-            <Icon name="eye" size={14} />
-            {showing ? 'Hide meaning' : 'Meaning'}
-          </button>
+    <article className={`turn ${from}`} data-turn={id}>
+      {from === 'duet' && (
+        <div className="turn-avatar" aria-hidden="true">
+          {avatar && <Mascot state="idle" scale={AVATAR_SCALE} opening={false} />}
+        </div>
+      )}
+      <div className="turn-body">
+        <div className={`bubble${avatar || from === 'learner' ? ' has-tail' : ''}`}>
+          <span className="sr-only">{from === 'learner' ? 'You' : 'Duet'}: </span>
+          <p className="turn-text" lang={canReveal ? language : undefined}>
+            <Inline text={text} />
+          </p>
+          {canReveal && reading?.text && (
+            <p className="turn-reading" aria-label={`${languageName(language)} in Latin letters`}>
+              {reading.text}
+            </p>
+          )}
+          {revealed && (
+            <p className={`turn-meaning${meaning?.error ? ' has-error' : ''}`}>
+              {meaning?.loading
+                ? 'Showing the meaning…'
+                : (meaning?.text ?? meaning?.error ?? 'Meaning unavailable.')}
+            </p>
+          )}
+        </div>
+        {(canReveal || spoken) && (
+          <div className="turn-foot">
+            {spoken && <span>Spoken</span>}
+            {canReveal && (
+              <button
+                type="button"
+                className={`meaning-button${showing ? ' is-on' : ''}`}
+                aria-label={showing ? 'Hide English meaning' : 'Show English meaning'}
+                onClick={() => (showing ? onHide(id) : onReveal(id, text))}
+              >
+                <Icon name="eye" size={13} />
+                {showing ? 'Hide meaning' : 'Meaning'}
+              </button>
+            )}
+          </div>
         )}
-      </header>
-      <p className="turn-text" lang={canReveal ? language : undefined}>
-        <Inline text={text} />
-      </p>
-      {canReveal && reading?.text && (
-        <p className="turn-reading" aria-label={`${languageName(language)} in Latin letters`}>
-          {reading.text}
-        </p>
-      )}
-      {revealed && (
-        <p className={`turn-meaning${meaning?.error ? ' has-error' : ''}`}>
-          {meaning?.loading
-            ? 'Showing the meaning…'
-            : (meaning?.text ?? meaning?.error ?? 'Meaning unavailable.')}
-        </p>
-      )}
+      </div>
     </article>
   )
 })

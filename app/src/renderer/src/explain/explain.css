@@ -8,21 +8,43 @@
 .explain .quote { align-self: flex-start; padding: 3px 9px; border-radius: 7px; background: var(--fill); font-size: 15px; }
 .center { text-align: center; margin-top: 40%; }
 .explain .heard { margin-left: 8px; padding: 1px 6px; border-radius: 5px; background: rgba(50, 215, 75, 0.16); color: #7ee28f; font-size: 11px; letter-spacing: 0.04em; }
-/* The conversation: Duet's turns on the left, the learner's on the right, typed or spoken. */
+/* The conversation as messages: the learner's in blue on the right, Duet's in grey on the left with
+   the mascot as its picture; the last bubble of a run has a tail. Consecutive turns from the same
+   side sit closer. */
 .conversation { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
-.turn { max-width: 88%; display: flex; flex-direction: column; gap: 4px; padding: 9px 12px; border-radius: 14px; line-height: 1.45; }
-.turn.duet { align-self: flex-start; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
-.turn.learner { align-self: flex-end; background: #fff; color: #111; }
-.turn.learner .speaker { color: #555; }
-.turn-heading { display: flex; align-items: center; gap: 10px; }
-.speaker { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); }
-.speaker .via { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.turn { max-width: 86%; display: flex; align-items: flex-end; gap: 6px; }
+.turn.duet { align-self: flex-start; }
+.turn.learner { align-self: flex-end; margin-right: 5px; /* room for the tail */ }
+.turn.duet + .turn.duet, .turn.learner + .turn.learner { margin-top: -7px; }
+.turn-body { min-width: 0; display: flex; flex-direction: column; }
+.bubble { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 7px 12px; border-radius: 18px; line-height: 1.4; color: #fff; }
+.turn.learner .bubble { background: #0071e3; }
+.turn.duet .bubble { background: #3a3a3c; }
+.bubble.has-tail::after { content: ''; position: absolute; bottom: 0; width: 12px; height: 16px; background: inherit;
+  clip-path: path('M0 0 H5 C5 8 7 13 12 16 C7 16.5 3 15 0 12 Z'); }
+.turn.learner .bubble.has-tail { border-bottom-right-radius: 6px; }
+.turn.learner .bubble.has-tail::after { right: -5px; }
+.turn.duet .bubble.has-tail { border-bottom-left-radius: 6px; }
+.turn.duet .bubble.has-tail::after { left: -5px; transform: scaleX(-1); }
 .turn-text { margin: 0; white-space: pre-wrap; }
 .turn-reading { margin: 0; font-size: 13px; color: var(--text-2); font-style: italic; }
 .turn-meaning { margin: 0; padding-top: 6px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--fg-2); }
 .turn-meaning.has-error { color: #ff8a80; }
-.meaning-button { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; color: var(--text-2); border: 1px solid var(--line); }
+/* Under a bubble: "Spoken", and Meaning for Duet's turns in the language being learnt. */
+.turn-foot { display: flex; align-items: center; gap: 8px; margin-top: 3px; padding: 0 4px; font-size: 11px; color: var(--text-3); }
+.turn.learner .turn-foot { justify-content: flex-end; }
+.meaning-button { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 999px; font-size: 12px; color: var(--text-2); }
 .meaning-button:hover, .meaning-button.is-on { color: #fff; background: var(--fill); }
+/* Duet's picture: the mascot, still, in a dark circle; kept as an empty space beside the other
+   bubbles of a run, so they line up. Lifted above the foot so it sits beside the bubble. */
+.turn-avatar { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #1c1c1e; border: 0.5px solid var(--line); }
+.turn-avatar:empty { background: none; border-color: transparent; }
+.turn:has(.turn-foot) .turn-avatar { margin-bottom: 23px; }
+.turn-avatar .particle-field, .turn-avatar .sound-ring, .turn-avatar .mascot-canvas::before { display: none; }
+.turn-avatar .duet-mascot, .turn-avatar .duet-mascot * { animation: none !important; }
+/* The mascot flying from the dock to a new reply's picture (useMascotFlight.ts). */
+.duet-mascot.mascot-flight { position: fixed; z-index: 1000; margin: 0; pointer-events: none; transform-origin: top left; }
+.mascot-flight .particle-field { display: none; }
 
 /* A card preview waiting for the learner, or a card Duet opened. */
 .action-card { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(255, 255, 255, 0.04); }
