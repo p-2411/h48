@@ -1,9 +1,18 @@
-/* Review: one card at a time, recall first, then reveal and rate. Shown in the home base (Cards). */
-.review { max-width: 620px; width: 100%; align-self: center; display: flex; flex-direction: column; gap: 14px; }
+/* Review: one card at a time on a stage, recall first (the answer blurred), then show it and rate.
+   Shown in Your words and in the daily session. */
+.review { max-width: 620px; width: 100%; align-self: center; display: flex; flex-direction: column; gap: 18px; }
 .counts { display: flex; gap: 18px; font-size: 13px; color: var(--fg-2); }
-.prompt { min-height: 140px; justify-content: center; }
+/* The stage: centred, the card's front large with its word glowing, the answer blurred under it. */
+.card-stage { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 26px 0 6px; text-align: center; }
+.card-stage > p { margin: 0; }
+.stage-front { font-size: 30px; line-height: 1.35; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.stage-back { font-size: 17px; line-height: 1.45; color: var(--fg-2); transition: filter 0.3s var(--ease), opacity 0.3s var(--ease); }
+.stage-back.is-hidden { filter: blur(7px); opacity: 0.6; user-select: none; }
+.stage-answer { width: 100%; margin-top: 8px; text-align: left; align-items: stretch; }
+.stage-answer p { margin: 0; }
+.stage-show, .stage-more { display: flex; justify-content: center; }
 .ratings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.rate { flex-direction: column; gap: 2px; padding: 10px; }
+.rate { flex-direction: column; gap: 2px; padding: 10px; border-radius: 16px; }
 .rate.again { box-shadow: inset 0 0 0 1px rgba(255, 105, 97, 0.5); }
 .rate.good { box-shadow: inset 0 0 0 1px rgba(50, 215, 75, 0.5); }
 .legend { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; font-size: 12px; color: var(--text-2); }

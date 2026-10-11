@@ -1,6 +1,6 @@
 // A tile and its page are one surface at two sizes. Opening: a solid surface covers the tile (its
 // content goes at once), grows to fill the window, then thins away under the page's content as that
-// rises in. Closing: the page's content goes as the surface turns solid again, the surface shrinks
+// rises in. Closing: the page's content fades away as the surface turns solid again, the surface shrinks
 // to the tile's exact place and corners, then thins away over the tile. It is never see-through on
 // the way. The surface moves by transform alone (a move and a scale, run by the GPU), so it stays
 // smooth while the page mounts or the hub paints; its corners are scaled the other way so they keep
@@ -40,14 +40,14 @@ const nextFrame = (): Promise<void> =>
 
 export function useSurface(
   root: RefObject<HTMLElement | null>,
-  surface: RefObject<HTMLDivElement | null>,
-  page: RefObject<HTMLElement | null>
+  surface: RefObject<HTMLDivElement | null>
 ): {
   stage: Stage
   /** Grows `from` (a tile, or the gear) into the page; `show` puts the page's content in place. */
   grow: (from: HTMLElement, show: () => void) => Promise<void>
-  /** Shrinks the page back into the element it grew from; `hide` takes the page's content away. */
-  shrink: (hide: () => void) => Promise<void>
+  /** Shrinks the page back into the element it grew from; `hide` takes the page's content away
+   * (done once it has faded out). */
+  shrink: (hide: () => Promise<void>) => Promise<void>
   /** The element the open page grew from (the focus goes back to it). */
   from: RefObject<HTMLElement | null>
   /** Another page took the open one's place: it shrinks back into `element` instead. */
@@ -93,12 +93,14 @@ export function useSurface(
   )
 
   const shrink = useCallback(
-    async (hide: () => void) => {
+    async (hide: () => Promise<void>) => {
       if (busy.current || !from.current) return
       busy.current = true
       const layer = surface.current
       const box = root.current
       if (layer && box && !reducedMotion()) {
+        // The page's content fades away as it came in, while the surface turns solid behind it;
+        // only then does the surface shrink.
         await Promise.all([
           layer.animate(
             [
@@ -107,12 +109,8 @@ export function useSurface(
             ],
             { duration: QUICK, fill: 'forwards' }
           ).finished,
-          page.current?.animate([{ opacity: 1 }, { opacity: 0 }], {
-            duration: QUICK,
-            fill: 'forwards'
-          }).finished
+          hide()
         ])
-        hide()
         setStage('shrinking')
         await nextFrame()
         const tile = frameOf(from.current, box)
@@ -125,12 +123,12 @@ export function useSurface(
           { duration: 100, fill: 'forwards' }
         ).finished
       } else {
-        hide()
+        await hide()
       }
       setStage('closed')
       busy.current = false
     },
-    [root, surface, page]
+    [root, surface]
   )
 
   const retarget = useCallback((element: HTMLElement) => {

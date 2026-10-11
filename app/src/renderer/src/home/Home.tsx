@@ -9,7 +9,7 @@ import type { HomePlace } from '../../../shared/home'
 import { languageName } from '../../../shared/languages'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { Icon } from '../components/Icon'
-import { DURATION, fadeUp } from '../components/motion'
+import { DURATION, EASE_IN, fadeUp } from '../components/motion'
 import { useSettings } from '../components/useSettings'
 import { SettingsPage } from './SettingsPage'
 import { TalkPage } from './TalkPage'
@@ -23,6 +23,12 @@ import { Watching } from './Watching'
 import { YourWords } from './words/YourWords'
 
 type Page = 'today' | 'watching' | 'words' | 'talk' | 'settings'
+
+// An open page's content: in, fading and rising; out, fading and sinking (a little faster).
+const PAGE_MOTION = {
+  ...fadeUp(8, DURATION.slow),
+  exit: { opacity: 0, y: 8, transition: { duration: DURATION.base, ease: EASE_IN } }
+}
 /** A page open over the hub: Your words can open straight into Review, Talk with a first message or
  * with voice on. */
 type Opened = { page: Page; review?: boolean; talk?: TalkStart }
@@ -80,7 +86,9 @@ export function Home(): React.JSX.Element {
   const root = useRef<HTMLDivElement>(null)
   const surface = useRef<HTMLDivElement>(null)
   const page = useRef<HTMLDivElement>(null)
-  const { stage, grow, shrink, from, retarget } = useSurface(root, surface, page)
+  const { stage, grow, shrink, from, retarget } = useSurface(root, surface)
+  // Called once the open page has faded out (AnimatePresence below).
+  const pageGone = useRef<() => void>(undefined)
   const [opened, setOpened] = useState<Opened>()
   const language = useSettings()?.language
   // What's open, for the listeners below (they're set up once).
@@ -104,7 +112,14 @@ export function Home(): React.JSX.Element {
     [grow, retarget]
   )
   const close = useCallback(() => {
-    void shrink(() => setOpened(undefined)).then(() => {
+    const hide = (): Promise<void> =>
+      new Promise((resolve) => {
+        pageGone.current = resolve
+        setOpened(undefined)
+        // In case the fade's end is never heard (the page was already going), go on anyway.
+        window.setTimeout(resolve, 600)
+      })
+    void shrink(hide).then(() => {
       // Back to where the page came from, for the keyboard and screen readers.
       const origin = from.current
       ;(origin?.querySelector<HTMLElement>('.tile-title') ?? origin)?.focus()
@@ -152,10 +167,11 @@ export function Home(): React.JSX.Element {
         <TalkTile onOpen={(tile, start) => open({ page: 'talk', talk: start }, tile)} />
       </div>
       {stage !== 'closed' && <div className="home-surface" ref={surface} aria-hidden="true" />}
-      <AnimatePresence>
+      <AnimatePresence onExitComplete={() => pageGone.current?.()}>
         {opened && (
           // Keyed by page, so a page that broke can be left and come back fresh.
-          <motion.div key={opened.page} className="home-open" ref={page} {...fadeUp(8, DURATION.slow)}>
+          // It comes in fading and rising, and leaves the same way back (fading and sinking).
+          <motion.div key={opened.page} className="home-open" ref={page} {...PAGE_MOTION}>
             <button type="button" className="btn home-back" onClick={close}>
               ‹ Home
             </button>
