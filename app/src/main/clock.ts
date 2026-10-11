@@ -35,6 +35,11 @@ export class PlayerClock {
     }
   }
 
+  /** Whether the reader has reported the video's position and play state at all. */
+  get known(): boolean {
+    return this.last !== undefined
+  }
+
   /** Whether the video is playing, as last reported. */
   get playing(): boolean {
     return !!this.last?.playing && !this.last.ad

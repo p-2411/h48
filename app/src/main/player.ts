@@ -10,7 +10,7 @@ import { EventEmitter } from 'events'
 import type { PlayerCommand } from './captions'
 import { PlayerClock, type PlayerTime } from './clock'
 
-export type Holder = 'wait' | 'tutor'
+export type Holder = 'wait' | 'tutor' | 'explain'
 
 // How long the reader has to report that a pause or play Duet asked for has happened.
 const COMMAND_MS = 1500
@@ -31,6 +31,12 @@ export class Player extends EventEmitter {
 
   get playing(): boolean {
     return this.clock.playing
+  }
+
+  /** Whether Duet has seen the play state at all. On Netflix it can't while the player's controls
+   * are hidden, until they first show. */
+  get stateKnown(): boolean {
+    return this.clock.known
   }
 
   /** Seconds into the video, or undefined while unknown or during an ad. */

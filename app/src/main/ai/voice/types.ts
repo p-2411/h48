@@ -18,8 +18,15 @@ export type AudioClip = {
 export interface SpeechToText {
   /** Provider and model, for logs, e.g. "openai/gpt-4o-transcribe". */
   readonly name: string
-  /** What was said. `language` is the one being practised; a learner may also speak English. */
-  transcribe(audio: AudioClip, language: Language, signal?: AbortSignal): Promise<{ text: string }>
+  /** What was said. `language` is the one being practised; a learner may also speak English. For a
+   * video's own speech, pass `options.only` to transcribe in that language alone, and `options.before`
+   * (the text just before) for continuity. */
+  transcribe(
+    audio: AudioClip,
+    language: Language,
+    signal?: AbortSignal,
+    options?: { only?: boolean; before?: string }
+  ): Promise<{ text: string }>
 }
 
 /** How a line was said, as heard in the video's audio. */

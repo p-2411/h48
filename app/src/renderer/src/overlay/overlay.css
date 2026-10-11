@@ -38,6 +38,8 @@
 .action { padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 500; background: #fff; color: #111; }
 .action:hover { background: #e6e6e6; }
 .action:disabled { opacity: 0.4; cursor: default; }
+/* The status area is part of the drag handle; a button in it must still take clicks. */
+.brand .action { flex: none; -webkit-app-region: no-drag; }
 .close { width: 22px; height: 22px; border-radius: 50%; font-size: 16px; line-height: 1; color: var(--text-2); }
 .close:hover { background: var(--fill); color: #fff; }
 

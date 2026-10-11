@@ -73,10 +73,18 @@ export type OverlayStatus = {
   site?: Site
   siteName?: string
   controls?: { playPause: boolean; seek: boolean }
-  /** Where lines come from: the video's transcript, or the captions on screen. */
-  source?: 'transcript' | 'captions'
+  /** Where lines come from: the video's transcript, the captions on screen, or Duet's own hearing of
+   * the audio (when there are neither). */
+  source?: 'transcript' | 'captions' | 'audio'
   /** False when the player says this video has no captions at all. */
   available?: boolean
+  /** Set when what Duet reads or hears is mostly in another language than the one being learnt
+   * (those lines are then ignored): which language, or 'other' for one Duet doesn't teach, and
+   * whether it came from the captions or the audio. */
+  otherLanguage?: { language: Language | 'other'; from: 'captions' | 'audio' }
+  /** Set when listening to the video shows it is spoken in another language than the one being
+   * learnt (so its subtitles are a translation): the language, and its name as heard. */
+  spokenLanguage?: { language: Language | 'other'; name: string }
   error?: string
   /** Which AI model processes lines, e.g. "anthropic/claude-opus-5-5". */
   model?: string
@@ -89,4 +97,6 @@ export type OverlaySettings = {
   guessFirst: boolean
   /** Pause the video while the line on screen is still being translated. */
   waitForTranslation: boolean
+  /** Pause the video while Explain is open (off by default: Duet never pauses the show unasked). */
+  pauseForHelp: boolean
 }

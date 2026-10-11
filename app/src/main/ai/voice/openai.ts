@@ -28,13 +28,21 @@ export class OpenAISpeechToText implements SpeechToText {
     this.client = new OpenAI(apiKey ? { apiKey } : {})
   }
 
-  async transcribe(audio: AudioClip, language: Language, signal?: AbortSignal): Promise<{ text: string }> {
+  async transcribe(
+    audio: AudioClip,
+    language: Language,
+    signal?: AbortSignal,
+    options: { only?: boolean; before?: string } = {}
+  ): Promise<{ text: string }> {
     const type = audio.mimeType.split(';')[0]
     const file = await toFile(audio.data, `speech.${EXTENSIONS[type] ?? 'webm'}`, { type })
     try {
-      // No language hint: learners mix English and the language they practise.
+      // A learner mixes English and the language they practise, so by default there is no language
+      // hint; a video's speech is transcribed in its one language, continuing from the text before.
       const result = await this.client.audio.transcriptions.create(
-        { file, model: this.model, prompt: `The speaker is an English speaker practising ${LANGUAGES[language]}.` },
+        options.only
+          ? { file, model: this.model, language, ...(options.before ? { prompt: options.before } : {}) }
+          : { file, model: this.model, prompt: `The speaker is an English speaker practising ${LANGUAGES[language]}.` },
         { signal }
       )
       return { text: result.text }

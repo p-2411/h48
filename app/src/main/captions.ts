@@ -30,7 +30,8 @@ export type CaptionStatus = {
 
 export type CaptionLine = { text: string; url?: string; at: number }
 
-export type PlayerCommand = { type: 'pause' } | { type: 'play' } | { type: 'seek'; seconds: number; from?: number }
+export type PlayerCommand =
+  { type: 'pause' } | { type: 'play' } | { type: 'seek'; seconds: number; from?: number }
 
 // A caption counts as finished when it has stopped changing for this long, or when the next
 // caption is not just a longer version of it (YouTube's auto captions grow word by word).
@@ -50,9 +51,14 @@ export class CaptionSource extends EventEmitter {
 
   start(): void {
     const name = READERS[process.platform]
-    const path = name && join(app.getAppPath(), 'resources', 'bin', name).replace('app.asar', 'app.asar.unpacked')
+    const path =
+      name &&
+      join(app.getAppPath(), 'resources', 'bin', name).replace('app.asar', 'app.asar.unpacked')
     if (!path || !existsSync(path)) {
-      this.emit('status', { trusted: false, error: `No caption reader for ${process.platform} yet.` } satisfies CaptionStatus)
+      this.emit('status', {
+        trusted: false,
+        error: `No caption reader for ${process.platform} yet.`
+      } satisfies CaptionStatus)
       return
     }
     this.child = spawn(path, [], { stdio: ['pipe', 'pipe', 'pipe'] })
@@ -66,9 +72,14 @@ export class CaptionSource extends EventEmitter {
         if (raw) this.handle(raw)
       }
     })
-    this.child.stderr?.on('data', (chunk) => console.error('[caption reader]', String(chunk).trim()))
+    this.child.stderr?.on('data', (chunk) =>
+      console.error('[caption reader]', String(chunk).trim())
+    )
     this.child.on('exit', (code) => {
-      this.emit('status', { trusted: false, error: `Caption reader stopped (code ${code}).` } satisfies CaptionStatus)
+      this.emit('status', {
+        trusted: false,
+        error: `Caption reader stopped (code ${code}).`
+      } satisfies CaptionStatus)
     })
   }
 
@@ -84,7 +95,8 @@ export class CaptionSource extends EventEmitter {
   }
 
   private handle(raw: string): void {
-    let message: { type?: string; text?: string; url?: string; at?: number } & CaptionStatus & Partial<PlayerTime>
+    let message: { type?: string; text?: string; url?: string; at?: number } & CaptionStatus &
+      Partial<PlayerTime>
     try {
       message = JSON.parse(raw)
     } catch {
@@ -92,20 +104,49 @@ export class CaptionSource extends EventEmitter {
     }
     if (message.type === 'status') {
       const { trusted, browser, bundle, url, title, captions, available, error } = message
-      this.emit('status', { trusted, browser, bundle, url, title, captions, available, error } satisfies CaptionStatus)
+      this.emit('status', {
+        trusted,
+        browser,
+        bundle,
+        url,
+        title,
+        captions,
+        available,
+        error
+      } satisfies CaptionStatus)
       return
     }
     if (message.type === 'time') {
       const { t, playing, ad, at } = message
-      if (typeof t === 'number') this.emit('time', { t, playing: !!playing, ad: !!ad, at: at ?? Date.now() } satisfies PlayerTime)
+      if (typeof t === 'number')
+        this.emit('time', {
+          t,
+          playing: !!playing,
+          ad: !!ad,
+          at: at ?? Date.now()
+        } satisfies PlayerTime)
       return
     }
     if (message.type !== 'caption') return
-    const text = (message.text ?? '').trim()
+    // The player's own notices aren't speech: YouTube's "Spanish (auto-generated) · Click ⚙ for
+    // settings" appears in the caption area when captions come on, with the gear in every language.
+    // Sound tags ([música de suspense], (risas)) aren't speech either; a line of only those is no line.
+    const text = (message.text ?? '').includes('⚙')
+      ? ''
+      : (message.text ?? '')
+          .replace(/\[[^\]]*\]|\([^)]*\)/g, ' ')
+          .replace(/(^|\s)-\s*(?=-|$)/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .replace(/^-\s*$/, '')
     const previous = this.pending?.text ?? ''
     // A caption that grows word by word keeps the time it first appeared.
     const growing = previous && text.startsWith(previous)
-    const line: CaptionLine = { text, url: message.url, at: growing ? this.pending!.at : (message.at ?? Date.now()) }
+    const line: CaptionLine = {
+      text,
+      url: message.url,
+      at: growing ? this.pending!.at : (message.at ?? Date.now())
+    }
     // Show what is on screen straight away; the finished line follows once it settles.
     this.emit('live', line)
     if (previous && !text.startsWith(previous)) this.finish()

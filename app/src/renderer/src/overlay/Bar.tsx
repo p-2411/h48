@@ -8,10 +8,25 @@ function statusText(status: OverlayStatus, language: Language): string {
   if (!status.trusted) return 'Needs Accessibility permission'
   if (!status.url) return `Open a YouTube or Netflix video with ${LANGUAGES[language]} captions`
   const browser = status.browser ?? 'your browser'
+  const other = status.otherLanguage
+  if (other) {
+    const name = LANGUAGES[language]
+    if (other.language === 'other')
+      return other.from === 'captions' ? `These captions aren’t in ${name}. Choose ${name} in the player` : `This video isn’t in ${name}`
+    return other.from === 'captions' ? `Captions are in ${LANGUAGES[other.language]}` : `This video is in ${LANGUAGES[other.language]}`
+  }
+  const spoken = status.spokenLanguage
+  if (spoken) {
+    if (spoken.language !== 'other') return `This video is spoken in ${LANGUAGES[spoken.language]}`
+    return `Spoken in ${spoken.name}: the ${status.source === 'transcript' ? 'subtitles' : 'captions'} are a translation`
+  }
   // With the video's transcript, the captions in the player don't matter.
   if (status.source === 'transcript') return `Following the transcript in ${browser}`
+  // No transcript and no captions: Duet transcribes what it hears.
+  if (status.source === 'audio') return `Listening to the video in ${browser}`
   if (status.available === false) return 'This video has no captions. Try another video'
-  if (!status.captions) return 'Turn on captions in the player'
+  // Without captions, Duet starts listening to the video after a few seconds.
+  if (!status.captions) return 'Turn on captions, or Duet will listen'
   return `Reading ${status.siteName ?? 'the video'} in ${browser}`
 }
 
@@ -27,6 +42,9 @@ function Toggle({ on, label, title, onChange }: { on: boolean; label: string; ti
 }
 
 export function Bar({ settings, status, hasLine }: { settings: OverlaySettings; status: OverlayStatus; hasLine: boolean }): React.JSX.Element {
+  // A language Duet teaches that the video turned out to be in: offer to switch to it.
+  const found = status.otherLanguage?.language ?? status.spokenLanguage?.language
+  const switchTo = found && found !== 'other' && found !== settings.language ? (found as Language) : undefined
   return (
     <header className="bar">
       <div className="brand">
@@ -38,6 +56,11 @@ export function Bar({ settings, status, hasLine }: { settings: OverlaySettings; 
           <i aria-hidden="true" />
           {statusText(status, settings.language)}
         </span>
+        {switchTo && (
+          <button type="button" className="action" onClick={() => window.duet.setLanguage(switchTo)}>
+            Switch to {switchTo.toUpperCase()}
+          </button>
+        )}
       </div>
       <div className="controls">
         <button type="button" className="action" disabled={!status.url} title="Every line of the video" onClick={() => window.duet.showScript()}>
@@ -70,7 +93,7 @@ export function Bar({ settings, status, hasLine }: { settings: OverlaySettings; 
         <Toggle
           on={settings.waitForTranslation}
           label="Wait"
-          title="Pause the video until the line is translated"
+          title="With a transcript, pause the video until the line on screen is translated"
           onChange={window.duet.setWaitForTranslation}
         />
         <button type="button" className="close" aria-label="Hide Duet" onClick={() => window.duet.hide()}>

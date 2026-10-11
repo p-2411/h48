@@ -36,21 +36,37 @@ let browsers: [String: String] = [
   "com.brave.Browser": "Brave",
 ]
 
-// Where each site draws its captions: the class on the caption container, and the class on the
-// pieces of caption text inside it (nil means "all text inside the container"). Chrome often
-// exposes caption text directly inside the caption window, without the inner span's class, so
-// both sites read all text in the container.
+// Where each site draws its captions: the class on the caption container, and the class of the
+// elements inside it that hold subtitle text (nil means "all text inside the container"). Only text
+// inside those counts, so nothing else the player puts in the caption area is taken for a line. On
+// YouTube that is each caption window (Chrome exposes the text directly inside it, without the
+// inner spans' classes).
 // `captionsButton` is the player's CC button, whose label says when the video has no captions.
-// `player` carries the play and ad state in its classes; `progress` is the seek bar, whose value is
-// the position in seconds.
+//
+// The player's controls are found one of two ways:
+// - by class (YouTube): `player` carries the play and ad state in its classes; `progress` is the seek
+//   bar, whose value is the position in seconds; `playButton` toggles play.
+// - by label (Netflix, whose class names are scrambled): `labels` names the seek slider, the play
+//   and pause button and the 10-second seek buttons as the player labels them. They only exist while
+//   the controls show (when the mouse moves over the video); the app's clock runs on in between.
+struct LabelControls {
+  let slider: String; let play: String; let pause: String; let back: String; let forward: String
+  /** The slider's value times this is seconds. */
+  let scale: Double
+  /** Seconds one press of back or forward moves. */
+  let step: Double
+}
 struct Site {
   let host: String; let container: String; let segment: String?; let captionsButton: String?
   var player: String? = nil; var progress: String? = nil; var playButton: String? = nil
+  var labels: LabelControls? = nil
 }
 let sites = [
-  Site(host: "youtube.com", container: "ytp-caption-window-container", segment: nil, captionsButton: "ytp-subtitles-button",
+  Site(host: "youtube.com", container: "ytp-caption-window-container", segment: "caption-window", captionsButton: "ytp-subtitles-button",
        player: "html5-video-player", progress: "ytp-progress-bar", playButton: "ytp-play-button"),
-  Site(host: "netflix.com", container: "player-timedtext", segment: nil, captionsButton: nil),
+  Site(host: "netflix.com", container: "player-timedtext", segment: nil, captionsButton: nil,
+       labels: LabelControls(slider: "Seek time scrubber", play: "Play", pause: "Pause", back: "Seek back", forward: "Seek forward",
+                             scale: 0.001, step: 10)),
 ]
 
 let pollInterval = 0.15
@@ -70,6 +86,10 @@ func value(_ element: AXUIElement, _ name: String) -> AnyObject? {
 func children(_ element: AXUIElement) -> [AXUIElement] { (value(element, kAXChildrenAttribute) as? [AXUIElement]) ?? [] }
 func role(_ element: AXUIElement) -> String { (value(element, kAXRoleAttribute) as? String) ?? "" }
 func classes(_ element: AXUIElement) -> [String] { (value(element, "AXDOMClassList") as? [String]) ?? [] }
+/** What a control is called: its accessibility description, or its title. */
+func label(_ element: AXUIElement) -> String {
+  (value(element, kAXDescriptionAttribute) as? String).flatMap { $0.isEmpty ? nil : $0 } ?? (value(element, kAXTitleAttribute) as? String) ?? ""
+}
 func url(_ element: AXUIElement) -> String? {
   if let link = value(element, "AXURL") as? URL { return link.absoluteString }
   return value(element, "AXURL") as? String
@@ -167,7 +187,7 @@ if !trusted {
 // --dump [class]: print what the browser exposes inside the caption area (or the element with that
 // DOM class), then exit. For finding where a site keeps something when the reader comes back empty.
 func dump(_ element: AXUIElement, depth: Int = 0) {
-  guard depth < 8 else { return }
+  guard depth < 20 else { return }
   let indent = String(repeating: "  ", count: depth)
   let text = [kAXValueAttribute, kAXTitleAttribute, kAXDescriptionAttribute, kAXValueDescriptionAttribute as String]
     .compactMap { name -> String? in
@@ -201,6 +221,44 @@ var container: AXUIElement?
 var player: AXUIElement?
 var progress: AXUIElement?
 var playButton: AXUIElement?
+// Controls found by label (see LabelControls).
+var slider: AXUIElement?
+var playPause: AXUIElement?
+var backButton: AXUIElement?
+var forwardButton: AXUIElement?
+
+/** Finds the controls a site names by label; they may not exist while the controls are hidden. */
+func findLabelled(_ page: AXUIElement, _ labels: LabelControls) {
+  slider = nil; playPause = nil; backButton = nil; forwardButton = nil
+  var queue = [page]
+  var visited = 0
+  while !queue.isEmpty && visited < searchBudget {
+    let element = queue.removeFirst()
+    visited += 1
+    let kind = role(element)
+    if kind == kAXSliderRole as String || kind == kAXButtonRole as String {
+      let name = label(element)
+      if kind == kAXSliderRole as String, name.contains(labels.slider) { slider = element }
+      else if name == labels.play || name == labels.pause { playPause = element }
+      else if name == labels.back { backButton = element }
+      else if name == labels.forward { forwardButton = element }
+    }
+    queue.append(contentsOf: children(element))
+  }
+}
+
+/** Position (seconds) and play state from a site's controls, when they can be read now. */
+func playerState(_ site: Site) -> (seconds: Double, playing: Bool, ad: Bool)? {
+  if let labels = site.labels {
+    guard let bar = slider, let raw = number(bar, kAXValueAttribute), let button = playPause else { return nil }
+    return (raw * labels.scale, label(button) == labels.pause, false)
+  }
+  guard let bar = progress, let seconds = number(bar, kAXValueAttribute) else { return nil }
+  let modes = player.map(classes) ?? []
+  return (seconds, modes.contains("playing-mode"), modes.contains("ad-showing"))
+}
+
+var currentSite: Site?
 var lastTime: [String: AnyHashable] = [:]
 var containerURL = ""
 var available = true
@@ -222,6 +280,9 @@ Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
     if lastText != nil && lastText != "" { lastText = ""; emit(["type": "caption", "text": "", "at": Date().timeIntervalSince1970 * 1000]) }
     return
   }
+  currentSite = current.site
+  // Labelled controls come and go with the mouse, so look for them more often (the page is small).
+  if let labels = current.site.labels, slider == nil || ticks % 4 == 0 { findLabelled(current.page, labels) }
   if container == nil || containerURL != current.url || ticks % 20 == 0 {
     let site = current.site
     let found = findAll(current.page, budget: searchBudget, classNames: [site.container, site.player, site.progress, site.playButton].compactMap { $0 })
@@ -232,8 +293,9 @@ Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
     containerURL = current.url
     available = seenTextOn == current.url || captionsAvailable(current.page, site: current.site)
   }
+  // Netflix removes its caption area between lines, so captions count as on once seen on this video.
   status(["type": "status", "trusted": true, "browser": current.browser, "bundle": current.bundle, "url": current.url,
-          "title": current.title, "captions": container != nil, "available": available])
+          "title": current.title, "captions": container != nil || seenTextOn == current.url, "available": available])
   let text = container.map { captionText($0, site: current.site) } ?? ""
   // Caption text on screen proves the video has captions, whatever the CC button's label says.
   if !text.isEmpty { seenTextOn = current.url }
@@ -242,10 +304,9 @@ Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
     status(["type": "status", "trusted": true, "browser": current.browser, "bundle": current.bundle, "url": current.url,
             "title": current.title, "captions": true, "available": true])
   }
-  if let bar = progress, let seconds = number(bar, kAXValueAttribute) {
-    let modes = player.map(classes) ?? []
-    let fields: [String: AnyHashable] = ["t": seconds, "playing": modes.contains("playing-mode"), "ad": modes.contains("ad-showing"),
-                                         "url": current.url]
+  if let state = playerState(current.site) {
+    // Whole seconds, like YouTube's bar: the app's clock works out the time in between.
+    let fields: [String: AnyHashable] = ["t": state.seconds.rounded(.down), "playing": state.playing, "ad": state.ad, "url": current.url]
     if fields != lastTime {
       lastTime = fields
       emit(fields.merging(["type": "time", "at": Date().timeIntervalSince1970 * 1000]) { a, _ in a })
@@ -261,6 +322,15 @@ Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
 // and increment actions (5 seconds each on YouTube, like the arrow keys), landing just before.
 let stepSeconds = 5.0
 func seek(to seconds: Double, from position: Double?) {
+  if let labels = currentSite?.labels {
+    // Netflix: step with its 10-second buttons, landing just before.
+    guard let now = position ?? playerState(currentSite!).map({ $0.seconds }) else { return }
+    let distance = seconds - now
+    let steps = Int((abs(distance) / labels.step).rounded(distance < 0 ? .up : .down))
+    guard let button = distance < 0 ? backButton : forwardButton else { return }
+    for _ in 0..<steps { AXUIElementPerformAction(button, kAXPressAction as CFString) }
+    return
+  }
   guard let bar = progress, let before = number(bar, kAXValueAttribute) else { return }
   AXUIElementSetAttributeValue(bar, kAXValueAttribute as CFString, NSNumber(value: seconds))
   DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -284,8 +354,9 @@ FileHandle.standardInput.readabilityHandler = { handle in
     DispatchQueue.main.async {
       switch type {
       case "pause", "play":
-        guard let button = playButton, let modes = player.map(classes) else { return }
-        if modes.contains("playing-mode") == (type == "pause") { AXUIElementPerformAction(button, kAXPressAction as CFString) }
+        guard let site = currentSite, let state = playerState(site),
+              let button = site.labels != nil ? playPause : playButton else { return }
+        if state.playing == (type == "pause") { AXUIElementPerformAction(button, kAXPressAction as CFString) }
       case "seek":
         if let seconds = object["seconds"] as? Double { seek(to: seconds, from: object["from"] as? Double) }
       default:
