@@ -22,6 +22,7 @@ import { Cards } from './cards'
 import { Explain } from './explain'
 import { Hearing } from './hearing'
 import { hearLine } from './listen'
+import { SpokenLanguageCheck } from './spoken'
 import { Panel } from './panel'
 import { connectOverlay } from './ipc/overlay'
 import { Player } from './player'
@@ -137,6 +138,15 @@ app.whenReady().then(() => {
     player.sample()
   }, TICK_MS)
   setInterval(() => hearing.tick(), HEARING_TICK_MS)
+  // Once per video: is it spoken in the language being learnt, or are its subtitles a translation?
+  const spoken = new SpokenLanguageCheck({
+    watcher,
+    player,
+    audio,
+    settings,
+    hear: (moment, signal) => hearLine(moment, { audio, player, listener: voice?.listener }, signal)
+  })
+  setInterval(() => spoken.tick(), 1000)
   captions.start()
   audio.start()
 

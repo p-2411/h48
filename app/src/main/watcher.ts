@@ -127,6 +127,12 @@ export class Watcher extends EventEmitter {
     return mostly && top !== this.settings.current.language ? top : undefined
   }
 
+  /** What listening to the video found it is spoken in; the overlay says so when it isn't the
+   * language being learnt. */
+  noteSpokenLanguage(spoken: { language: Language | 'other'; name: string }): void {
+    this.setStatus({ spokenLanguage: spoken.language === this.settings.current.language ? undefined : spoken })
+  }
+
   /** Lines come from the video's transcript (translated ahead of the video). */
   get followingTranscript(): boolean {
     return !!this.session?.hasTranscript
@@ -217,7 +223,7 @@ export class Watcher extends EventEmitter {
     // and judge its language afresh.
     this.captionSeenAt = Date.now()
     this.recentLanguages = []
-    if (this._status.otherLanguage) this.setStatus({ otherLanguage: undefined })
+    if (this._status.otherLanguage || this._status.spokenLanguage) this.setStatus({ otherLanguage: undefined, spokenLanguage: undefined })
     this.session?.pause()
     const language = this.settings.current.language
     const video = this.video
