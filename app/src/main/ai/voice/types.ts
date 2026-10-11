@@ -44,9 +44,3 @@ export interface DeliveryListener {
   /** How the line is delivered, or undefined when the speech can't be made out. */
   describe(audio: AudioClip, line: { original: string; language: Language }, signal?: AbortSignal): Promise<Delivery | undefined>
 }
-
-export interface TextToSpeech {
-  readonly name: string
-  /** Generated speech. Generated audio is never a checked pronunciation reference: label it. */
-  speak(text: string, language: Language, signal?: AbortSignal): Promise<AudioClip>
-}
