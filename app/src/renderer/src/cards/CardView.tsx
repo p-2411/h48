@@ -1,13 +1,14 @@
 // One card: its content, where it came from, when it's due, its review history, and what can be
 // done with it. Editing keeps the schedule; a change to what is tested becomes a new card.
 // Shown with key={card.id}, so another card starts with a fresh view.
-import { useState } from 'react'
-import type { CardContent, CardDetail } from '../../../shared/cards'
+import { useEffect, useRef, useState } from 'react'
+import type { CardDetail } from '../../../shared/cards'
 import { languageName } from '../../../shared/languages'
-import { CardForm } from '../components/CardForm'
-import { cardReady, contentOf } from '../components/cards'
+import { say } from '../components/errors'
 import { clock, when } from '../components/time'
+import { CardEditor } from './CardEditor'
 import { stateLabel } from './labels'
+import { NuanceBox } from './NuanceBox'
 
 export function CardView({
   card,
@@ -16,52 +17,60 @@ export function CardView({
   card: CardDetail
   onDeleted: (id: string) => void
 }): React.JSX.Element {
-  const [editing, setEditing] = useState<CardContent>()
+  const [editing, setEditing] = useState(false)
   const [error, setError] = useState<string>()
+  const [busy, setBusy] = useState(false)
+  // A button turned off while it runs loses focus (Pause, say); once it is back on, it gets focus
+  // back, unless focus has gone somewhere else meanwhile.
+  const pressed = useRef<HTMLElement | null>(null)
+  useEffect(() => {
+    if (busy || !pressed.current) return
+    if (pressed.current.isConnected && document.activeElement === document.body)
+      pressed.current.focus()
+    pressed.current = null
+  }, [busy])
+  // Leaving the editor (Cancel or a save) puts focus back on Edit, not at the top of the window.
+  const editButton = useRef<HTMLButtonElement>(null)
+  const wasEditing = useRef(false)
+  useEffect(() => {
+    if (wasEditing.current && !editing) editButton.current?.focus()
+    wasEditing.current = editing
+  }, [editing])
 
+  // One action at a time: the buttons are off while it runs, so "Save as new card" pressed twice
+  // still makes one card. The ref also stops a second press that comes before the buttons turn off.
+  const running = useRef(false)
   const run = async (work: () => Promise<unknown>): Promise<void> => {
+    if (running.current) return
+    running.current = true
+    pressed.current = document.activeElement as HTMLElement | null
+    setBusy(true)
     setError(undefined)
     try {
       await work()
-      setEditing(undefined)
+      setEditing(false)
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'That did not work.')
+      setError(say(failure, 'That did not work.'))
+    } finally {
+      running.current = false
+      setBusy(false)
     }
   }
   const video = card.source.kind === 'video' ? card.source.moment : undefined
 
   if (editing)
     return (
-      <section className="detail">
-        <CardForm value={editing} onChange={setEditing} lang={card.language}>
-          <p className="faint">
-            Save keeps the review schedule. If you changed what the card tests, save it as a new
-            card instead.
-          </p>
-          {error && <p className="notice error">{error}</p>}
-          <div className="row">
-            <button
-              type="button"
-              className="btn primary"
-              disabled={!cardReady(editing)}
-              onClick={() => run(() => window.duet.cards.update(card.id, editing))}
-            >
-              Save
-            </button>
-            <button
-              type="button"
-              className="btn"
-              disabled={!cardReady(editing)}
-              onClick={() => run(() => window.duet.cards.saveAsNew(card.id, editing))}
-            >
-              Save as new card
-            </button>
-            <button type="button" className="btn quiet" onClick={() => setEditing(undefined)}>
-              Cancel
-            </button>
-          </div>
-        </CardForm>
-      </section>
+      <CardEditor
+        card={card}
+        busy={busy}
+        error={error}
+        onSave={(content) => run(() => window.duet.cards.update(card.id, content))}
+        onSaveAsNew={(content) => run(() => window.duet.cards.saveAsNew(card.id, content))}
+        onCancel={() => {
+          setError(undefined)
+          setEditing(false)
+        }}
+      />
     )
 
   return (
@@ -127,29 +136,7 @@ export function CardView({
           </>
         )}
       </dl>
-      {card.explanation && (
-        <section className="nuance-box" aria-label="Saved nuance analysis">
-          <span className="label">Nuance analysis</span>
-          <p>{card.explanation.meaning}</p>
-          {card.explanation.notice && (
-            <p>
-              <strong>Notice:</strong> {card.explanation.notice.text}
-            </p>
-          )}
-          {card.explanation.why && (
-            <p>
-              <strong>Why:</strong> {card.explanation.why}
-            </p>
-          )}
-          {card.explanation.alternative && (
-            <p>
-              <strong>Alternative:</strong> {card.explanation.alternative.expression} —{' '}
-              {card.explanation.alternative.changes}
-            </p>
-          )}
-          {card.explanation.limitation && <p className="faint">{card.explanation.limitation}</p>}
-        </section>
-      )}
+      {card.explanation && <NuanceBox explanation={card.explanation} />}
       {video && video.earlier.length > 0 && (
         <details>
           <summary>Original context ({video.earlier.length} lines before)</summary>
@@ -166,17 +153,25 @@ export function CardView({
           <summary>
             Review history ({card.reviews.filter((review) => !review.undone).length})
           </summary>
-          {card.reviews.map((review) => (
-            <p key={review.id} className={review.undone ? 'faint' : undefined}>
-              {when(review.reviewedAt)} · {review.rating}
-              {review.undone ? ' (undone)' : ` · next ${when(review.dueAfter)}`}
-            </p>
-          ))}
+          <div className="history">
+            {card.reviews.map((review) => (
+              <p key={review.id} className={review.undone ? 'faint' : undefined}>
+                {when(review.reviewedAt)} · {review.rating}
+                {review.undone ? ' (undone)' : ` · next ${when(review.dueAfter)}`}
+              </p>
+            ))}
+          </div>
         </details>
       )}
       {error && <p className="notice error">{error}</p>}
       <div className="row">
-        <button type="button" className="btn" onClick={() => setEditing(contentOf(card))}>
+        <button
+          ref={editButton}
+          type="button"
+          className="btn"
+          disabled={busy}
+          onClick={() => setEditing(true)}
+        >
           Edit
         </button>
         {video && (
@@ -196,6 +191,7 @@ export function CardView({
         <button
           type="button"
           className="btn"
+          disabled={busy}
           onClick={() => run(() => window.duet.cards.setPaused(card.id, !card.paused))}
         >
           {card.paused ? 'Resume reviews' : 'Pause reviews'}
@@ -203,6 +199,7 @@ export function CardView({
         <button
           type="button"
           className="btn danger"
+          disabled={busy}
           onClick={() =>
             run(async () => {
               await window.duet.cards.remove(card.id)
