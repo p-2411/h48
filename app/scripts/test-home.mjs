@@ -93,7 +93,8 @@ try {
   // --- The window -------------------------------------------------------------------------------
   const cards = Object.assign(new EventEmitter(), { counts: () => ({ due: 3, newAvailable: 2 }) })
   let welcomed = 0
-  const home = new Home({ log, cards, openWelcome: () => welcomed++ })
+  const settings = new EventEmitter()
+  const home = new Home({ log, cards, settings, openWelcome: () => welcomed++ })
   home.open('cards', 'card-1')
   assert.equal(electron.windows.length, 1)
   const window = electron.windows[0]
@@ -114,6 +115,12 @@ try {
     window.webContents.sent.at(-1),
     ['cards:changed', undefined],
     'card changes reach the page'
+  )
+  settings.emit('change', { language: 'ko', reminder: '19:00' }, { reminder: '19:00' })
+  assert.deepEqual(
+    window.webContents.sent.at(-1),
+    ['duet:settings', { language: 'ko', reminder: '19:00' }],
+    'setting changes reach the page (Settings shows them)'
   )
 
   // --- What it tells the page -------------------------------------------------------------------

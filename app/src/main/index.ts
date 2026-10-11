@@ -14,7 +14,7 @@
 //   audio.ts, listen.ts, hearing.ts, spoken.ts   the video's sound: hearing lines, how they were said
 //   detect.ts       which language a caption line is in; replay.ts going back to a line
 //   settings.ts, shortcut.ts, welcome.ts, demo.ts   settings, the show/hide keys, first run, demos
-import { app, globalShortcut, nativeTheme, type Tray } from 'electron'
+import { app, globalShortcut, nativeTheme, Notification, type Tray } from 'electron'
 import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import type { Moment } from '../shared/moment'
@@ -44,6 +44,9 @@ import { Watcher } from './watcher'
 import { WatchLog } from './watchlog'
 import { connectWatchLog } from './watchlog/connect'
 import { Home } from './home'
+import { DailySession } from './daily'
+import { openAIQuiz } from './daily/quiz'
+import { Reminder } from './daily/reminder'
 import { createOverlay, toggleOverlay } from './windows/overlay'
 
 // In development, settings such as OPENAI_API_KEY can live in app/.env.local (git-ignored).
@@ -154,8 +157,30 @@ app.whenReady().then(() => {
   })
   app.on('before-quit', () => logLink.finish())
   // The home base: opened from the Dock, the menu bar, the strip's ⚙ and when Duet starts.
-  const home = new Home({ log: watchLog, cards, openWelcome: () => welcome.open(true) })
+  const home = new Home({ log: watchLog, cards, settings, openWelcome: () => welcome.open(true) })
   app.on('activate', () => home.open())
+  // The daily session in the home base's Today: reviews, a line said back, one challenge.
+  new DailySession({
+    log: watchLog,
+    cards,
+    voice,
+    quiz: openAIQuiz(),
+    owns: (sender) => home.owns(sender),
+    setReminder: (time) => settings.update({ reminder: time })
+  })
+  // The daily reminder (off unless a time is set in Settings); clicking it opens Today.
+  const reminder = new Reminder({
+    streak: () => watchLog.streak(),
+    notify: (text) => {
+      const notification = new Notification({ title: 'Duet', body: text })
+      notification.on('click', () => home.open('today'))
+      notification.show()
+    }
+  })
+  reminder.set(settings.current.reminder)
+  settings.on('change', (current, changed) => {
+    if ('reminder' in changed) reminder.set(current.reminder)
+  })
   // Shows or hides the overlay from anywhere; the keys are a setting (⚙ on the strip).
   const shortcut = new Shortcut(settings.current.shortcut, () => toggleOverlay(overlay))
   const showScript = (): void => panel.show('script')

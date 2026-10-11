@@ -5,13 +5,21 @@
 //   DUET_VOICE_PROVIDER  openai (the only one so far, and the default)
 //   DUET_STT_MODEL       speech to text; default gpt-4o-transcribe
 //   DUET_LISTEN_MODEL    hears how a video's line is said, for Explain; default gpt-audio-1.5
+//   DUET_TTS_MODEL       says a line for the daily session; default gpt-4o-mini-tts
+//   DUET_COACH_MODEL     hears the learner say a line back; default gpt-audio-1.5
+//   DUET_LIVE_VOICE      Duet's voice (the tutor's too); default marin
 //   OPENAI_API_KEY
-import { OpenAIDeliveryListener, OpenAISpeechToText } from './openai'
-import type { DeliveryListener, SpeechToText } from './types'
+import { OpenAIDeliveryListener, OpenAIPronunciationCoach, OpenAISpeechToText, OpenAITextToSpeech } from './openai'
+import type { DeliveryListener, PronunciationCoach, SpeechToText, TextToSpeech } from './types'
 
 export * from './types'
 
-export type VoiceModels = { speechToText: SpeechToText; listener: DeliveryListener }
+export type VoiceModels = {
+  speechToText: SpeechToText
+  listener: DeliveryListener
+  tts: TextToSpeech
+  coach: PronunciationCoach
+}
 
 export function createVoiceModels(env: NodeJS.ProcessEnv = process.env): VoiceModels {
   const provider = env.DUET_VOICE_PROVIDER?.toLowerCase() ?? 'openai'
@@ -20,7 +28,9 @@ export function createVoiceModels(env: NodeJS.ProcessEnv = process.env): VoiceMo
       if (!env.OPENAI_API_KEY) throw new Error('Add OPENAI_API_KEY to app/.env.local to hear videos.')
       return {
         speechToText: new OpenAISpeechToText(env.DUET_STT_MODEL || 'gpt-4o-transcribe', env.OPENAI_API_KEY),
-        listener: new OpenAIDeliveryListener(env.DUET_LISTEN_MODEL || 'gpt-audio-1.5', env.OPENAI_API_KEY)
+        listener: new OpenAIDeliveryListener(env.DUET_LISTEN_MODEL || 'gpt-audio-1.5', env.OPENAI_API_KEY),
+        tts: new OpenAITextToSpeech(env.DUET_TTS_MODEL || 'gpt-4o-mini-tts', env.DUET_LIVE_VOICE || 'marin', env.OPENAI_API_KEY),
+        coach: new OpenAIPronunciationCoach(env.DUET_COACH_MODEL || 'gpt-audio-1.5', env.OPENAI_API_KEY)
       }
     default:
       throw new Error(`Unknown voice provider "${provider}". Supported: openai.`)

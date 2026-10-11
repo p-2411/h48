@@ -87,9 +87,22 @@ function Scene({ card }: { card: Card }): React.JSX.Element | null {
 }
 
 /** `onEnd` leaves the review (back to where it was opened from). */
-export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
+/** Review, until the learner ends it. In the daily session, `limit` caps it: after that many ratings
+ * (or once nothing is left) it moves on with `onEnd`. */
+export function Review({ onEnd, limit }: { onEnd: () => void; limit?: number }): React.JSX.Element {
   const session = useReviewSession()
   const { queue, revealed, busy, error, act, settings } = session
+  const inSession = limit !== undefined
+  // Ratings that went through, to stop at the daily session's cap.
+  const rated = useRef(0)
+  const rate = async (card: Card, rating: Rating): Promise<void> => {
+    await act(async () => {
+      const next = await window.duet.cards.rate(card.id, card.revision, rating)
+      rated.current++
+      return next
+    })
+    if (inSession && rated.current >= limit) onEnd()
+  }
   // Reveal answer goes away once pressed, so focus moves on to the first rating.
   const firstRating = useRef<HTMLButtonElement>(null)
   useEffect(() => {
@@ -140,9 +153,7 @@ export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
                     className={`btn rate ${rating}`}
                     title={meaning}
                     disabled={busy}
-                    onClick={() =>
-                      act(() => window.duet.cards.rate(next.card.id, next.card.revision, rating))
-                    }
+                    onClick={() => void rate(next.card, rating)}
                   >
                     <span>{label}</span>
                     <span className="faint">{next.outcomes[rating].interval}</span>
@@ -185,7 +196,7 @@ export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
               </button>
             )}
             <button type="button" className="btn quiet" onClick={onEnd}>
-              End session
+              {inSession ? 'Skip the rest' : 'End session'}
             </button>
           </div>
         </>
@@ -212,9 +223,15 @@ export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
                 Undo last rating
               </button>
             )}
-            <button type="button" className="btn" onClick={() => window.duet.cards.open()}>
-              Open My cards
-            </button>
+            {inSession ? (
+              <button type="button" className="btn primary" onClick={onEnd}>
+                Continue
+              </button>
+            ) : (
+              <button type="button" className="btn" onClick={() => window.duet.cards.open()}>
+                Open My cards
+              </button>
+            )}
           </div>
         </div>
       )}

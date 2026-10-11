@@ -10,10 +10,11 @@
 //   home:place         ← which place to show (opening Home on Cards, Settings…)
 //   cards:show         ← a card to show in My cards
 //   cards:changed      ← cards changed (saved, edited, reviewed), so the page reloads them
+//   duet:settings      ← the settings changed (from anywhere), so Settings shows them
 import type { EventEmitter } from 'events'
 import { ipcMain, shell, type BrowserWindow, type WebContents } from 'electron'
 import type { HomePlace, HomeToday, WatchingVideo } from '../../shared/home'
-import type { DueCounts } from '../../shared/types'
+import type { DueCounts, OverlaySettings } from '../../shared/types'
 import { sourceForSite } from '../sources'
 import type { WatchLog } from '../watchlog'
 import { createHomeWindow } from '../windows/home'
@@ -27,10 +28,12 @@ export class Home {
   constructor({
     log,
     cards,
+    settings,
     openWelcome
   }: {
     log: WatchLog
     cards: EventEmitter & { counts(): DueCounts }
+    settings: EventEmitter
     openWelcome: () => void
   }) {
     ipcMain.handle('home:get-today', (): HomeToday => {
@@ -55,6 +58,7 @@ export class Home {
       if (this.owns(event.sender)) openWelcome()
     })
     cards.on('changed', () => this.send('cards:changed'))
+    settings.on('change', (current: OverlaySettings) => this.send('duet:settings', current))
   }
 
   /** Shows the home base on a place (Today by default), and on one card when given. */

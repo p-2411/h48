@@ -3,7 +3,7 @@
 // words (hovered, saved, explained, missed in a checkpoint) and each study day's activity (for the
 // streak). This class is the only code that touches those tables; connect.ts feeds it.
 import type { WatchedVideoSummary } from '../../shared/home'
-import type { Language, OverlayLine, Site } from '../../shared/types'
+import type { Language, OverlayLine, ProcessedLine, Site } from '../../shared/types'
 import { database, transaction } from '../store/db'
 import { studyDay } from '../study-day'
 import { streak, type DayRecord, type Streak } from './streak'
@@ -53,6 +53,22 @@ function summary(row: VideoRow): WatchedVideoSummary {
     position: row.position ?? undefined,
     lastWatched: row.last_watched,
     watchedMs: row.watched_ms
+  }
+}
+
+/** The last video's lines and words, for the daily session (see lastVideo). */
+export type LastVideo = { key: string; title?: string; language: Language; lines: MetLine[]; words: string[] }
+
+/** A line met, as kept: its processed form (translation and word pairs). */
+export type MetLine = { id: number; original: string; translation: string; processed: ProcessedLine; start?: number }
+
+/** A stored processed line, or undefined when it is missing or damaged. */
+function parseProcessed(json: string | null): ProcessedLine | undefined {
+  try {
+    const value = json ? (JSON.parse(json) as ProcessedLine) : undefined
+    return value && Array.isArray(value.source) ? value : undefined
+  } catch {
+    return undefined
   }
 }
 
@@ -114,6 +130,35 @@ export class WatchLog {
       )
       .get(key) as VideoRow | undefined
     return row && summary(row)
+  }
+
+  /** The video watched last that has lines on record: its lines, newest first (at most `limit`),
+   * and the words the learner looked at in it (hovered or saved), for the daily session. */
+  lastVideo(limit = 40): LastVideo | undefined {
+    const video = database()
+      .prepare(
+        `SELECT id, title, language FROM videos WHERE id IN (SELECT video_id FROM lines)
+         ORDER BY last_watched DESC LIMIT 1`
+      )
+      .get() as { id: string; title: string | null; language: Language } | undefined
+    if (!video) return undefined
+    const rows = database()
+      .prepare(
+        'SELECT id, original, translation, processed, start FROM lines WHERE video_id = ? AND language = ? ORDER BY met_at DESC LIMIT ?'
+      )
+      .all(video.id, video.language, limit) as { id: number; original: string; translation: string | null; processed: string | null; start: number | null }[]
+    const lines = rows.flatMap((row) => {
+      const processed = parseProcessed(row.processed)
+      return processed
+        ? [{ id: row.id, original: row.original, translation: row.translation ?? processed.translation, processed, start: row.start ?? undefined }]
+        : []
+    })
+    const words = database()
+      .prepare(
+        `SELECT text FROM word_events WHERE video_id = ? AND kind IN ('hovered', 'saved') GROUP BY text ORDER BY MAX(at) DESC`
+      )
+      .all(video.id) as { text: string }[]
+    return { key: video.id, title: video.title ?? undefined, language: video.language, lines, words: words.map((word) => word.text) }
   }
 
   /** A line the learner met. Only translated lines count; returns whether it was added. */

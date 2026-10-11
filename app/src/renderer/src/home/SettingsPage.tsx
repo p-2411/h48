@@ -8,8 +8,38 @@ import {
   LanguagePicker,
   LevelPicker,
   QuickToggles,
-  ShortcutRecorder
+  ShortcutRecorder,
+  Toggle
 } from '../components/SettingControls'
+
+// The reminder's time when it is first turned on.
+const DEFAULT_REMINDER = '19:00'
+
+/** The daily reminder: on or off, and at what time. Off by default. */
+function ReminderSetting({ time }: { time?: string }): React.JSX.Element {
+  const [error, setError] = useState<string>()
+  const save = (next: string | null): void => {
+    setError(undefined)
+    window.duet.daily.setReminder(next).catch((cause) => setError(say(cause, 'Could not save the reminder.')))
+  }
+  return (
+    <>
+      <Toggle
+        on={!!time}
+        label="Remind me each day"
+        hint="A notification when today’s session isn’t done yet"
+        onChange={(on) => save(on ? DEFAULT_REMINDER : null)}
+      />
+      {time && (
+        <label className="field">
+          <span className="muted">At</span>
+          <input type="time" value={time} onChange={(event) => event.target.value && save(event.target.value)} />
+        </label>
+      )}
+      {error && <small className="error-text">{error}</small>}
+    </>
+  )
+}
 
 export function SettingsPage(): React.JSX.Element {
   const [settings, setSettings] = useState<OverlaySettings>()
@@ -50,6 +80,12 @@ export function SettingsPage(): React.JSX.Element {
               While watching
             </h2>
             <QuickToggles settings={settings} />
+          </section>
+          <section className="card-box" aria-labelledby="settings-reminder">
+            <h2 className="label" id="settings-reminder">
+              Daily reminder
+            </h2>
+            <ReminderSetting time={settings.reminder} />
           </section>
           <section className="card-box" aria-labelledby="settings-keys">
             <h2 className="label" id="settings-keys">

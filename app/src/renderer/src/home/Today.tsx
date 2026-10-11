@@ -1,5 +1,8 @@
-// Today: the streak and the cards to review now. The daily session joins it later (piece 3).
+// Today: the daily session (about 5 minutes: due cards, a line said back, one challenge), the
+// streak and the cards to review now.
+import { useState } from 'react'
 import type { HomeToday } from '../../../shared/home'
+import { DailySession } from './daily/DailySession'
 import { useLoaded } from './useLoaded'
 
 const loadToday = (): Promise<HomeToday> => window.duet.home.getToday()
@@ -14,6 +17,19 @@ function streakNote({ days, keptToday, freezesLeft }: HomeToday['streak']): stri
 
 export function Today(): React.JSX.Element {
   const { value: today, error, reload } = useLoaded(loadToday, 'Could not load today.')
+  const [inSession, setInSession] = useState(false)
+  if (inSession)
+    return (
+      <main className="home-page">
+        <h1>Today’s session</h1>
+        <DailySession
+          onClose={() => {
+            setInSession(false)
+            reload()
+          }}
+        />
+      </main>
+    )
   return (
     <main className="home-page">
       <h1>Today</h1>
@@ -33,6 +49,15 @@ export function Today(): React.JSX.Element {
         )
       ) : (
         <div className="home-cards">
+          <section className="card-box home-session" aria-label="Today’s session">
+            <span className="label">Today’s session</span>
+            <p className="muted">
+              {today.streak.keptToday ? 'Done for today. You can go again any time.' : 'About 5 minutes: your cards, a line to say back, and one challenge.'}
+            </p>
+            <button type="button" className="btn primary" onClick={() => setInSession(true)}>
+              {today.streak.keptToday ? 'Go again' : 'Start'}
+            </button>
+          </section>
           <section className="card-box" aria-label="Streak">
             <span className="label">Streak</span>
             <p className="home-number">

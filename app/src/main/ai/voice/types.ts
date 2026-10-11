@@ -2,8 +2,10 @@
 // nothing outside src/main/ai knows which provider is in use; a provider implements these
 // interfaces in one file (see openai.ts) and index.ts picks it from settings.
 //
-// The tutor's conversation itself (what to say back) and pronunciation assessment are not here yet:
-// add their interfaces in this file the same way when they are designed.
+// The tutor's conversation itself (what to say back) is not here (it is GPT-Live, src/main/tutor).
+// Saying a line back in the daily session uses TextToSpeech (Duet says it) and PronunciationCoach
+// (how the learner said it).
+import type { LineAttempt } from '../../../shared/daily'
 import type { Language } from '../../../shared/types'
 
 export { ModelError } from '../errors'
@@ -43,4 +45,18 @@ export interface DeliveryListener {
   readonly name: string
   /** How the line is delivered, or undefined when the speech can't be made out. */
   describe(audio: AudioClip, line: { original: string; language: Language }, signal?: AbortSignal): Promise<Delivery | undefined>
+}
+
+/** Says text aloud, as Duet's voice: the line the learner is to say back in the daily session. */
+export interface TextToSpeech {
+  readonly name: string
+  speak(text: string, language: Language, signal?: AbortSignal): Promise<AudioClip>
+}
+
+export type { LineAttempt } from '../../../shared/daily'
+
+/** Hears the learner say a line back and says what matched, and at most one thing to work on. */
+export interface PronunciationCoach {
+  readonly name: string
+  coach(audio: AudioClip, line: { original: string; translation?: string; language: Language }, signal?: AbortSignal): Promise<LineAttempt>
 }
