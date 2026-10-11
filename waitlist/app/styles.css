@@ -73,6 +73,15 @@ h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text
 .join input::placeholder{color:var(--text-3)}
 .join .button{padding:11px 18px;font-size:16px;text-align:center}
 .join[data-invalid]{border-color:var(--c-x)}
+/* The trap field: off screen, for bots only. */
+.join-trap{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
+.join .button:disabled{cursor:progress;opacity:.75}
+/* Once you have joined, every bar says so instead of asking again. */
+.join-done{display:none;margin:0;padding:12px 16px;font-size:16px;line-height:1.4;text-align:center;color:var(--fg)}
+.join.is-joined input[type="email"],.join.is-joined .button{display:none}
+.join.is-joined .join-done{display:block}
+.join-note{margin-top:16px;font-size:14px;color:var(--text-3)}
+.join-note a{color:var(--text-2);text-decoration:underline;text-underline-offset:3px}
 
 /* On wide screens the hero is one full screen: the heading in front, the video and its panel
    behind it as a background that site.js drifts slower than the page (parallax) and fades as you scroll.
@@ -91,7 +100,8 @@ h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text
 .join-dock{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));z-index:60;flex-direction:row;align-items:center;gap:8px;width:min(520px,calc(100% - 24px));max-width:none;margin:0;padding:5px 5px 5px 20px;border-radius:999px;border-color:rgba(255,255,255,.16);background:rgba(24,24,26,.55);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);box-shadow:0 10px 40px rgba(0,0,0,.5),0 0 32px rgba(94,92,230,.16);transform:translateX(-50%);transition:opacity .3s var(--ease),transform .3s var(--ease),border-color .2s,box-shadow .3s var(--ease)}
 .join-dock input{flex:1;padding:8px 0;font-size:15px}
 .join-dock .button{flex:none;padding:9px 18px;font-size:15px}
-.join-dock.is-hidden{opacity:0;transform:translate(-50%,24px);pointer-events:none}
+.join-dock.is-hidden,.join-dock.is-done{opacity:0;transform:translate(-50%,24px);pointer-events:none}
+.join-dock .join-done{padding:8px 16px}
 
 /* Frames: the browser window around the video, and the empty slots that wait for demos. */
 .demo-card{min-width:0;width:100%}
@@ -356,6 +366,14 @@ html:has(.stepper.is-scrolly){scroll-snap-type:y proximity}
 
 /* Wide sections: one heading across the page. */
 .wide-heading{max-width:24ch;text-wrap:balance}
+
+/* Privacy page: plain reading, one column. */
+.privacy{max-width:760px;padding-top:clamp(56px,10vh,112px);padding-bottom:clamp(64px,10vh,128px)}
+.privacy h1{font-size:clamp(44px,6vw,72px)}
+.privacy-lead{margin-top:20px;font-size:18px;line-height:1.55;color:var(--fg-2)}
+.privacy h2{margin-top:44px;font-size:22px;line-height:1.3;letter-spacing:-.01em}
+.privacy p{margin-top:10px;color:var(--text-2);max-width:62ch}
+.privacy strong{font-weight:500;color:var(--fg)}
 
 /* FAQ */
 .faq-items details+details{border-top:1px solid var(--line)}

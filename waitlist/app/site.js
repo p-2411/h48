@@ -28,20 +28,60 @@
   window.addEventListener('resize', requestUpdate);
   motion.addEventListener('change', requestUpdate);
 
-  // The email bar. Design only for now: nothing is sent or stored; the reader gets a toast.
-  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  document.querySelectorAll('.join').forEach(form => {
+  // The email bars. Each sends its address to /api/join (api/join.js). Once it lands, every bar on
+  // the page says you're on the list, the sticky one slides away, and the browser remembers it so
+  // the bars stay that way on your next visit. Wrong addresses and failures say so in a toast.
+  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const joinForms = [...document.querySelectorAll('.join')];
+  const JOINED = 'duet-joined';
+  const markJoined = (quietly = false) => {
+    joinForms.forEach(form => form.classList.add('is-joined'));
+    const dockBar = document.querySelector('.join-dock');
+    if (dockBar) setTimeout(() => dockBar.classList.add('is-done'), quietly ? 0 : 2500);
+  };
+  try { if (localStorage.getItem(JOINED)) markJoined(true); } catch { /* Storage blocked: ask again. */ }
+  joinForms.forEach(form => {
     const input = form.querySelector('input[type="email"]');
+    const button = form.querySelector('button[type="submit"]');
+    const label = button?.querySelector('span');
+    const original = label?.textContent;
     input?.addEventListener('input', () => delete form.dataset.invalid);
-    form.addEventListener('submit', event => {
+    form.addEventListener('submit', async event => {
       event.preventDefault();
-      if (!input || !EMAIL.test(input.value.trim())) {
+      if (form.dataset.busy !== undefined) return;
+      const email = input?.value.trim() || '';
+      if (!EMAIL.test(email)) {
         form.dataset.invalid = '';
         input?.focus();
         announce('Enter an email address, like you@example.com.');
         return;
       }
-      announce('Thanks. Sign-ups open soon.');
+      form.dataset.busy = '';
+      if (button) button.disabled = true;
+      if (label) label.textContent = 'Joining…';
+      try {
+        const response = await fetch('/api/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, source: form.dataset.source, website: form.querySelector('.join-trap')?.value || '' })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.error || String(response.status));
+        try { localStorage.setItem(JOINED, '1'); } catch { /* Fine: only skips remembering. */ }
+        markJoined();
+        announce(result.already ? 'You’re already on the list.' : 'You’re on the list. We’ll email you when Duet is ready.');
+      } catch (error) {
+        if (error.message === 'email') {
+          form.dataset.invalid = '';
+          announce('That email doesn’t look right. Check it and try again.');
+        } else {
+          announce('Couldn’t add you just now. Try again in a moment.');
+        }
+      } finally {
+        delete form.dataset.busy;
+        if (button) button.disabled = false;
+        if (label) label.textContent = original;
+      }
     });
   });
 

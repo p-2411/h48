@@ -1,0 +1,15 @@
+{
+  "name": "duet-waitlist",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.cjs",
+    "migrate": "node scripts/migrate.js"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "1.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

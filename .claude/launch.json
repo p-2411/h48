@@ -4,7 +4,7 @@
     {
       "name": "waitlist",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["waitlist/dev-server.js"],
+      "runtimeArgs": ["waitlist/dev-server.cjs"],
       "port": 4321
     }
   ]

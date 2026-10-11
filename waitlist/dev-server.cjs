@@ -1,5 +1,5 @@
-// Local dev server: serves the static app/.
-// Run:  node dev-server.js   then open the printed URL.
+// Local dev server: serves the static app/ and runs api/join.js the way Vercel does.
+// Run:  npm run dev   then open the printed URL. Without DATABASE_URL, sign-ups go to .data/signups.json.
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -19,6 +19,18 @@ const TYPES = {
 
 const server = http.createServer((req, res) => {
   const pathname = decodeURIComponent(req.url.split("?")[0]);
+
+  // Functions in api/ are ES modules; load them on demand, as Vercel does.
+  if (pathname === "/api/join") {
+    import("./api/join.js")
+      .then(({ default: join }) => join(req, res))
+      .catch(error => {
+        console.error(error);
+        res.statusCode = 500;
+        res.end("Function failed");
+      });
+    return;
+  }
 
   // Mirror Vercel's cleanUrls (vercel.json): `/privacy` serves privacy.html, and
   // `/privacy.html` redirects to the clean URL — so local behaves like prod.
