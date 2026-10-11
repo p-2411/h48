@@ -26,6 +26,8 @@ import { sourceFor, type Source } from './sources'
 
 // Videos and languages whose lines are kept after switching away.
 const SESSIONS_KEPT = 12
+// With no transcript and no captions on screen for this long, the video needs hearing.
+const NO_CAPTIONS_MS = 6000
 
 /** The video open in the browser. */
 type Video = { source: Source; id: string; url: string; title?: string }
@@ -36,6 +38,8 @@ export class Watcher extends EventEmitter {
   private session?: LineSession
   private video?: Video
   private fetching?: AbortController
+  private captionSeenAt = 0
+  private hearing = false
 
   constructor(
     captions: CaptionSource,
@@ -66,6 +70,7 @@ export class Watcher extends EventEmitter {
       }
     })
     captions.on('live', (line: { text: string }) => {
+      if (line.text) this.captionSeenAt = Date.now()
       if (!this.session?.hasTranscript) this.emit('live', line.text)
     })
     captions.on('line', (line: { text: string; at: number }) => {
@@ -86,6 +91,24 @@ export class Watcher extends EventEmitter {
   /** The video open in the browser, if any. */
   get currentVideo(): { site: Source['site']; id: string } | undefined {
     return this.video && { site: this.video.source.site, id: this.video.id }
+  }
+
+  /** A video is open with neither a transcript nor captions on screen: Duet should hear it. */
+  get needsHearing(): boolean {
+    return !!this.video && !!this.session && !this.session.hasTranscript && Date.now() - this.captionSeenAt > NO_CAPTIONS_MS
+  }
+
+  /** Duet started or stopped hearing the video for its lines. */
+  setHearing(on: boolean): void {
+    if (on === this.hearing) return
+    this.hearing = on
+    if (!this.session?.hasTranscript) this.setStatus({ source: on ? 'audio' : 'captions' })
+  }
+
+  /** A line heard in the audio (when there are no captions): `at` is when it began, `start` where
+   * the video was then. */
+  addHeardLine(text: string, at: number, start?: number): void {
+    if (this.session && !this.session.hasTranscript) this.session.add(text, at, start)
   }
 
   /** Every line of the video being watched, for the Script tab. */
@@ -150,6 +173,8 @@ export class Watcher extends EventEmitter {
   /** Shows the session for the open video in the current language, fetching its transcript if needed. */
   private open(): void {
     this.fetching?.abort()
+    // Give a new video (or language) time to show captions or find a transcript before hearing it.
+    this.captionSeenAt = Date.now()
     this.session?.pause()
     const language = this.settings.current.language
     const video = this.video
@@ -159,7 +184,7 @@ export class Watcher extends EventEmitter {
     this.emit('script', this.script)
     if (!target || !video) return this.setStatus({ source: undefined })
     target.resume()
-    this.setStatus({ source: target.hasTranscript ? 'transcript' : 'captions' })
+    this.setStatus({ source: target.hasTranscript ? 'transcript' : this.hearing ? 'audio' : 'captions' })
     const { id, source } = video
     if (!source.fetchTranscript || target.hasTranscript) return
     const abort = (this.fetching = new AbortController())

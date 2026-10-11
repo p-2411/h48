@@ -73,8 +73,9 @@ export type OverlayStatus = {
   site?: Site
   siteName?: string
   controls?: { playPause: boolean; seek: boolean }
-  /** Where lines come from: the video's transcript, or the captions on screen. */
-  source?: 'transcript' | 'captions'
+  /** Where lines come from: the video's transcript, the captions on screen, or Duet's own hearing of
+   * the audio (when there are neither). */
+  source?: 'transcript' | 'captions' | 'audio'
   /** False when the player says this video has no captions at all. */
   available?: boolean
   error?: string

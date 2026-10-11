@@ -15,11 +15,12 @@ import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import type { Moment } from '../shared/moment'
 import { createModels, type Models } from './ai'
-import { createVoiceModels, type DeliveryListener } from './ai/voice'
+import { createVoiceModels, type VoiceModels } from './ai/voice'
 import { AudioSource } from './audio'
 import { CaptionSource } from './captions'
 import { Cards } from './cards'
 import { Explain } from './explain'
+import { Hearing } from './hearing'
 import { hearLine } from './listen'
 import { Panel } from './panel'
 import { connectOverlay } from './ipc/overlay'
@@ -43,8 +44,9 @@ if (is.dev) {
 
 // Shows or hides the overlay from anywhere. Option/Alt+Shift+D on every OS.
 const SHORTCUT = 'Alt+Shift+D'
-// How often the line on screen follows the video.
+// How often the line on screen follows the video, and how often hearing looks at the audio.
 const TICK_MS = 100
+const HEARING_TICK_MS = 500
 
 let tray: Tray | undefined
 
@@ -67,11 +69,11 @@ app.whenReady().then(() => {
     modelError = error instanceof Error ? error.message : String(error)
   }
 
-  let listener: DeliveryListener | undefined
+  let voice: VoiceModels | undefined
   try {
-    listener = createVoiceModels().listener
+    voice = createVoiceModels()
   } catch {
-    // No voice provider: Explain works from the words alone.
+    // No voice provider: Explain works from the words alone, and videos without captions go unheard.
   }
 
   const settings = new Settings()
@@ -84,7 +86,7 @@ app.whenReady().then(() => {
   const replayMoment = (moment: Moment): void => replay(moment, { watcher, player })
   const panel = new Panel({ watcher, replay: replayMoment })
   const explain = new Explain(models?.explainer, replayMoment, panel, (moment, signal) =>
-    hearLine(moment, { audio, player, listener }, signal)
+    hearLine(moment, { audio, player, listener: voice?.listener }, signal)
   )
   // Listen to the browser only while a video is being watched in it.
   watcher.on('status', (status) => audio.listen(watcher.currentVideo ? status.bundle : undefined))
@@ -121,11 +123,15 @@ app.whenReady().then(() => {
   if (!globalShortcut.register(SHORTCUT, () => toggleOverlay(overlay)))
     console.error(`[duet] could not register ${SHORTCUT}; another app may be using it`)
 
+  // Videos with neither a transcript nor captions: lines from the audio.
+  const hearing = new Hearing({ watcher, player, audio, speech: voice?.speechToText, settings })
+
   setInterval(() => {
     watcher.tick()
     wait.tick()
     player.sample()
   }, TICK_MS)
+  setInterval(() => hearing.tick(), HEARING_TICK_MS)
   captions.start()
   audio.start()
 

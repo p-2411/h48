@@ -10,6 +10,8 @@ function statusText(status: OverlayStatus, language: Language): string {
   const browser = status.browser ?? 'your browser'
   // With the video's transcript, the captions in the player don't matter.
   if (status.source === 'transcript') return `Following the transcript in ${browser}`
+  // No transcript and no captions: Duet transcribes what it hears.
+  if (status.source === 'audio') return `Listening to the video in ${browser}`
   if (status.available === false) return 'This video has no captions. Try another video'
   if (!status.captions) return 'Turn on captions in the player'
   return `Reading ${status.siteName ?? 'the video'} in ${browser}`
