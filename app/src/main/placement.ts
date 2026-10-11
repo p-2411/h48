@@ -44,7 +44,12 @@ export class Placement {
     private readonly settings: Settings,
     /** Tells the page how wide the strip may be (undefined: as wide as it likes). */
     private readonly fit: (maxWidth?: number) => void
-  ) {}
+  ) {
+    // A page that reloads or crashes mid-drag never says the drag ended: stop following then.
+    const stop = (): void => this.stopFollowing()
+    overlay.webContents.on('did-start-loading', stop)
+    overlay.webContents.on('render-process-gone', stop)
+  }
 
   /** How wide the strip may be to stay inside the video (undefined: no video in view). */
   maxWidth(): number | undefined {
@@ -79,21 +84,29 @@ export class Placement {
   /** Dragging: until it ends, the window follows the pointer, keeping the offset it was grabbed at. */
   drag(phase: 'start' | 'end'): void {
     if (this.overlay.isDestroyed()) return
-    clearInterval(this.follow)
-    this.follow = undefined
+    this.stopFollowing()
     if (phase === 'start') {
       this.dragged = true
       const grab = screen.getCursorScreenPoint()
       const [x, y] = this.overlay.getPosition()
+      let last = grab
       this.follow = setInterval(() => {
-        if (this.overlay.isDestroyed()) return clearInterval(this.follow)
+        if (this.overlay.isDestroyed()) return this.stopFollowing()
         const now = screen.getCursorScreenPoint()
+        // Only move when the pointer did.
+        if (now.x === last.x && now.y === last.y) return
+        last = now
         this.overlay.setPosition(now.x - (grab.x - x), now.y - (grab.y - y))
       }, 1000 / 60)
     } else {
       const [x, y] = this.overlay.getPosition()
       this.settings.update({ overlayPosition: { x, y } })
     }
+  }
+
+  private stopFollowing(): void {
+    clearInterval(this.follow)
+    this.follow = undefined
   }
 
   private place(): void {

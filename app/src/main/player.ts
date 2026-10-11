@@ -108,6 +108,8 @@ export class Player extends EventEmitter {
   release(holder: Holder): void {
     if (!this.holders.delete(holder) || this.holders.size || !this.resumeOnRelease) return
     this.resumeOnRelease = false
+    // The video plays on now, so a replay under way must not pause it at its line's end.
+    this.stopReplay()
     this.send('play')
   }
 
