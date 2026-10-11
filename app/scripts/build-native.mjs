@@ -6,8 +6,6 @@ const root = resolve(import.meta.dirname, '..')
 const output = resolve(root, 'resources', 'bin')
 mkdirSync(output, { recursive: true })
 
-// This is a plain JavaScript build script, so TypeScript return annotations are unavailable.
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function run(command, args) {
   const result = spawnSync(command, args, { cwd: root, stdio: 'inherit' })
   if (result.error) throw result.error
