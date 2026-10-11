@@ -140,6 +140,8 @@ h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text
 .browser-extension{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;background:#0a84ff}
 .browser-extension svg{width:16px;height:13px;stroke:none}
 .hero-demo .watch{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;padding:16px;align-items:stretch}
+.watch-title{margin-top:12px;font-size:16px;line-height:1.4;letter-spacing:-.01em}
+.watch-meta{font-size:13px;color:var(--text-3)}
 /* The panel takes the height of the video column (height 0, min-height 100%) so the script list
    below the line card fills what is left and clips, like the real panel's scrolling list. */
 .duet-panel{display:flex;flex-direction:column;gap:12px;height:0;min-height:100%;overflow:hidden;padding:12px;border-radius:14px;background:rgba(28,28,30,.86);border-color:rgba(255,255,255,.1)}
@@ -179,7 +181,7 @@ h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text
 @container (max-width:600px){
   .hero-demo .watch{grid-template-columns:1fr}
   .duet-panel{height:auto;min-height:0}
-  .duet-controls,.duet-legend,.duet-tabs,.duet-script,.browser-nav,.browser-extension{display:none}
+  .duet-controls,.duet-legend,.duet-tabs,.duet-script,.watch-meta,.browser-nav,.browser-extension{display:none}
 }
 
 /* Duet is its own floating window, not part of the page: in the hero it breaks out past the browser's
