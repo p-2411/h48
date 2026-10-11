@@ -1,0 +1,151 @@
+// Watching: the path from the video in the browser to processed lines.
+//
+// The caption reader says which video is open, what its captions say and where it is. On YouTube
+// the video's own transcript is fetched, so the captions need not be on and lines are processed
+// before they are spoken; without one (or on Netflix) lines come from the captions on screen.
+//
+// One session per video and language is kept after switching away, so switching back (to a
+// language or a video) shows what was already processed and carries on from there. Only the
+// session on screen does any work. Kept in memory for this run, most recently used last.
+//
+// Events: "status" (OverlayStatus), "line" (OverlayLine), "current" (line id or null), "live"
+// (caption text still being spoken).
+import { EventEmitter } from 'events'
+import { is } from '@electron-toolkit/utils'
+import type { Moment } from '../shared/moment'
+import type { OverlayLine, OverlayStatus } from '../shared/types'
+import type { LineModel } from './ai'
+import type { CaptionSource, CaptionStatus } from './captions'
+import type { PlayerTime } from './clock'
+import type { Player } from './player'
+import { LineSession } from './session'
+import type { Settings } from './settings'
+import { fetchTranscript, youtubeVideoId } from './transcript'
+
+// Videos and languages whose lines are kept after switching away.
+const SESSIONS_KEPT = 12
+
+function siteOf(url: string | undefined): Moment['video']['site'] {
+  if (url?.includes('youtube.com')) return 'youtube'
+  if (url?.includes('netflix.com')) return 'netflix'
+  return 'other'
+}
+
+export class Watcher extends EventEmitter {
+  private _status: OverlayStatus = { trusted: false }
+  private sessions = new Map<string, LineSession>()
+  private session?: LineSession
+  private video?: string
+  private fetching?: AbortController
+
+  constructor(
+    captions: CaptionSource,
+    private player: Player,
+    private settings: Settings,
+    private model: LineModel | undefined,
+    modelError?: string
+  ) {
+    super()
+    this._status = { trusted: false, model: model?.name, modelError }
+    captions.on('status', (change: CaptionStatus) => {
+      this.setStatus({ ...change, error: change.error })
+      const key = youtubeVideoId(change.url) ?? change.url
+      if (key && key !== this.video) {
+        this.video = key
+        player.reset()
+        this.open()
+      }
+    })
+    captions.on('live', (line: { text: string }) => {
+      if (!this.session?.hasTranscript) this.emit('live', line.text)
+    })
+    captions.on('line', (line: { text: string; at: number }) => this.session?.add(line.text, line.at))
+    captions.on('time', (time: PlayerTime) => player.update(time))
+    settings.on('change', (_, changed) => {
+      if ('language' in changed && this.video) this.open()
+    })
+  }
+
+  get status(): OverlayStatus {
+    return this._status
+  }
+
+  /** The line on screen, if any. */
+  get currentLine(): OverlayLine | undefined {
+    return this.session?.currentLine
+  }
+
+  /** Moves the transcript's line on screen along with the video; call often. */
+  tick(): void {
+    this.session?.setTime(this.player.now())
+  }
+
+  /** A moment for a line (the one on screen by default), or undefined when there is no such line. */
+  moment(lineId?: number): Moment | undefined {
+    const taken = this.session?.moment(lineId)
+    if (!taken) return undefined
+    const url = this._status.url
+    return {
+      language: this.settings.current.language,
+      ...taken,
+      video: { site: siteOf(url), url, id: youtubeVideoId(url), position: taken.line.start ?? this.player.now() },
+      takenAt: Date.now()
+    }
+  }
+
+  private setStatus(change: Partial<OverlayStatus>): void {
+    this._status = { ...this._status, ...change }
+    this.emit('status', this._status)
+  }
+
+  private sessionFor(key: string): LineSession | undefined {
+    const kept = this.sessions.get(key)
+    if (kept) {
+      this.sessions.delete(key)
+      this.sessions.set(key, kept)
+      return kept
+    }
+    if (!this.model) return undefined
+    const language = this.settings.current.language
+    const created = new LineSession(this.model, language)
+    created.on('line', (line: OverlayLine) => created === this.session && this.emit('line', line))
+    created.on('current', (id: number | null) => created === this.session && this.emit('current', id))
+    if (is.dev)
+      created.on('line', (line: OverlayLine) =>
+        console.log(
+          `[duet] ${language} line ${line.id} ${line.state}: ${line.original}${line.processed ? ` → ${line.processed.translation}` : ''}${line.error ? ` (${line.error})` : ''}`
+        )
+      )
+    created.on('model-error', (message: string) => this.setStatus({ modelError: message }))
+    this.sessions.set(key, created)
+    if (this.sessions.size > SESSIONS_KEPT) this.sessions.delete(this.sessions.keys().next().value!)
+    return created
+  }
+
+  /** Shows the session for the open video in the current language, fetching its transcript if needed. */
+  private open(): void {
+    this.fetching?.abort()
+    this.session?.pause()
+    const language = this.settings.current.language
+    const target = this.video ? this.sessionFor(`${this.video}|${language}`) : undefined
+    this.session = target
+    this.emit('current', null)
+    if (!target) return
+    target.resume()
+    this.setStatus({ source: target.hasTranscript ? 'transcript' : 'captions' })
+    const id = youtubeVideoId(this._status.url)
+    if (!id || target.hasTranscript) return
+    const abort = (this.fetching = new AbortController())
+    fetchTranscript(id, language, abort.signal)
+      .then((lines) => {
+        if (abort.signal.aborted || !lines) return
+        target.loadTranscript(lines)
+        this.setStatus({ source: 'transcript' })
+        if (is.dev) console.log(`[duet] transcript for ${id} (${language}): ${lines.length} lines`)
+      })
+      .catch((error) => {
+        if (!abort.signal.aborted)
+          console.error(`[duet] no transcript for ${id}:`, error instanceof Error ? error.message : error)
+      })
+  }
+}

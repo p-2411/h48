@@ -7,7 +7,7 @@ import OpenAI from 'openai'
 import { zodTextFormat } from 'openai/helpers/zod'
 import { alignLines } from './align'
 import { formatHistory, formatNewLines, LinesOutputSchema, systemPrompt } from './prompt'
-import { LineModelError, type LineModel, type LinesRequest, type ProcessedLine } from './types'
+import { ModelError, type LineModel, type LinesRequest, type ProcessedLine } from './types'
 
 export class OpenAILineModel implements LineModel {
   readonly name: string
@@ -50,16 +50,16 @@ export class OpenAILineModel implements LineModel {
           (item) => item.type === 'message' && item.content.some((part) => part.type === 'refusal')
         )
         throw refused
-          ? new LineModelError('The model declined these lines.', 'refusal')
-          : new LineModelError('The model returned no usable result.', 'invalid_output')
+          ? new ModelError('The model declined these lines.', 'refusal')
+          : new ModelError('The model returned no usable result.', 'invalid_output')
       }
       return alignLines(lines, response.output_parsed)
     } catch (error) {
-      if (error instanceof LineModelError) throw error
+      if (error instanceof ModelError) throw error
       if (error instanceof OpenAI.AuthenticationError || error instanceof OpenAI.PermissionDeniedError)
-        throw new LineModelError('The OpenAI API key was rejected.', 'auth')
-      if (error instanceof OpenAI.RateLimitError) throw new LineModelError('Rate limited by OpenAI.', 'rate_limit')
-      if (error instanceof OpenAI.APIConnectionError) throw new LineModelError('Could not reach OpenAI.', 'network')
+        throw new ModelError('The OpenAI API key was rejected.', 'auth')
+      if (error instanceof OpenAI.RateLimitError) throw new ModelError('Rate limited by OpenAI.', 'rate_limit')
+      if (error instanceof OpenAI.APIConnectionError) throw new ModelError('Could not reach OpenAI.', 'network')
       throw error
     }
   }

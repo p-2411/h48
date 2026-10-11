@@ -1,11 +1,12 @@
-import './assets/main.css'
+import '../styles/base.css'
+import './overlay.css'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import App from './App'
+import { Overlay } from './Overlay'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <Overlay />
   </StrictMode>
 )

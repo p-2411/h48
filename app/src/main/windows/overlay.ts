@@ -2,8 +2,7 @@
 // fullscreen video, near the bottom of the screen where subtitles sit. It is shown without taking
 // focus, so the video keeps its keyboard controls.
 import { BrowserWindow, screen } from 'electron'
-import { join } from 'path'
-import { is } from '@electron-toolkit/utils'
+import { loadPage, webPreferences } from './load'
 
 const WIDTH = 820
 const HEIGHT = 300
@@ -27,17 +26,13 @@ export function createOverlay(): BrowserWindow {
     fullscreenable: false,
     alwaysOnTop: true,
     show: false,
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
-    }
+    webPreferences
   })
   // Above fullscreen apps and on every desktop/space.
   overlay.setAlwaysOnTop(true, 'screen-saver')
   overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
 
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) overlay.loadURL(process.env['ELECTRON_RENDERER_URL'])
-  else overlay.loadFile(join(__dirname, '../renderer/index.html'))
+  loadPage(overlay, 'index')
 
   overlay.once('ready-to-show', () => overlay.showInactive())
   return overlay

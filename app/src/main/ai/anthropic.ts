@@ -9,7 +9,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod'
 import { alignLines } from './align'
 import { formatHistory, formatNewLines, LinesOutputSchema, systemPrompt } from './prompt'
-import { LineModelError, type LineModel, type LinesRequest, type ProcessedLine } from './types'
+import { ModelError, type LineModel, type LinesRequest, type ProcessedLine } from './types'
 
 export class AnthropicLineModel implements LineModel {
   readonly name: string
@@ -45,15 +45,15 @@ export class AnthropicLineModel implements LineModel {
         },
         { signal }
       )
-      if (response.stop_reason === 'refusal') throw new LineModelError('The model declined these lines.', 'refusal')
-      if (!response.parsed_output) throw new LineModelError('The model returned no usable result.', 'invalid_output')
+      if (response.stop_reason === 'refusal') throw new ModelError('The model declined these lines.', 'refusal')
+      if (!response.parsed_output) throw new ModelError('The model returned no usable result.', 'invalid_output')
       return alignLines(lines, response.parsed_output)
     } catch (error) {
-      if (error instanceof LineModelError) throw error
+      if (error instanceof ModelError) throw error
       if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError)
-        throw new LineModelError('The Anthropic API key was rejected.', 'auth')
-      if (error instanceof Anthropic.RateLimitError) throw new LineModelError('Rate limited by Anthropic.', 'rate_limit')
-      if (error instanceof Anthropic.APIConnectionError) throw new LineModelError('Could not reach Anthropic.', 'network')
+        throw new ModelError('The Anthropic API key was rejected.', 'auth')
+      if (error instanceof Anthropic.RateLimitError) throw new ModelError('Rate limited by Anthropic.', 'rate_limit')
+      if (error instanceof Anthropic.APIConnectionError) throw new ModelError('Could not reach Anthropic.', 'network')
       throw error
     }
   }

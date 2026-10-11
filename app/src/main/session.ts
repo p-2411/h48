@@ -9,8 +9,9 @@
 // - From the captions on screen, one by one as they finish. Lines that wait are sent together; if
 //   too many wait, the oldest are skipped so the overlay never falls behind the video.
 import { EventEmitter } from 'events'
+import type { MomentLine } from '../shared/moment'
 import type { Language, OverlayLine } from '../shared/types'
-import { LineModelError, type HistoryEntry, type LineModel } from './ai'
+import { ModelError, type HistoryEntry, type LineModel } from './ai'
 import type { TranscriptLine } from './transcript'
 
 // The context is the last CONTEXT_KEEP processed lines before the line, with its start moved in
@@ -27,6 +28,10 @@ const CHUNK_MAX = 12
 // translated alone often picks the wrong sense of a word (measured: "hoja" came back as "leaf"
 // instead of "blade" alone or in twos, "blade" every time in threes).
 const FIRST_CHUNK = 3
+
+// The context frozen with a moment (the spec's starting budget).
+const MOMENT_SECONDS = 20
+const MOMENT_CHARS = 1500
 
 // Line ids are unique across sessions, so the overlay never mixes up lines from two of them.
 let nextId = 1
@@ -56,6 +61,21 @@ export class LineSession extends EventEmitter {
   /** The line on screen, if any. */
   get currentLine(): OverlayLine | undefined {
     return this.current
+  }
+
+  /** A copy of a line (the one on screen by default) and the lines just before it, for a moment. */
+  moment(id?: number): { line: OverlayLine; earlier: MomentLine[] } | undefined {
+    const line = id === undefined ? this.current : this.lines.find((item) => item.id === id)
+    if (!line) return undefined
+    const when = (item: OverlayLine): number => item.start ?? item.at / 1000
+    const earlier: MomentLine[] = []
+    let chars = 0
+    for (const item of this.lines.slice(0, this.lines.indexOf(line)).reverse()) {
+      chars += item.original.length
+      if (when(line) - when(item) > MOMENT_SECONDS || chars > MOMENT_CHARS) break
+      earlier.unshift({ original: item.original, translation: item.processed?.translation })
+    }
+    return { line: structuredClone(line), earlier }
   }
 
   get hasTranscript(): boolean {
@@ -180,10 +200,10 @@ export class LineSession extends EventEmitter {
       if (!abort.signal.aborted) chunk.forEach((line, index) => this.update(line, { state: 'ready', processed: processed[index] }))
     } catch (error) {
       if (!abort.signal.aborted) {
-        const message = error instanceof LineModelError ? error.message : 'Could not translate this line.'
-        if (!(error instanceof LineModelError)) console.error('[duet] lines failed', error)
+        const message = error instanceof ModelError ? error.message : 'Could not translate this line.'
+        if (!(error instanceof ModelError)) console.error('[duet] lines failed', error)
         for (const line of chunk) this.update(line, { state: 'failed', error: message })
-        if (error instanceof LineModelError && error.kind === 'auth') this.emit('model-error', message)
+        if (error instanceof ModelError && error.kind === 'auth') this.emit('model-error', message)
       }
     } finally {
       if (!abort.signal.aborted) {

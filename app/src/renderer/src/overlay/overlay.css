@@ -1,29 +1,4 @@
-/* Duet overlay: a dark glass panel floating over video. Black and white, with one kind of colour:
-   the words, each glowing in the colour of its job. Same colours as useduet.io. */
-:root {
-  --panel: rgba(16, 16, 19, 0.86);
-  --line: rgba(255, 255, 255, 0.12);
-  --fg: #fff;
-  --fg-2: #d6d6d6;
-  --text-2: #a6a6a6;
-  --text-3: #767676;
-  --fill: rgba(118, 118, 128, 0.24);
-  --c-n: #4da3ff;
-  --c-v: #ff9f0a;
-  --c-a: #32d74b;
-  --c-p: #da8fff;
-  --c-x: #ff6482;
-  --c-g: #8a8a8e;
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  color-scheme: dark;
-}
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; background: transparent; overflow: hidden; }
-button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
-:focus-visible { outline: 2px solid #fff; outline-offset: 2px; border-radius: 4px; }
-
+/* The overlay: a dark glass panel floating over video. */
 .panel {
   height: 100%;
   display: flex;
@@ -77,15 +52,5 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 .empty { font-size: 14px; color: var(--text-2); text-align: center; }
 .error { font-size: 12px; color: var(--c-x); }
 
-/* Words glow a little in the colour of their job; glue words stay flat. */
-.w { --c: var(--fg); color: var(--c); border-radius: 6px; padding: 0 0.04em; text-shadow: 0 0 14px color-mix(in srgb, var(--c) 60%, transparent); }
-.w[data-t='n'] { --c: var(--c-n); }
-.w[data-t='v'] { --c: var(--c-v); }
-.w[data-t='a'] { --c: var(--c-a); }
-.w[data-t='p'] { --c: var(--c-p); }
-.w[data-t='x'] { --c: var(--c-x); }
-.w[data-t='g'] { --c: var(--c-g); text-shadow: none; }
 /* A word swapped into the other language: a soft tint and a thin border in its colour. */
 .mix .w.sw { padding: 0 0.18em; font-weight: 500; background: color-mix(in srgb, var(--c) 15%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent); }
-
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

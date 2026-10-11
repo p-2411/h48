@@ -23,12 +23,4 @@ export interface LineModel {
   processLines(request: LinesRequest, signal?: AbortSignal): Promise<ProcessedLine[]>
 }
 
-export class LineModelError extends Error {
-  constructor(
-    message: string,
-    /** Decides what the overlay says. */
-    readonly kind: 'refusal' | 'invalid_output' | 'auth' | 'rate_limit' | 'network'
-  ) {
-    super(message)
-  }
-}
+export { ModelError } from './errors'
