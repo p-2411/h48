@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react'
 import type { PendingTutorAction, ReviewRating, TutorActionResult, TutorCard } from '../../../shared/tutor'
 import { say } from '../components/errors'
-import { exclusive } from './exclusive'
+import { exclusive } from '../components/exclusive'
 
 // How long Duet looks pleased after a card is saved or a review counted.
 const CHEER_MS = 2_000

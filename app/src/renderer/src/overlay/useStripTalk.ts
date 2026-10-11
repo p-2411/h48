@@ -25,18 +25,25 @@ export type StripTalk = {
 export function useStripTalk(language: Language, onError: (text: string) => void): StripTalk {
   // The conversation under way; none: not talking.
   const [about, setAbout] = useState<StripTalk['about']>()
-  const live = useLiveTutor(language)
+  const live = useLiveTutor(language, about?.moment ? 'line' : 'free')
   const { start: startVoice, end: endVoice, transcripts, status } = live
 
+  // Talking is starting: a second press (or the keys) waits for the first.
+  const beginning = useRef(false)
   const begin = useCallback(() => {
-    window.duet.talkHere.start().then(
-      (next) => {
-        // Together, so no render shows the conversation with the last session's "ended" status.
-        setAbout(next)
-        void startVoice()
-      },
-      (cause) => onError(say(cause, 'Duet couldn’t start talking. Try again.'))
-    )
+    if (beginning.current) return
+    beginning.current = true
+    window.duet.talkHere
+      .start()
+      .then(
+        (next) => {
+          // Together, so no render shows the conversation with the last session's "ended" status.
+          setAbout(next)
+          void startVoice()
+        },
+        (cause) => onError(say(cause, 'Duet couldn’t start talking. Try again.'))
+      )
+      .finally(() => (beginning.current = false))
   }, [onError, startVoice])
 
   const end = useCallback(() => {

@@ -52,4 +52,6 @@ export type ExplainState = ThreadState & {
   stage?: 'listening' | 'explaining'
   hearing?: HearingNote
   error?: string
+  /** False when asking again can't help (no API key): no Try again. */
+  retryable?: boolean
 }

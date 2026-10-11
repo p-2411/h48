@@ -34,6 +34,9 @@ export type Shown = { id: number; url?: string; language: string }
  * is); while it is still being translated, the line shown before, if it belongs to the same video
  * and language (switching either drops it). `next` is what to remember as shown.
  */
+// How long to wait before asking for the first state again, when asking failed.
+const STATE_RETRY_MS = 2_000
+
 export function chooseLine(
   onScreen: OverlayLine | undefined,
   lines: OverlayLine[],
@@ -60,19 +63,31 @@ export function useOverlay(): OverlayState {
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    window.duet
-      .getState()
-      .then((state) => {
-        setSettings(state.settings)
-        setStatus(state.status)
-        setFit(state.fit)
-      })
-      // Without the first state the strip still works on its defaults, and updates fill it in.
-      .catch((error) => console.error('[duet] could not read the overlay state', error))
-      .finally(() => setLoaded(true))
+    // The first state, asked for again until it comes: until then the strip stays quiet, rather than
+    // show notices made from its defaults (such as a permission it may well have). A status update
+    // that arrives first does as well.
+    let retry: number | undefined
+    const ask = (): void => {
+      window.duet.getState().then(
+        (state) => {
+          setSettings(state.settings)
+          setStatus(state.status)
+          setFit(state.fit)
+          setLoaded(true)
+        },
+        (error) => {
+          console.error('[duet] could not read the overlay state', error)
+          retry = window.setTimeout(ask, STATE_RETRY_MS)
+        }
+      )
+    }
+    ask()
     const unsubscribe = [
       window.duet.onFit(setFit),
-      window.duet.onStatus(setStatus),
+      window.duet.onStatus((next) => {
+        setStatus(next)
+        setLoaded(true)
+      }),
       window.duet.onSettings(setSettings),
       window.duet.onLive(setLive),
       window.duet.onCurrent(setCurrentId),
@@ -83,7 +98,10 @@ export function useOverlay(): OverlayState {
         })
       )
     ]
-    return () => unsubscribe.forEach((stop) => stop())
+    return () => {
+      window.clearTimeout(retry)
+      unsubscribe.forEach((stop) => stop())
+    }
   }, [])
 
   const onScreen = useMemo(() => lines.find((line) => line.id === currentId), [lines, currentId])

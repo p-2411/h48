@@ -1,6 +1,6 @@
-// The conversation's bridge to the main process (src/main/tutor), used by the side panel's Explain
-// tab for voice, card previews and the learning tools. All on "tutor:*" channels; main answers only
-// the side panel.
+// The conversation's bridge to the main process (src/main/tutor): voice, card previews and the
+// learning tools, for Explain (side panel), Talk (home base) and the strip's talk. All on "tutor:*"
+// channels; main answers only the window whose conversation it is.
 import { ipcRenderer } from 'electron'
 import type {
   PendingTutorAction,
@@ -19,7 +19,7 @@ export const tutorApi = {
   /** Unlocks saved-card/history tools only after the learner explicitly asks to explore. */
   setExplore: (enabled: boolean): Promise<boolean> =>
     invoke<boolean>('tutor:set-explore', enabled),
-  /** Starts voice on the line Explain is open on; the video waits until voiceEnded. */
+  /** Starts voice in this window's conversation (a line, or free); the video waits until voiceEnded. */
   startSession: (offer: TutorSessionOffer): Promise<TutorSessionAnswer> =>
     invoke<TutorSessionAnswer>('tutor:start-session', offer),
   voiceEnded: () => ipcRenderer.send('tutor:voice-ended'),

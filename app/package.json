@@ -41,6 +41,7 @@
     "@anthropic-ai/sdk": "0.128.0",
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "motion": "13.4.4",
     "openai": "7.23.0",
     "ts-fsrs": "5.4.2",
     "zod": "4.6.5"
@@ -66,5 +67,10 @@
     "react-dom": "^19.2.1",
     "typescript": "^5.9.3",
     "vite": "^7.2.6"
+  },
+  "overrides": {
+    "framer-motion": "13.4.4",
+    "motion-dom": "13.4.4",
+    "motion-utils": "13.3.0"
   }
 }

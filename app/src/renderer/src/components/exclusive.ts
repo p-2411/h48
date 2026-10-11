@@ -1,6 +1,6 @@
-// One card action at a time. Saving, rating and undoing each go to the main process once; a second
-// press would find the action already done and show "That was already done" or "There is nothing to
-// undo". Kept free of React so scripts/test-conversation.mjs can check it.
+// One action at a time: saving, rating, undoing each go to the main process once; a second press
+// would find the action already done ("That was already done", "There is nothing to undo") or do it
+// twice. Kept free of React so scripts/test-conversation.mjs can check it.
 
 /**
  * Makes `run(task)`: while a task is out, further calls are ignored. `onBusy` says when the buttons

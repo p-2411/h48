@@ -1,11 +1,15 @@
 // The daily session: the due cards (capped at about 5 minutes), then a line said back, then one
 // challenge, then "done for today" with the streak (kept only when something was done). Each step
-// can be skipped; what's in it comes
-// from main (src/main/daily) and the last video watched.
-import { useEffect, useState } from 'react'
+// can be skipped; what's in it comes from main (src/main/daily) and the last video watched. Each new
+// step takes the focus, so the keyboard and a screen reader follow along.
+import { AnimatePresence, motion } from 'motion/react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { HomeToday } from '../../../../shared/home'
 import type { SessionView } from '../../../../shared/daily'
+import { ErrorBoundary } from '../../components/ErrorBoundary'
 import { say } from '../../components/errors'
+import { LoadState } from '../../components/LoadState'
+import { CountUp, SLIDE } from '../../components/motion'
 import { Review } from '../../review/Review'
 import { Meaning } from '../../components/challenges/Meaning'
 import { Recall } from '../../components/challenges/Recall'
@@ -19,60 +23,99 @@ function stepsOf(plan: SessionView): Step[] {
 
 export function DailySession({ onClose }: { onClose: () => void }): React.JSX.Element {
   const [plan, setPlan] = useState<SessionView>()
-  const [error, setError] = useState<string>()
+  const [planError, setPlanError] = useState<string>()
   const [at, setAt] = useState(0)
   const [result, setResult] = useState<{ kept: boolean; streak: HomeToday['streak'] }>()
-  useEffect(() => {
-    window.duet.daily.plan().then(setPlan, (cause) => setError(say(cause, 'Today’s session could not start.')))
+  const [doneError, setDoneError] = useState<string>()
+  // Reaching the end keeps the day (or says why it couldn't); asked from the step that ends it, so once.
+  const finish = useCallback(() => {
+    setDoneError(undefined)
+    window.duet.daily.done().then(setResult, (cause) => setDoneError(say(cause, 'Could not record today.')))
   }, [])
+  const loadPlan = useCallback(() => {
+    window.duet.daily.plan().then(
+      (next) => {
+        setPlan(next)
+        // Nothing to do today: the session is over as it starts.
+        if (stepsOf(next).length === 1) finish()
+      },
+      (cause) => setPlanError(say(cause, 'Today’s session could not start.'))
+    )
+  }, [finish])
+  useEffect(() => loadPlan(), [loadPlan])
   const steps = plan ? stepsOf(plan) : []
   const step = steps[at]
-  // Reaching the end keeps the day; once, however the page re-renders.
+  const next = (): void => {
+    if (steps[at + 1] === 'done') finish()
+    setAt((index) => index + 1)
+  }
+  // Each new step (after the first) takes the focus.
+  const stepBox = useRef<HTMLDivElement>(null)
+  const started = useRef(false)
   useEffect(() => {
-    if (step !== 'done') return
-    window.duet.daily.done().then(setResult, (cause) => setError(say(cause, 'Could not record today.')))
-  }, [step])
-  const next = (): void => setAt((index) => index + 1)
+    if (started.current) stepBox.current?.focus()
+    started.current = true
+  }, [at])
 
-  if (error && !plan)
-    return (
-      <p className="notice error row" role="alert">
-        <span>{error}</span>
-        <button type="button" className="btn quiet" onClick={onClose}>
-          Back
-        </button>
-      </p>
-    )
   if (!plan)
     return (
-      <p className="faint" role="status">
-        Getting today’s session ready…
-      </p>
+      <div className="row">
+        <LoadState
+          loaded={false}
+          error={planError}
+          reload={() => {
+            setPlanError(undefined)
+            loadPlan()
+          }}
+        />
+        {planError && (
+          <button type="button" className="btn quiet" onClick={onClose}>
+            Back
+          </button>
+        )}
+      </div>
     )
   return (
-    <div className="daily">
-      <p className="faint daily-progress">
+    <div className="daily" ref={stepBox} tabIndex={-1}>
+      <p className="faint daily-progress" role="status">
         {step === 'done' ? 'Done' : `Step ${at + 1} of ${steps.length - 1}`}
         {plan.video && step !== 'cards' && step !== 'done' && ` · from ${plan.video}`}
       </p>
-      {step === 'cards' && <Review limit={plan.cards} onEnd={next} />}
-      {step === 'say' && plan.say && <SayLine line={plan.say} api={window.duet.daily} onNext={next} />}
-      {step === 'challenge' && plan.challenge?.kind === 'recall' && <Recall challenge={plan.challenge} api={window.duet.daily} onNext={next} />}
-      {step === 'challenge' && plan.challenge?.kind === 'meaning' && <Meaning challenge={plan.challenge} api={window.duet.daily} onNext={next} />}
+      {/* Each step slides in from the right as the last leaves to the left; one that breaks takes
+          only itself down, and Skip goes on with the session. */}
+      <AnimatePresence mode="wait" custom={1} initial={false}>
+      <motion.div key={at} className="daily-step" custom={1} variants={SLIDE} initial="enter" animate="center" exit="leave">
+      <ErrorBoundary what="This step">
+        {step === 'cards' && <Review limit={plan.cards} onEnd={next} />}
+        {step === 'say' && plan.say && <SayLine line={plan.say} api={window.duet.daily} onNext={next} />}
+        {step === 'challenge' && plan.challenge?.kind === 'recall' && <Recall challenge={plan.challenge} api={window.duet.daily} onNext={next} />}
+        {step === 'challenge' && plan.challenge?.kind === 'meaning' && <Meaning challenge={plan.challenge} api={window.duet.daily} onNext={next} />}
+      </ErrorBoundary>
       {step === 'done' && (
         <section className="card-box" aria-label="End of today’s session">
-          <span className="label">{result && !result.kept ? 'Session over' : 'Done for today'}</span>
-          <p className="home-number">{result ? `${result.streak.days} ${result.streak.days === 1 ? 'day' : 'days'}` : '…'}</p>
+          <span className="label">{!result ? 'Today’s session' : result.kept ? 'Done for today' : 'Session over'}</span>
+          {result && (
+            <p className="home-number">
+              <CountUp value={result.streak.days} /> {result.streak.days === 1 ? 'day' : 'days'}
+            </p>
+          )}
           <p className="muted">
-            {steps.length === 1
-              ? 'You’re all caught up: nothing due, and nothing watched lately.'
-              : result && !result.kept
-                ? 'Nothing done this time, so today isn’t kept yet. Do one step, or watch 10 minutes.'
-                : 'That’s today. See you tomorrow.'}
+            {!result
+              ? doneError
+                ? ''
+                : 'Keeping today…'
+              : steps.length === 1
+                ? 'You’re all caught up: nothing due, and nothing watched lately.'
+                : !result.kept
+                  ? 'Nothing done this time, so today isn’t kept yet. Do one step, or watch 10 minutes.'
+                  : 'That’s today. See you tomorrow.'}
           </p>
-          {error && (
-            <p className="notice error" role="alert">
-              {error}
+          {doneError && (
+            <p className="notice error row" role="alert">
+              <span>{doneError}</span>
+              <button type="button" className="btn quiet" onClick={finish}>
+                Try again
+              </button>
             </p>
           )}
           <button type="button" className="btn primary" onClick={onClose}>
@@ -80,6 +123,8 @@ export function DailySession({ onClose }: { onClose: () => void }): React.JSX.El
           </button>
         </section>
       )}
+      </motion.div>
+      </AnimatePresence>
     </div>
   )
 }

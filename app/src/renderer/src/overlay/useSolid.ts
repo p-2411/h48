@@ -18,6 +18,8 @@ export function useSolid(): void {
     return () => {
       window.removeEventListener('mousemove', move)
       document.removeEventListener('mouseleave', leave)
+      // Gone (the strip crashed or reloaded): the window lets clicks through to the video again.
+      window.duet.setSolid(false)
     }
   }, [])
 }

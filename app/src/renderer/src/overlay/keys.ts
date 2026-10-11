@@ -1,4 +1,4 @@
-// Show/hide keys: turning a key press into an Electron accelerator ("Alt+Shift+D"), and an
+// Duet's global keys (show or hide, talk): turning a key press into an Electron accelerator ("Alt+Shift+D"), and an
 // accelerator into the symbols a Mac shows (⌥⇧D).
 
 const MODIFIERS: [keyof KeyboardEvent, string][] = [

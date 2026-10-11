@@ -1,4 +1,4 @@
-// The review session behind the Review tab: the queue, whether the answer is shown, the settings,
+// The review session behind Review (in the home base, and the daily session's cards): the queue, whether the answer is shown, the settings,
 // and each action (rate, skip, undo), one at a time.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReviewQueue, ReviewSettings } from '../../../shared/cards'

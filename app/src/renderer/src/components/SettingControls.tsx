@@ -43,10 +43,10 @@ export function QuickToggles({ settings }: { settings: OverlaySettings }): React
   return (
     <>
       <Toggle
-        on={settings.showEnglish}
-        label="Show the English line"
-        hint="Under the line, when you hover the strip"
-        onChange={window.duet.setShowEnglish}
+        on={settings.showFullLine}
+        label={`Show the whole ${name} line`}
+        hint="Under the mixed line, when you hover the strip"
+        onChange={window.duet.setShowFullLine}
       />
       {reading && (
         <Toggle
@@ -140,16 +140,18 @@ export function ShortcutRecorder({ keys, kind = 'show' }: { keys: string; kind?:
     window.addEventListener('keydown', press)
     return () => window.removeEventListener('keydown', press)
   }, [recording, kind])
+  const label = kind === 'talk' ? 'Talk to Duet' : 'Show or hide Duet'
   return (
     <>
       <div className="toggle">
         <span>
-          {kind === 'talk' ? 'Talk to Duet about the line' : 'Show or hide Duet'}
+          {label}
           <small>{recording ? 'Press the new keys · Esc to keep' : 'Click to change'}</small>
         </span>
         <button
           type="button"
           className={`keys${recording ? ' on' : ''}`}
+          aria-label={recording ? `${label}: press the new keys, or Esc to keep ${symbols(keys)}` : `${label}: ${symbols(keys)}. Change`}
           onClick={() => {
             setError(undefined)
             setRecording(!recording)
@@ -158,7 +160,11 @@ export function ShortcutRecorder({ keys, kind = 'show' }: { keys: string; kind?:
           {recording ? '…' : symbols(keys)}
         </button>
       </div>
-      {error && <small className="error-text">{error}</small>}
+      {error && (
+        <small className="error-text" role="alert">
+          {error}
+        </small>
+      )}
     </>
   )
 }

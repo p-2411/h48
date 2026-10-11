@@ -8,7 +8,7 @@ export const homeApi = {
   getToday: () => invoke<HomeToday>('home:get-today'),
   getWatching: () => invoke<WatchingVideo[]>('home:get-watching'),
   /** Opens a video from Watching in the browser, where the learner left off. */
-  openVideo: (key: string) => ipcRenderer.send('home:open-video', key),
+  openVideo: (key: string) => invoke<void>('home:open-video', key),
   /** Opens the welcome window again, for the permissions. */
   openWelcome: () => ipcRenderer.send('home:open-welcome'),
   /** Main asks for a place (Home opened on Cards, Settings…). */

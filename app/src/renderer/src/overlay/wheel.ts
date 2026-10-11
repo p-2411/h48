@@ -1,5 +1,5 @@
 // Turns scrolling (the mouse wheel, or a trackpad swiped up, down or sideways) into steps of one, for
-// the level carousel. A trackpad swipe sends many small events and keeps sending them as it coasts,
+// the strip's level button (LevelNumber.tsx). A trackpad swipe sends many small events and keeps sending them as it coasts,
 // so one swipe is one step: after a step, the rest of that swipe is let go. Pure, for tests.
 
 // This much scrolled (in pixels) makes a step.

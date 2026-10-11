@@ -22,6 +22,19 @@ export function BackupMenu({
     setOpen(false)
     toggle.current?.focus()
   }
+  // Opened, the menu takes the focus on its first item; the arrow keys move between items.
+  const menu = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (open) menu.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
+  }, [open])
+  const moveFocus = (event: React.KeyboardEvent): void => {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+    event.preventDefault()
+    const items = [...(menu.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])]
+    const at = items.indexOf(document.activeElement as HTMLElement)
+    const next = event.key === 'ArrowDown' ? (at + 1) % items.length : (at - 1 + items.length) % items.length
+    items[next]?.focus()
+  }
   useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent): void => {
@@ -65,7 +78,7 @@ export function BackupMenu({
         <Icon name="more" size={18} />
       </button>
       {open && (
-        <div className="menu" role="menu" onClick={close}>
+        <div className="menu" role="menu" ref={menu} onClick={close} onKeyDown={moveFocus}>
           <button
             type="button"
             role="menuitem"

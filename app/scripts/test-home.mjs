@@ -142,15 +142,16 @@ try {
   // --- Opening a video from Watching ------------------------------------------------------------
   // The page names a video it was shown; main builds the address from the record (never one the page
   // sends), at the place the learner left off.
-  const openVideo = electron.listeners.get('home:open-video')
-  openVideo(fromHome, 'netflix:81234')
+  const openVideo = (event, key) => electron.handlers.get('home:open-video')(event, key)
+  await openVideo(fromHome, 'netflix:81234')
   assert.deepEqual(electron.opened, ['https://www.netflix.com/watch/81234?t=600'])
-  openVideo(fromHome, 'youtube:old')
+  await openVideo(fromHome, 'youtube:old')
   assert.equal(electron.opened.at(-1), 'https://www.youtube.com/watch?v=old&t=30s')
-  openVideo(fromHome, 'youtube:never-watched')
-  openVideo(fromHome, 'https://evil.example/')
-  openVideo(fromHome, 42)
-  openVideo(fromElsewhere, 'youtube:old')
+  // A video not on record says so (the page shows it); another page is refused.
+  await assert.rejects(async () => openVideo(fromHome, 'youtube:never-watched'), /open that video/i)
+  await assert.rejects(async () => openVideo(fromHome, 'https://evil.example/'), /open that video/i)
+  await assert.rejects(async () => openVideo(fromHome, 42), /open that video/i)
+  await assert.rejects(async () => openVideo(fromElsewhere, 'youtube:old'), /not allowed/i)
   assert.equal(
     electron.opened.length,
     2,
@@ -201,6 +202,14 @@ try {
   await setReminder({}, null)
   await assert.rejects(async () => setReminder({}, '7pm'), /time/i)
   assert.deepEqual(changes, [{ reminder: '19:30' }, { reminder: undefined }])
+
+  // What the streak note says: freezes cover a missed day only while there are some left.
+  const { streakNote } = await jiti.import(resolve('src/renderer/src/home/streak.ts'))
+  assert.match(streakNote({ days: 4, keptToday: false, freezesLeft: 2 }), /2 freezes left this week, so a missed day is covered/)
+  assert.match(streakNote({ days: 4, keptToday: false, freezesLeft: 1 }), /1 freeze left/)
+  const none = streakNote({ days: 4, keptToday: true, freezesLeft: 0 })
+  assert.ok(!/covered/.test(none) && /No freezes left this week/.test(none), `no freezes: not covered (${none})`)
+  assert.equal(streakNote({ days: 0, keptToday: false, freezesLeft: 2 }), 'Watch 10 minutes with Duet to start one.')
 
   // What opens at launch and from the Dock: the welcome window until it's been through, then home.
   const { openDuet } = await jiti.import(join(root, 'home/index.ts'))

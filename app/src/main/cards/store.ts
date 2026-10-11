@@ -404,9 +404,21 @@ const BackupSchema = z.object({
   reviews: z.array(ReviewRowSchema)
 })
 
+const NOT_A_BACKUP = 'That file is not a Duet backup, or it is damaged.'
+
+/** A backup file's text, read as JSON (checked when restored); a file that isn't JSON is refused in
+ * the same plain words as one that isn't a backup. */
+export function readBackup(text: string): unknown {
+  try {
+    return JSON.parse(text)
+  } catch {
+    throw new Error(NOT_A_BACKUP)
+  }
+}
+
 function checkBackup(value: unknown): Pick<Backup, 'cards' | 'reviews'> {
   const result = BackupSchema.safeParse(value)
-  if (!result.success) throw new Error('That file is not a Duet backup, or it is damaged.')
+  if (!result.success) throw new Error(NOT_A_BACKUP)
   return result.data as Pick<Backup, 'cards' | 'reviews'>
 }
 

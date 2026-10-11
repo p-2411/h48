@@ -6,6 +6,7 @@ import { chooseLine } from '../src/renderer/src/overlay/useOverlay.ts'
 import { statusDot } from '../src/renderer/src/overlay/notice.ts'
 import { hoverOn } from '../src/renderer/src/overlay/words.ts'
 import { WheelSteps } from '../src/renderer/src/overlay/wheel.ts'
+import { levelAt } from '../src/renderer/src/overlay/levels.ts'
 import { upgradeSettings } from '../src/main/upgrade-settings.ts'
 import { settingsChange } from '../src/main/ipc/settings-change.ts'
 import { OVERLAY, overlayBounds, stripOnScreen } from '../src/main/windows/overlay-size.ts'
@@ -108,9 +109,9 @@ const screens = [{ x: 0, y: 25, width: 1440, height: 875 }]
 check(stripOnScreen({ x: 100, y: -300 }, screens), 'a strip dragged near the top is on screen')
 check(!stripOnScreen({ x: 100, y: 2000 }, screens), 'one below every screen is not')
 // A page's settings change keeps only the settings it may set, with values of the right kind.
-const changed = settingsChange({ pauseForHelp: false, showEnglish: false, wordScript: 'reading', language: 'xx', shortcut: 'Ctrl+Q' })
-check(JSON.stringify(changed) === JSON.stringify({ pauseForHelp: false, showEnglish: false, wordScript: 'reading' }), `only the page's own settings: ${JSON.stringify(changed)}`)
-check(JSON.stringify(settingsChange({ showEnglish: 'yes', wordScript: 'cursive' })) === '{}', 'values of the wrong kind are dropped')
+const changed = settingsChange({ pauseForHelp: false, showFullLine: false, wordScript: 'reading', language: 'xx', shortcut: 'Ctrl+Q' })
+check(JSON.stringify(changed) === JSON.stringify({ pauseForHelp: false, showFullLine: false, wordScript: 'reading' }), `only the page's own settings: ${JSON.stringify(changed)}`)
+check(JSON.stringify(settingsChange({ showFullLine: 'yes', wordScript: 'cursive' })) === '{}', 'values of the wrong kind are dropped')
 check(JSON.stringify(settingsChange(null)) === '{}', 'no change at all')
 // Scrolling the level carousel: a swipe's many small scroll events make one step, not many; a
 // sideways swipe counts as much as the wheel; scrolling on after a pause steps again.
@@ -122,4 +123,9 @@ check([1030, 1040, 1050, 1060].map((at) => wheel.step(30, 0, at)).every((steps) 
 check(wheel.step(0, -60, 1400) === -1, 'later, a swipe back (sideways): one step back')
 check(wheel.step(0, 80, 1450) === 0, 'a swipe straight back the other way waits its turn')
 check(wheel.step(0, 80, 1700) === 1, 'then steps')
+// The level slider: the level under the pointer, by where it is along the row (26 px a level),
+// kept to 1–5 however far the drag goes.
+check(levelAt(0) === 1 && levelAt(25) === 1, 'the first place is level 1')
+check(levelAt(26) === 2 && levelAt(60) === 3 && levelAt(129) === 5, 'each 26 px is the next level')
+check(levelAt(-40) === 1 && levelAt(400) === 5, 'dragged past either end: the end level')
 console.log('Overlay line choice, status dot and settings upgrade tests passed.')

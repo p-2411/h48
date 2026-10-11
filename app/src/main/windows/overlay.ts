@@ -44,8 +44,13 @@ export function createOverlay(settings: Settings): BrowserWindow {
     skipTaskbar: true,
     fullscreenable: false,
     alwaysOnTop: true,
+    // On macOS, a panel: Duet has a Dock icon (it is a normal app), and a normal app's window can't
+    // join another app's full-screen space; a panel floats over it, on every desktop.
+    ...(process.platform === 'darwin' && { type: 'panel' }),
     show: false,
-    webPreferences
+    // Its animations (Motion, on requestAnimationFrame) must run on time: macOS can take this
+    // see-through window for covered, and the throttling would stall them half-way.
+    webPreferences: { ...webPreferences, backgroundThrottling: false }
   })
   // Above fullscreen apps and on every desktop/space.
   overlay.setAlwaysOnTop(true, 'screen-saver')

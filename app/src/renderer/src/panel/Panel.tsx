@@ -2,13 +2,14 @@
 // own buttons close it. On Explain, Duet's mascot sits in the top bar, right of the tabs.
 import { useState } from 'react'
 import { ErrorBoundary } from '../components/ErrorBoundary'
+import { LoadState } from '../components/LoadState'
 import { ExplainView } from '../explain/ExplainView'
 import { Script } from './Script'
 import { useExplain } from './useExplain'
 import { usePanel } from './usePanel'
 
 export function Panel(): React.JSX.Element {
-  const { tab, setTab, script, current, loaded } = usePanel()
+  const { tab, setTab, script, current, loaded, loadError, reload } = usePanel()
   const explain = useExplain()
   const [mascotSlot, setMascotSlot] = useState<HTMLDivElement | null>(null)
   return (
@@ -27,17 +28,13 @@ export function Panel(): React.JSX.Element {
       {/* Keyed by tab, so a tab that broke can be left and come back fresh, and the others still work. */}
       <ErrorBoundary key={tab} what="This tab">
         {!loaded ? (
-          <p className="faint" role="status">
-            Loading…
-          </p>
+          <LoadState loaded={false} error={loadError} reload={reload} />
         ) : tab === 'script' ? (
           <Script script={script} current={current} />
         ) : explain ? (
           <ExplainView state={explain} onReplay={window.duet.explain.replay} onRetry={window.duet.explain.retry} mascotSlot={mascotSlot} />
         ) : (
-          <p className="faint" role="status">
-            Loading…
-          </p>
+          <LoadState loaded={false} reload={reload} />
         )}
       </ErrorBoundary>
     </main>

@@ -47,7 +47,8 @@ export class Explain {
       ({ chat, replying, chatError }) => this.update({ chat, replying, chatError })
     )
     ipcMain.handle('explain:get-state', () => this.state)
-    ipcMain.on('explain:retry', () => this.state.moment && this.ask(this.state.moment))
+    // Asks for the explanation again; the conversation so far stays.
+    ipcMain.on('explain:retry', () => this.state.moment && this.explain(this.state.moment))
     ipcMain.on('explain:replay', () => this.state.moment && options.replay(this.state.moment))
     ipcMain.on('explain:ask', (event, message: unknown) => {
       if (panel.owns(event.sender) && this.state.moment) this.thread.ask(String(message ?? ''))
@@ -66,9 +67,14 @@ export class Explain {
     })
   }
 
+  /** Explain on a moment: a new conversation about it, and its explanation. */
   open(moment: Moment): void {
     this.options.panel.show('explain')
-    this.ask(moment)
+    this.request?.abort()
+    this.thread.reset()
+    this.context = { moment }
+    this.options.tutor.open(this.context, this.options.panel)
+    this.explain(moment)
   }
 
   /** Opens on a moment already talked about elsewhere (the strip), with those turns in the thread. */
@@ -77,14 +83,12 @@ export class Explain {
     this.thread.addVoiceTurns(turns)
   }
 
-  private ask(moment: Moment): void {
-    const { explainer, tutor, hear } = this.options
+  /** Listens to the moment and asks for its explanation (again, after a failure). */
+  private explain(moment: Moment): void {
+    const { explainer, hear } = this.options
     this.request?.abort()
-    this.thread.reset()
-    this.context = { moment }
-    tutor.open(this.context, this.options.panel)
     if (!explainer)
-      return this.set({ moment, loading: false, ...this.thread.state, error: 'Add an API key to use Explain.' })
+      return this.set({ moment, loading: false, ...this.thread.state, error: 'Add an API key to use Explain.', retryable: false })
     const request = (this.request = new AbortController())
     this.set({ moment, loading: true, stage: 'listening', ...this.thread.state })
     hear(moment, request.signal)

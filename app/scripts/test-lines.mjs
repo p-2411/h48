@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict'
 import { alignLine } from '../src/main/ai/lines/align.ts'
 import { linesOutputSchema, systemPrompt } from '../src/main/ai/lines/prompt.ts'
-import { pairReading, written } from '../src/shared/levels.ts'
+import { mixedLine, pairReading, written } from '../src/shared/levels.ts'
 
 // Japanese and Korean phrases come with their reading; Spanish ones don't need one.
 const phrase = { source: '映画', english: 'a movie', job: 'n', reading: 'eiga' }
@@ -31,5 +31,11 @@ assert.equal(pairReading(alignLine('Vi una película.', 'I saw a movie.', [{ sou
 assert.equal(written(movie, 'native'), '映画')
 assert.equal(written(movie, 'reading'), 'eiga')
 assert.equal(written({ text: 'película', job: 'n', pair: 1, space: true }, 'reading'), 'película', 'no reading: as written')
+
+// The words swapped into the English line keep their reading, so the strip can write them in it.
+const mixed = mixedLine(line, 1)
+const swapped = mixed.find((token) => token.swapped)
+assert.equal(swapped?.text, '映画')
+assert.equal(written(swapped, 'reading'), 'eiga', 'a swapped word is written in its reading when chosen')
 
 console.log('Line task and reading tests passed.')

@@ -38,7 +38,7 @@ export const overlayApi = {
   setWaitForTranslation: (on: boolean) => ipcRenderer.send('duet:set-wait', on),
   setCheckpoints: (on: boolean) => ipcRenderer.send('duet:set-checkpoints', on),
   setPauseForHelp: (on: boolean) => ipcRenderer.send('duet:set', { pauseForHelp: on }),
-  setShowEnglish: (on: boolean) => ipcRenderer.send('duet:set', { showEnglish: on }),
+  setShowFullLine: (on: boolean) => ipcRenderer.send('duet:set', { showFullLine: on }),
   /** The strip was right-clicked: Duet's menu (Hide Duet, Settings…, Quit Duet). */
   showMenu: () => ipcRenderer.send('duet:menu'),
   setWordScript: (script: WordScript) => ipcRenderer.send('duet:set', { wordScript: script }),
@@ -58,7 +58,6 @@ export const overlayApi = {
   setSolid: (solid: boolean) => ipcRenderer.send('duet:solid', solid),
   /** Dragging the subtitles: the window follows the pointer between start and end. */
   drag: (phase: 'start' | 'end') => ipcRenderer.send('duet:drag', phase),
-  /** Takes the keyboard (the overlay normally leaves it to the video), to record new keys. */
   /** New keys (an Electron accelerator), to show or hide Duet or to talk to it; resolves with why
    * not, if they can't be had. */
   setShortcut: (keys: string, kind: ShortcutKind = 'show') => invoke<string | undefined>('duet:set-shortcut', keys, kind),

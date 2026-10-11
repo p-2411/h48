@@ -11,7 +11,7 @@ import {
   ShortcutRecorder,
   Toggle
 } from '../components/SettingControls'
-import { LoadState } from './LoadState'
+import { LoadState } from '../components/LoadState'
 
 // The reminder's time when it is first turned on.
 const DEFAULT_REMINDER = '19:00'
@@ -34,10 +34,14 @@ function ReminderSetting({ time }: { time?: string }): React.JSX.Element {
       {time && (
         <label className="field">
           <span className="muted">At</span>
-          <input type="time" value={time} onChange={(event) => event.target.value && save(event.target.value)} />
+          <input type="time" aria-label="Reminder time" value={time} onChange={(event) => event.target.value && save(event.target.value)} />
         </label>
       )}
-      {error && <small className="error-text">{error}</small>}
+      {error && (
+        <small className="error-text" role="alert">
+          {error}
+        </small>
+      )}
     </>
   )
 }

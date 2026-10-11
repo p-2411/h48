@@ -18,7 +18,7 @@ export function actionable(status: OverlayStatus, language: Language): Notice | 
     return {
       text: 'Duet needs Accessibility permission to see the video',
       action: {
-        label: 'Open settings',
+        label: 'Open System Settings',
         run: () => window.duet.welcome.openSettings('accessibility')
       }
     }

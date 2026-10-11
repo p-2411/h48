@@ -6,8 +6,9 @@ html, body { background: #101013; }
 .welcome h2 { margin: 0; font-size: 17px; font-weight: 600; }
 .welcome p { margin: 0; font-size: 13.5px; line-height: 1.5; }
 .welcome header p { font-size: 14px; }
-.body { flex: 1; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
-.spacer { flex: 1; }
+.body { flex: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+/* One step's content, sliding in from the side the learner moved to (Welcome.tsx). */
+.welcome-step { display: flex; flex-direction: column; gap: 14px; }
 .grow { flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
 .grow small { font-size: 12px; line-height: 1.4; }
 .end { justify-content: flex-end; }

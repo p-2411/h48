@@ -4,10 +4,13 @@
 // conversation with Duet follows, in text or voice (Conversation.tsx). The tab scrolls above a dock
 // that holds the conversation's composer, so the composer stays put on the panel's glass and nothing
 // scrolls under it.
+import { motion } from 'motion/react'
 import { useState } from 'react'
 import type { ExplainState, HearingNote } from '../../../shared/explain'
 import { languageName } from '../../../shared/languages'
 import { clock } from '../components/time'
+import { ErrorBoundary } from '../components/ErrorBoundary'
+import { DURATION, fade, fadeUp } from '../components/motion'
 import { Conversation } from './Conversation'
 import { SaveCard } from './SaveCard'
 import { Icon } from '../components/Icon'
@@ -49,9 +52,15 @@ export function ExplainView({
   mascotSlot: HTMLElement | null
 }): React.JSX.Element {
   const [dock, setDock] = useState<HTMLDivElement | null>(null)
-  const { moment, explanation, loading, stage, hearing, error } = state
+  const { moment, explanation, loading, stage, hearing, error, retryable } = state
   if (!moment)
-    return <p className="muted center">Press Explain on the strip, or on a line in Script.</p>
+    return error ? (
+      <p className="notice error" role="alert">
+        {error}
+      </p>
+    ) : (
+      <p className="muted center">Press Explain on the strip, or on a line in Script.</p>
+    )
   const processed = moment.line.processed
   const position = moment.video.position
   const more =
@@ -61,7 +70,7 @@ export function ExplainView({
       explanation.limitation ||
       moment.earlier.length > 0)
   return (
-    <div className="explain-tab">
+    <motion.div className="explain-tab" {...fade(DURATION.fast)}>
       <div className="explain-scroll">
         <div className="explain">
           <section className="card-box" aria-label="The line">
@@ -91,15 +100,18 @@ export function ExplainView({
             <p className="muted">{stage === 'listening' ? 'Listening…' : 'Explaining…'}</p>
           )}
           {error && (
-            <div className="notice error row">
+            <div className="notice error row" role="alert">
               <span>{error}</span>
-              <button type="button" className="btn quiet" onClick={onRetry}>
-                Try again
-              </button>
+              {retryable !== false && (
+                <button type="button" className="btn quiet" onClick={onRetry}>
+                  Try again
+                </button>
+              )}
             </div>
           )}
           {explanation && (
-            <section className="part">
+            // The explanation rises in when it comes.
+            <motion.section className="part" {...fadeUp(6)}>
               <p className="lead">
                 {explanation.meaning}
                 {explanation.heard && (
@@ -113,7 +125,7 @@ export function ExplainView({
               </p>
               {explanation.notice && <p>{explanation.notice.text}</p>}
               {hearing && HEARING[hearing] && <p className="faint">{HEARING[hearing]}</p>}
-            </section>
+            </motion.section>
           )}
 
           {more && (
@@ -154,13 +166,13 @@ export function ExplainView({
             </details>
           )}
 
-          {explanation && (
-            <p className="faint">Written by AI ({explanation.model}). It can be wrong.</p>
-          )}
-          <Conversation key={moment.takenAt} state={state} language={moment.language} thread={window.duet.explain} dock={dock} mascotSlot={mascotSlot} />
+          {/* The conversation in its own boundary: if it breaks, the explanation stays. */}
+          <ErrorBoundary key={moment.takenAt} what="The conversation">
+            <Conversation state={state} language={moment.language} thread={window.duet.explain} dock={dock} mascotSlot={mascotSlot} />
+          </ErrorBoundary>
         </div>
       </div>
       <div className="explain-dock" ref={setDock} />
-    </div>
+    </motion.div>
   )
 }

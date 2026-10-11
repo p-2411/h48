@@ -1,17 +1,7 @@
 // Voice: what it is doing, and its controls, in place of the message box while it is on.
 import type { Ref } from 'react'
+import { VOICE_STATUS } from './voice/status'
 import { isConnected, type LiveTutor, type VoiceOnStatus } from './voice/useLiveTutor'
-
-// Only the statuses voice can be in while this bar shows.
-const STATUS: Record<VoiceOnStatus, string> = {
-  'requesting-microphone': 'Opening the microphone',
-  connecting: 'Connecting',
-  reconnecting: 'Reconnecting',
-  listening: 'Listening',
-  speaking: 'Speaking',
-  working: 'Checking that',
-  ending: 'Ending'
-}
 
 export function VoiceBar({
   live,
@@ -26,7 +16,7 @@ export function VoiceBar({
   return (
     <div className="voice-bar">
       <span className={`voice-state ${status}`}>
-        <i aria-hidden="true" /> {STATUS[status]}
+        <i aria-hidden="true" /> {VOICE_STATUS[status]}
         {live.usageSeconds > 0 && <span className="faint"> · {Math.ceil(live.usageSeconds)}s</span>}
       </span>
       <span className="spacer" />

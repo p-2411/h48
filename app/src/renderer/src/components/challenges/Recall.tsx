@@ -9,12 +9,18 @@ import './challenges.css'
 export function Recall({ challenge, api, onNext }: { challenge: RecallView; api: ChallengeApi; onNext: (answered: boolean) => void }): React.JSX.Element {
   const [result, setResult] = useState<RecallResult & { picked: string }>()
   const [error, setError] = useState<string>()
+  // A pick being checked: the choices wait, so a second pick can't take its place.
+  const [checking, setChecking] = useState(false)
   const pick = async (choice: string): Promise<void> => {
+    if (checking) return
     setError(undefined)
+    setChecking(true)
     try {
       setResult({ picked: choice, ...(await api.checkRecall(choice)) })
     } catch (cause) {
       setError(say(cause, 'That could not be checked.'))
+    } finally {
+      setChecking(false)
     }
   }
   const blank = result ? result.answer : '＿＿＿'
@@ -36,7 +42,7 @@ export function Recall({ challenge, api, onNext }: { challenge: RecallView; api:
             type="button"
             className={`challenge-btn${result?.answer === choice ? ' primary' : ''}`}
             aria-pressed={result?.picked === choice}
-            disabled={!!result}
+            disabled={!!result || checking}
             onClick={() => void pick(choice)}
           >
             {choice}

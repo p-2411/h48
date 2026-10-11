@@ -3,18 +3,11 @@
 import { useState } from 'react'
 import type { HomeToday } from '../../../shared/home'
 import { DailySession } from './daily/DailySession'
-import { LoadState } from './LoadState'
+import { LoadState } from '../components/LoadState'
+import { streakNote } from './streak'
 import { useLoaded } from './useLoaded'
 
 const loadToday = (): Promise<HomeToday> => window.duet.home.getToday()
-
-/** What keeps the streak going, said for where it stands. */
-function streakNote({ days, keptToday, freezesLeft }: HomeToday['streak']): string {
-  const freezes = `${freezesLeft} ${freezesLeft === 1 ? 'freeze' : 'freezes'} left this week, so a missed day is covered.`
-  if (keptToday) return `Kept for today. ${freezes}`
-  if (days === 0) return 'Watch 10 minutes with Duet to start one.'
-  return `Watch 10 minutes with Duet today to keep it. ${freezes}`
-}
 
 /** `onReview` opens Review (inside Cards). */
 export function Today({ onReview }: { onReview: () => void }): React.JSX.Element {

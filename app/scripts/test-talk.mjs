@@ -206,6 +206,42 @@ try {
   assert.deepEqual(shown.chat.map((turn) => turn.text), ['行こうって？', '"Let\'s go."'], 'and the strip’s turns are in the thread, kept through the explaining')
   assert.equal(shown.chat[0].via, 'voice')
 
+  // Try again after a failed explanation asks for it again and keeps the conversation (the strip's
+  // turns, here); an error that can't be fixed by asking again offers no Try again.
+  electron.handlers.clear()
+  electron.listeners.clear()
+  let explainTries = 0
+  const flaky = new Explain({
+    panel,
+    replay: () => {},
+    tutor: { open: () => {}, end: () => {}, update: () => {}, forWindow: () => fakeTutor() },
+    hear: async () => ({ note: { heard: false } }),
+    explainer: { explain: async () => (++explainTries === 1 ? Promise.reject(new Error('down')) : { meaning: 'Let’s go.' }) }
+  })
+  flaky.openWithTurns(onScreen, turns)
+  await settle()
+  await settle()
+  let now = await electron.handlers.get('explain:get-state')({ sender: panelPage })
+  assert.ok(now.error && now.retryable !== false, 'a failed explanation can be asked for again')
+  electron.listeners.get('explain:retry')({ sender: panelPage })
+  await settle()
+  await settle()
+  now = await electron.handlers.get('explain:get-state')({ sender: panelPage })
+  assert.equal(now.explanation?.meaning, 'Let’s go.', 'asked again: explained')
+  assert.equal(now.chat.length, 2, 'Try again keeps the conversation')
+  electron.handlers.clear()
+  electron.listeners.clear()
+  const keyless = new Explain({ panel, replay: () => {}, tutor: { open: () => {}, end: () => {}, update: () => {}, forWindow: () => fakeTutor() }, hear: async () => ({ note: { heard: false } }) })
+  keyless.open(onScreen)
+  now = await electron.handlers.get('explain:get-state')({ sender: panelPage })
+  assert.equal(now.retryable, false, 'no API key: asking again won’t help, so no Try again')
+
+  // Voice greets by what the conversation is about: a line, or nothing in particular.
+  const { voiceGreeting } = await jiti.import(resolve('src/renderer/src/explain/voice/prompts.ts'))
+  assert.match(voiceGreeting('line').instructions, /the line/)
+  assert.doesNotMatch(voiceGreeting('free').instructions, /\bline\b/, 'a free conversation is not about a line')
+  assert.match(voiceGreeting('free').instructions, /free conversation/)
+
   console.log('Talk tests passed.')
 } catch (error) {
   console.error(error)

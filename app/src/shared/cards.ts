@@ -52,6 +52,9 @@ export const RATINGS = ['again', 'hard', 'good', 'easy'] as const
 
 export type Rating = (typeof RATINGS)[number]
 
+/** Each rating as the learner sees it (on Review's buttons and in a card's history). */
+export const RATING_LABELS: Record<Rating, string> = { again: 'Again', hard: 'Hard', good: 'Good', easy: 'Easy' }
+
 export type CardReview = { id: string; rating: Rating; reviewedAt: number; undone: boolean; dueAfter: number }
 
 export type CardDetail = Card & { reviews: CardReview[] }

@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import type { Card, CardDraft } from '../../../shared/cards'
 import type { Explanation } from '../../../shared/explain'
 import type { Moment } from '../../../shared/moment'
+import { say } from '../components/errors'
+import { exclusive } from '../components/exclusive'
 
 const UNDO_MS = 8000
 
@@ -38,6 +40,9 @@ export function SaveCard({
 }): React.JSX.Element {
   const [step, setStep] = useState<Step>({ name: 'ready' })
   const [error, setError] = useState<string>()
+  const [undoing, setUndoing] = useState(false)
+  // Undo takes the card back once, however often it's pressed.
+  const [runUndo] = useState(() => exclusive(setUndoing))
 
   useEffect(() => {
     if (step.name !== 'saved' || !step.undo) return
@@ -56,7 +61,7 @@ export function SaveCard({
           : { name: 'duplicate', card: result.duplicate }
       )
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Could not save the card.')
+      setError(say(failure, 'Could not save the card.'))
       setStep({ name: 'ready' })
     }
   }
@@ -76,10 +81,17 @@ export function SaveCard({
           <button
             type="button"
             className="btn quiet"
-            onClick={async () => {
-              await window.duet.cards.remove(step.card.id)
-              setStep({ name: 'ready' })
-            }}
+            disabled={undoing}
+            onClick={() =>
+              void runUndo(async () => {
+                try {
+                  await window.duet.cards.remove(step.card.id)
+                  setStep({ name: 'ready' })
+                } catch (failure) {
+                  setError(say(failure, 'Could not take the card back. Remove it in My cards.'))
+                }
+              })
+            }
           >
             Undo
           </button>
@@ -91,7 +103,11 @@ export function SaveCard({
       <button type="button" className="btn" disabled={step.name === 'saving'} onClick={save}>
         Save
       </button>
-      {error && <span className="notice error">{error}</span>}
+      {error && (
+        <span className="notice error" role="alert">
+          {error}
+        </span>
+      )}
     </>
   )
 }

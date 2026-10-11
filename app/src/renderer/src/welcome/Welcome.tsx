@@ -2,11 +2,13 @@
 // on macOS the two permissions (each one's state live, so the learner sees it take), and what the
 // colours mean. Windows asks for no permissions, so it skips that step. Every choice can be changed
 // later in Settings, in the home base.
+import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { joinTokens, mixedLine } from '../../../shared/levels'
 import { LANGUAGE_CODES, languageModule, languageName } from '../../../shared/languages'
 import { type AudioPermission, type Language, type Level, type OverlaySettings, type OverlayStatus } from '../../../shared/types'
 import { Mascot } from '../components/Mascot'
+import { SLIDE } from '../components/motion'
 import { Words } from '../components/Words'
 import { JOBS, LEVELS } from '../overlay/words'
 import { Icon } from '../components/Icon'
@@ -45,6 +47,12 @@ function Check({ on, title, hint, state, children }: { on: boolean; title: strin
 
 export function Welcome(): React.JSX.Element {
   const [step, setStep] = useState(0)
+  // Which way the last move went (1: on, -1: back), so the step slides in from that side.
+  const [direction, setDirection] = useState(1)
+  const move = (by: 1 | -1): void => {
+    setDirection(by)
+    setStep((now) => now + by)
+  }
   const [settings, setSettings] = useState<OverlaySettings>()
   const [status, setStatus] = useState<OverlayStatus>()
   const [loadError, setLoadError] = useState(false)
@@ -62,7 +70,8 @@ export function Welcome(): React.JSX.Element {
   // The permissions change in System Settings, outside Duet: read them again while that step shows.
   useEffect(() => {
     if (STEPS[step] !== 'Permissions') return
-    const timer = setInterval(() => void window.duet.getState().then((state) => setStatus(state.status)), CHECK_MS)
+    // A check that fails keeps the last answer; the next one tries again.
+    const timer = setInterval(() => void window.duet.getState().then((state) => setStatus(state.status), () => undefined), CHECK_MS)
     return () => clearInterval(timer)
   }, [step])
 
@@ -123,6 +132,8 @@ export function Welcome(): React.JSX.Element {
       </header>
 
       <section className="body">
+        <AnimatePresence mode="wait" custom={direction} initial={false}>
+        <motion.div key={step} className="welcome-step" custom={direction} variants={SLIDE} initial="enter" animate="center" exit="leave">
         {STEPS[step] === 'Language' && (
           <>
             <h2>Which language are you learning?</h2>
@@ -217,16 +228,18 @@ export function Welcome(): React.JSX.Element {
             </p>
           </>
         )}
+        </motion.div>
+        </AnimatePresence>
       </section>
 
       <footer className="row">
         {step > 0 && (
-          <button type="button" className="btn quiet" onClick={() => setStep(step - 1)}>
+          <button type="button" className="btn quiet" onClick={() => move(-1)}>
             Back
           </button>
         )}
         <span className="spacer" />
-        <button type="button" className="btn primary" onClick={() => (last ? window.duet.welcome.done() : setStep(step + 1))}>
+        <button type="button" className="btn primary" onClick={() => (last ? window.duet.welcome.done() : move(1))}>
           {last ? 'Start watching' : 'Continue'}
         </button>
       </footer>

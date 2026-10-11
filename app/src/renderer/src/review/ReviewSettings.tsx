@@ -38,7 +38,8 @@ export function ReviewSettings({
           min={0}
           max={100}
           value={settings.newPerDay}
-          onChange={(event) => onChange({ ...settings, newPerDay: Number(event.target.value) })}
+          // An emptied box is being typed into, not set to 0: nothing changes until there is a number.
+          onChange={(event) => event.target.value !== '' && onChange({ ...settings, newPerDay: Number(event.target.value) })}
           onBlur={() => onSave(settings)}
         />
       </label>

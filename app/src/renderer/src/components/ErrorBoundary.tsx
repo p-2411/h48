@@ -1,8 +1,16 @@
 // Keeps one broken part from blanking a whole window: if what it wraps throws while rendering, it
-// shows a short message and a way to try again in its place.
+// shows a short message and a way to try again in its place. `frame` places that message where the
+// part was, when the page needs it placed (the strip's window is see-through and lets clicks through
+// except over data-solid, so its message must sit where the strip was, marked solid).
 import { Component, type ReactNode } from 'react'
 
-type Props = { children: ReactNode; /** What broke, in the learner's words ("This tab"). */ what?: string }
+type Props = {
+  children: ReactNode
+  /** What broke, in the learner's words ("This tab"). */
+  what?: string
+  /** Wraps the message, to place it where the part was. */
+  frame?: (message: ReactNode) => ReactNode
+}
 
 export class ErrorBoundary extends Component<Props, { failed: boolean }> {
   state = { failed: false }
@@ -17,7 +25,7 @@ export class ErrorBoundary extends Component<Props, { failed: boolean }> {
 
   render(): ReactNode {
     if (!this.state.failed) return this.props.children
-    return (
+    const message = (
       <div className="notice error row" role="alert">
         <span>{this.props.what ?? 'This window'} ran into a problem.</span>
         <button type="button" className="btn quiet" onClick={() => this.setState({ failed: false })}>
@@ -28,5 +36,6 @@ export class ErrorBoundary extends Component<Props, { failed: boolean }> {
         </button>
       </div>
     )
+    return this.props.frame ? this.props.frame(message) : message
   }
 }

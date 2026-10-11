@@ -29,7 +29,7 @@ import type { Moment } from '../../shared/moment'
 import { readSetting, writeSetting } from '../store/db'
 import { reviewCounts, reviewsSince, ReviewSession } from './review'
 import { Scheduler } from './scheduler'
-import { CardStore, UNDO_DELETE_MS } from './store'
+import { CardStore, readBackup, UNDO_DELETE_MS } from './store'
 
 const SETTINGS_KEY = 'review'
 const DEFAULT_SETTINGS: ReviewSettings = { desiredRetention: 0.9, newPerDay: 10 }
@@ -163,7 +163,7 @@ export class Cards extends EventEmitter {
           ? dialog.showOpenDialog(parent, options)
           : dialog.showOpenDialog(options))
         if (result.canceled || !result.filePaths[0]) return undefined
-        return this.store.restoreBackup(JSON.parse(await readFile(result.filePaths[0], 'utf8')))
+        return this.store.restoreBackup(readBackup(await readFile(result.filePaths[0], 'utf8')))
       })
     )
 

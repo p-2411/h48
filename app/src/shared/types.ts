@@ -120,8 +120,9 @@ export type OverlaySettings = {
   talkShortcut: string
   /** For Japanese and Korean: the words swapped into a line in their own script, or read in Latin letters. */
   wordScript: WordScript
-  /** The English line shows under the line when the strip is hovered (off: the strip never shows it). */
-  showEnglish: boolean
+  /** The whole line in the language being learnt shows under the mixed line when the strip is
+   * hovered (off: only the mixed line and the English). */
+  showFullLine: boolean
   /** Where the learner dragged the subtitles to (the overlay window's top-left at full height: near
    * the top of the screen the window is cut shorter, see windows/overlay-size.ts), if anywhere. */
   overlayPosition?: { x: number; y: number }
@@ -147,7 +148,7 @@ export const DEFAULT_SETTINGS: OverlaySettings = {
   shortcut: 'Alt+Shift+D',
   talkShortcut: 'Alt+Shift+T',
   wordScript: 'native',
-  showEnglish: true,
+  showFullLine: true,
   version: 2
 }
 

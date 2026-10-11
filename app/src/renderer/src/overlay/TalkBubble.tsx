@@ -1,22 +1,13 @@
 // Talking to Duet on the strip: the mascot alone (no card behind it) pops up just above the subtitles,
 // with small subtitles under it of what it last heard and said, and quiet Text chat and End.
 import type { Language } from '../../../shared/languages'
-import { Mascot, type MascotState } from '../components/Mascot'
-import type { LiveTutor, TutorLiveStatus } from '../explain/voice/useLiveTutor'
-
-function mascotState(status: TutorLiveStatus): MascotState {
-  if (status === 'listening') return 'listening'
-  if (status === 'speaking') return 'speaking'
-  if (status === 'idle' || status === 'ended' || status === 'error') return 'idle'
-  return 'thinking'
-}
+import { Mascot } from '../components/Mascot'
+import { VOICE_STATUS, voiceMascotState } from '../explain/voice/status'
+import { isVoiceOn, type LiveTutor, type TutorLiveStatus } from '../explain/voice/useLiveTutor'
 
 /** What is happening, when there is nothing said yet to show. */
 function waiting(status: TutorLiveStatus): string {
-  if (status === 'requesting-microphone') return 'Asking for the microphone…'
-  if (status === 'connecting' || status === 'idle') return 'Connecting…'
-  if (status === 'reconnecting') return 'Reconnecting…'
-  return 'Listening…'
+  return `${isVoiceOn(status) ? VOICE_STATUS[status] : VOICE_STATUS.connecting}…`
 }
 
 export function TalkBubble({
@@ -34,8 +25,9 @@ export function TalkBubble({
   const heard = said.find((turn) => turn.role === 'learner' && turn.text.trim())
   const reply = said.find((turn) => turn.role === 'tutor' && turn.text.trim())
   return (
-    <div className="talk-bubble" data-solid role="dialog" aria-label="Talking with Duet">
-      <Mascot state={mascotState(live.status)} scale={0.3} opening={false} />
+    // Placed above the strip, and opened and closed, by the strip (Overlay.tsx).
+    <>
+      <Mascot state={voiceMascotState(live.status)} scale={0.3} opening={false} />
       <div className="talk-lines" aria-live="polite">
         {live.error ? (
           <p className="talk-error">{live.error}</p>
@@ -53,8 +45,14 @@ export function TalkBubble({
         )}
       </div>
       <div className="talk-actions">
+        {/* Again, keeping what was said so far (Text chat can still take it on). */}
+        {live.status === 'error' && live.microphoneBlocked && window.duet.welcome.asksPermissions && (
+          <button type="button" className="talk-link" onClick={() => window.duet.welcome.openSettings('microphone')}>
+            Open System Settings
+          </button>
+        )}
         {live.status === 'error' && (
-          <button type="button" className="talk-link" onClick={() => void live.start()}>
+          <button type="button" className="talk-link" onClick={() => void live.start(true)}>
             Try again
           </button>
         )}
@@ -65,6 +63,6 @@ export function TalkBubble({
           End
         </button>
       </div>
-    </div>
+    </>
   )
 }

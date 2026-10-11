@@ -8,10 +8,12 @@
 // mascot (thinking, listening, speaking) into `mascotSlot`, in the page's top bar, and Duet's typed
 // replies fly out of it.
 import { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { createPortal } from 'react-dom'
 import type { Language } from '../../../shared/languages'
 import { say } from '../components/errors'
 import { Mascot, type MascotState } from '../components/Mascot'
+import { pop } from '../components/motion'
 import { CardPreview, OpenedCard } from './CardPreview'
 import { Composer } from './Composer'
 import type { ConversationState, ThreadBridge } from './thread'
@@ -21,6 +23,7 @@ import { useMascotFlight } from './useMascotFlight'
 import { useTurnAids } from './useTurnAids'
 import { useEnglishHelp, useVoiceHandoff } from './useVoiceHandoff'
 import { VoiceBar } from './VoiceBar'
+import { voiceMascotState } from './voice/status'
 import { isVoiceOn, useLiveTutor, type TutorLiveStatus } from './voice/useLiveTutor'
 
 // How long the mascot gently corrects after a reply that corrects the learner: one cycle of its
@@ -28,7 +31,8 @@ import { isVoiceOn, useLiveTutor, type TutorLiveStatus } from './voice/useLiveTu
 const CORRECTION_MS = 3_800
 
 /** What the mascot shows: pleased for a moment after a save, gently correcting for a moment after a
- * reply that corrects the learner, else what the conversation is doing. */
+ * reply that corrects the learner, else what voice is doing (voice/status.ts), or thinking while a
+ * typed reply is on its way. */
 function mascotState(
   status: TutorLiveStatus,
   replying: boolean,
@@ -36,9 +40,8 @@ function mascotState(
   correcting: boolean
 ): MascotState {
   if (cheering) return 'success'
-  if (status === 'listening') return 'listening'
-  if (status === 'speaking') return 'speaking'
-  if (isVoiceOn(status) && status !== 'ending') return 'thinking'
+  const voice = voiceMascotState(status)
+  if (voice !== 'idle') return voice
   if (replying) return 'thinking'
   return correcting ? 'correction' : 'idle'
 }
@@ -72,7 +75,7 @@ export function Conversation({
   /** A free conversation (Talk): no line, and the cards open to Duet from the start. */
   free?: boolean
 }): React.JSX.Element {
-  const live = useLiveTutor(language)
+  const live = useLiveTutor(language, free ? 'free' : 'line')
   const [draft, setDraft] = useState('')
   const box = useRef<HTMLTextAreaElement>(null)
   const end = useRef<HTMLDivElement>(null)
@@ -140,9 +143,13 @@ export function Conversation({
 
   return (
     <section className="conversation" aria-label="Conversation with Duet" ref={section}>
+      {/* New turns rise in; those there when it opens, and voice turns joining the thread after voice
+          (they were shown as they were spoken), don't. */}
+      <AnimatePresence initial={false}>
       {thread.map((turn, index) => (
         <Turn
           key={turn.id}
+          enter={!(turn.via === 'voice' && turn.id.startsWith('c'))}
           id={turn.id}
           from={turn.from}
           text={turn.text}
@@ -156,17 +163,27 @@ export function Conversation({
           onHide={aids.hide}
         />
       ))}
+      </AnimatePresence>
 
-      {cards.card && <OpenedCard card={cards.card} onClose={cards.closeCard} />}
-      {cards.pending && (
-        <CardPreview
-          pending={cards.pending}
-          language={language}
-          voiceOn={voiceOn}
-          busy={cards.busy}
-          onConfirm={cards.confirm}
-        />
-      )}
+      {/* A card opened or offered pops in, and out when it's done. */}
+      <AnimatePresence>
+        {cards.card && (
+          <motion.div key={`card:${cards.card.id}`} {...pop()}>
+            <OpenedCard card={cards.card} onClose={cards.closeCard} />
+          </motion.div>
+        )}
+        {cards.pending && (
+          <motion.div key={`pending:${cards.pending.id}`} {...pop()}>
+            <CardPreview
+              pending={cards.pending}
+              language={language}
+              voiceOn={voiceOn}
+              busy={cards.busy}
+              onConfirm={cards.confirm}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Results and errors are announced; the turns and the composer are not, so streaming voice
           doesn't flood a screen reader. Always rendered, so a new notice is read out. */}
@@ -223,7 +240,7 @@ export function Conversation({
                     Open System Settings
                   </button>
                 )}
-                <button type="button" className="btn quiet" onClick={() => void bridge.claim().then(() => live.start())}>
+                <button type="button" className="btn quiet" onClick={() => void bridge.claim().catch(() => undefined).then(() => live.start())}>
                   Try voice again
                 </button>
               </>
@@ -257,7 +274,7 @@ export function Conversation({
                 replying={!!state.replying}
                 explore={cards.explore}
                 onOpenCards={cards.openCards}
-                onStartVoice={() => void bridge.claim().then(() => live.start())}
+                onStartVoice={() => void bridge.claim().catch(() => undefined).then(() => live.start())}
                 onSend={bridge.ask}
                 free={free}
               />

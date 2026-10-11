@@ -6,6 +6,24 @@
   grid-template-columns: 188px minmax(0, 1fr);
   background: #000;
 }
+/* The place shown, beside the sidebar. */
+.home-place {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+.home-place-page {
+  height: 100%;
+  min-height: 0;
+}
+/* A place that broke (ErrorBoundary): its message at the top, not stretched down the page. */
+.home-place-page > .notice {
+  margin: 44px 26px 0;
+}
+/* A page's title takes the focus after an in-page switch (Home.tsx); no ring for that. */
+.home-place h1:focus {
+  outline: none;
+}
 .home-nav {
   display: flex;
   flex-direction: column;
@@ -117,6 +135,8 @@
 
 /* The daily session (daily/): one step at a time, in a column (the steps: components/challenges). */
 .daily { display: flex; flex-direction: column; gap: 12px; max-width: 640px; }
+/* It takes the focus at each new step (for the keyboard and screen readers); no ring around it all. */
+.daily:focus { outline: none; }
 .daily .review { align-self: stretch; max-width: none; }
 /* Talk: the conversation scrolls, the message box stays at the bottom (explain.css draws both). */
 .home-talk {

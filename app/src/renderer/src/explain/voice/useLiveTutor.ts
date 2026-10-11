@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { languageName, type Language } from '../../../../shared/languages'
 import { say } from '../../components/errors'
+import { voiceGreeting, type VoiceTopic } from './prompts'
 import { LIVE_REPLY_FALLBACK_MS } from './timing'
 import { nextReconnectAttempt, RECONNECT_LIMIT } from './reconnect'
 
@@ -78,9 +79,9 @@ function waitForIce(connection: RTCPeerConnection): Promise<void> {
   })
 }
 
-/** Voice with Duet in `language` (none yet: voice can't start). The tutor's context (a line, or a
- * free conversation) is in the main process. */
-export function useLiveTutor(language?: Language): {
+/** Voice with Duet in `language` (none yet: voice can't start), about `topic` (a line, or nothing in
+ * particular). The tutor's context itself is in the main process. */
+export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
   status: TutorLiveStatus
   transcripts: TranscriptSegment[]
   error?: string
@@ -102,9 +103,11 @@ export function useLiveTutor(language?: Language): {
   // can't start without one, so the neutral fallback is never sent.
   const name = language ? languageName(language) : 'the language'
   const nameRef = useRef(name)
+  const topicRef = useRef(topic)
   useEffect(() => {
     nameRef.current = name
-  }, [name])
+    topicRef.current = topic
+  }, [name, topic])
   const [status, setStatus] = useState<TutorLiveStatus>('idle')
   const [transcripts, setTranscripts] = useState<TranscriptSegment[]>([])
   const [error, setError] = useState<string>()
@@ -129,6 +132,8 @@ export function useLiveTutor(language?: Language): {
   // Bumped on every release, so a start() still awaiting the microphone or network knows to stop.
   const generation = useRef(0)
   const manuallyEnded = useRef(false)
+  // A connect() is under way (from the microphone to the session's answer).
+  const starting = useRef(false)
   const startRef = useRef<(preserveConversation?: boolean) => Promise<void>>(async () => undefined)
 
   const release = useCallback((next: TutorLiveStatus = 'ended') => {
@@ -272,25 +277,25 @@ export function useLiveTutor(language?: Language): {
   const handleEvent = useCallback(
     (event: LiveEvent): void => {
       switch (event.type) {
-        case 'session.started':
+        case 'session.started': {
           healthySince.current = Date.now()
           setError(undefined)
           setStatus('listening')
+          const greeting = voiceGreeting(topicRef.current)
           send({
             type: 'session.instructions.append',
             event_id: `greeting-${crypto.randomUUID()}`,
             delegation_id: null,
-            content:
-              `The learner switched to voice to talk about the line in the context. If the conversation so far is empty, greet them briefly in English as Duet and ask whether they want to practise saying the line or talk about it; otherwise pick up where the conversation left off, in one short sentence, without repeating the explanation. Do not search saved cards unless the learner opened them to Duet. Then pause and listen.`
+            content: greeting.instructions
           })
           send({
             type: 'session.commentary.append',
             event_id: `welcome-${crypto.randomUUID()}`,
             delegation_id: null,
-            content:
-              `Greet the learner briefly as Duet, or pick up the conversation where it left off.`
+            content: greeting.commentary
           })
           break
+        }
         case 'session.input_transcript.delta':
           window.clearTimeout(outputSettledTimer.current)
           setStatus('listening')
@@ -359,11 +364,15 @@ export function useLiveTutor(language?: Language): {
     async (preserveConversation = false): Promise<void> => {
       if (
         !language ||
+        // A start still under way: a second press (before the status above has changed) would open a
+        // second microphone and session and lose the first.
+        starting.current ||
         status === 'connecting' ||
         status === 'requesting-microphone' ||
         (status === 'reconnecting' && !preserveConversation)
       )
         return
+      starting.current = true
       manuallyEnded.current = false
       setError(undefined)
       setMicrophoneBlocked(false)
@@ -450,6 +459,8 @@ export function useLiveTutor(language?: Language): {
         setMicrophoneBlocked(microphoneDenied(cause))
         setError(microphoneDenied(cause) ? MICROPHONE_DENIED : say(cause, 'Voice could not start.'))
         release('error')
+      } finally {
+        starting.current = false
       }
     },
     [handleEvent, language, playSpeaker, reconnect, release, status, tutorMuted]

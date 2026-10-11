@@ -2,7 +2,7 @@
 // meaning or romanisation once per text. Run with: npx jiti scripts/test-conversation.mjs
 import assert from 'node:assert/strict'
 import { aidRequester } from '../src/renderer/src/explain/aids.ts'
-import { exclusive } from '../src/renderer/src/explain/exclusive.ts'
+import { exclusive } from '../src/renderer/src/components/exclusive.ts'
 import { readReply } from '../src/main/tutor/text.ts'
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0))

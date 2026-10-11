@@ -8,9 +8,12 @@
 // Duet's menu (Hide Duet, Settings…, Quit Duet).
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react'
 import type { SaveResult } from '../../../shared/cards'
+import { AnimatePresence, motion } from 'motion/react'
+import { ErrorBoundary } from '../components/ErrorBoundary'
+import { fadeUp, GLIDE, pop } from '../components/motion'
 import { Icon } from '../components/Icon'
 import { say } from '../components/errors'
-import { LevelNumber } from './LevelNumber'
+import { LevelSlider } from './LevelSlider'
 import { LineView } from './LineView'
 import { actionable, quiet, statusDot } from './notice'
 import type { CheckpointView, Offer } from '../../../shared/checkpoints'
@@ -19,9 +22,13 @@ import { SettingsPopover } from './SettingsPopover'
 import { TalkBubble } from './TalkBubble'
 import { useOverlay } from './useOverlay'
 import { useSolid } from './useSolid'
+import { useRoomAbove } from './useRoomAbove'
 import { useStripTalk } from './useStripTalk'
 
 const TOAST_MS = 5000
+
+/** How a broken checkpoint or talk bubble says so, in its place above the strip. */
+const popped = (message: React.ReactNode): React.ReactNode => <div className="strip-crash">{message}</div>
 
 // Undo on a toast: takes back a star just given (`unsave`), or brings back the card a star just
 // removed (`restore`; a removed card is kept for 30 s, longer than the toast shows).
@@ -47,6 +54,8 @@ function startDrag(event: PointerEvent<HTMLElement>): void {
 
 export function Overlay(): React.JSX.Element {
   useSolid()
+  const dock = useRef<HTMLDivElement>(null)
+  useRoomAbove(dock)
   const { settings, status, current, building, translating, fit, loaded } = useOverlay()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [toast, setToast] = useState<Toast>()
@@ -60,11 +69,17 @@ export function Overlay(): React.JSX.Element {
   useEffect(() => window.duet.checkpoint.onClosed(() => setCheckpoint(undefined)), [])
   // Where the pointer went down on the strip, so a click can be told from a drag.
   const pressedAt = useRef<{ x: number; y: number }>(undefined)
+  // A checkpoint opening: a second click (a double-click) waits for the first.
+  const opening = useRef(false)
   const openCheckpoint = (event: React.MouseEvent<HTMLElement>): void => {
     const pressed = pressedAt.current
     const moved = pressed ? Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) > 4 : true
-    if (!offer || checkpoint || moved || (event.target as Element).closest(NOT_FOR_DRAGGING)) return
-    window.duet.checkpoint.open().then(setCheckpoint, (cause) => setToast({ text: say(cause, 'That checkpoint has gone.') }))
+    if (!offer || checkpoint || opening.current || moved || (event.target as Element).closest(NOT_FOR_DRAGGING)) return
+    opening.current = true
+    window.duet.checkpoint
+      .open()
+      .then(setCheckpoint, (cause) => setToast({ text: say(cause, 'That checkpoint has gone.') }))
+      .finally(() => (opening.current = false))
   }
 
   useEffect(() => {
@@ -146,16 +161,20 @@ export function Overlay(): React.JSX.Element {
       style={fit ? ({ '--fit': `${fit}px` } as React.CSSProperties) : undefined}
     >
       <div
+        ref={dock}
         className={`dock${settingsOpen ? ' pinned' : ''}`}
         data-solid
         onContextMenu={(event) => {
           event.preventDefault()
           window.duet.showMenu()
         }}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && settingsOpen) setSettingsOpen(false)
+        }}
       >
-        {settingsOpen && <SettingsPopover settings={settings} />}
+        <AnimatePresence>{settingsOpen && <SettingsPopover key="settings" settings={settings} />}</AnimatePresence>
         <div className="actions" role="toolbar" aria-label="Line actions">
-          <LevelNumber settings={settings} />
+          <LevelSlider settings={settings} />
           <span className="spacer" />
           <button
             type="button"
@@ -190,14 +209,31 @@ export function Overlay(): React.JSX.Element {
             className={`act icon${settingsOpen ? ' on' : ''}`}
             title="Settings"
             aria-label="Settings"
+            aria-expanded={settingsOpen}
             onClick={() => setSettingsOpen(!settingsOpen)}
           >
             <Icon name="settings" />
           </button>
         </div>
 
-        {checkpoint && <Checkpoint view={checkpoint} onClose={() => setCheckpoint(undefined)} />}
-        {talk.talking && talk.about && <TalkBubble live={talk.live} language={talk.about.language} onText={talk.toText} onEnd={talk.end} />}
+        {/* Each opens out of the strip and goes back into it, in its own boundary: one that breaks
+            says so above the strip, which goes on. */}
+        <AnimatePresence>
+          {checkpoint && (
+            <motion.div key="checkpoint" className="checkpoint" data-solid role="dialog" aria-label="Checkpoint" style={{ x: '-50%' }} {...pop()}>
+              <ErrorBoundary what="The checkpoint" frame={popped}>
+                <Checkpoint view={checkpoint} onClose={() => setCheckpoint(undefined)} onError={(text) => setToast({ text })} />
+              </ErrorBoundary>
+            </motion.div>
+          )}
+          {talk.talking && talk.about && (
+            <motion.div key="talk" className="talk-bubble" data-solid role="dialog" aria-label="Talking with Duet" style={{ x: '-50%' }} {...pop()}>
+              <ErrorBoundary what="Talking with Duet" frame={popped}>
+                <TalkBubble live={talk.live} language={talk.about.language} onText={talk.toText} onEnd={talk.end} />
+              </ErrorBoundary>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="strip-row">
         <button
           type="button"
@@ -210,8 +246,12 @@ export function Overlay(): React.JSX.Element {
         >
           <Icon name="mascot" filled />
         </button>
-        <div
-          // Glowing while a checkpoint is offered, and on while it's being done.
+        <motion.div
+          // Glowing while a checkpoint is offered, and on while it's being done. Its size glides to
+          // each line's (the radius is given here so it stays round while it does).
+          layout
+          transition={GLIDE}
+          style={{ borderRadius: 18 }}
           className={`strip${offer || checkpoint ? ' glow' : ''}`}
           title={offer && !checkpoint ? 'A quick checkpoint: click the strip' : undefined}
           onPointerDown={(event) => {
@@ -227,41 +267,48 @@ export function Overlay(): React.JSX.Element {
             aria-label={`Status: ${dot.text}`}
           />
 
-          {current ? (
-            <LineView
-              line={current}
-              settings={settings}
-              starred={(pair) => !!stars[key(pair)]}
-              onStar={star}
-            />
-          ) : (
-            <p className="idle">
-              {status.url ? 'Lines appear here as they are spoken' : state.text}
-            </p>
-          )}
+          {/* Each new line rises in as the last fades out. */}
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.div key={current ? current.id : 'idle'} layout="position" {...fadeUp(4, 0.18)}>
+              {current ? (
+                <LineView
+                  line={current}
+                  settings={settings}
+                  starred={(pair) => !!stars[key(pair)]}
+                  onStar={star}
+                />
+              ) : (
+                <p className="idle">
+                  {status.url ? 'Lines appear here as they are spoken' : state.text}
+                </p>
+              )}
+            </motion.div>
+          </AnimatePresence>
           {building && <p className="hint">{building}</p>}
 
+          <AnimatePresence initial={false}>
           {notice && (
-            <p className="notice">
+            <motion.p key={`notice:${notice.text}`} layout="position" {...fadeUp()} className="notice" role="status">
               <span>{notice.text}</span>
               {notice.action && (
                 <button type="button" className="act primary" onClick={notice.action.run}>
                   {notice.action.label}
                 </button>
               )}
-            </p>
+            </motion.p>
           )}
           {toast && (
-            <p className="toast">
+            <motion.p key={`toast:${toast.text}`} layout="position" {...fadeUp()} className="toast" role="status">
               <span>{toast.text}</span>
               {toast.undo && (
                 <button type="button" className="act" onClick={() => undo(toast.undo!)}>
                   Undo
                 </button>
               )}
-            </p>
+            </motion.p>
           )}
-        </div>
+          </AnimatePresence>
+        </motion.div>
         </div>
       </div>
     </div>

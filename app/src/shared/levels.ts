@@ -62,7 +62,9 @@ export function mixedLine(line: ProcessedLine, level: Level): MixedToken[] {
     // A word that opened the original sentence loses its capital mid-line, unless it is a name.
     if (mixed.length > 0 && partners[0] === line.source[0] && token.job !== 'x')
       text = text.charAt(0).toLocaleLowerCase() + text.slice(1)
-    mixed.push({ text, job: token.job, pair: token.pair, space: token.space, swapped: true })
+    // Its reading goes with it, so the strip can write it in Latin letters (a setting).
+    const reading = pairReading(partners, token.pair)
+    mixed.push({ text, job: token.job, pair: token.pair, space: token.space, swapped: true, ...(reading && { reading }) })
   }
   return mixed
 }

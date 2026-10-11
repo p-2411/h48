@@ -5,26 +5,33 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ThreadState } from '../../../shared/explain'
 import { languageName, type Language } from '../../../shared/languages'
 import { say } from '../components/errors'
+import { ErrorBoundary } from '../components/ErrorBoundary'
 import { Conversation } from '../explain/Conversation'
 import type { ThreadBridge } from '../explain/thread'
-import { LoadState } from './LoadState'
+import { LoadState } from '../components/LoadState'
 
 export function TalkPage(): React.JSX.Element {
   const [thread, setThread] = useState<ThreadState>()
   const [language, setLanguage] = useState<Language>()
+  // Opening Talk failed (LoadState shows it, with Try again), or a message or New conversation did.
   const [error, setError] = useState<string>()
+  const [actionError, setActionError] = useState<string>()
   const [dock, setDock] = useState<HTMLElement | null>(null)
   const [mascotSlot, setMascotSlot] = useState<HTMLElement | null>(null)
   // A new conversation (New conversation) is a new Conversation, with its own voice session.
   const [round, setRound] = useState(0)
   const failed = useCallback((cause: unknown) => setError(say(cause, 'Could not reach Duet. Try again.')), [])
+  const actionFailed = useCallback((cause: unknown) => setActionError(say(cause, 'Could not reach Duet. Try again.')), [])
   const bridge = useMemo<ThreadBridge>(
     () => ({
-      ask: (text) => void window.duet.talk.ask(text).catch(failed),
-      voiceTurns: (turns) => void window.duet.talk.voiceTurns(turns).catch(failed),
+      ask: (text) => {
+        setActionError(undefined)
+        window.duet.talk.ask(text).catch(actionFailed)
+      },
+      voiceTurns: (turns) => void window.duet.talk.voiceTurns(turns).catch(actionFailed),
       claim: () => window.duet.talk.open()
     }),
-    [failed]
+    [actionFailed]
   )
   // Talk on show: the conversation is this window's again, in the language now set.
   const open = useCallback(() => {
@@ -47,10 +54,11 @@ export function TalkPage(): React.JSX.Element {
     [language, open]
   )
   const startOver = (): void => {
+    setActionError(undefined)
     window.duet.talk.start().then((next) => {
       setThread(next)
       setRound((count) => count + 1)
-    }, failed)
+    }, actionFailed)
   }
 
   return (
@@ -64,6 +72,11 @@ export function TalkPage(): React.JSX.Element {
           </button>
         )}
       </div>
+      {actionError && (
+        <p className="notice error" role="alert">
+          {actionError}
+        </p>
+      )}
       <div className="explain-scroll">
         <LoadState loaded={!!thread && !!language} error={error} reload={open} />
         {thread && language && (
@@ -74,7 +87,9 @@ export function TalkPage(): React.JSX.Element {
                 the cards you saved, and helps you say it better. Type, or press the mic to talk.
               </p>
             )}
-            <Conversation key={round} state={thread} language={language} thread={bridge} dock={dock} mascotSlot={mascotSlot} free />
+            <ErrorBoundary key={round} what="The conversation">
+              <Conversation state={thread} language={language} thread={bridge} dock={dock} mascotSlot={mascotSlot} free />
+            </ErrorBoundary>
           </>
         )}
       </div>

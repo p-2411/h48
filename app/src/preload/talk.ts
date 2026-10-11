@@ -8,7 +8,6 @@ export const talkApi = {
   open: () => invoke<ThreadState>('talk:open'),
   /** A new, empty conversation. */
   start: () => invoke<ThreadState>('talk:new'),
-  getState: () => invoke<ThreadState>('talk:get-state'),
   onState: (listener: (state: ThreadState) => void) => subscribe('talk:state', listener),
   /** The learner's typed message. */
   ask: (message: string) => invoke<void>('talk:ask', message),

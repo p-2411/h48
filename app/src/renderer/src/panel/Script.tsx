@@ -2,11 +2,13 @@
 // The line being spoken is highlighted and kept in view; lines already passed are dimmed; clicking
 // a line goes back to it; each line can also be explained or starred from here. Without a
 // transcript it lists the lines read so far, newest first.
+import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import type { Script as ScriptData } from '../../../shared/types'
 import { clock } from '../components/time'
 import { Words } from '../components/Words'
 import { Icon } from '../components/Icon'
+import { DURATION, fade, GLIDING } from '../components/motion'
 
 export function Script({
   script,
@@ -54,7 +56,7 @@ export function Script({
       </p>
     )
   return (
-    <ol className="script" ref={list}>
+    <motion.ol className="script" ref={list} {...fade(DURATION.fast)}>
       {lines.map((line) => {
         const index = script.lines.indexOf(line)
         const processed = line.state === 'ready' ? line.processed : undefined
@@ -63,6 +65,8 @@ export function Script({
             key={line.id}
             className={`script-item${line.id === current ? ' is-now' : ''}${timed && currentIndex >= 0 && index < currentIndex ? ' is-past' : ''}`}
           >
+            {/* One highlight, gliding to the line being spoken. */}
+            {line.id === current && <motion.span layoutId="script-now" className="script-now" transition={GLIDING} aria-hidden="true" />}
             <button
               type="button"
               className="script-row"
@@ -88,7 +92,7 @@ export function Script({
                 type="button"
                 className="btn quiet"
                 disabled={!processed || saved.has(line.id) || saving.has(line.id)}
-                title={failed.has(line.id) ? 'Saving failed. Press to try again.' : undefined}
+                title={failed.has(line.id) ? 'Could not save this line. Press to try again.' : undefined}
                 onClick={async () => {
                   mark(setSaving, line.id, true)
                   mark(setFailed, line.id, false)
@@ -107,13 +111,13 @@ export function Script({
                   : saving.has(line.id)
                     ? 'Saving…'
                     : failed.has(line.id)
-                      ? 'Retry save'
+                      ? 'Try again'
                       : 'Save'}
               </button>
             </span>
           </li>
         )
       })}
-    </ol>
+    </motion.ol>
   )
 }

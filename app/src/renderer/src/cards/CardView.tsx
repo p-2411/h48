@@ -2,7 +2,7 @@
 // done with it. Editing keeps the schedule; a change to what is tested becomes a new card.
 // Shown with key={card.id}, so another card starts with a fresh view.
 import { useEffect, useRef, useState } from 'react'
-import type { CardDetail } from '../../../shared/cards'
+import { RATING_LABELS, type CardDetail } from '../../../shared/cards'
 import { languageName } from '../../../shared/languages'
 import { say } from '../components/errors'
 import { clock, when } from '../components/time'
@@ -12,10 +12,14 @@ import { NuanceBox } from './NuanceBox'
 
 export function CardView({
   card,
-  onDeleted
+  onDeleted,
+  onSavedAsNew
 }: {
   card: CardDetail
-  onDeleted: (id: string) => void
+  /** The card was deleted (its expression, to say which). */
+  onDeleted: (id: string, expression: string) => void
+  /** An edit was saved as a new card: that card. */
+  onSavedAsNew: (id: string) => void
 }): React.JSX.Element {
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState<string>()
@@ -65,7 +69,7 @@ export function CardView({
         busy={busy}
         error={error}
         onSave={(content) => run(() => window.duet.cards.update(card.id, content))}
-        onSaveAsNew={(content) => run(() => window.duet.cards.saveAsNew(card.id, content))}
+        onSaveAsNew={(content) => run(async () => onSavedAsNew((await window.duet.cards.saveAsNew(card.id, content)).id))}
         onCancel={() => {
           setError(undefined)
           setEditing(false)
@@ -156,14 +160,18 @@ export function CardView({
           <div className="history">
             {card.reviews.map((review) => (
               <p key={review.id} className={review.undone ? 'faint' : undefined}>
-                {when(review.reviewedAt)} · {review.rating}
+                {when(review.reviewedAt)} · {RATING_LABELS[review.rating]}
                 {review.undone ? ' (undone)' : ` · next ${when(review.dueAfter)}`}
               </p>
             ))}
           </div>
         </details>
       )}
-      {error && <p className="notice error">{error}</p>}
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
       <div className="row">
         <button
           ref={editButton}
@@ -176,13 +184,17 @@ export function CardView({
         </button>
         {video && (
           <>
-            <button type="button" className="btn" onClick={() => window.duet.cards.replay(card.id)}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => window.duet.cards.replay(card.id).catch((cause) => setError(say(cause, 'Could not go back to that moment.')))}
+            >
               Replay
             </button>
             <button
               type="button"
               className="btn"
-              onClick={() => window.duet.cards.practise(card.id)}
+              onClick={() => window.duet.cards.practise(card.id).catch((cause) => setError(say(cause, 'Could not open Explain on that line.')))}
             >
               Practise in Explain
             </button>
@@ -203,7 +215,7 @@ export function CardView({
           onClick={() =>
             run(async () => {
               await window.duet.cards.remove(card.id)
-              onDeleted(card.id)
+              onDeleted(card.id, card.expression)
             })
           }
         >

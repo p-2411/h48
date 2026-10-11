@@ -5,7 +5,8 @@
 // IPC (the page reaches these through window.duet.home in src/preload/home.ts):
 //   home:get-today     → HomeToday: the streak and the cards to review now
 //   home:get-watching  → WatchingVideo[]: videos watched, the last first
-//   home:open-video    opens a video from Watching in the browser where the learner left off
+//   home:open-video    opens a video from Watching in the browser where the learner left off (or
+//                      says why it can't)
 //   home:open-welcome  opens the welcome window again (Settings › permissions)
 //   home:place         ← which place to show (opening Home on Cards, Settings…)
 //   cards:show         ← a card to show in My cards
@@ -39,10 +40,10 @@ export class Home {
     settings: EventEmitter
     openWelcome: () => void
   }) {
-    const handle = (channel: string, work: () => unknown): void => {
-      ipcMain.handle(channel, (event) => {
+    const handle = (channel: string, work: (...args: unknown[]) => unknown): void => {
+      ipcMain.handle(channel, (event, ...args) => {
         if (!this.owns(event.sender)) throw new Error('Not allowed: this is the home page’s.')
-        return work()
+        return work(...args)
       })
     }
     handle('home:get-today', (): HomeToday => {
@@ -55,12 +56,11 @@ export class Home {
     )
     // Opening an address is the page's most powerful ask, so the page only names a video it was
     // shown; the address comes from the record.
-    ipcMain.on('home:open-video', (event, key: unknown) => {
-      if (!this.owns(event.sender) || typeof key !== 'string') return
-      const video = log.video(key)
+    handle('home:open-video', async (key: unknown) => {
+      const video = typeof key === 'string' ? log.video(key) : undefined
       const source = video && sourceForSite(video.site)
-      if (video && source)
-        void shell.openExternal(source.linkAt(video.videoId, video.position ?? 0))
+      if (!video || !source) throw new Error('Could not open that video. It may no longer be on record.')
+      await shell.openExternal(source.linkAt(video.videoId, video.position ?? 0))
     })
     ipcMain.on('home:open-welcome', (event) => {
       if (this.owns(event.sender)) openWelcome()

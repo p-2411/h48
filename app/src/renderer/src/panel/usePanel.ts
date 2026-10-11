@@ -1,5 +1,6 @@
 // The side panel's state, kept in step with the main process: the tab, every line, and the one on screen.
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { say } from '../components/errors'
 import type { OverlayLine, PanelTab, Script } from '../../../shared/types'
 
 export type PanelState = {
@@ -9,6 +10,9 @@ export type PanelState = {
   current: number | null
   /** The first state has arrived (until then the tab is a guess, so nothing is shown). */
   loaded: boolean
+  /** Why the first state couldn't be read, and asking again. */
+  loadError?: string
+  reload: () => void
 }
 
 export function usePanel(): PanelState {
@@ -16,18 +20,22 @@ export function usePanel(): PanelState {
   const [script, setScript] = useState<Script>({ source: 'captions', lines: [] })
   const [current, setCurrent] = useState<number | null>(null)
   const [loaded, setLoaded] = useState(false)
-
-  useEffect(() => {
-    window.duet.panel
-      .getState()
-      .then((state) => {
+  const [loadError, setLoadError] = useState<string>()
+  const reload = useCallback(() => {
+    window.duet.panel.getState().then(
+      (state) => {
         setTabState(state.tab)
         setScript(state.script)
         setCurrent(state.current)
-      })
-      // Without it the panel still works from the updates that follow.
-      .catch((error) => console.error('[duet] could not read the panel state', error))
-      .finally(() => setLoaded(true))
+        setLoaded(true)
+        setLoadError(undefined)
+      },
+      (cause) => setLoadError(say(cause, 'Could not load the lines.'))
+    )
+  }, [])
+
+  useEffect(() => {
+    reload()
     const unsubscribe = [
       window.duet.panel.onTab(setTabState),
       window.duet.panel.onScript(setScript),
@@ -41,11 +49,11 @@ export function usePanel(): PanelState {
       )
     ]
     return () => unsubscribe.forEach((stop) => stop())
-  }, [])
+  }, [reload])
 
   const setTab = (next: PanelTab): void => {
     setTabState(next)
     window.duet.panel.setTab(next)
   }
-  return { tab, setTab, script, current, loaded }
+  return { tab, setTab, script, current, loaded, loadError, reload }
 }

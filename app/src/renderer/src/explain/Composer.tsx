@@ -103,7 +103,7 @@ export function Composer({
           type="button"
           className="btn mic"
           title="Talk instead: Duet hears you, and how you say it"
-          aria-label="Talk with Duet"
+          aria-label="Talk to Duet"
           onClick={onStartVoice}
         >
           <Icon name="mic" />

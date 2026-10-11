@@ -1,6 +1,7 @@
 // My cards: every saved card, to browse, edit, pause and delete, plus backup and export (in the ⋯
 // menu). A place in the home base; its Review button opens Review there.
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { ErrorBoundary } from '../components/ErrorBoundary'
 import { say } from '../components/errors'
 import type { HomeToday } from '../../../shared/home'
 import { useLoaded } from '../home/useLoaded'
@@ -18,14 +19,23 @@ export function MyCards({ onReview }: { onReview: () => void }): React.JSX.Eleme
   const due = useLoaded(loadToday, 'Could not count the cards to review.').value?.due
   const library = useCardLibrary()
   const { cards, detail, setSelected } = library
-  const [deleted, setDeleted] = useState<string[]>([])
+  const [deleted, setDeleted] = useState<{ id: string; expression: string }[]>([])
   const [notice, setNotice] = useState<Notice>()
 
-  // Each deleted card can be brought back for a few seconds.
-  const forget = (id: string): void => setDeleted((ids) => ids.filter((item) => item !== id))
-  const markDeleted = (id: string): void => {
-    setDeleted((ids) => [...ids, id])
-    setTimeout(() => forget(id), UNDO_MS)
+  // Each deleted card can be brought back for a few seconds; its Undo takes the focus (the card's
+  // own buttons are gone).
+  const forget = (id: string): void => setDeleted((items) => items.filter((item) => item.id !== id))
+  const timers = useRef<number[]>([])
+  useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), [])
+  const lastUndo = useRef<HTMLButtonElement>(null)
+  const undoCount = useRef(0)
+  useEffect(() => {
+    if (deleted.length > undoCount.current) lastUndo.current?.focus()
+    undoCount.current = deleted.length
+  }, [deleted.length])
+  const markDeleted = (id: string, expression: string): void => {
+    setDeleted((items) => [...items, { id, expression }])
+    timers.current.push(window.setTimeout(() => forget(id), UNDO_MS))
   }
   const undoDelete = async (id: string): Promise<void> => {
     try {
@@ -65,10 +75,15 @@ export function MyCards({ onReview }: { onReview: () => void }): React.JSX.Eleme
           </button>
         </p>
       )}
-      {deleted.map((id) => (
-        <p key={id} className="notice row">
-          <span>Card deleted.</span>
-          <button type="button" className="btn quiet" onClick={() => undoDelete(id)}>
+      {deleted.map(({ id, expression }, index) => (
+        <p key={id} className="notice row" role="status">
+          <span>Deleted “{expression}”.</span>
+          <button
+            ref={index === deleted.length - 1 ? lastUndo : undefined}
+            type="button"
+            className="btn quiet"
+            onClick={() => undoDelete(id)}
+          >
             Undo
           </button>
         </p>
@@ -82,14 +97,20 @@ export function MyCards({ onReview }: { onReview: () => void }): React.JSX.Eleme
       <div className="browse">
         <CardList library={library} />
         {detail ? (
-          <CardView
-            key={detail.id}
-            card={detail}
-            onDeleted={(id) => {
-              markDeleted(id)
-              setSelected(undefined)
-            }}
-          />
+          // A card that breaks takes only its detail down; the list goes on.
+          <ErrorBoundary key={detail.id} what="This card">
+            <CardView
+              card={detail}
+              onDeleted={(id, expression) => {
+                markDeleted(id, expression)
+                setSelected(undefined)
+              }}
+              onSavedAsNew={(id) => {
+                setSelected(id)
+                setNotice({ text: 'Saved as a new card.' })
+              }}
+            />
+          </ErrorBoundary>
         ) : (
           <p className="faint pick">Pick a card to see it.</p>
         )}

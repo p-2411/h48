@@ -3,11 +3,13 @@
 // turns). Duet's turns in the language being learnt can show their English meaning (on request)
 // and, for languages not written in Latin letters, their romanisation. Memoised on plain values
 // (the thread is rebuilt each render), so a streaming voice turn doesn't re-render the others.
+import { motion } from 'motion/react'
 import { memo } from 'react'
 import { languageName, speaks, type Language } from '../../../shared/languages'
 import { Icon } from '../components/Icon'
 import { Inline } from '../components/Inline'
 import { Mascot } from '../components/Mascot'
+import { fadeUp } from '../components/motion'
 import type { Aid } from './aids'
 
 export type TurnData = {
@@ -18,7 +20,7 @@ export type TurnData = {
 }
 
 // The mascot in a message's picture: 420 x 190 drawn at 22 px wide, in a 30 px circle.
-export const AVATAR_SCALE = 22 / 420
+const AVATAR_SCALE = 22 / 420
 
 export const Turn = memo(function Turn({
   id,
@@ -31,7 +33,8 @@ export const Turn = memo(function Turn({
   meaning,
   reading,
   onReveal,
-  onHide
+  onHide,
+  enter = true
 }: TurnData & {
   /** Shows Duet's picture beside this turn (the last of a run of Duet's turns). */
   avatar?: boolean
@@ -41,13 +44,15 @@ export const Turn = memo(function Turn({
   reading?: Aid
   onReveal: (id: string, text: string) => void
   onHide: (id: string) => void
+  /** Rises in when it arrives (false: it is already on screen in another form). */
+  enter?: boolean
 }): React.JSX.Element {
   const canReveal = from === 'duet' && speaks(language, text)
   // After a failed meaning the button offers Meaning again, so one press tries again.
   const showing = revealed && !meaning?.error
   const spoken = via === 'voice'
   return (
-    <article className={`turn ${from}`} data-turn={id}>
+    <motion.article className={`turn ${from}`} data-turn={id} {...fadeUp(6)} initial={enter ? fadeUp(6).initial : false}>
       {from === 'duet' && (
         <div className="turn-avatar" aria-hidden="true">
           {avatar && <Mascot state="idle" scale={AVATAR_SCALE} opening={false} />}
@@ -89,6 +94,6 @@ export const Turn = memo(function Turn({
           </div>
         )}
       </div>
-    </article>
+    </motion.article>
   )
 })

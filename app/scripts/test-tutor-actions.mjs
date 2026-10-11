@@ -370,6 +370,18 @@ await test('12: a free conversation opened with the cards open to Duet can searc
   expect(closed.error === 'EXPLORE_REQUIRED', 'without it, the cards stay closed')
 })
 
+await test('13: a file that is not a backup is refused in plain words', async () => {
+  const { readBackup } = await jiti.import(join(root, 'cards/store.ts'))
+  let refused
+  try {
+    readBackup('this is not JSON {')
+  } catch (error) {
+    refused = error
+  }
+  expect(refused?.message === 'That file is not a Duet backup, or it is damaged.', `got ${refused?.message}`)
+  expect(readBackup('{"format":"duet-backup"}').format === 'duet-backup', 'JSON is read as it is (checked when restored)')
+})
+
 tutor.end(panel)
 database().close()
 rmSync(folder, { recursive: true, force: true })

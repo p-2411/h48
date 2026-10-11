@@ -70,13 +70,12 @@
 .pill { padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; color: var(--fg-2); }
 .pill:hover { background: var(--fill); color: #fff; }
 .input-row { display: flex; gap: 8px; align-items: flex-end; }
-.input-row textarea { flex: 1; resize: none; max-height: 120px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line);
+.input-row textarea { flex: 1; min-width: 0; overflow-wrap: anywhere; resize: none; max-height: 120px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.04); color: var(--fg); font: inherit; font-size: 14px; line-height: 1.4; field-sizing: content; }
 .input-row textarea::placeholder { color: var(--text-2); }
 .input-row textarea:focus { outline: none; border-color: rgba(255, 255, 255, 0.4); }
 .explain .line mark { background: rgba(255, 214, 10, 0.22); color: inherit; border-radius: 4px; padding: 0 2px; }
 .explain .lead { font-size: 15.5px; line-height: 1.55; }
-.explain .spacer, .composer .spacer { flex: 1; }
 .more-explain { display: flex; flex-direction: column; gap: 12px; }
 .more-explain[open] summary { margin-bottom: 10px; }
 .more-explain .part + .part { margin-top: 12px; }
@@ -84,4 +83,3 @@
 .notices { display: flex; flex-direction: column; gap: 10px; }
 .notices:empty { display: contents; }
 
-/* On a short panel the conversation needs the room more than the mascot does. */

@@ -1,8 +1,10 @@
 // Watching: the videos watched with Duet, the last first, each reopened in the browser where the
 // learner left off.
+import { useState } from 'react'
 import type { WatchingVideo } from '../../../shared/home'
+import { say } from '../components/errors'
 import { clock, when } from '../components/time'
-import { LoadState } from './LoadState'
+import { LoadState } from '../components/LoadState'
 import { useLoaded } from './useLoaded'
 
 const loadWatching = (): Promise<WatchingVideo[]> => window.duet.home.getWatching()
@@ -13,10 +15,21 @@ export function Watching(): React.JSX.Element {
     error,
     reload
   } = useLoaded(loadWatching, 'Could not load the videos you watched.')
+  // Continue that couldn't open the video, and why.
+  const [openError, setOpenError] = useState<string>()
+  const open = (key: string): void => {
+    setOpenError(undefined)
+    window.duet.home.openVideo(key).catch((cause) => setOpenError(say(cause, 'Could not open that video.')))
+  }
   return (
     <main className="home-page">
       <h1>Watching</h1>
       <LoadState loaded={!!videos} error={error} reload={reload} />
+      {openError && (
+        <p className="notice error" role="alert">
+          {openError}
+        </p>
+      )}
       {!videos ? null : videos.length === 0 ? (
         <p className="muted">
           Nothing here yet. Videos you watch with Duet show up here, so you can pick up where you
@@ -38,7 +51,7 @@ export function Watching(): React.JSX.Element {
                   type="button"
                   className="btn"
                   aria-label={`Continue ${title}`}
-                  onClick={() => window.duet.home.openVideo(video.key)}
+                  onClick={() => open(video.key)}
                 >
                   Continue
                 </button>

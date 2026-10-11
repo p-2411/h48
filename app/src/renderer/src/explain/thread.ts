@@ -10,7 +10,8 @@ export type ThreadBridge = {
   ask(text: string): void
   /** Turns of a voice conversation that just ended, to keep in the thread. */
   voiceTurns(turns: VoiceTurn[]): void
-  /** Voice is about to start: the conversation (with its tools) is this window's again. */
+  /** Voice is about to start: the conversation (with its tools) is this window's again. If this
+   * fails, voice starts anyway and says why it can't (the tutor refuses another window's voice). */
   claim(): Promise<unknown>
 }
 

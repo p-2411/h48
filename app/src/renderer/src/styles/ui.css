@@ -1,7 +1,10 @@
-/* Controls shared by the side windows and My cards: buttons, fields, sections, notices. */
+/* Controls shared by the side panel, the home base and the welcome window: buttons, fields,
+   sections, notices. (The strip, which lets clicks through to the video, has its own.) */
 html, body, #root { background: #101013; overflow: auto; }
 body { color: var(--fg); font-size: 14px; }
 h1, h2, h3, p { margin: 0; }
+/* Pushes what follows it in a row to the far end. */
+.spacer { flex: 1; }
 .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 9px; font-size: 13px; font-weight: 500; background: var(--fill); color: var(--fg); }
 .btn:hover { background: rgba(118, 118, 128, 0.36); }
 .btn.primary { background: #fff; color: #111; }

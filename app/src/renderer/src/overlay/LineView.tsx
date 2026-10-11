@@ -1,12 +1,15 @@
 // The line on the strip: the mixed line, whose words answer back. Hovering a word shows its popup:
 // the word, how it is read (in Latin letters, for Japanese and Korean), its English, a star for the
 // word and Explain for the line. Swapped-in words are written in their own script or their reading
-// (a setting). Hovering the strip shows the original and, unless turned off, the English under it.
+// (a setting). Hovering the strip shows, under it, the whole line in the language (unless turned off) and
+// the English.
+import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { joinTokens, mixedLine, pairReading, written } from '../../../shared/levels'
 import type { OverlayLine, OverlaySettings, Token, WordScript } from '../../../shared/types'
 import { hoverOn, JOBS, pairOf } from './words'
 import { Icon } from '../components/Icon'
+import { pop } from '../components/motion'
 
 // A word counts as looked at (for the watch log) once the pointer rests on it this long; passing
 // over words on the way somewhere doesn't count.
@@ -106,11 +109,15 @@ export function LineView({
     )
   return (
     <div className="line" onMouseLeave={leave}>
+      {/* A word's popup opens out of the word and goes back into it (each word its own). */}
+      <AnimatePresence>
       {hover && word && (
-        <div
+        <motion.div
+          key={hover.pair}
           className="popup"
           data-solid
-          style={{ '--x': `${hover.left}px` } as React.CSSProperties}
+          style={{ '--x': `${hover.left}px`, x: '-50%' } as React.CSSProperties}
+          {...pop()}
           onMouseEnter={() => setHover(lineHover)}
           onMouseLeave={leave}
         >
@@ -133,8 +140,9 @@ export function LineView({
               Explain line
             </button>
           </span>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
       <p className="mix" lang={settings.level === 5 ? settings.language : undefined}>
         <Tokens
           tokens={mixedLine(ready, settings.level)}
@@ -144,16 +152,14 @@ export function LineView({
         />
       </p>
       <div className="more">
-        {settings.level < 5 && (
+        {settings.level < 5 && settings.showFullLine && (
           <p className="source" lang={settings.language}>
             {joinTokens(ready.source)}
           </p>
         )}
-        {settings.showEnglish && (
-          <p className={`english${settings.guessFirst ? ' guess' : ''}`} tabIndex={0}>
-            {joinTokens(ready.english)}
-          </p>
-        )}
+        <p className={`english${settings.guessFirst ? ' guess' : ''}`} tabIndex={0}>
+          {joinTokens(ready.english)}
+        </p>
       </div>
     </div>
   )
