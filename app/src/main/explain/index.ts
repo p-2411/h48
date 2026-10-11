@@ -11,7 +11,8 @@
 //   explain:state        ← sent whenever it changes
 //   explain:retry        asks again for the same moment
 //   explain:replay       goes back to the moment in the video
-//   explain:ask          the learner's message in the text conversation
+//   explain:ask          the learner's message in the text conversation (the same message again,
+//                        after a failed reply, asks again without adding it twice)
 //   explain:voice-turns  turns of a voice conversation that just ended, to keep in the thread
 import { ipcMain } from 'electron'
 import type { ChatMessage, ExplainState, HearingNote } from '../../shared/explain'
@@ -96,12 +97,17 @@ export class Explain {
 
   /** The learner's message in the text conversation about the line on show. */
   private followUp(message: string): void {
-    const { moment, replying } = this.state
+    const { moment, replying, chat, chatError } = this.state
     if (!message || !moment || replying) return
     const request = this.request
+    // Try again after a failed reply sends the same message, which is already the last turn: it is
+    // asked again, not added twice.
+    const last = chat.at(-1)
+    const retry = chatError !== undefined && last?.from === 'learner' && last.via === 'text' && last.text === message
+    const before = retry ? chat.slice(0, -1) : chat
     // The tutor's context holds the conversation before this message; the message goes with it.
-    this.options.tutor.update({ conversation: this.state.chat })
-    this.update({ chat: [...this.state.chat, { from: 'learner', text: message, via: 'text' }], replying: true, chatError: undefined })
+    this.options.tutor.update({ conversation: before })
+    this.update({ chat: [...before, { from: 'learner', text: message, via: 'text' }], replying: true, chatError: undefined })
     this.options.tutor
       .reply(message)
       .then((reply) => {

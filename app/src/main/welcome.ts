@@ -12,7 +12,9 @@ import { createWelcomeWindow } from './windows/welcome'
 
 const PRIVACY = {
   accessibility: 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility',
-  audio: 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture'
+  audio: 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture',
+  // For voice in the side panel, when the microphone was refused.
+  microphone: 'x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone'
 }
 
 export class Welcome {
