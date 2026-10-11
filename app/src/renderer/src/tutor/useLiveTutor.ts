@@ -39,6 +39,9 @@ type LiveEvent = {
   }
 }
 
+const PLAYBACK_BLOCKED =
+  'Duet is speaking, but your system blocked playback. Press Hear Duet to retry.'
+
 function message(error: unknown): string {
   if (error instanceof DOMException && error.name === 'NotAllowedError')
     return 'Microphone access was denied. Allow it in system settings, then try again.'
@@ -76,8 +79,9 @@ export function useLiveTutor(moment?: Moment): {
   offerEnglishHelp: () => void
   enableExplore: () => void
 } {
-  // The language being learnt, by name, for the instructions sent during the session.
-  const name = languageName(moment?.language ?? 'ja')
+  // The language being learnt, by name, for the instructions sent during the session. A session
+  // can't start without a moment, so the neutral fallback is never sent.
+  const name = moment ? languageName(moment.language) : 'the language'
   const nameRef = useRef(name)
   useEffect(() => {
     nameRef.current = name
@@ -214,15 +218,11 @@ export function useLiveTutor(moment?: Moment): {
       .play()
       .then(() => {
         setSpeakerBlocked(false)
-        setError((current) =>
-          current?.startsWith('Duet is speaking, but Windows blocked playback')
-            ? undefined
-            : current
-        )
+        setError((current) => (current === PLAYBACK_BLOCKED ? undefined : current))
       })
       .catch(() => {
         setSpeakerBlocked(true)
-        setError('Duet is speaking, but Windows blocked playback. Press Hear Duet to retry.')
+        setError(PLAYBACK_BLOCKED)
       })
   }, [])
 
@@ -288,6 +288,12 @@ export function useLiveTutor(moment?: Moment): {
           window.clearTimeout(outputSettledTimer.current)
           setStatus('listening')
           appendTranscript('learner', event.delta ?? '', event.start_ms ?? 0, event.end_ms ?? 0)
+          // Tell main the learner just spoke, so the voice model can't confirm a save without them.
+          // The preload gains learnerTurn on another branch; until then this does nothing.
+          if (event.delta)
+            (
+              window.duet.tutor as typeof window.duet.tutor & { learnerTurn?: () => void }
+            ).learnerTurn?.()
           window.clearTimeout(replyFallbackTimer.current)
           replyFallbackTimer.current = window.setTimeout(() => {
             setStatus('working')
@@ -480,14 +486,14 @@ export function useLiveTutor(moment?: Moment): {
   }, [muted, send])
 
   const toggleTutorAudio = useCallback((): void => {
-    setTutorMuted((current) => {
-      if (speaker.current) {
-        speaker.current.muted = !current
-        if (current) playSpeaker()
-      }
-      return !current
-    })
-  }, [playSpeaker])
+    // Touch the audio element here, not in the state updater: React may run updaters twice.
+    const next = !tutorMuted
+    if (speaker.current) {
+      speaker.current.muted = next
+      if (!next) playSpeaker()
+    }
+    setTutorMuted(next)
+  }, [playSpeaker, tutorMuted])
 
   const retryTutorAudio = useCallback((): void => {
     if (speaker.current) speaker.current.muted = false

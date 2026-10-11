@@ -524,7 +524,7 @@ export function Tutor(): React.JSX.Element {
           {exploreEnabled ? 'History unlocked' : 'Explore further'}
         </button>
         {canStart && live.transcripts.length > 0 && (
-          <button type="button" className="primary compact" onClick={() => void live.start()}>
+          <button type="button" className="primary compact" onClick={() => void live.start(true)}>
             Reconnect
           </button>
         )}
