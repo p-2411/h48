@@ -1,5 +1,5 @@
 // The dark housing stays still; only its white inner surface flows sideways and refills.
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { reducedMotion } from '../components/motion'
 import type { LevelSwipe } from './useLevelSwipe'
 
@@ -8,12 +8,15 @@ const pose = (x: number, width: number): string =>
   `translate3d(${x}px, 0, 0) scaleX(${width})`
 // Numerals can travel with the liquid but always retain their original proportions.
 const digitPose = (x = 0): string => `translate3d(${Math.round(x)}px, 0, 0)`
+// A level as the circle writes it (Auto is A).
+const mark = (level: number): string => (level === 0 ? 'A' : String(level))
 
 export function LevelDial({ swipe }: { swipe: LevelSwipe }): React.JSX.Element {
   const surface = useRef<HTMLSpanElement>(null)
   const number = useRef<HTMLSpanElement>(null)
   const previous = useRef(swipe.level)
-  const [shown, setShown] = useState(swipe.level)
+  // The number is written here, with the motion that carries it (React leaves its text alone), so a
+  // new level can swap in mid-animation.
   const animations = useRef<Animation[]>([])
   const swap = useRef<number | undefined>(undefined)
   const pull = swipe.dragging ? swipe.position - swipe.level : 0
@@ -38,12 +41,15 @@ export function LevelDial({ swipe }: { swipe: LevelSwipe }): React.JSX.Element {
     const animate = (element: Element, frames: Keyframe[], duration: number, easing = SPRING): void => {
       animations.current.push(element.animate(frames, { duration, easing, fill: 'forwards' }))
     }
+    const show = (): void => {
+      digit.textContent = mark(swipe.level)
+    }
     if (reducedMotion()) {
-      setShown(swipe.level)
+      show()
       return
     }
     if (swipe.dragging) {
-      setShown(swipe.level)
+      show()
       const amount = Math.min(1, Math.abs(pull))
       const stretch = amount < 0.3 ? 1 + amount / 0.3 * 0.12 : 1.12 - (amount - 0.3) / 0.7 * 0.51
       const offset = amount < 0.3 ? amount / 0.3 : 1 + (amount - 0.3) / 0.7 * 4
@@ -63,14 +69,14 @@ export function LevelDial({ swipe }: { swipe: LevelSwipe }): React.JSX.Element {
         { transform: digitPose(direction * 4), opacity: 0 }
       ], 30, 'ease-in')
       swap.current = window.setTimeout(() => {
-        setShown(swipe.level)
+        show()
         animate(digit, [
           { transform: digitPose(direction * 3), opacity: 0 },
           { transform: digitPose(), opacity: 1 }
         ], 150)
       }, 30)
     } else {
-      setShown(swipe.level)
+      show()
       animate(disc, [{ transform: discFrom }, { transform: pose(0, 1) }], 200)
       animate(digit, [{ transform: digitFrom, opacity: opacityFrom }, { transform: digitPose(), opacity: 1 }], 160)
     }
@@ -83,6 +89,6 @@ export function LevelDial({ swipe }: { swipe: LevelSwipe }): React.JSX.Element {
 
   return <>
     <span ref={surface} className="level-dial-surface" aria-hidden="true" />
-    <span ref={number} className="level-dial-number" aria-hidden="true">{shown === 0 ? 'A' : shown}</span>
+    <span ref={number} className="level-dial-number" aria-hidden="true" />
   </>
 }
