@@ -57,7 +57,6 @@ export function LineView({
         <p className="mix plain" lang={settings.language}>
           {line.original}
         </p>
-        {line.state === 'pending' && <p className="hint">Translating…</p>}
       </div>
     )
   const word = hover && pairOf(ready, hover.pair)

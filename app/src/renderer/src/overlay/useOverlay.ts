@@ -1,5 +1,6 @@
 // The overlay's state, kept in step with the main process: settings, status, cards due, recent
-// lines and the line that belongs on screen now.
+// lines and the line to show. A line still being translated never replaces one that is ready: the
+// strip keeps the last translated line (through gaps between lines too) until the next is ready.
 import { useEffect, useMemo, useState } from 'react'
 import type { DueCounts, OverlayLine, OverlaySettings, OverlayStatus } from '../../../shared/types'
 
@@ -8,9 +9,10 @@ export type OverlayState = {
   status: OverlayStatus
   /** Cards to review now (due plus new still allowed today). */
   due: number
-  /** The line on screen, if any. */
+  /** The line to show: the one on screen once it is translated, until then the last one that was. */
   current?: OverlayLine
-  /** Caption text on screen that is not yet a finished line (only when reading the screen). */
+  /** Caption text on screen that is not yet a finished line (only when reading the screen, and
+   * only while there is no line to show). */
   building: string
 }
 
@@ -46,7 +48,13 @@ export function useOverlay(): OverlayState {
     return () => unsubscribe.forEach((stop) => stop())
   }, [])
 
-  const current = useMemo(() => lines.find((line) => line.id === currentId), [lines, currentId])
-  const building = status.source !== 'transcript' && live && live !== current?.original ? live : ''
+  const onScreen = useMemo(() => lines.find((line) => line.id === currentId), [lines, currentId])
+  // The last line shown translated, kept until the next one is ready; it belongs to its video.
+  const [shown, setShown] = useState<{ id: number; url?: string }>()
+  const ready = onScreen?.state === 'ready'
+  if (ready && (shown?.id !== onScreen.id || shown.url !== status.url)) setShown({ id: onScreen.id, url: status.url })
+  const kept = shown?.url === status.url ? lines.find((line) => line.id === shown?.id) : undefined
+  const current = ready ? onScreen : (kept ?? onScreen)
+  const building = !current && status.source !== 'transcript' ? live : ''
   return { settings, status, due: due.due + due.newAvailable, current, building }
 }
