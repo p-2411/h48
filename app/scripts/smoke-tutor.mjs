@@ -5,6 +5,7 @@ import { resolve } from 'node:path'
 import { backendInstructions, liveInstructions, momentContext } from '../src/main/tutor/prompts.ts'
 import { ENGLISH_HELP_DELAY_MS, LIVE_REPLY_FALLBACK_MS } from '../src/renderer/src/tutor/language.ts'
 import { LANGUAGE_CODES, languageModule, speaks } from '../src/shared/languages/index.ts'
+import { joinTokens } from '../src/shared/levels.ts'
 
 const now = Date.now()
 const outcomes = fsrs({ request_retention: 0.9 }).repeat(
@@ -62,10 +63,9 @@ for (const language of LANGUAGE_CODES) {
 }
 
 // The Meaning button shows for turns in the language, not for English ones.
-const SAMPLES = { ja: 'こんにちは、元気？', ko: '안녕하세요, 잘 지냈어요?', es: '¿Qué tal? Estoy muy bien, gracias.' }
 for (const language of LANGUAGE_CODES) {
-  if (!SAMPLES[language]) throw new Error(`No reveal-detection sample for ${language}.`)
-  if (!speaks(language, SAMPLES[language]) || speaks(language, 'Hello, how are you doing today?'))
+  const sample = joinTokens(languageModule(language).sample.source)
+  if (!speaks(language, sample) || speaks(language, 'Hello, how are you doing today?'))
     throw new Error(`${languageModule(language).name} reveal detection is not working.`)
 }
 if (ENGLISH_HELP_DELAY_MS < 5_000 || ENGLISH_HELP_DELAY_MS > 15_000)

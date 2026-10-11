@@ -10,6 +10,7 @@
     "lint": "eslint --cache .",
     "test:tutor": "jiti scripts/smoke-tutor.mjs",
     "test:overlay": "jiti scripts/test-overlay.mjs",
+    "test:languages": "jiti scripts/test-languages.mjs",
     "test:native-reader": "node scripts/smoke-native-reader.mjs",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
