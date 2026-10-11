@@ -15,7 +15,7 @@
 import { EventEmitter } from 'events'
 import { is } from '@electron-toolkit/utils'
 import type { Moment } from '../shared/moment'
-import type { OverlayLine, OverlayStatus, Script } from '../shared/types'
+import type { Language, OverlayLine, OverlayStatus, Script } from '../shared/types'
 import type { LineModel } from './ai'
 import type { CaptionSource, CaptionStatus } from './captions'
 import type { PlayerTime } from './clock'
@@ -29,8 +29,8 @@ import { sourceFor, type Source } from './sources'
 const SESSIONS_KEPT = 12
 // With no transcript and no captions on screen for this long, the video needs hearing.
 const NO_CAPTIONS_MS = 6000
-// How many recent caption lines decide the language of a line too short to tell.
-const RECENT_VERDICTS = 4
+// How many recent lines (read or heard) decide which language the video is in.
+const RECENT_LINES = 4
 
 /** The video open in the browser. */
 type Video = { source: Source; id: string; url: string; title?: string }
@@ -43,8 +43,8 @@ export class Watcher extends EventEmitter {
   private fetching?: AbortController
   private captionSeenAt = 0
   private hearing = false
-  // Whether recent caption lines were in the language being learnt, newest last.
-  private verdicts: boolean[] = []
+  // The language of recent lines (captions or heard), newest last.
+  private recentLanguages: (Language | 'other')[] = []
 
   constructor(
     captions: CaptionSource,
@@ -77,12 +77,12 @@ export class Watcher extends EventEmitter {
     // Captions in another language than the one being learnt (English captions on a Spanish video)
     // are ignored, and don't count as captions: the video may then be heard instead.
     captions.on('live', (line: { text: string }) => {
-      if (line.text && !this.inLanguage(line.text, false)) return
+      if (line.text && !this.inLanguage(line.text, 'captions', false)) return
       if (line.text) this.captionSeenAt = Date.now()
       if (!this.session?.hasTranscript) this.emit('live', line.text)
     })
     captions.on('line', (line: { text: string; at: number }) => {
-      if (!this.inLanguage(line.text, true)) return
+      if (!this.inLanguage(line.text, 'captions', true)) return
       // Where the video was when the caption appeared, so Replay can go back to it.
       const now = player.now()
       this.session?.add(line.text, line.at, now === undefined ? undefined : Math.max(0, now - (Date.now() - line.at) / 1000))
@@ -102,17 +102,29 @@ export class Watcher extends EventEmitter {
     return this.video && { site: this.video.source.site, id: this.video.id }
   }
 
-  /** Whether a caption is in the language being learnt. A line too short to tell goes with the
-   * recent lines; `remember` records the verdict (for finished lines, not text still growing). */
-  private inLanguage(text: string, remember: boolean): boolean {
+  /** Whether a line (read or heard) is in the language being learnt; lines that aren't are left
+   * out, and when most recent lines are in another language the overlay says so (and offers to
+   * switch, for a language Duet teaches). A line too short to tell goes with the recent lines.
+   * `remember` counts the line (finished lines, not caption text still growing). */
+  private inLanguage(text: string, from: 'captions' | 'audio', remember: boolean): boolean {
     const detected = detectLanguage(text)
-    const recent = this.verdicts.filter(Boolean).length * 2 >= this.verdicts.length
-    const matches = detected === undefined ? recent : detected === this.settings.current.language
     if (remember && detected !== undefined) {
-      this.verdicts = [...this.verdicts, matches].slice(-RECENT_VERDICTS)
-      if (this._status.captionsMatch !== matches) this.setStatus({ captionsMatch: matches })
+      this.recentLanguages = [...this.recentLanguages, detected].slice(-RECENT_LINES)
+      const other = this.mostlyOther()
+      const current = this._status.otherLanguage
+      if (other?.toString() !== current?.language || (other && current?.from !== from))
+        this.setStatus({ otherLanguage: other ? { language: other, from } : undefined })
     }
-    return matches
+    return detected === undefined ? this.mostlyOther() === undefined : detected === this.settings.current.language
+  }
+
+  /** The language most recent lines are in, when it isn't the one being learnt (two lines at least). */
+  private mostlyOther(): Language | 'other' | undefined {
+    const counts = new Map<Language | 'other', number>()
+    for (const language of this.recentLanguages) counts.set(language, (counts.get(language) ?? 0) + 1)
+    const [top, count] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0] ?? []
+    const mostly = top !== undefined && count! >= 2 && count! * 2 > this.recentLanguages.length
+    return mostly && top !== this.settings.current.language ? top : undefined
   }
 
   /** A video is open with neither a transcript nor captions on screen: Duet should hear it. */
@@ -130,6 +142,7 @@ export class Watcher extends EventEmitter {
   /** A line heard in the audio (when there are no captions): `at` is when it began, `start` where
    * the video was then. */
   addHeardLine(text: string, at: number, start?: number): void {
+    if (!this.inLanguage(text, 'audio', true)) return
     if (this.session && !this.session.hasTranscript) this.session.add(text, at, start)
   }
 
@@ -196,10 +209,10 @@ export class Watcher extends EventEmitter {
   private open(): void {
     this.fetching?.abort()
     // Give a new video (or language) time to show captions or find a transcript before hearing it,
-    // and judge its captions afresh.
+    // and judge its language afresh.
     this.captionSeenAt = Date.now()
-    this.verdicts = []
-    if (this._status.captionsMatch !== undefined) this.setStatus({ captionsMatch: undefined })
+    this.recentLanguages = []
+    if (this._status.otherLanguage) this.setStatus({ otherLanguage: undefined })
     this.session?.pause()
     const language = this.settings.current.language
     const video = this.video

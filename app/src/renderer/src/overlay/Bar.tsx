@@ -8,11 +8,17 @@ function statusText(status: OverlayStatus, language: Language): string {
   if (!status.trusted) return 'Needs Accessibility permission'
   if (!status.url) return `Open a YouTube or Netflix video with ${LANGUAGES[language]} captions`
   const browser = status.browser ?? 'your browser'
+  const other = status.otherLanguage
+  if (other) {
+    const name = LANGUAGES[language]
+    if (other.language === 'other')
+      return other.from === 'captions' ? `These captions aren’t in ${name}. Choose ${name} in the player` : `This video isn’t in ${name}`
+    return other.from === 'captions' ? `Captions are in ${LANGUAGES[other.language]}` : `This video is in ${LANGUAGES[other.language]}`
+  }
   // With the video's transcript, the captions in the player don't matter.
   if (status.source === 'transcript') return `Following the transcript in ${browser}`
   // No transcript and no captions: Duet transcribes what it hears.
   if (status.source === 'audio') return `Listening to the video in ${browser}`
-  if (status.captionsMatch === false && status.captions) return `These captions aren’t in ${LANGUAGES[language]}. Choose ${LANGUAGES[language]} in the player`
   if (status.available === false) return 'This video has no captions. Try another video'
   // Without captions, Duet starts listening to the video after a few seconds.
   if (!status.captions) return 'Turn on captions, or Duet will listen'
@@ -42,6 +48,11 @@ export function Bar({ settings, status, hasLine }: { settings: OverlaySettings; 
           <i aria-hidden="true" />
           {statusText(status, settings.language)}
         </span>
+        {status.otherLanguage && status.otherLanguage.language !== 'other' && (
+          <button type="button" className="action" onClick={() => window.duet.setLanguage(status.otherLanguage!.language as Language)}>
+            Switch to {status.otherLanguage.language.toUpperCase()}
+          </button>
+        )}
       </div>
       <div className="controls">
         <button type="button" className="action" disabled={!status.url} title="Every line of the video" onClick={() => window.duet.showScript()}>
