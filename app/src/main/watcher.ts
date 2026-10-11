@@ -10,11 +10,12 @@
 // session on screen does any work. Kept in memory for this run, most recently used last.
 //
 // Events: "status" (OverlayStatus), "line" (OverlayLine), "current" (line id or null), "live"
-// (caption text still being spoken).
+// (caption text still being spoken), "script" (every line: Script) and "script-line" (one line of
+// it added or changed).
 import { EventEmitter } from 'events'
 import { is } from '@electron-toolkit/utils'
 import type { Moment } from '../shared/moment'
-import type { OverlayLine, OverlayStatus } from '../shared/types'
+import type { OverlayLine, OverlayStatus, Script } from '../shared/types'
 import type { LineModel } from './ai'
 import type { CaptionSource, CaptionStatus } from './captions'
 import type { PlayerTime } from './clock'
@@ -85,6 +86,11 @@ export class Watcher extends EventEmitter {
     return this.video && { site: this.video.source.site, id: this.video.id }
   }
 
+  /** Every line of the video being watched, for the Script tab. */
+  get script(): Script {
+    return this.session?.script ?? { source: 'captions', lines: [] }
+  }
+
   /** The line on screen, if any. */
   get currentLine(): OverlayLine | undefined {
     return this.session?.currentLine
@@ -125,6 +131,8 @@ export class Watcher extends EventEmitter {
     const created = new LineSession(this.model, language)
     created.on('line', (line: OverlayLine) => created === this.session && this.emit('line', line))
     created.on('current', (id: number | null) => created === this.session && this.emit('current', id))
+    created.on('script', (script: Script) => created === this.session && this.emit('script', script))
+    created.on('changed', (line: OverlayLine) => created === this.session && this.emit('script-line', line))
     if (is.dev)
       created.on('line', (line: OverlayLine) =>
         console.log(
@@ -146,6 +154,7 @@ export class Watcher extends EventEmitter {
     const target = video ? this.sessionFor(`${video.source.site}:${video.id}|${language}`) : undefined
     this.session = target
     this.emit('current', null)
+    this.emit('script', this.script)
     if (!target || !video) return this.setStatus({ source: undefined })
     target.resume()
     this.setStatus({ source: target.hasTranscript ? 'transcript' : 'captions' })

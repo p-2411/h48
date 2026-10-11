@@ -10,7 +10,7 @@
 //   too many wait, the oldest are skipped so the overlay never falls behind the video.
 import { EventEmitter } from 'events'
 import type { MomentLine } from '../shared/moment'
-import type { Language, OverlayLine } from '../shared/types'
+import type { Language, OverlayLine, Script } from '../shared/types'
 import { ModelError, type HistoryEntry, type LineModel } from './ai'
 import type { TranscriptLine } from './sources'
 
@@ -58,6 +58,12 @@ export class LineSession extends EventEmitter {
     return this.model.name
   }
 
+  /** Every line, for the Script tab. "script" is emitted when the whole list changes, "changed" when
+   * one line is added or updated. */
+  get script(): Script {
+    return { source: this.transcript ? 'transcript' : 'captions', lines: this.lines }
+  }
+
   /** The line on screen, if any. */
   get currentLine(): OverlayLine | undefined {
     return this.current
@@ -90,6 +96,7 @@ export class LineSession extends EventEmitter {
     this.transcript = false
     this.position = 0
     this.show(undefined)
+    this.emit('script', this.script)
   }
 
   /** Replaces the session with a video's whole transcript; lines then follow setTime. */
@@ -104,6 +111,7 @@ export class LineSession extends EventEmitter {
       end: item.end,
       state: 'pending'
     }))
+    this.emit('script', this.script)
     void this.next()
   }
 
@@ -130,6 +138,7 @@ export class LineSession extends EventEmitter {
     if (this.transcript) return
     const line: OverlayLine = { id: nextId++, original, at, start, state: 'pending' }
     this.lines.push(line)
+    this.emit('changed', line)
     this.show(line)
     const waiting = this.lines.filter((item) => item.state === 'pending' && !this.inFlight.includes(item))
     for (const skipped of waiting.slice(0, -QUEUE_MAX))
@@ -224,6 +233,7 @@ export class LineSession extends EventEmitter {
 
   private update(line: OverlayLine, change: Partial<OverlayLine>): void {
     Object.assign(line, change)
+    this.emit('changed', line)
     // From a transcript, the overlay only needs the line on screen; the others are sent as they appear.
     if (!this.transcript || line === this.current) this.emit('line', line)
   }

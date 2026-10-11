@@ -3,7 +3,8 @@
 //   player.ts       the video's position and the one place that pauses and plays it
 //   watcher.ts      captions or transcript → processed lines, one session per video and language
 //   wait.ts         holds the video while the line on screen is still being translated
-//   explain/        Explain that: the explanation window and its request
+//   panel/          the side panel beside the video: Script and Explain tabs
+//   explain/        Explain that: the explanation and its request
 //   cards/          saved cards, My cards and FSRS review
 //   tutor/          the voice tutor's window and work
 //   sources/        each video site (YouTube, Netflix); store/ the local database
@@ -17,6 +18,7 @@ import { createModels, type Models } from './ai'
 import { CaptionSource } from './captions'
 import { Cards } from './cards'
 import { Explain } from './explain'
+import { Panel } from './panel'
 import { connectOverlay } from './ipc/overlay'
 import { Player } from './player'
 import { replay } from './replay'
@@ -69,7 +71,8 @@ app.whenReady().then(() => {
   const wait = new WaitForTranslation(player, settings, () => watcher.currentLine)
   const tutor = new Tutor(player)
   const replayMoment = (moment: Moment): void => replay(moment, { watcher, player })
-  const explain = new Explain(models?.explainer, replayMoment)
+  const panel = new Panel({ watcher, replay: replayMoment })
+  const explain = new Explain(models?.explainer, replayMoment, panel)
   const cards = new Cards({ replay: replayMoment, practise: (moment) => tutor.open(moment) })
   // Each opens on a line: the one on screen when no id is given.
   const openTutor = (lineId?: number): void => {
@@ -82,10 +85,12 @@ app.whenReady().then(() => {
   }
 
   const overlay = createOverlay()
-  connectOverlay(overlay, { watcher, settings, openTutor, explainLine })
+  const showScript = (): void => panel.show('script')
+  connectOverlay(overlay, { watcher, settings, openTutor, explainLine, showScript })
   tray = createTray({
     shortcut: SHORTCUT,
     toggleOverlay: () => toggleOverlay(overlay),
+    showScript,
     explainLine: () => explainLine(),
     openTutor: () => openTutor(),
     openCards: () => cards.open()

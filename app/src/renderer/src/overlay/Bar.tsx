@@ -40,6 +40,9 @@ export function Bar({ settings, status, hasLine }: { settings: OverlaySettings; 
         </span>
       </div>
       <div className="controls">
+        <button type="button" className="action" disabled={!status.url} title="Every line of the video" onClick={() => window.duet.showScript()}>
+          Script
+        </button>
         <button type="button" className="action" disabled={!hasLine} title="Explain the line on screen" onClick={() => window.duet.explainLine()}>
           Explain
         </button>

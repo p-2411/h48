@@ -1,42 +1,35 @@
-// Explain that, main-process side: opens the Explain window on a moment and asks the model about it.
-// Opening it on another line abandons the request for the old one, so an answer always belongs to
-// the line on show.
+// Explain that, main-process side: shows the side panel's Explain tab on a moment and asks the model
+// about it. Opening it on another line abandons the request for the old one, so an answer always
+// belongs to the line on show; closing the panel abandons it too.
 //
 // IPC (all "explain:*"; the page reaches them through window.duet.explain in src/preload/explain.ts):
 //   explain:get-state  → ExplainState
 //   explain:state      ← sent whenever it changes
 //   explain:retry      asks again for the same moment
 //   explain:replay     goes back to the moment in the video
-//   explain:close      closes the window
-import { ipcMain, type BrowserWindow } from 'electron'
+import { ipcMain } from 'electron'
 import type { ExplainState } from '../../shared/explain'
 import type { Moment } from '../../shared/moment'
 import { ModelError, type Explainer } from '../ai'
-import { createExplainWindow } from '../windows/explain'
+import type { Panel } from '../panel'
 
 export class Explain {
-  private window?: BrowserWindow
   private state: ExplainState = { loading: false }
   private request?: AbortController
 
   constructor(
     private explainer: Explainer | undefined,
-    private replay: (moment: Moment) => void
+    private replay: (moment: Moment) => void,
+    private panel: Panel
   ) {
     ipcMain.handle('explain:get-state', () => this.state)
     ipcMain.on('explain:retry', () => this.state.moment && this.ask(this.state.moment))
     ipcMain.on('explain:replay', () => this.state.moment && this.replay(this.state.moment))
-    ipcMain.on('explain:close', () => this.window?.close())
+    panel.on('closed', () => this.request?.abort())
   }
 
   open(moment: Moment): void {
-    if (!this.window || this.window.isDestroyed()) {
-      this.window = createExplainWindow()
-      this.window.on('closed', () => {
-        this.request?.abort()
-        this.window = undefined
-      })
-    } else this.window.show()
+    this.panel.show('explain')
     this.ask(moment)
   }
 
@@ -57,6 +50,6 @@ export class Explain {
 
   private set(state: ExplainState): void {
     this.state = state
-    if (this.window && !this.window.isDestroyed()) this.window.webContents.send('explain:state', state)
+    this.panel.send('explain:state', state)
   }
 }

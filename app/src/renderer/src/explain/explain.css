@@ -1,7 +1,4 @@
-/* The Explain window. */
-.window { min-height: 100%; display: flex; flex-direction: column; gap: 18px; padding: 20px; }
-.window-head { display: flex; align-items: center; justify-content: space-between; }
-.window-head h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+/* The Explain tab. */
 .explain { display: flex; flex-direction: column; gap: 16px; }
 .explain .line { font-size: 22px; line-height: 1.35; }
 .explain .part { display: flex; flex-direction: column; gap: 6px; line-height: 1.5; }

@@ -51,6 +51,16 @@ export type OverlayLine = {
   error?: string
 }
 
+/** The side panel's tabs. */
+export type PanelTab = 'script' | 'explain'
+
+/** Every line of the video so far (or the whole transcript), for the Script tab. */
+export type Script = {
+  /** transcript: the whole video, timed; captions: the lines read from the screen so far. */
+  source: 'transcript' | 'captions'
+  lines: OverlayLine[]
+}
+
 export type OverlayStatus = {
   /** The caption reader is running with the permission it needs. */
   trusted: boolean

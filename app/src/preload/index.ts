@@ -4,9 +4,10 @@ import { contextBridge } from 'electron'
 import { cardsApi } from './cards'
 import { explainApi } from './explain'
 import { overlayApi } from './overlay'
+import { panelApi } from './panel'
 import { tutorApi } from './tutor'
 
-const duet = { ...overlayApi, tutor: tutorApi, explain: explainApi, cards: cardsApi }
+const duet = { ...overlayApi, tutor: tutorApi, panel: panelApi, explain: explainApi, cards: cardsApi }
 
 export type DuetApi = typeof duet
 

@@ -1,0 +1,14 @@
+/* The side panel: a fixed header with tabs, and the tab below it scrolling on its own. */
+html, body, #root { height: 100%; overflow: hidden; }
+.window { height: 100%; display: flex; flex-direction: column; gap: 14px; padding: 16px 16px 0; }
+.window > :last-child { flex: 1; min-height: 0; overflow: auto; padding-bottom: 20px; }
+.window-head { display: flex; align-items: center; justify-content: space-between; }
+.script { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.script-row { width: 100%; display: grid; grid-template-columns: 40px 1fr; gap: 10px; padding: 9px 10px; border-radius: 10px; text-align: left; }
+.script-row:hover { background: rgba(255, 255, 255, 0.04); }
+.script-row.is-now { background: var(--fill); }
+.script-row.is-past { opacity: 0.6; }
+.script-row .time { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; padding-top: 3px; }
+.script-row.is-now .time { color: #fff; font-weight: 600; }
+.script-row .original { display: block; font-size: 15px; line-height: 1.4; }
+.script-row .english { display: block; margin-top: 2px; font-size: 13px; line-height: 1.4; color: var(--text-2); }

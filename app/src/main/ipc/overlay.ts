@@ -3,6 +3,7 @@
 //
 //   duet:get-state     → { settings, status }
 //   duet:set-*         settings changes
+//   duet:script        opens the side panel on the Script tab
 //   duet:explain       explains a line (the one on screen when no id is given)
 //   duet:open-tutor    opens the tutor on a line (the one on screen when no id is given)
 //   duet:hide          hides the overlay
@@ -18,8 +19,15 @@ export function connectOverlay(
     watcher,
     settings,
     openTutor,
-    explainLine
-  }: { watcher: Watcher; settings: Settings; openTutor: (lineId?: number) => void; explainLine: (lineId?: number) => void }
+    explainLine,
+    showScript
+  }: {
+    watcher: Watcher
+    settings: Settings
+    openTutor: (lineId?: number) => void
+    explainLine: (lineId?: number) => void
+    showScript: () => void
+  }
 ): void {
   const send = (channel: string, payload: unknown): void => {
     if (!overlay.isDestroyed()) overlay.webContents.send(channel, payload)
@@ -37,5 +45,6 @@ export function connectOverlay(
   ipcMain.on('duet:set-wait', (_, waitForTranslation: boolean) => settings.update({ waitForTranslation }))
   ipcMain.on('duet:open-tutor', (_, lineId?: number) => openTutor(lineId))
   ipcMain.on('duet:explain', (_, lineId?: number) => explainLine(lineId))
+  ipcMain.on('duet:script', () => showScript())
   ipcMain.on('duet:hide', () => overlay.hide())
 }

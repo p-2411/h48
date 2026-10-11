@@ -1,34 +1,33 @@
-// Save card: an editable preview filled from the explanation, then Saved with a short-lived Undo.
-// Saving the same card twice finds the first instead, unless the learner asks for another.
-// Shown with a key per moment, so another line starts over.
+// Save card: one click saves the card Duet wrote from the explanation; nothing to fill in. It can be
+// edited later in My cards. Saved shows a short-lived Undo; the same card saved twice is found
+// instead of saved again. Shown with a key per moment, so another line starts over.
 import { useEffect, useState } from 'react'
-import type { Card, CardContent } from '../../../shared/cards'
+import type { Card, CardDraft } from '../../../shared/cards'
 import type { Explanation } from '../../../shared/explain'
 import type { Moment } from '../../../shared/moment'
-import { CardForm } from '../components/CardForm'
-import { cardReady } from '../components/cards'
 
 const UNDO_MS = 8000
 
-function draftOf(explanation: Explanation): CardContent {
+function draftOf(moment: Moment, explanation: Explanation): CardDraft {
   const { card, alternative } = explanation
   return {
     type: 'understand',
     expression: card.expression,
     meaning: card.meaning,
     target: card.target,
-    situation: card.situation,
-    alternative: alternative ? `${alternative.expression} — ${alternative.changes}` : undefined
+    situation: card.situation || undefined,
+    alternative: alternative ? `${alternative.expression} — ${alternative.changes}` : undefined,
+    language: moment.language,
+    source: { kind: 'video', moment },
+    explanation
   }
 }
 
-type Step = { name: 'closed' } | { name: 'editing' } | { name: 'saved'; card: Card; undo: boolean } | { name: 'duplicate'; card: Card }
+type Step = { name: 'ready' } | { name: 'saving' } | { name: 'saved'; card: Card; undo: boolean } | { name: 'duplicate'; card: Card }
 
 export function SaveCard({ moment, explanation }: { moment: Moment; explanation: Explanation }): React.JSX.Element {
-  const [step, setStep] = useState<Step>({ name: 'closed' })
-  const [content, setContent] = useState(() => draftOf(explanation))
+  const [step, setStep] = useState<Step>({ name: 'ready' })
   const [error, setError] = useState<string>()
-  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (step.name !== 'saved' || !step.undo) return
@@ -36,73 +35,45 @@ export function SaveCard({ moment, explanation }: { moment: Moment; explanation:
     return () => clearTimeout(timer)
   }, [step])
 
-  const save = async (again = false): Promise<void> => {
-    if (saving) return
-    setSaving(true)
+  const save = async (): Promise<void> => {
+    setStep({ name: 'saving' })
     setError(undefined)
     try {
-      const result = await window.duet.cards.save({ ...content, language: moment.language, source: { kind: 'video', moment }, explanation }, again)
+      const result = await window.duet.cards.save(draftOf(moment, explanation))
       setStep('saved' in result ? { name: 'saved', card: result.saved, undo: true } : { name: 'duplicate', card: result.duplicate })
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'Could not save the card.')
-    } finally {
-      setSaving(false)
+      setStep({ name: 'ready' })
     }
   }
 
-  if (step.name === 'closed')
+  if (step.name === 'saved' || step.name === 'duplicate')
     return (
-      <button type="button" className="btn" onClick={() => setStep({ name: 'editing' })}>
-        Save card
-      </button>
-    )
-  if (step.name === 'saved')
-    return (
-      <div className="notice row">
-        <span>Saved.</span>
+      <span className="row">
+        <span className="muted">{step.name === 'saved' ? 'Saved' : 'Already saved'}</span>
         <button type="button" className="btn quiet" onClick={() => window.duet.cards.open(step.card.id)}>
           Open card
         </button>
-        {step.undo && (
+        {step.name === 'saved' && step.undo && (
           <button
             type="button"
             className="btn quiet"
             onClick={async () => {
               await window.duet.cards.remove(step.card.id)
-              setStep({ name: 'editing' })
+              setStep({ name: 'ready' })
             }}
           >
             Undo
           </button>
         )}
-      </div>
-    )
-  if (step.name === 'duplicate')
-    return (
-      <div className="notice row">
-        <span>You already saved this card.</span>
-        <button type="button" className="btn quiet" onClick={() => window.duet.cards.open(step.card.id)}>
-          Open it
-        </button>
-        <button type="button" className="btn quiet" disabled={saving} onClick={() => save(true)}>
-          Save another
-        </button>
-      </div>
+      </span>
     )
   return (
-    <section className="card-box" aria-label="Save card">
-      <span className="label">Save card</span>
-      <CardForm value={content} onChange={setContent} lang={moment.language}>
-        {error && <p className="notice error">{error}</p>}
-        <div className="row">
-          <button type="button" className="btn primary" disabled={!cardReady(content) || saving} onClick={() => save()}>
-            Save
-          </button>
-          <button type="button" className="btn quiet" onClick={() => setStep({ name: 'closed' })}>
-            Cancel
-          </button>
-        </div>
-      </CardForm>
-    </section>
+    <>
+      <button type="button" className="btn" disabled={step.name === 'saving'} onClick={save}>
+        Save card
+      </button>
+      {error && <span className="notice error">{error}</span>}
+    </>
   )
 }
