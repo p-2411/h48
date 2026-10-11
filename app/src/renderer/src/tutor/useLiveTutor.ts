@@ -198,9 +198,11 @@ export function useLiveTutor(moment?: Moment): {
         if (last && last.role === role && startMs - last.endMs < 1_000) {
           return [...current.slice(0, -1), { ...last, text: last.text + delta, endMs }]
         }
+        // Unique across sessions, so a new conversation's turn never inherits an old turn's
+        // revealed meaning or pronunciation.
         return [
           ...current,
-          { id: `${role}-${startMs}-${current.length}`, role, text: delta, startMs, endMs }
+          { id: `${role}-${crypto.randomUUID()}`, role, text: delta, startMs, endMs }
         ]
       })
     },
