@@ -9,7 +9,8 @@ import { exclusive } from './exclusive'
 // How long Duet looks pleased after a card is saved or a review counted.
 const CHEER_MS = 2_000
 
-export function useCardActions(): {
+/** `explored`: whether the cards start open to Duet (they do in Talk). */
+export function useCardActions(explored = false): {
   card?: TutorCard
   pending?: PendingTutorAction
   result?: TutorActionResult
@@ -28,7 +29,7 @@ export function useCardActions(): {
   const [pending, setPending] = useState<PendingTutorAction>()
   const [result, setResult] = useState<TutorActionResult>()
   const [actionError, setActionError] = useState<string>()
-  const [explore, setExplore] = useState(false)
+  const [explore, setExplore] = useState(explored)
   const [cheering, setCheering] = useState(false)
   const [busy, setBusy] = useState(false)
   const [run] = useState(() => exclusive(setBusy))

@@ -2,6 +2,7 @@ import '../styles/base.css'
 import '../styles/ui.css'
 import '../cards/cards.css'
 import '../review/review.css'
+import '../explain/explain.css'
 import './home.css'
 
 import { StrictMode } from 'react'

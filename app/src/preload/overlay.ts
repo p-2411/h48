@@ -2,12 +2,14 @@
 // updates, change settings.
 import { ipcRenderer } from 'electron'
 import type { SaveResult } from '../shared/cards'
+import type { Moment } from '../shared/moment'
 import type {
   Language,
   Level,
   OverlayLine,
   OverlaySettings,
-  OverlayStatus
+  OverlayStatus,
+  ShortcutKind
 } from '../shared/types'
 import { invoke } from './invoke'
 import { subscribe } from './subscribe'
@@ -52,8 +54,19 @@ export const overlayApi = {
   /** Dragging the subtitles: the window follows the pointer between start and end. */
   drag: (phase: 'start' | 'end') => ipcRenderer.send('duet:drag', phase),
   /** Takes the keyboard (the overlay normally leaves it to the video), to record new keys. */
-  /** New show/hide keys (an Electron accelerator); resolves with why not, if they can't be had. */
-  setShortcut: (keys: string) => invoke<string | undefined>('duet:set-shortcut', keys),
+  /** New keys (an Electron accelerator), to show or hide Duet or to talk to it; resolves with why
+   * not, if they can't be had. */
+  setShortcut: (keys: string, kind: ShortcutKind = 'show') => invoke<string | undefined>('duet:set-shortcut', keys, kind),
+  /** Talking to Duet from the strip (src/main/talk/strip.ts). */
+  talkHere: {
+    /** Opens the conversation: about the line on screen (its moment), or free when there is none. */
+    start: () => invoke<{ moment?: Moment; language: Language }>('duet:talk'),
+    /** Goes on in writing with the turns so far: Explain on the same line, or Talk in the home base. */
+    toText: (turns: { from: 'learner' | 'duet'; text: string }[]) => invoke<void>('duet:talk-to-text', turns),
+    end: () => invoke<void>('duet:talk-end'),
+    /** The talk keys were pressed. */
+    onKeys: (listener: () => void) => subscribe('duet:talk-keys', listener)
+  },
   /** The daily reminder's time ("19:30"), or null for none. */
   setReminder: (time: string | null) => invoke<void>('duet:set-reminder', time),
   /** Opens the home base's Settings. */

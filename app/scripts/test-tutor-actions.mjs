@@ -338,6 +338,38 @@ await test('10: a conversation belongs to the window that opened it', async () =
   expect(ended?.message === 'UNTRUSTED_TUTOR_CALLER', 'an ended conversation has no window')
 })
 
+await test('11: a window that lost the conversation gets it back, on its own line', async () => {
+  // The panel talks about one line; then the strip opens the tutor on another.
+  const panelLine = moment('パネルの行')
+  const stripPage = {}
+  const strip = { owns: (sender) => sender === stripPage, send: nothing }
+  const panelThread = tutor.forWindow(panel, () => ({ moment: panelLine }))
+  tutor.open({ moment: panelLine }, panel)
+  panelThread.update({ conversation: [{ from: 'learner', text: 'こんにちは', via: 'text' }] })
+  tutor.open({ moment: moment('ストリップの行') }, strip)
+  // The panel's late news doesn't reach the strip's conversation.
+  panelThread.update({ conversation: [{ from: 'learner', text: 'まだパネル', via: 'text' }] })
+  tutor.update(panel, { explanation: { meaning: 'not the strip line' } })
+  const onStrip = JSON.parse((await electron.handlers.get('tutor:execute-tool')({ sender: stripPage }, { callId: 'c', name: 'get_current_moment', arguments: {} })).output)
+  expect(onStrip.selectedLine === 'ストリップの行', `the strip's conversation keeps its line, not ${onStrip.selectedLine}`)
+  // The panel's next message takes the tutor back, on the panel's line, with the thread so far.
+  const key = process.env.OPENAI_API_KEY
+  delete process.env.OPENAI_API_KEY
+  await panelThread.reply('もう一度').catch(() => {})
+  if (key) process.env.OPENAI_API_KEY = key
+  const back = await tool('get_current_moment')
+  expect(back.selectedLine === 'パネルの行', `the panel's own line again, not ${back.selectedLine}`)
+})
+
+await test('12: a free conversation opened with the cards open to Duet can search them', async () => {
+  tutor.open({ kind: 'free', language: 'ja', level: 3, exploreEnabled: true }, panel)
+  const found = await tool('search_cards', { query: '表現' })
+  expect(found.ok !== false && found.error !== 'EXPLORE_REQUIRED', `search_cards gave ${JSON.stringify(found)}`)
+  tutor.open({ kind: 'free', language: 'ja', level: 3 }, panel)
+  const closed = await tool('search_cards', { query: '表現' })
+  expect(closed.error === 'EXPLORE_REQUIRED', 'without it, the cards stay closed')
+})
+
 tutor.end(panel)
 database().close()
 rmSync(folder, { recursive: true, force: true })

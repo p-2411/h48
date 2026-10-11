@@ -1,17 +1,18 @@
-// The conversation about a line, below its explanation, in text or voice. It is one thread: typed
+// A conversation with Duet, in text or voice: about a line below its explanation (Explain), or free
+// (Talk in the home base); `thread` says which one it is in the main process. It is one thread: typed
 // messages go to Duet in text; the mic switches to a voice conversation with the same context, and
 // when it ends its turns join the thread, so text picks up where voice left off. Card previews
 // (save, review) wait for the learner's click or answer; "Use my cards" opens saved cards to Duet.
-// Rendered with the line as its key, so a new line starts a new conversation (and a new voice hook).
-// The composer renders into `dock`, the tab's slot below its scrolling part.
+// Explain renders it with the line as its key, so a new line starts a new conversation (and a new
+// voice hook). The composer renders into `dock`, the page's slot below its scrolling part.
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { ExplainState } from '../../../shared/explain'
-import type { Moment } from '../../../shared/moment'
+import type { Language } from '../../../shared/languages'
 import { say } from '../components/errors'
 import { Mascot, type MascotState } from '../components/Mascot'
 import { CardPreview, OpenedCard } from './CardPreview'
 import { Composer } from './Composer'
+import type { ConversationState, ThreadBridge } from './thread'
 import { Turn, type TurnData } from './Turn'
 import { useCardActions } from './useCardActions'
 import { useMascotFlight } from './useMascotFlight'
@@ -54,22 +55,26 @@ function useCorrection(turnId: string | undefined): boolean {
 
 export function Conversation({
   state,
-  moment,
-  dock
+  language,
+  thread: bridge,
+  dock,
+  free = false
 }: {
-  state: ExplainState
-  moment: Moment
+  state: ConversationState
+  language: Language
+  thread: ThreadBridge
   dock: HTMLElement | null
+  /** A free conversation (Talk): no line, and the cards open to Duet from the start. */
+  free?: boolean
 }): React.JSX.Element {
-  const live = useLiveTutor(moment)
-  const { language } = moment
+  const live = useLiveTutor(language)
   const [draft, setDraft] = useState('')
   const box = useRef<HTMLTextAreaElement>(null)
   const end = useRef<HTMLDivElement>(null)
   const section = useRef<HTMLElement>(null)
   const dockMascot = useRef<HTMLDivElement>(null)
-  const cards = useCardActions()
-  const endButton = useVoiceHandoff(live, box)
+  const cards = useCardActions(free)
+  const endButton = useVoiceHandoff(live, box, bridge.voiceTurns)
   const voiceOn = isVoiceOn(live.status)
 
   // The thread: what main keeps, then the voice conversation under way.
@@ -192,7 +197,7 @@ export function Conversation({
               <button
                 type="button"
                 className="btn quiet"
-                onClick={() => window.duet.explain.ask(unanswered)}
+                onClick={() => bridge.ask(unanswered)}
               >
                 Try again
               </button>
@@ -213,7 +218,7 @@ export function Conversation({
                     Open System Settings
                   </button>
                 )}
-                <button type="button" className="btn quiet" onClick={() => void live.start()}>
+                <button type="button" className="btn quiet" onClick={() => void bridge.claim().then(() => live.start())}>
                   Try voice again
                 </button>
               </>
@@ -230,7 +235,7 @@ export function Conversation({
               <Mascot
                 state={mascotState(
                   live.status,
-                  !!state.replying || state.loading,
+                  !!state.replying || !!state.loading,
                   cards.cheering,
                   correcting
                 )}
@@ -248,7 +253,9 @@ export function Conversation({
                 replying={!!state.replying}
                 explore={cards.explore}
                 onOpenCards={cards.openCards}
-                onStartVoice={() => void live.start()}
+                onStartVoice={() => void bridge.claim().then(() => live.start())}
+                onSend={bridge.ask}
+                free={free}
               />
             )}
           </div>,

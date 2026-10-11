@@ -7,7 +7,8 @@
 //   panel/          the side panel beside the video: Script and Explain tabs
 //   explain/        Explain that: the side panel's Explain tab and its request
 //   cards/          saved cards, My cards and FSRS review
-//   tutor/          the conversation about a line (text and voice) and its card tools
+//   tutor/          the conversation with Duet (text and voice), its thread and its card tools
+//   talk/           Talk in the home base: a free conversation with Duet
 //   home/           the home base window: Today, Watching, My cards, Settings
 //   watchlog/       what was watched with Duet (videos, lines, words, days) and the streak
 //   daily/          the daily session: the cards, a line said back, one challenge; the reminder
@@ -49,6 +50,8 @@ import { Watcher } from './watcher'
 import { WatchLog } from './watchlog'
 import { connectWatchLog } from './watchlog/connect'
 import { Home, openDuet } from './home'
+import { Talk } from './talk'
+import { StripTalk } from './talk/strip'
 import { DailySession } from './daily'
 import { openAIQuiz } from './challenges/quiz'
 import { Reminder } from './daily/reminder'
@@ -163,6 +166,8 @@ app.whenReady().then(() => {
   app.on('before-quit', () => logLink.finish())
   // The home base: opened from the Dock, the menu bar, the strip's ⚙ and when Duet starts.
   const home = new Home({ log: watchLog, cards, settings, openWelcome: () => welcome.open(true) })
+  // Talk in the home base: a free conversation with Duet, in the language being learnt.
+  const talk = new Talk({ tutor, settings, window: home })
   // The text model's quiz (what did they mean?), for the daily session and checkpoints.
   const quiz = openAIQuiz()
   // The daily session in the home base's Today: reviews, a line said back, one challenge.
@@ -173,6 +178,11 @@ app.whenReady().then(() => {
     quiz,
     owns: (sender) => home.owns(sender)
   })
+  // The strip's window, for the features that talk to its page.
+  const strip = {
+    owns: (sender: Electron.WebContents) => isFrom(overlay, sender),
+    send: (channel: string, value: unknown) => overlay.isDestroyed() || overlay.webContents.send(channel, value)
+  }
   // Checkpoints: a glow on the strip at a pause or where a scene ends; one challenge when clicked.
   const checkpoints = new Checkpoints({
     watcher,
@@ -183,10 +193,7 @@ app.whenReady().then(() => {
     voice,
     quiz,
     scenes: openAISceneJudge(),
-    overlay: {
-      owns: (sender) => isFrom(overlay, sender),
-      send: (channel, value) => overlay.isDestroyed() || overlay.webContents.send(channel, value)
-    }
+    overlay: strip
   })
   // The strip's page reloaded or crashed: a checkpoint it had open goes with it.
   overlay.webContents.on('did-start-loading', () => checkpoints.reset())
@@ -206,8 +213,17 @@ app.whenReady().then(() => {
   settings.on('change', (current, changed) => {
     if ('reminder' in changed) reminder.set(current.reminder)
   })
-  // Shows or hides the overlay from anywhere; the keys are a setting (Settings, in the home base).
-  const shortcut = new Shortcut(settings.current.shortcut, () => toggleOverlay(overlay))
+  // Talking to Duet from the strip: its mascot button, or the talk keys.
+  new StripTalk({ watcher, settings, tutor, explain, talk, openTalk: () => home.open('talk'), window: strip })
+  // Global keys, a setting each (Settings, in the home base): one shows or hides the overlay, the
+  // other starts talking to Duet (showing the strip first, if it was hidden).
+  const shortcuts = {
+    show: new Shortcut(settings.current.shortcut, () => toggleOverlay(overlay)),
+    talk: new Shortcut(settings.current.talkShortcut, () => {
+      if (!overlay.isVisible()) overlay.showInactive()
+      strip.send('duet:talk-keys', null)
+    })
+  }
   const showScript = (): void => panel.show('script')
   const { sendFit } = connectOverlay(overlay, {
     watcher,
@@ -227,9 +243,11 @@ app.whenReady().then(() => {
       const moment = watcher.moment(lineId)
       if (moment) replayMoment(moment)
     },
-    setShortcut: (keys) => {
-      const error = shortcut.change(keys)
-      if (!error) settings.update({ shortcut: keys })
+    setShortcut: (keys, kind) => {
+      const other = kind === 'talk' ? settings.current.shortcut : settings.current.talkShortcut
+      if (keys === other) return 'Duet already uses those keys for something else. Try a different combination.'
+      const error = shortcuts[kind].change(keys)
+      if (!error) settings.update(kind === 'talk' ? { talkShortcut: keys } : { shortcut: keys })
       return error
     },
     // Pressing play for the learner counts as their own play, so Wait lets this line go.

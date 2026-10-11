@@ -13,7 +13,7 @@ const SAID: Record<string, string> = {
   STALE_CARD_REVISION: 'That card changed in the meantime. Try again.',
   STALE_UNDO: 'That review can no longer be undone.',
   MOMENT_NOT_FOUND: 'Open Explain on a line first.',
-  UNTRUSTED_TUTOR_CALLER: 'Open Explain on a line first.',
+  UNTRUSTED_TUTOR_CALLER: 'This conversation moved to another Duet window. Start it again here.',
   INVALID_SDP_OFFER: 'Voice could not connect. Try again.'
 }
 

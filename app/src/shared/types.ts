@@ -95,6 +95,9 @@ export type OverlayStatus = {
   modelError?: string
 }
 
+/** Which of Duet's global keys: show or hide the strip, or talk to Duet. */
+export type ShortcutKind = 'show' | 'talk'
+
 export type OverlaySettings = {
   language: Language
   level: Level
@@ -107,6 +110,8 @@ export type OverlaySettings = {
   onboarded: boolean
   /** The keys that show and hide Duet anywhere, as an Electron accelerator ("Alt+Shift+D"). */
   shortcut: string
+  /** The keys that start talking to Duet about the line on screen ("Alt+Shift+T"). */
+  talkShortcut: string
   /** Where the learner dragged the subtitles to (the overlay window's top-left), if anywhere. */
   overlayPosition?: { x: number; y: number }
   /** Where the side panel was last left, and its size. */
@@ -129,6 +134,7 @@ export const DEFAULT_SETTINGS: OverlaySettings = {
   pauseForHelp: true,
   onboarded: false,
   shortcut: 'Alt+Shift+D',
+  talkShortcut: 'Alt+Shift+T',
   version: 2
 }
 

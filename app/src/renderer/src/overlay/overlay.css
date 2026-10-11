@@ -1,7 +1,7 @@
 /* The overlay: a subtitle-sized strip at the bottom of a transparent window. The window's empty
    space lets clicks through to the video (see useSolid); the strip, its actions, the word popup
    and the settings sit above it when reached for. */
-.stage { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 20px 6px; }
+.stage { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 64px 6px; }
 .dock { position: relative; max-width: 100%; display: flex; flex-direction: column; align-items: center; }
 
 /* Duet's surfaces: nearly opaque dark glass, as macOS draws its HUDs. */
@@ -135,3 +135,35 @@
 }
 /* An open checkpoint, just above the strip (where a word's card opens), over the actions row. */
 .checkpoint { position: absolute; z-index: 5; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); width: min(440px, 100%); max-height: 440px; overflow-y: auto; }
+/* Talking to Duet: the mascot button left of the strip (quiet until reached for), and while talking
+   the mascot just above the subtitles, with small subtitles of what it heard and said. */
+/* The button hangs just left of the strip, outside it, so the actions row and the cards above
+   still line up with the subtitles. The stage's side padding (64px) leaves it room. */
+.strip-row { position: relative; max-width: 100%; }
+.talk-button {
+  position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(30, 30, 32, 0.92); border: 0.5px solid rgba(255, 255, 255, 0.1); color: var(--fg-2);
+  opacity: 0.55; transition: opacity 0.2s var(--ease), color 0.2s var(--ease);
+}
+.dock:hover .talk-button, .talk-button:focus-visible, .talk-button.on { opacity: 1; color: var(--fg); }
+.talk-button:disabled { opacity: 0.25; }
+.talk-button svg { width: 20px; height: 20px; }
+.talk-bubble {
+  /* Above the actions row (Explain, star, replay, ⚙), which shows on hover. */
+  position: absolute; z-index: 5; bottom: calc(100% + 48px); left: 50%; transform: translateX(-50%); width: min(420px, 100%);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; color: #fff; text-align: center;
+  animation: talk-pop 0.25s var(--ease);
+}
+/* No card: the text reads over the video by its shadow. */
+.talk-lines, .talk-actions { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.6); }
+.talk-lines { display: flex; flex-direction: column; gap: 1px; font-size: 13px; line-height: 1.35; max-width: 100%; }
+.talk-lines p { margin: 0; overflow-wrap: anywhere; }
+.talk-heard { color: rgba(255, 255, 255, 0.72); }
+.talk-said { font-size: 14.5px; }
+.talk-wait { color: rgba(255, 255, 255, 0.72); }
+.talk-error { color: #ff8a80; }
+.talk-actions { display: flex; gap: 14px; }
+.talk-link { padding: 2px 4px; font-size: 12.5px; color: rgba(255, 255, 255, 0.8); background: none; border: 0; }
+.talk-link:hover, .talk-link:focus-visible { color: #fff; text-decoration: underline; }
+@keyframes talk-pop { from { opacity: 0; transform: translateX(-50%) translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .talk-bubble { animation: none; } }

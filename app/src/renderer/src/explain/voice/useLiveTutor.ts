@@ -1,8 +1,7 @@
 // Browser-side GPT-Live transport. WebRTC carries microphone/model audio while the data channel
 // carries transcripts and delegated tool calls. The API key remains in Electron's main process.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Moment } from '../../../../shared/moment'
-import { languageName } from '../../../../shared/languages'
+import { languageName, type Language } from '../../../../shared/languages'
 import { say } from '../../components/errors'
 import { LIVE_REPLY_FALLBACK_MS } from './timing'
 import { nextReconnectAttempt, RECONNECT_LIMIT } from './reconnect'
@@ -79,7 +78,9 @@ function waitForIce(connection: RTCPeerConnection): Promise<void> {
   })
 }
 
-export function useLiveTutor(moment?: Moment): {
+/** Voice with Duet in `language` (none yet: voice can't start). The tutor's context (a line, or a
+ * free conversation) is in the main process. */
+export function useLiveTutor(language?: Language): {
   status: TutorLiveStatus
   transcripts: TranscriptSegment[]
   error?: string
@@ -98,8 +99,8 @@ export function useLiveTutor(moment?: Moment): {
   offerEnglishHelp: () => void
 } {
   // The language being learnt, by name, for the instructions sent during the session. A session
-  // can't start without a moment, so the neutral fallback is never sent.
-  const name = moment ? languageName(moment.language) : 'the language'
+  // can't start without one, so the neutral fallback is never sent.
+  const name = language ? languageName(language) : 'the language'
   const nameRef = useRef(name)
   useEffect(() => {
     nameRef.current = name
@@ -357,7 +358,7 @@ export function useLiveTutor(moment?: Moment): {
   const connect = useCallback(
     async (preserveConversation = false): Promise<void> => {
       if (
-        !moment ||
+        !language ||
         status === 'connecting' ||
         status === 'requesting-microphone' ||
         (status === 'reconnecting' && !preserveConversation)
@@ -451,7 +452,7 @@ export function useLiveTutor(moment?: Moment): {
         release('error')
       }
     },
-    [handleEvent, moment, playSpeaker, reconnect, release, status, tutorMuted]
+    [handleEvent, language, playSpeaker, reconnect, release, status, tutorMuted]
   )
 
   useEffect(() => {

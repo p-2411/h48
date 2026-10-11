@@ -5,10 +5,16 @@ import { useEffect, useRef, type RefObject } from 'react'
 import { speaks, type Language } from '../../../shared/languages'
 import { focusMessageBox } from './focus'
 import { ENGLISH_HELP_DELAY_MS } from './voice/timing'
+import { voiceTurns, type VoiceTurn } from './thread'
 import { isConnected, isVoiceOn, type LiveTutor } from './voice/useLiveTutor'
 
-/** Hands over between voice and text; returns the ref for the End voice button. */
-export function useVoiceHandoff(live: LiveTutor, box: RefObject<HTMLTextAreaElement | null>): RefObject<HTMLButtonElement | null> {
+/** Hands over between voice and text (`onTurns` keeps a finished voice conversation's turns in the
+ * thread); returns the ref for the End voice button. */
+export function useVoiceHandoff(
+  live: LiveTutor,
+  box: RefObject<HTMLTextAreaElement | null>,
+  onTurns: (turns: VoiceTurn[]) => void
+): RefObject<HTMLButtonElement | null> {
   const endButton = useRef<HTMLButtonElement>(null)
   const voiceOn = isVoiceOn(live.status)
   const wasOn = useRef(false)
@@ -22,10 +28,10 @@ export function useVoiceHandoff(live: LiveTutor, box: RefObject<HTMLTextAreaElem
     if (!wasOn.current) return
     wasOn.current = false
     const turns = transcripts.filter((turn) => turn.text.trim())
-    if (turns.length) window.duet.explain.voiceTurns(turns.map((turn) => ({ from: turn.role === 'tutor' ? 'duet' : 'learner', text: turn.text })))
+    if (turns.length) onTurns(voiceTurns(turns))
     window.duet.tutor.voiceEnded()
     focusMessageBox(box)
-  }, [voiceOn, transcripts, box])
+  }, [voiceOn, transcripts, box, onTurns])
   return endButton
 }
 

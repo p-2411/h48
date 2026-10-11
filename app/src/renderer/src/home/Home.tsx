@@ -1,4 +1,4 @@
-// The home base: a sidebar of places and the place shown. Main can ask for a place (Home opened from
+// The home base: a sidebar of places and the place shown (Talk is a free conversation with Duet). Main can ask for a place (Home opened from
 // the Dock, the menu bar, the strip's ⚙, a card's "Open in My cards"); Review shows inside Cards.
 import { useEffect, useState } from 'react'
 import type { HomePlace } from '../../../shared/home'
@@ -6,11 +6,13 @@ import { MyCards } from '../cards/MyCards'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { Review } from '../review/Review'
 import { SettingsPage } from './SettingsPage'
+import { TalkPage } from './TalkPage'
 import { Today } from './Today'
 import { Watching } from './Watching'
 
 const PLACES: { place: Exclude<HomePlace, 'review'>; label: string }[] = [
   { place: 'today', label: 'Today' },
+  { place: 'talk', label: 'Talk' },
   { place: 'watching', label: 'Watching' },
   { place: 'cards', label: 'Cards' },
   { place: 'settings', label: 'Settings' }
@@ -24,6 +26,7 @@ function Place({
   onPlace: (place: HomePlace) => void
 }): React.JSX.Element {
   if (place === 'today') return <Today onReview={() => onPlace('review')} />
+  if (place === 'talk') return <TalkPage />
   if (place === 'watching') return <Watching />
   if (place === 'cards') return <MyCards onReview={() => onPlace('review')} />
   if (place === 'settings') return <SettingsPage />

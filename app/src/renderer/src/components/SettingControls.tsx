@@ -2,7 +2,7 @@
 // ⚙ too, so they look and work the same in both. Styles: settings.css.
 import { useEffect, useState } from 'react'
 import { LANGUAGE_CODES, languageName } from '../../../shared/languages'
-import type { OverlaySettings } from '../../../shared/types'
+import type { OverlaySettings, ShortcutKind } from '../../../shared/types'
 import { accelerator, symbols } from '../overlay/keys'
 import { LEVELS } from '../overlay/words'
 import { say } from './errors'
@@ -103,8 +103,9 @@ export function LevelPicker({ settings }: { settings: OverlaySettings }): React.
   )
 }
 
-/** The show/hide keys: click, then press the new ones (Esc keeps the old). */
-export function ShortcutRecorder({ keys }: { keys: string }): React.JSX.Element {
+/** One of Duet's global keys (show or hide it, or talk to it): click, then press the new ones (Esc
+ * keeps the old). */
+export function ShortcutRecorder({ keys, kind = 'show' }: { keys: string; kind?: ShortcutKind }): React.JSX.Element {
   const [recording, setRecording] = useState(false)
   const [error, setError] = useState<string>()
   useEffect(() => {
@@ -116,19 +117,19 @@ export function ShortcutRecorder({ keys }: { keys: string }): React.JSX.Element 
       if (!next) return
       setRecording(false)
       try {
-        setError(await window.duet.setShortcut(next))
+        setError(await window.duet.setShortcut(next, kind))
       } catch (error) {
         setError(say(error, 'Could not change the keys. Try another combination.'))
       }
     }
     window.addEventListener('keydown', press)
     return () => window.removeEventListener('keydown', press)
-  }, [recording])
+  }, [recording, kind])
   return (
     <>
       <div className="toggle">
         <span>
-          Show or hide Duet
+          {kind === 'talk' ? 'Talk to Duet about the line' : 'Show or hide Duet'}
           <small>{recording ? 'Press the new keys · Esc to keep' : 'Click to change'}</small>
         </span>
         <button

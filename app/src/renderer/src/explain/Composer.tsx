@@ -5,11 +5,18 @@ import type { Language } from '../../../shared/languages'
 import { focusMessageBox } from './focus'
 import { Icon } from '../components/Icon'
 
-// Common questions that fill in the message box (to send as is, or finish first).
-const PILLS = [
-  { label: 'Explain more', text: 'Explain more' },
-  { label: 'Can I say this?', text: 'Can I say ' }
-]
+// Common questions that fill in the message box (to send as is, or finish first): about a line, or
+// in a free conversation.
+const PILLS = {
+  line: [
+    { label: 'Explain more', text: 'Explain more' },
+    { label: 'Can I say this?', text: 'Can I say ' }
+  ],
+  free: [
+    { label: 'How do I say…?', text: 'How do I say ' },
+    { label: 'Can I say this?', text: 'Can I say ' }
+  ]
+}
 
 export function Composer({
   box,
@@ -19,7 +26,9 @@ export function Composer({
   replying,
   explore,
   onOpenCards,
-  onStartVoice
+  onStartVoice,
+  onSend,
+  free = false
 }: {
   box: RefObject<HTMLTextAreaElement | null>
   draft: string
@@ -29,11 +38,15 @@ export function Composer({
   explore: boolean
   onOpenCards: () => void
   onStartVoice: () => void
+  /** Sends the learner's message to Duet. */
+  onSend: (text: string) => void
+  /** A free conversation (Talk), not about a line. */
+  free?: boolean
 }): React.JSX.Element {
   const send = (): void => {
     const text = draft.trim()
     if (!text || replying) return
-    window.duet.explain.ask(text)
+    onSend(text)
     onDraft('')
     // A click on Send leaves focus on the button, which is disabled while Duet replies.
     focusMessageBox(box)
@@ -46,7 +59,7 @@ export function Composer({
   return (
     <>
       <div className="row">
-        {PILLS.map((pill) => (
+        {PILLS[free ? 'free' : 'line'].map((pill) => (
           <button key={pill.label} type="button" className="pill" onClick={() => fill(pill.text)}>
             {pill.label}
           </button>
@@ -68,7 +81,7 @@ export function Composer({
           id="conversation-message"
           rows={1}
           lang={language}
-          placeholder="Ask about this line, or practise it"
+          placeholder={free ? 'Say something, or ask Duet anything' : 'Ask about this line, or practise it'}
           value={draft}
           onChange={(event) => onDraft(event.target.value)}
           onKeyDown={(event) => {

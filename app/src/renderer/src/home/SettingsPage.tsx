@@ -90,6 +90,7 @@ export function SettingsPage(): React.JSX.Element {
               Keys
             </h2>
             <ShortcutRecorder keys={settings.shortcut} />
+            <ShortcutRecorder keys={settings.talkShortcut} kind="talk" />
           </section>
           <section className="card-box" aria-labelledby="settings-permissions">
             <h2 className="label" id="settings-permissions">

@@ -19,6 +19,7 @@
 import { randomUUID } from 'node:crypto'
 import { ipcMain, type WebContents } from 'electron'
 import { RATINGS, type CardDraft } from '../../shared/cards'
+import type { ChatMessage } from '../../shared/explain'
 import type {
   PendingTutorAction,
   ReviewRating,
@@ -33,6 +34,7 @@ import type { Player } from '../player'
 import { createLiveSession, romaniseForLearner, translateForLearner } from './live'
 import { contextLanguage, type LineContext, type TutorContext } from './prompts'
 import { replyInText, type TextReply } from './text'
+import type { ThreadTutor } from './thread'
 
 type PendingAction =
   | { id: string; kind: 'save-card'; preparedAt: number; expiresAt: number; draft: CardDraft }
@@ -154,11 +156,13 @@ export class Tutor {
     })
   }
 
-  /** A new conversation, owned by `window`: earlier previews, undo and Explore end. */
+  /** A new conversation, owned by `window`: earlier previews and undo end; Explore is on only when
+   * the context opens the cards to Duet (home Talk). */
   open(context: TutorContext, window: TutorWindow): void {
     this.reset()
     this.context = context
     this.window = window
+    this.exploreEnabled = context.exploreEnabled === true
   }
 
   /** `window`'s conversation is over (its window closed): its previews, undo and any hold on the
@@ -167,14 +171,35 @@ export class Tutor {
     if (this.window === window) this.reset()
   }
 
-  /** What Explain learnt about the line since (how it was said, the explanation, new messages). */
-  update(change: Partial<Omit<LineContext, 'moment'>>): void {
-    if (!this.context) return
+  /** What `window` learnt about its conversation since (how the line was said, the explanation, new
+   * messages). Ignored once another window has taken the tutor over. */
+  update(window: TutorWindow, change: Partial<Omit<LineContext, 'moment'>>): void {
+    if (!this.context || this.window !== window) return
     // A free conversation only keeps the conversation and Explore; the rest is about a line.
     this.context =
       'moment' in this.context
         ? { ...this.context, ...change }
         : { ...this.context, conversation: change.conversation ?? this.context.conversation, exploreEnabled: change.exploreEnabled ?? this.context.exploreEnabled }
+  }
+
+  /** The tutor as `window`'s thread (thread.ts) uses it. When another window has taken the tutor over
+   * since, the thread's next message opens it again for `window`, on `context()` and the thread so far. */
+  forWindow(window: TutorWindow, context: () => TutorContext): ThreadTutor {
+    let conversation: ChatMessage[] = []
+    const claim = (): void => {
+      if (this.window !== window) this.open({ ...context(), conversation }, window)
+    }
+    return {
+      update: (change) => {
+        conversation = change.conversation
+        this.update(window, change)
+      },
+      reply: (message) => {
+        claim()
+        return this.reply(message)
+      },
+      claim
+    }
   }
 
   /** Duet's text reply to the learner's message. Writing counts as the learner's turn. */

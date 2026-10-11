@@ -31,6 +31,14 @@ const PATHS = {
     </>
   ),
   check: <path d="M20 6 9 17l-5-5" />,
+  // The Duet mark: the mascot at rest, two rounded shapes offset (components/Mascot.tsx), drawn
+  // filled (with `filled`) as the mascot is. Not Lucide's.
+  mascot: (
+    <>
+      <rect x="2.5" y="5.5" width="11" height="7" rx="3.5" />
+      <rect x="10.5" y="11.5" width="11" height="7" rx="3.5" />
+    </>
+  ),
   mic: (
     <>
       <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />

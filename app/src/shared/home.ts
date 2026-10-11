@@ -2,7 +2,7 @@
 import type { Site } from './types'
 
 /** The places in the home base's sidebar; Review is shown inside Cards. */
-export type HomePlace = 'today' | 'watching' | 'cards' | 'review' | 'settings'
+export type HomePlace = 'today' | 'talk' | 'watching' | 'cards' | 'review' | 'settings'
 
 /** The streak: days kept in a row, whether today is kept yet, and the freezes left this week. */
 export type Streak = { days: number; keptToday: boolean; freezesLeft: number }

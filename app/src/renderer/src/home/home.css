@@ -118,3 +118,16 @@
 /* The daily session (daily/): one step at a time, in a column (the steps: components/challenges). */
 .daily { display: flex; flex-direction: column; gap: 12px; max-width: 640px; }
 .daily .review { align-self: stretch; max-width: none; }
+/* Talk: the conversation scrolls, the message box stays at the bottom (explain.css draws both). */
+.home-talk {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.home-talk-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}

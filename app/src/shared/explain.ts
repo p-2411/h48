@@ -36,7 +36,15 @@ export type ChatMessage = { from: 'learner' | 'duet'; text: string; via?: 'text'
 
 /** What the Explain tab shows: the moment, the explanation once it arrives, and the conversation
  * about the line that follows it. */
-export type ExplainState = {
+/** A conversation with Duet (Explain's, or Talk's): the turns, and a reply on its way or failed. */
+export type ThreadState = {
+  chat: ChatMessage[]
+  /** Duet is writing a reply. */
+  replying?: boolean
+  chatError?: string
+}
+
+export type ExplainState = ThreadState & {
   moment?: Moment
   explanation?: Explanation
   loading: boolean
@@ -44,8 +52,4 @@ export type ExplainState = {
   stage?: 'listening' | 'explaining'
   hearing?: HearingNote
   error?: string
-  chat: ChatMessage[]
-  /** Duet is writing a reply. */
-  replying?: boolean
-  chatError?: string
 }

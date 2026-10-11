@@ -14,13 +14,13 @@
 //   duet:solid         the pointer is over Duet (take clicks) or not (let them through to the video)
 //   duet:drag          the learner drags the subtitles: start, end (placement.ts moves the window)
 //   duet:focus         takes the keyboard, while the learner types an answer in a checkpoint
-//   duet:set-shortcut  new show/hide keys → why not, if they can't be had
+//   duet:set-shortcut  new keys, to show or hide Duet or to talk to it → why not, if they can't be had
 //   duet:set-reminder  the daily reminder's time ("19:30"), or null for none; anything else is refused
 //   duet:status / duet:settings / duet:line / duet:current / duet:live   ← updates
 //   duet:fit           ← how wide the strip may be, to stay inside the video (none: as wide as it likes)
 import { ipcMain, type BrowserWindow } from 'electron'
 import type { SaveResult } from '../../shared/cards'
-import type { Language, Level, OverlaySettings } from '../../shared/types'
+import type { Language, Level, OverlaySettings, ShortcutKind } from '../../shared/types'
 import { parseReminder } from '../daily/reminder'
 import type { Settings } from '../settings'
 import type { Watcher } from '../watcher'
@@ -36,7 +36,7 @@ type Actions = {
   openSettings: () => void
   hoveredWord: (lineId: number, text: string) => void
   playOn: () => void
-  setShortcut: (keys: string) => string | undefined
+  setShortcut: (keys: string, kind: ShortcutKind) => string | undefined
   drag: (phase: 'start' | 'end') => void
   /** How wide the strip may be to stay inside the video, when one is in view. */
   fit: () => number | undefined
@@ -93,7 +93,7 @@ export function connectOverlay(
   ipcMain.on('duet:solid', (_, solid: boolean) => {
     if (!overlay.isDestroyed()) overlay.setIgnoreMouseEvents(!solid, { forward: true })
   })
-  ipcMain.handle('duet:set-shortcut', (_, keys: string) => actions.setShortcut(String(keys)))
+  ipcMain.handle('duet:set-shortcut', (_, keys: unknown, kind: unknown) => actions.setShortcut(String(keys), kind === 'talk' ? 'talk' : 'show'))
   ipcMain.on('duet:focus', () => overlay.isDestroyed() || overlay.focus())
   ipcMain.on('duet:drag', (_, phase: 'start' | 'end') =>
     actions.drag(phase === 'start' ? 'start' : 'end')

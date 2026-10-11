@@ -3,8 +3,9 @@
 // English and the actions above it; hovering a word shows its popup; ⚙ opens the settings. Words
 // show on the strip itself only when the learner can act on them (see notice.ts). The strip sits on
 // the video, no wider than it (the main process moves the window; see placement.ts), and can be
-// dragged anywhere by its background.
-import { useEffect, useRef, useState, type PointerEvent } from 'react'
+// dragged anywhere by its background. The mascot button left of it (or the talk keys) starts talking
+// to Duet any time, about the line on screen if there is one (useStripTalk.ts).
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react'
 import type { SaveResult } from '../../../shared/cards'
 import { Icon } from '../components/Icon'
 import { say } from '../components/errors'
@@ -14,8 +15,10 @@ import { actionable, quiet, statusDot } from './notice'
 import type { CheckpointView, Offer } from '../../../shared/checkpoints'
 import { Checkpoint } from './Checkpoint'
 import { SettingsPopover } from './SettingsPopover'
+import { TalkBubble } from './TalkBubble'
 import { useOverlay } from './useOverlay'
 import { useSolid } from './useSolid'
+import { useStripTalk } from './useStripTalk'
 
 const TOAST_MS = 5000
 
@@ -46,6 +49,7 @@ export function Overlay(): React.JSX.Element {
   const { settings, status, current, building, translating, fit, loaded } = useOverlay()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [toast, setToast] = useState<Toast>()
+  const talk = useStripTalk(settings.language, useCallback((text: string) => setToast({ text }), []))
   // Stars given in this run, by line and word ("12:3", or "12:line"), so they show as saved.
   const [stars, setStars] = useState<Record<string, string>>({})
   // A checkpoint offered (the strip glows; a click opens it) and the one open.
@@ -185,6 +189,19 @@ export function Overlay(): React.JSX.Element {
         </div>
 
         {checkpoint && <Checkpoint view={checkpoint} onClose={() => setCheckpoint(undefined)} />}
+        {talk.talking && talk.about && <TalkBubble live={talk.live} language={talk.about.language} onText={talk.toText} onEnd={talk.end} />}
+        <div className="strip-row">
+        <button
+          type="button"
+          className={`talk-button${talk.talking ? ' on' : ''}`}
+          title={talk.talking ? 'End talking with Duet' : 'Talk to Duet'}
+          aria-label={talk.talking ? 'End talking with Duet' : 'Talk to Duet'}
+          aria-pressed={talk.talking}
+          data-solid
+          onClick={talk.talking ? talk.end : talk.begin}
+        >
+          <Icon name="mascot" filled />
+        </button>
         <div
           // Glowing while a checkpoint is offered, and on while it's being done.
           className={`strip${offer || checkpoint ? ' glow' : ''}`}
@@ -236,6 +253,7 @@ export function Overlay(): React.JSX.Element {
               )}
             </p>
           )}
+        </div>
         </div>
       </div>
     </div>

@@ -11,6 +11,8 @@ export const explainApi = {
   replay: () => ipcRenderer.send('explain:replay'),
   /** Turns of a voice conversation that just ended, to keep in the thread. */
   voiceTurns: (turns: { from: 'learner' | 'duet'; text: string }[]) => ipcRenderer.send('explain:voice-turns', turns),
+  /** Voice is about to start: the conversation is this line's again (the strip may have taken it). */
+  claim: () => invoke<void>('explain:claim'),
   /** The learner's message in the text conversation about the line. */
   ask: (message: string) => ipcRenderer.send('explain:ask', message)
 }

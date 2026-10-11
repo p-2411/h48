@@ -101,7 +101,8 @@ export class Home {
     if (cardId) this.send('cards:show', cardId)
   }
 
-  private send(channel: string, value?: unknown): void {
+  /** Sends to the home page, when the window is open (it is also Talk's window: src/main/talk). */
+  send(channel: string, value?: unknown): void {
     if (this.window && !this.window.isDestroyed()) this.window.webContents.send(channel, value)
   }
 }

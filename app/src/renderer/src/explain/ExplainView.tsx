@@ -154,7 +154,7 @@ export function ExplainView({
           {explanation && (
             <p className="faint">Written by AI ({explanation.model}). It can be wrong.</p>
           )}
-          <Conversation key={moment.takenAt} state={state} moment={moment} dock={dock} />
+          <Conversation key={moment.takenAt} state={state} language={moment.language} thread={window.duet.explain} dock={dock} />
         </div>
       </div>
       <div className="explain-dock" ref={setDock} />
