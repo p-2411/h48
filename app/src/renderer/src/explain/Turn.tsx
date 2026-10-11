@@ -8,7 +8,12 @@ import { Inline } from '../components/Inline'
 import type { Aid } from './aids'
 import { Icon } from '../components/Icon'
 
-export type TurnData = { id: string; from: 'learner' | 'duet'; text: string; via?: 'text' | 'voice' }
+export type TurnData = {
+  id: string
+  from: 'learner' | 'duet'
+  text: string
+  via?: 'text' | 'voice'
+}
 
 export const Turn = memo(function Turn({
   id,
@@ -61,7 +66,9 @@ export const Turn = memo(function Turn({
       )}
       {revealed && (
         <p className={`turn-meaning${meaning?.error ? ' has-error' : ''}`}>
-          {meaning?.loading ? 'Showing the meaning…' : (meaning?.text ?? meaning?.error ?? 'Meaning unavailable.')}
+          {meaning?.loading
+            ? 'Showing the meaning…'
+            : (meaning?.text ?? meaning?.error ?? 'Meaning unavailable.')}
         </p>
       )}
     </article>

@@ -41,9 +41,16 @@ function voiceTurns(value: unknown): ChatMessage[] {
     .slice(0, MAX_VOICE_TURNS)
     .filter(
       (turn): turn is ChatMessage =>
-        !!turn && (turn.from === 'learner' || turn.from === 'duet') && typeof turn.text === 'string' && !!turn.text.trim()
+        !!turn &&
+        (turn.from === 'learner' || turn.from === 'duet') &&
+        typeof turn.text === 'string' &&
+        !!turn.text.trim()
     )
-    .map((turn) => ({ from: turn.from, text: turn.text.trim().slice(0, MAX_TURN_LENGTH), via: 'voice' }))
+    .map((turn) => ({
+      from: turn.from,
+      text: turn.text.trim().slice(0, MAX_TURN_LENGTH),
+      via: 'voice'
+    }))
 }
 
 export class Explain {
@@ -75,7 +82,8 @@ export class Explain {
     const { explainer, tutor, hear } = this.options
     this.request?.abort()
     tutor.open({ moment })
-    if (!explainer) return this.set({ moment, loading: false, chat: [], error: 'Add an API key to use Explain.' })
+    if (!explainer)
+      return this.set({ moment, loading: false, chat: [], error: 'Add an API key to use Explain.' })
     const request = (this.request = new AbortController())
     this.set({ moment, loading: true, stage: 'listening', chat: [] })
     hear(moment, request.signal)
@@ -91,7 +99,12 @@ export class Explain {
       .catch((error) => {
         if (request.signal.aborted) return
         if (!(error instanceof ModelError)) console.error('[duet] explain failed', error)
-        this.set({ moment, loading: false, chat: [], error: error instanceof ModelError ? error.message : 'Could not explain this line.' })
+        this.set({
+          moment,
+          loading: false,
+          chat: [],
+          error: error instanceof ModelError ? error.message : 'Could not explain this line.'
+        })
       })
   }
 
@@ -103,17 +116,33 @@ export class Explain {
     // Try again after a failed reply sends the same message, which is already the last turn: it is
     // asked again, not added twice.
     const last = chat.at(-1)
-    const retry = chatError !== undefined && last?.from === 'learner' && last.via === 'text' && last.text === message
+    const retry =
+      chatError !== undefined &&
+      last?.from === 'learner' &&
+      last.via === 'text' &&
+      last.text === message
     const before = retry ? chat.slice(0, -1) : chat
     // The tutor's context holds the conversation before this message; the message goes with it.
     this.options.tutor.update({ conversation: before })
-    this.update({ chat: [...before, { from: 'learner', text: message, via: 'text' }], replying: true, chatError: undefined })
+    this.update({
+      chat: [...before, { from: 'learner', text: message, via: 'text' }],
+      replying: true,
+      chatError: undefined
+    })
     this.options.tutor
       .reply(message)
       .then((reply) => {
         if (request?.signal.aborted || this.state.moment !== moment) return
         this.update({ replying: false })
-        this.setChat([...this.state.chat, { from: 'duet', text: reply, via: 'text' }])
+        this.setChat([
+          ...this.state.chat,
+          {
+            from: 'duet',
+            text: reply.text,
+            via: 'text',
+            ...(reply.correction && { correction: true })
+          }
+        ])
       })
       .catch((error: Error) => {
         if (request?.signal.aborted || this.state.moment !== moment) return

@@ -61,3 +61,6 @@
 /* Results and errors under the conversation; one live region, so each new one is read out. */
 .notices { display: flex; flex-direction: column; gap: 10px; }
 .notices:empty { display: contents; }
+
+/* On a short panel the conversation needs the room more than the mascot does. */
+@media (max-height: 600px) { .composer-mascot { display: none; } }

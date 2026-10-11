@@ -17,6 +17,40 @@ const textTools = tools.map((tool) => ({
   strict: tool.strict ?? true
 }))
 
+// The final answer: the reply, and whether it corrects the learner (the mascot shows a gentle
+// correction for it).
+const replyFormat = {
+  type: 'json_schema' as const,
+  name: 'duet_reply',
+  strict: true,
+  schema: {
+    type: 'object',
+    properties: {
+      reply: {
+        type: 'string',
+        description: 'What the learner reads: the whole reply, in plain text.'
+      },
+      corrects_learner: {
+        type: 'boolean',
+        description: 'True only when the reply points out a problem in what the learner wrote.'
+      }
+    },
+    required: ['reply', 'corrects_learner'],
+    additionalProperties: false
+  }
+}
+
+/** Duet's reply in the text chat. */
+export type TextReply = { text: string; correction: boolean }
+
+/** The reply from the model's final answer; an answer not in the format is taken as the reply. */
+export function readReply(output: string): TextReply {
+  const answer = parse(output) as { reply?: unknown; corrects_learner?: unknown } | undefined
+  if (answer && typeof answer.reply === 'string')
+    return { text: answer.reply.trim(), correction: answer.corrects_learner === true }
+  return { text: output.trim(), correction: false }
+}
+
 /** Runs one tool call and gives its JSON output, as the voice session's tool calls do. */
 export type ToolRunner = (name: string, args: unknown) => Promise<string>
 
@@ -34,8 +68,9 @@ export async function replyInText(
   message: string,
   runTool: ToolRunner,
   env: NodeJS.ProcessEnv = process.env
-): Promise<string> {
-  if (!env.OPENAI_API_KEY) throw new Error('Add OPENAI_API_KEY to app/.env.local to talk with Duet.')
+): Promise<TextReply> {
+  if (!env.OPENAI_API_KEY)
+    throw new Error('Add OPENAI_API_KEY to app/.env.local to talk with Duet.')
   const client = openai(env.OPENAI_API_KEY)
   const input: ResponseInput = [
     { role: 'developer', content: `Line context: ${lineContext(context)}` },
@@ -49,6 +84,7 @@ export async function replyInText(
         instructions: textInstructions(context.moment.language),
         input,
         tools: textTools,
+        text: { format: replyFormat },
         parallel_tool_calls: false,
         reasoning: { effort: 'low' },
         // Nothing is stored, so the reasoning travels with the next round's input.
@@ -57,13 +93,17 @@ export async function replyInText(
       })
       const calls = response.output.filter((item) => item.type === 'function_call')
       if (!calls.length) {
-        const reply = response.output_text.trim()
-        if (!reply) throw new Error('EMPTY_REPLY')
+        const reply = readReply(response.output_text)
+        if (!reply.text) throw new Error('EMPTY_REPLY')
         return reply
       }
       input.push(...(response.output as ResponseInput))
       for (const call of calls)
-        input.push({ type: 'function_call_output', call_id: call.call_id, output: await runTool(call.name, parse(call.arguments)) })
+        input.push({
+          type: 'function_call_output',
+          call_id: call.call_id,
+          output: await runTool(call.name, parse(call.arguments))
+        })
     }
     throw new Error('Duet took too many steps to answer. Try asking again.')
   } catch (error) {

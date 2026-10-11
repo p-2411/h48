@@ -32,7 +32,7 @@ import type { Panel } from '../panel'
 import type { Player } from '../player'
 import { createLiveSession, romaniseForLearner, translateForLearner } from './live'
 import type { LineContext } from './prompts'
-import { replyInText } from './text'
+import { replyInText, type TextReply } from './text'
 
 type PendingAction =
   | { id: string; kind: 'save-card'; preparedAt: number; expiresAt: number; draft: CardDraft }
@@ -165,7 +165,7 @@ export class Tutor {
   }
 
   /** Duet's text reply to the learner's message. Writing counts as the learner's turn. */
-  reply(message: string): Promise<string> {
+  reply(message: string): Promise<TextReply> {
     const context = this.requireContext()
     this.lastLearnerTurnAt = Date.now()
     return replyInText({ ...context, exploreEnabled: this.exploreEnabled }, message, async (name, args) => (await this.executeTool({ callId: randomUUID(), name, arguments: args })).output)

@@ -8,13 +8,23 @@ import { clock } from '../components/time'
 import { Words } from '../components/Words'
 import { Icon } from '../components/Icon'
 
-export function Script({ script, current }: { script: ScriptData; current: number | null }): React.JSX.Element {
+export function Script({
+  script,
+  current
+}: {
+  script: ScriptData
+  current: number | null
+}): React.JSX.Element {
   const list = useRef<HTMLOListElement>(null)
   // Lines starred from here in this run, being starred now, and whose star failed (pressing again retries).
   const [saved, setSaved] = useState<Set<number>>(new Set())
   const [saving, setSaving] = useState<Set<number>>(new Set())
   const [failed, setFailed] = useState<Set<number>>(new Set())
-  const mark = (set: (update: (now: Set<number>) => Set<number>) => void, id: number, on: boolean): void =>
+  const mark = (
+    set: (update: (now: Set<number>) => Set<number>) => void,
+    id: number,
+    on: boolean
+  ): void =>
     set((now) => {
       const next = new Set(now)
       if (on) next.add(id)
@@ -29,13 +39,18 @@ export function Script({ script, current }: { script: ScriptData; current: numbe
   useEffect(() => {
     const row = list.current?.querySelector<HTMLElement>('.is-now')
     if (!row || !list.current) return
-    list.current.scrollTo({ top: row.offsetTop - list.current.clientHeight / 3, behavior: 'smooth' })
+    list.current.scrollTo({
+      top: row.offsetTop - list.current.clientHeight / 3,
+      behavior: 'smooth'
+    })
   }, [current])
 
   if (!lines.length)
     return (
       <p className="muted center">
-        {timed ? 'This video has no lines.' : 'Lines you hear will collect here, so you can go back to them.'}
+        {timed
+          ? 'This video has no lines.'
+          : 'Lines you hear will collect here, so you can go back to them.'}
       </p>
     )
   return (
@@ -44,20 +59,29 @@ export function Script({ script, current }: { script: ScriptData; current: numbe
         const index = script.lines.indexOf(line)
         const processed = line.state === 'ready' ? line.processed : undefined
         return (
-          <li key={line.id} className="script-item">
+          <li
+            key={line.id}
+            className={`script-item${line.id === current ? ' is-now' : ''}${timed && currentIndex >= 0 && index < currentIndex ? ' is-past' : ''}`}
+          >
             <button
               type="button"
-              className={`script-row${line.id === current ? ' is-now' : ''}${timed && currentIndex >= 0 && index < currentIndex ? ' is-past' : ''}`}
+              className="script-row"
               onClick={() => window.duet.panel.seek(line.id)}
             >
               <span className="time">{line.start !== undefined ? clock(line.start) : ''}</span>
               <span>
-                <span className="original">{processed ? <Words tokens={processed.source} /> : line.original}</span>
+                <span className="original">
+                  {processed ? <Words tokens={processed.source} /> : line.original}
+                </span>
                 {processed && <span className="english">{processed.translation}</span>}
               </span>
             </button>
             <span className="row-actions">
-              <button type="button" className="btn quiet" onClick={() => window.duet.explainLine(line.id)}>
+              <button
+                type="button"
+                className="btn quiet"
+                onClick={() => window.duet.explainLine(line.id)}
+              >
                 Explain
               </button>
               <button
@@ -78,7 +102,13 @@ export function Script({ script, current }: { script: ScriptData; current: numbe
                 }}
               >
                 <Icon name="star" size={14} filled={saved.has(line.id)} />
-                {saved.has(line.id) ? 'Saved' : saving.has(line.id) ? 'Saving…' : failed.has(line.id) ? 'Retry save' : 'Save'}
+                {saved.has(line.id)
+                  ? 'Saved'
+                  : saving.has(line.id)
+                    ? 'Saving…'
+                    : failed.has(line.id)
+                      ? 'Retry save'
+                      : 'Save'}
               </button>
             </span>
           </li>

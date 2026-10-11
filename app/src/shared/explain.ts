@@ -31,7 +31,8 @@ export type HearingNote = 'heard' | 'asking' | 'not-allowed' | 'not-kept' | 'unc
 
 /** One message in the conversation about a line, after the explanation: typed, or a turn of a voice
  * conversation, kept once that conversation ends. */
-export type ChatMessage = { from: 'learner' | 'duet'; text: string; via?: 'text' | 'voice' }
+/** One turn of the conversation; `correction` marks a reply of Duet's that corrects the learner. */
+export type ChatMessage = { from: 'learner' | 'duet'; text: string; via?: 'text' | 'voice'; correction?: boolean }
 
 /** What the Explain tab shows: the moment, the explanation once it arrives, and the conversation
  * about the line that follows it. */

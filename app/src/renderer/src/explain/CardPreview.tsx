@@ -28,10 +28,10 @@ export function CardPreview({
           {pending.draft.expression}
         </p>
         <p>{pending.draft.meaning}</p>
-        <p className="muted">Remember: {pending.draft.target}</p>
+        <p className="muted">What it tests: {pending.draft.target}</p>
         <div className="row">
           <button type="button" className="btn primary" disabled={busy} onClick={() => onConfirm()}>
-            {busy ? 'Saving…' : 'Save card'}
+            {busy ? 'Saving…' : 'Save'}
           </button>
           <span className="faint">{voiceOn ? 'Or say yes.' : 'Or reply yes.'}</span>
         </div>
@@ -45,9 +45,17 @@ export function CardPreview({
       </p>
       <div className="ratings">
         {RATINGS.map((rating) => (
-          <button type="button" key={rating} className="rate" disabled={busy} onClick={() => onConfirm(rating)}>
+          <button
+            type="button"
+            key={rating}
+            className="rate"
+            disabled={busy}
+            onClick={() => onConfirm(rating)}
+          >
             <b>{rating}</b>
-            <span className="faint">{pending.previews.find((item) => item.rating === rating)?.intervalLabel}</span>
+            <span className="faint">
+              {pending.previews.find((item) => item.rating === rating)?.intervalLabel}
+            </span>
           </button>
         ))}
       </div>
@@ -56,7 +64,13 @@ export function CardPreview({
 }
 
 /** A card Duet opened or just saved. */
-export function OpenedCard({ card, onClose }: { card: TutorCard; onClose: () => void }): React.JSX.Element {
+export function OpenedCard({
+  card,
+  onClose
+}: {
+  card: TutorCard
+  onClose: () => void
+}): React.JSX.Element {
   const moment = card.source.kind === 'video' ? card.source.moment : undefined
   return (
     <section className="action-card" aria-label="A saved card">
@@ -71,9 +85,11 @@ export function OpenedCard({ card, onClose }: { card: TutorCard; onClose: () => 
         {card.expression}
       </p>
       <p>{card.meaning}</p>
-      <p className="muted">Remember: {card.target}</p>
+      <p className="muted">What it tests: {card.target}</p>
       <p className="faint">
-        {moment ? `Saved from a video${moment.video.position !== undefined ? ` at ${clock(moment.video.position)}` : ''} · ` : 'Made with Duet · '}
+        {moment
+          ? `Saved from a video${moment.video.position !== undefined ? ` at ${clock(moment.video.position)}` : ''} · `
+          : 'Made with Duet · '}
         next review {new Date(card.due).toLocaleDateString()}
       </p>
       <button type="button" className="btn quiet" onClick={() => window.duet.cards.open(card.id)}>

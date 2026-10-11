@@ -133,8 +133,8 @@ same context. `watcher.moment(lineId?)` takes one.
 
 - **Explain** (on the strip's hover row, on a line in Script, or "Explain this line" in the menu bar)
   opens the side panel's Explain tab on the line: what it means here and how it comes across, with
-  more under "More", Replay and Save card, then the conversation about the line (below).
-- **Save card** fills an editable card from the explanation; the same line, target and type is
+  more under "More", Replay and Save, then the conversation about the line (below).
+- **Save** fills an editable card from the explanation; the same line, target and type is
   caught as a duplicate. **My cards** (menu bar) lists, searches, edits, pauses, deletes (with undo),
   backs up and restores cards, and runs **review** with FSRS (`ts-fsrs` 5.4.2): due learning cards,
   then due reviews, then new cards within the daily allowance (10, study day from 04:00). A rating

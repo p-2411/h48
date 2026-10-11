@@ -1,5 +1,5 @@
 // The explanation of one line, and the conversation about it. It opens with the line itself (the
-// words worth noticing lit up in it), Replay and Save card, then one short paragraph: what it means
+// words worth noticing lit up in it), Replay and Save, then one short paragraph: what it means
 // here and how it comes across. The reasoning, an alternative and any doubt fold under "More"; the
 // conversation with Duet follows, in text or voice (Conversation.tsx). The tab scrolls above a dock
 // that holds the conversation's composer, so the composer stays put on the panel's glass and nothing

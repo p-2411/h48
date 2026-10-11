@@ -78,10 +78,21 @@ export function Composer({
             }
           }}
         />
-        <button type="button" className="btn primary" disabled={!draft.trim() || replying} onClick={send}>
+        <button
+          type="button"
+          className="btn primary"
+          disabled={!draft.trim() || replying}
+          onClick={send}
+        >
           Send
         </button>
-        <button type="button" className="btn mic" title="Talk instead: Duet hears you, and how you say it" aria-label="Talk with Duet" onClick={onStartVoice}>
+        <button
+          type="button"
+          className="btn mic"
+          title="Talk instead: Duet hears you, and how you say it"
+          aria-label="Talk with Duet"
+          onClick={onStartVoice}
+        >
           <Icon name="mic" />
         </button>
       </div>

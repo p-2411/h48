@@ -19,7 +19,9 @@ const TOAST_MS = 5000
 // Paused this long with cards due, the strip suggests a review.
 const NUDGE_AFTER_MS = 15_000
 
-type Toast = { text: string; cardId?: string }
+// Undo on a toast: takes back a star just given (`unsave`), or brings back the card a star just
+// removed (`restore`; a removed card is kept for 30 s, longer than the toast shows).
+type Toast = { text: string; undo?: { kind: 'unsave' | 'restore'; cardId: string; key: string } }
 
 // Pressing these does what they do; pressing anywhere else on the strip drags it.
 const NOT_FOR_DRAGGING = 'button, a, .w.live, .english, .popup'
@@ -72,8 +74,13 @@ export function Overlay(): React.JSX.Element {
     const existing = stars[key(pair)]
     if (existing) {
       window.duet.unsave(existing)
-      setStars((now) => Object.fromEntries(Object.entries(now).filter(([name]) => name !== key(pair))))
-      setToast({ text: 'Star removed' })
+      setStars((now) =>
+        Object.fromEntries(Object.entries(now).filter(([name]) => name !== key(pair)))
+      )
+      setToast({
+        text: 'Removed from My cards',
+        undo: { kind: 'restore', cardId: existing, key: key(pair) }
+      })
       return
     }
     starring.current = true
@@ -89,7 +96,29 @@ export function Overlay(): React.JSX.Element {
     if (!result) return
     const card = 'saved' in result ? result.saved : result.duplicate
     setStars((now) => ({ ...now, [key(pair)]: card.id }))
-    setToast('saved' in result ? { text: `Saved “${card.expression}”`, cardId: card.id } : { text: `Already saved “${card.expression}”` })
+    setToast(
+      'saved' in result
+        ? {
+            text: `Saved “${card.expression}”`,
+            undo: { kind: 'unsave', cardId: card.id, key: key(pair) }
+          }
+        : { text: `Already saved “${card.expression}”` }
+    )
+  }
+
+  const undo = ({ kind, cardId, key: starKey }: NonNullable<Toast['undo']>): void => {
+    setToast(undefined)
+    if (kind === 'unsave') {
+      window.duet.unsave(cardId)
+      setStars((now) =>
+        Object.fromEntries(Object.entries(now).filter(([name]) => name !== starKey))
+      )
+      return
+    }
+    window.duet.cards
+      .restore(cardId)
+      .then(() => setStars((now) => ({ ...now, [starKey]: cardId })))
+      .catch((error) => setToast({ text: say(error, 'Could not bring that card back.') }))
   }
 
   const notice = loaded ? actionable(status, settings.language) : undefined
@@ -98,13 +127,21 @@ export function Overlay(): React.JSX.Element {
   const nudge = pausedLong && due > 0 && !notice
 
   return (
-    <div className="stage" style={fit ? ({ '--fit': `${fit}px` } as React.CSSProperties) : undefined}>
+    <div
+      className="stage"
+      style={fit ? ({ '--fit': `${fit}px` } as React.CSSProperties) : undefined}
+    >
       <div className={`dock${settingsOpen ? ' pinned' : ''}`} data-solid>
         {settingsOpen && <SettingsPopover settings={settings} />}
         <div className="actions" role="toolbar" aria-label="Line actions">
           <LevelMeter settings={settings} />
           <span className="spacer" />
-          <button type="button" className="act primary" disabled={!current} onClick={() => window.duet.explainLine(current?.id)}>
+          <button
+            type="button"
+            className="act primary"
+            disabled={!current}
+            onClick={() => window.duet.explainLine(current?.id)}
+          >
             Explain
           </button>
           <button
@@ -117,7 +154,14 @@ export function Overlay(): React.JSX.Element {
           >
             <Icon name="star" filled={!!stars[key()]} />
           </button>
-          <button type="button" className="act icon" disabled={!current} title="Replay this line" aria-label="Replay this line" onClick={() => window.duet.replay(current?.id)}>
+          <button
+            type="button"
+            className="act icon"
+            disabled={!current}
+            title="Replay this line"
+            aria-label="Replay this line"
+            onClick={() => window.duet.replay(current?.id)}
+          >
             <Icon name="replay" />
           </button>
           <button
@@ -134,7 +178,12 @@ export function Overlay(): React.JSX.Element {
         <div className="strip" onPointerDown={startDrag}>
           <div className="corner">
             {due > 0 && (
-              <button type="button" className="due" onClick={() => window.duet.openReview()} title="Review the cards due">
+              <button
+                type="button"
+                className="due"
+                onClick={() => window.duet.openReview()}
+                title="Review the cards due"
+              >
                 {due} due
               </button>
             )}
@@ -142,9 +191,16 @@ export function Overlay(): React.JSX.Element {
           </div>
 
           {current ? (
-            <LineView line={current} settings={settings} starred={(pair) => !!stars[key(pair)]} onStar={star} />
+            <LineView
+              line={current}
+              settings={settings}
+              starred={(pair) => !!stars[key(pair)]}
+              onStar={star}
+            />
           ) : (
-            <p className="idle">{status.url ? 'Lines appear here as they are spoken' : state.text}</p>
+            <p className="idle">
+              {status.url ? 'Lines appear here as they are spoken' : state.text}
+            </p>
           )}
           {building && <p className="hint">{building}</p>}
 
@@ -161,9 +217,14 @@ export function Overlay(): React.JSX.Element {
           {nudge && (
             <p className="notice">
               <span>
-                Review {due} {due === 1 ? 'card' : 'cards'} · about {Math.max(1, Math.round(due * 0.4))} min
+                Review {due} {due === 1 ? 'card' : 'cards'} · about{' '}
+                {Math.max(1, Math.round(due * 0.4))} min
               </span>
-              <button type="button" className="act primary" onClick={() => window.duet.openReview()}>
+              <button
+                type="button"
+                className="act primary"
+                onClick={() => window.duet.openReview()}
+              >
                 Review
               </button>
             </p>
@@ -171,16 +232,8 @@ export function Overlay(): React.JSX.Element {
           {toast && (
             <p className="toast">
               <span>{toast.text}</span>
-              {toast.cardId && (
-                <button
-                  type="button"
-                  className="act"
-                  onClick={() => {
-                    window.duet.unsave(toast.cardId!)
-                    setStars((now) => Object.fromEntries(Object.entries(now).filter(([, id]) => id !== toast.cardId)))
-                    setToast(undefined)
-                  }}
-                >
+              {toast.undo && (
+                <button type="button" className="act" onClick={() => undo(toast.undo!)}>
                   Undo
                 </button>
               )}

@@ -168,6 +168,7 @@ Correction policy:
 - Look first at what ${name} learners most often get wrong:
 ${bullets(tutor.corrections).replace(/^- /gm, '  - ')}
 - In text you can't hear the learner. For pronunciation, suggest switching to voice.
+- Set corrects_learner only when your reply points out a problem in ${name} the learner wrote; an answer, an explanation or practice that needed no fix is not a correction.
 
 ${cardWorkflows()}
 

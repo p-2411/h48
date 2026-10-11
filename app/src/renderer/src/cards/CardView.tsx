@@ -124,7 +124,7 @@ export function CardView({
               )}
             </>
           ) : (
-            'The tutor (not from a video)'
+            'Made with Duet'
           )}
         </dd>
         <dt>Saved</dt>
@@ -177,7 +177,7 @@ export function CardView({
         {video && (
           <>
             <button type="button" className="btn" onClick={() => window.duet.cards.replay(card.id)}>
-              Replay source
+              Replay
             </button>
             <button
               type="button"

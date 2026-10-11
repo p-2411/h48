@@ -19,13 +19,36 @@ import { useEnglishHelp, useVoiceHandoff } from './useVoiceHandoff'
 import { VoiceBar } from './VoiceBar'
 import { isVoiceOn, useLiveTutor, type TutorLiveStatus } from './voice/useLiveTutor'
 
-/** What the mascot shows: pleased for a moment after a save, else what the conversation is doing. */
-function mascotState(status: TutorLiveStatus, replying: boolean, cheering: boolean): MascotState {
+// How long the mascot gently corrects after a reply that corrects the learner: one cycle of its
+// correction animation (mascot.css).
+const CORRECTION_MS = 3_800
+
+/** What the mascot shows: pleased for a moment after a save, gently correcting for a moment after a
+ * reply that corrects the learner, else what the conversation is doing. */
+function mascotState(
+  status: TutorLiveStatus,
+  replying: boolean,
+  cheering: boolean,
+  correcting: boolean
+): MascotState {
   if (cheering) return 'success'
   if (status === 'listening') return 'listening'
   if (status === 'speaking') return 'speaking'
   if (isVoiceOn(status) && status !== 'ending') return 'thinking'
-  return replying ? 'thinking' : 'idle'
+  if (replying) return 'thinking'
+  return correcting ? 'correction' : 'idle'
+}
+
+/** Whether the turn `turnId` (Duet's newest reply, when it corrects the learner) is still being
+ * shown as a correction: true from when it arrives until CORRECTION_MS later. */
+function useCorrection(turnId: string | undefined): boolean {
+  const [done, setDone] = useState<string>()
+  useEffect(() => {
+    if (!turnId || turnId === done) return
+    const timer = window.setTimeout(() => setDone(turnId), CORRECTION_MS)
+    return () => window.clearTimeout(timer)
+  }, [turnId, done])
+  return !!turnId && turnId !== done
 }
 
 export function Conversation({
@@ -82,6 +105,9 @@ export function Conversation({
 
   // A failed text reply can be asked again: main sends the same message without adding it twice.
   const last = state.chat.at(-1)
+  const correcting = useCorrection(
+    last?.from === 'duet' && last.correction ? `c${state.chat.length - 1}` : undefined
+  )
   const unanswered =
     state.chatError &&
     !state.replying &&
@@ -187,7 +213,12 @@ export function Conversation({
           <div className="composer">
             <div className="composer-mascot">
               <Mascot
-                state={mascotState(live.status, !!state.replying || state.loading, cards.cheering)}
+                state={mascotState(
+                  live.status,
+                  !!state.replying || state.loading,
+                  cards.cheering,
+                  correcting
+                )}
                 scale={voiceOn ? 0.5 : 0.34}
               />
             </div>

@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { aidRequester } from '../src/renderer/src/explain/aids.ts'
 import { exclusive } from '../src/renderer/src/explain/exclusive.ts'
+import { readReply } from '../src/main/tutor/text.ts'
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -32,7 +33,11 @@ function deferred() {
   // A failed call frees the buttons too, so the learner can try again.
   const failing = run(() => Promise.reject(new Error('NO_ACTION_TO_UNDO')))
   await assert.rejects(failing)
-  assert.deepEqual(busy, [true, false, true, false], 'A failed call must not leave the buttons disabled.')
+  assert.deepEqual(
+    busy,
+    [true, false, true, false],
+    'A failed call must not leave the buttons disabled.'
+  )
   await run(async () => calls++)
   assert.equal(calls, 2, 'After a call is back, the next press runs.')
 }
@@ -50,7 +55,15 @@ function store(options) {
     pending.push(call)
     return call.promise
   }
-  return { request, fetcher, asked, pending, get state() { return state } }
+  return {
+    request,
+    fetcher,
+    asked,
+    pending,
+    get state() {
+      return state
+    }
+  }
 }
 
 {
@@ -69,7 +82,11 @@ function store(options) {
   assert.equal(meanings.asked.length, 3, 'New text for a turn is asked for again.')
   meanings.pending[1].resolve('Mor')
   await tick()
-  assert.equal(meanings.state.t2.loading, true, 'An answer for older text must not replace the newer request.')
+  assert.equal(
+    meanings.state.t2.loading,
+    true,
+    'An answer for older text must not replace the newer request.'
+  )
   meanings.pending[2].resolve('Good morning')
   await tick()
   assert.equal(meanings.state.t2.text, 'Good morning')
@@ -78,7 +95,11 @@ function store(options) {
   meanings.request('t3', 'ありがとう', meanings.fetcher)
   meanings.pending[3].reject(new Error('MOMENT_NOT_FOUND'))
   await tick()
-  assert.equal(meanings.state.t3.error, 'Open Explain on a line first.', 'Error codes read as sentences.')
+  assert.equal(
+    meanings.state.t3.error,
+    'Open Explain on a line first.',
+    'Error codes read as sentences.'
+  )
   meanings.request('t3', 'ありがとう', meanings.fetcher)
   assert.equal(meanings.asked.length, 5, 'After a failed meaning, Meaning again must try again.')
 }
@@ -91,7 +112,29 @@ function store(options) {
   await tick()
   assert.equal(readings.state.t1.error, 'rate limited')
   readings.request('t1', 'こんにちは', readings.fetcher)
-  assert.equal(readings.asked.length, 1, 'A failed romanisation must not be asked again for the same text.')
+  assert.equal(
+    readings.asked.length,
+    1,
+    'A failed romanisation must not be asked again for the same text.'
+  )
+}
+
+// --- A text reply and whether it corrects the learner ---------------------------------------
+{
+  assert.deepEqual(readReply('{"reply":" Say 시장에 가요. ","corrects_learner":true}'), {
+    text: 'Say 시장에 가요.',
+    correction: true
+  })
+  assert.deepEqual(readReply('{"reply":"That works.","corrects_learner":false}'), {
+    text: 'That works.',
+    correction: false
+  })
+  // An answer outside the format is still the reply, and is never taken as a correction.
+  assert.deepEqual(readReply('Plain answer'), { text: 'Plain answer', correction: false })
+  assert.deepEqual(readReply('{"reply":"Hi","corrects_learner":"yes"}'), {
+    text: 'Hi',
+    correction: false
+  })
 }
 
 console.log('Conversation checks passed.')

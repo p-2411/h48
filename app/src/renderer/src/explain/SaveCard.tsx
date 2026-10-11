@@ -1,4 +1,4 @@
-// Save card: one click saves the card Duet wrote from the explanation; nothing to fill in. It can be
+// Save: one click saves the card Duet wrote from the explanation; nothing to fill in. It can be
 // edited later in My cards. Saved shows a short-lived Undo; the same card saved twice is found
 // instead of saved again. Shown with a key per moment, so another line starts over.
 import { useEffect, useState } from 'react'
@@ -23,9 +23,19 @@ function draftOf(moment: Moment, explanation: Explanation): CardDraft {
   }
 }
 
-type Step = { name: 'ready' } | { name: 'saving' } | { name: 'saved'; card: Card; undo: boolean } | { name: 'duplicate'; card: Card }
+type Step =
+  | { name: 'ready' }
+  | { name: 'saving' }
+  | { name: 'saved'; card: Card; undo: boolean }
+  | { name: 'duplicate'; card: Card }
 
-export function SaveCard({ moment, explanation }: { moment: Moment; explanation: Explanation }): React.JSX.Element {
+export function SaveCard({
+  moment,
+  explanation
+}: {
+  moment: Moment
+  explanation: Explanation
+}): React.JSX.Element {
   const [step, setStep] = useState<Step>({ name: 'ready' })
   const [error, setError] = useState<string>()
 
@@ -40,7 +50,11 @@ export function SaveCard({ moment, explanation }: { moment: Moment; explanation:
     setError(undefined)
     try {
       const result = await window.duet.cards.save(draftOf(moment, explanation))
-      setStep('saved' in result ? { name: 'saved', card: result.saved, undo: true } : { name: 'duplicate', card: result.duplicate })
+      setStep(
+        'saved' in result
+          ? { name: 'saved', card: result.saved, undo: true }
+          : { name: 'duplicate', card: result.duplicate }
+      )
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'Could not save the card.')
       setStep({ name: 'ready' })
@@ -51,8 +65,12 @@ export function SaveCard({ moment, explanation }: { moment: Moment; explanation:
     return (
       <span className="row">
         <span className="muted">{step.name === 'saved' ? 'Saved' : 'Already saved'}</span>
-        <button type="button" className="btn quiet" onClick={() => window.duet.cards.open(step.card.id)}>
-          Open card
+        <button
+          type="button"
+          className="btn quiet"
+          onClick={() => window.duet.cards.open(step.card.id)}
+        >
+          Open in My cards
         </button>
         {step.name === 'saved' && step.undo && (
           <button
@@ -71,7 +89,7 @@ export function SaveCard({ moment, explanation }: { moment: Moment; explanation:
   return (
     <>
       <button type="button" className="btn" disabled={step.name === 'saving'} onClick={save}>
-        Save card
+        Save
       </button>
       {error && <span className="notice error">{error}</span>}
     </>

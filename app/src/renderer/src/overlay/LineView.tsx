@@ -27,7 +27,11 @@ function Tokens({
               if (token.pair === null) return
               const box = event.currentTarget.getBoundingClientRect()
               const dock = event.currentTarget.closest('.dock')!.getBoundingClientRect()
-              onHover({ pair: token.pair, job: token.job, left: box.left - dock.left + box.width / 2 })
+              onHover({
+                pair: token.pair,
+                job: token.job,
+                left: box.left - dock.left + box.width / 2
+              })
             }}
           >
             {token.text}
@@ -64,16 +68,25 @@ export function LineView({
   return (
     <div className="line" onMouseLeave={() => setHover(undefined)}>
       {hover && word && (
-        <div className="popup" data-solid style={{ '--x': `${hover.left}px` } as React.CSSProperties} onMouseEnter={() => setHover(hover)}>
+        <div
+          className="popup"
+          data-solid
+          style={{ '--x': `${hover.left}px` } as React.CSSProperties}
+          onMouseEnter={() => setHover(hover)}
+        >
           <span className="job" data-t={hover.job}>
             {JOBS[hover.job]}
           </span>
           <b lang={settings.language}>{word.source}</b>
           <span>{word.english}</span>
           <span className="row">
-            <button type="button" className={`pill${starred(hover.pair) ? ' on' : ''}`} onClick={() => onStar(hover.pair)}>
+            <button
+              type="button"
+              className={`pill${starred(hover.pair) ? ' on' : ''}`}
+              onClick={() => onStar(hover.pair)}
+            >
               <Icon name="star" size={13} filled={starred(hover.pair)} />
-              {starred(hover.pair) ? 'Saved' : 'Save word'}
+              {starred(hover.pair) ? 'Saved' : 'Save'}
             </button>
             <button type="button" className="pill" onClick={() => window.duet.explainLine(line.id)}>
               Explain line

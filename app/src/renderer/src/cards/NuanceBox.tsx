@@ -8,7 +8,7 @@ export function NuanceBox({
 }): React.JSX.Element {
   return (
     <section className="nuance-box" aria-label="Saved nuance analysis">
-      <span className="label">Nuance analysis</span>
+      <span className="label">What it means here</span>
       <p>{explanation.meaning}</p>
       {explanation.notice && (
         <p>

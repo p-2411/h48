@@ -44,7 +44,7 @@ function Answer({ card }: { card: Card }): React.JSX.Element {
       ) : (
         <p className="big">{card.meaning}</p>
       )}
-      <p className="muted">Tests: {card.target}</p>
+      <p className="muted">What it tests: {card.target}</p>
       {card.explanation?.notice && <p>{card.explanation.notice.text}</p>}
       {card.alternative && <p className="muted">Alternative: {card.alternative}</p>}
       {card.note && <p className="muted">Note: {card.note}</p>}
@@ -74,8 +74,12 @@ function Scene({ card }: { card: Card }): React.JSX.Element | null {
       <p className="faint">
         {video.title ?? video.site}
         {video.position !== undefined && ` · ${clock(video.position)}`}
-        <button type="button" className="btn quiet" onClick={() => window.duet.cards.replay(card.id)}>
-          Watch this moment
+        <button
+          type="button"
+          className="btn quiet"
+          onClick={() => window.duet.cards.replay(card.id)}
+        >
+          Replay
         </button>
       </p>
     </div>
@@ -136,7 +140,9 @@ export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
                     className={`btn rate ${rating}`}
                     title={meaning}
                     disabled={busy}
-                    onClick={() => act(() => window.duet.cards.rate(next.card.id, next.card.revision, rating))}
+                    onClick={() =>
+                      act(() => window.duet.cards.rate(next.card.id, next.card.revision, rating))
+                    }
                   >
                     <span>{label}</span>
                     <span className="faint">{next.outcomes[rating].interval}</span>
@@ -160,11 +166,21 @@ export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
                 Reveal answer
               </button>
             )}
-            <button type="button" className="btn quiet" disabled={busy} onClick={() => act(() => window.duet.cards.skip(next.card.id))}>
+            <button
+              type="button"
+              className="btn quiet"
+              disabled={busy}
+              onClick={() => act(() => window.duet.cards.skip(next.card.id))}
+            >
               Skip
             </button>
             {queue.canUndo && (
-              <button type="button" className="btn quiet" disabled={busy} onClick={() => act(() => window.duet.cards.undo())}>
+              <button
+                type="button"
+                className="btn quiet"
+                disabled={busy}
+                onClick={() => act(() => window.duet.cards.undo())}
+              >
                 Undo last rating
               </button>
             )}
@@ -180,17 +196,24 @@ export function Review({ onEnd }: { onEnd: () => void }): React.JSX.Element {
           ) : (
             <>
               <p>Nothing to review right now.</p>
-              {queue.nextDueAt && <p className="muted">Next card is due {when(queue.nextDueAt)}.</p>}
+              {queue.nextDueAt && (
+                <p className="muted">Next card is due {when(queue.nextDueAt)}.</p>
+              )}
             </>
           )}
           <div className="row">
             {queue.canUndo && (
-              <button type="button" className="btn quiet" disabled={busy} onClick={() => act(() => window.duet.cards.undo())}>
+              <button
+                type="button"
+                className="btn quiet"
+                disabled={busy}
+                onClick={() => act(() => window.duet.cards.undo())}
+              >
                 Undo last rating
               </button>
             )}
             <button type="button" className="btn" onClick={() => window.duet.cards.open()}>
-              Browse cards
+              Open My cards
             </button>
           </div>
         </div>
