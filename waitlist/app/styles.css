@@ -95,11 +95,6 @@ h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text
   /* The video, in its whole browser frame, is a big backdrop: the heading and its line sit right on
      top of it. Its edges line up with the header pill (the same gutter from the screen edge on both
      sides, at every width). site.js drifts it slower than the page as you scroll. */
-  /* The window keeps its height on narrower screens and gets less wide instead: the video fills
-     the height and crops its sides, so the panel never gets squeezed. */
-  .hero .hero-demo .watch{height:clamp(420px,58vh,560px);grid-template-columns:minmax(0,1.7fr) minmax(340px,1fr)}
-  .hero .hero-demo .watch-main{display:flex;flex-direction:column;min-height:0}
-  .hero .hero-demo .video-still{flex:1;min-height:0;aspect-ratio:auto}
   .hero .hero-demo{--gutter:clamp(16px,3vw,36px);position:absolute;z-index:0;left:50%;right:auto;width:calc(100vw - 2 * var(--gutter));margin-left:calc(var(--gutter) - 50vw);top:max(48px,7vh);opacity:.6;will-change:transform,opacity}
 }
 
