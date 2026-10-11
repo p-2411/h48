@@ -9,10 +9,11 @@ import { languageModule, speaks } from '../../../shared/languages'
 import type { Moment } from '../../../shared/moment'
 import type { PendingTutorAction, ReviewRating, TutorActionResult, TutorCard } from '../../../shared/tutor'
 import { RATINGS } from '../../../shared/cards'
+import { say } from '../components/errors'
 import { Mascot, type MascotState } from '../components/Mascot'
 import { clock } from '../components/time'
-import { ENGLISH_HELP_DELAY_MS, TURN_SETTLE_MS } from '../tutor/timing'
-import { useLiveTutor, type TutorLiveStatus } from '../tutor/useLiveTutor'
+import { ENGLISH_HELP_DELAY_MS, TURN_SETTLE_MS } from './voice/timing'
+import { useLiveTutor, type TutorLiveStatus } from './voice/useLiveTutor'
 import { Turn, type Aid, type TurnData } from './Turn'
 
 // Common questions that fill in the message box (to send as is, or finish first).
@@ -202,9 +203,8 @@ export function Conversation({ state, moment }: { state: ExplainState; moment: M
     try {
       const enabled = await window.duet.tutor.setExplore(true)
       setExplore(enabled)
-      if (enabled && connected) live.enableExplore()
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Could not open your saved cards to Duet.')
+      setActionError(say(error, 'Could not open your saved cards to Duet.'))
     }
   }
   const confirm = async (rating?: ReviewRating): Promise<void> => {

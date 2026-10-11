@@ -3,7 +3,7 @@ import { createEmptyCard, fsrs, Rating } from 'ts-fsrs'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { backendInstructions, lineContext, liveInstructions, textInstructions } from '../src/main/tutor/prompts.ts'
-import { ENGLISH_HELP_DELAY_MS, LIVE_REPLY_FALLBACK_MS } from '../src/renderer/src/tutor/timing.ts'
+import { ENGLISH_HELP_DELAY_MS, LIVE_REPLY_FALLBACK_MS } from '../src/renderer/src/explain/voice/timing.ts'
 import { LANGUAGE_CODES, languageModule, speaks } from '../src/shared/languages/index.ts'
 import { joinTokens } from '../src/shared/levels.ts'
 
@@ -96,7 +96,7 @@ if (!lineContext({ moment: { language: 'ja', line: { id: 1, original: 'x', at: n
   throw new Error('The line context no longer says the saved cards are open to Duet.')
 
 const liveHook = readFileSync(
-  resolve(import.meta.dirname, '../src/renderer/src/tutor/useLiveTutor.ts'),
+  resolve(import.meta.dirname, '../src/renderer/src/explain/voice/useLiveTutor.ts'),
   'utf8'
 )
 if (
