@@ -170,6 +170,12 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+server.on('error', error => {
+  if (error.code !== 'EADDRINUSE') throw error;
+  console.log(`The dashboard is already running → http://localhost:${PORT}`);
+  console.log(`To start another copy, pick a different port: PORT=4401 npm run dashboard`);
+  process.exit(0);
+});
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`Waitlist dashboard → http://localhost:${PORT}`);
 });
