@@ -47,6 +47,8 @@ import { Home } from './home'
 import { DailySession } from './daily'
 import { openAIQuiz } from './daily/quiz'
 import { Reminder } from './daily/reminder'
+import { Checkpoints } from './checkpoints'
+import { openAISceneJudge } from './checkpoints/scenes'
 import { createOverlay, toggleOverlay } from './windows/overlay'
 
 // In development, settings such as OPENAI_API_KEY can live in app/.env.local (git-ignored).
@@ -159,14 +161,31 @@ app.whenReady().then(() => {
   // The home base: opened from the Dock, the menu bar, the strip's ⚙ and when Duet starts.
   const home = new Home({ log: watchLog, cards, settings, openWelcome: () => welcome.open(true) })
   app.on('activate', () => home.open())
+  // The text model's quiz (what did they mean?), for the daily session and checkpoints.
+  const quiz = openAIQuiz()
   // The daily session in the home base's Today: reviews, a line said back, one challenge.
   new DailySession({
     log: watchLog,
     cards,
     voice,
-    quiz: openAIQuiz(),
+    quiz,
     owns: (sender) => home.owns(sender),
     setReminder: (time) => settings.update({ reminder: time })
+  })
+  // Checkpoints: a glow on the strip at a pause or where a scene ends; one challenge when clicked.
+  const checkpoints = new Checkpoints({
+    watcher,
+    player,
+    settings,
+    log: watchLog,
+    cards,
+    voice,
+    quiz,
+    scenes: openAISceneJudge(),
+    overlay: {
+      owns: (sender) => !overlay.isDestroyed() && sender === overlay.webContents,
+      send: (channel, value) => overlay.isDestroyed() || overlay.webContents.send(channel, value)
+    }
   })
   // The daily reminder (off unless a time is set in Settings); clicking it opens Today.
   const reminder = new Reminder({
@@ -246,6 +265,7 @@ app.whenReady().then(() => {
     wait.tick()
     player.sample()
     logLink.tick()
+    checkpoints.tick()
     watcher.setPlayback({
       playing: player.playing,
       waiting: player.isHeldBy('wait'),

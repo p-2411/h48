@@ -200,6 +200,16 @@ export class Cards extends EventEmitter {
     return result
   }
 
+  /** A word the learner missed in a challenge (the daily session, a checkpoint): a new card for it,
+   * or, when it has one, that card due now. `made` says which. */
+  missed(draft: CardDraft, now = Date.now()): { card: Card; made: boolean } {
+    const result = this.saveDraft(draft)
+    if ('saved' in result) return { card: result.saved, made: true }
+    const card = this.store.bringForward(result.duplicate.id, now)
+    this.changed()
+    return { card, made: false }
+  }
+
   /** Deletes a card (undoable for a while, see CardStore.remove), then removes it for good. */
   remove(id: string): void {
     this.store.remove(id)

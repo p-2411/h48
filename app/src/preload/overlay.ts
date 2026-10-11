@@ -37,6 +37,7 @@ export const overlayApi = {
   setLevel: (level: Level) => ipcRenderer.send('duet:set-level', level),
   setGuessFirst: (on: boolean) => ipcRenderer.send('duet:set-guess-first', on),
   setWaitForTranslation: (on: boolean) => ipcRenderer.send('duet:set-wait', on),
+  setCheckpoints: (on: boolean) => ipcRenderer.send('duet:set-checkpoints', on),
   setPauseForHelp: (on: boolean) => ipcRenderer.send('duet:set', { pauseForHelp: on }),
   /** Stars a line (the one on screen when no id is given), or one of its words by pair number. */
   save: (lineId?: number, pair?: number) =>

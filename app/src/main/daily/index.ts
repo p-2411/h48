@@ -7,29 +7,26 @@
 //   daily:plan             → SessionView: today's plan (a new one each time it's asked for)
 //   daily:speak            → SessionAudio: Duet saying the line
 //   daily:coach            the learner's recording (WAV) → LineAttempt: what was heard, a note
-//   daily:check-recall     the word picked → { correct, answer }
+//   daily:check-recall     the word picked → { correct, answer }; a miss becomes a card (Cards.missed)
 //   daily:meaning-question → { question }
 //   daily:meaning-check    the learner's answer → { note }
 //   daily:done             → the streak, with today kept
 //   daily:set-reminder     the daily reminder's time ("19:30"), or null for none
 import { ipcMain, type WebContents } from 'electron'
+import type { CardDraft } from '../../shared/cards'
 import type { SessionAudio, SessionView } from '../../shared/daily'
-import type { DueCounts, Language } from '../../shared/types'
-import type { LineAttempt, PronunciationCoach, TextToSpeech } from '../ai/voice'
+import type { DueCounts } from '../../shared/types'
+import type { PronunciationCoach, TextToSpeech } from '../ai/voice'
+import type { LastVideo, WordEvent } from '../watchlog'
 import type { Streak } from '../watchlog/streak'
-import type { LastVideo } from '../watchlog'
-import { planSession, type SessionPlan } from './plan'
+import { planSession } from './plan'
 import type { Quiz } from './quiz'
 import { parseReminder } from './reminder'
-
-// A recording longer than this (about 3 minutes of WAV) is not a line said back.
-const MAX_RECORDING_BYTES = 12 * 1024 * 1024
-const MAX_ANSWER = 1_000
-const NO_KEY = 'Add OPENAI_API_KEY to app/.env.local for the speaking and quiz steps.'
+import { challengeView, NO_KEY, Round } from './round'
 
 type Deps = {
-  log: { lastVideo(): LastVideo | undefined; markSessionDone(): void; streak(): Streak }
-  cards: { counts(): DueCounts }
+  log: { lastVideo(): LastVideo | undefined; markSessionDone(): void; streak(): Streak; noteWord(event: WordEvent): unknown }
+  cards: { counts(): DueCounts; missed(draft: CardDraft): unknown }
   voice?: { tts: TextToSpeech; coach: PronunciationCoach }
   quiz?: Quiz
   /** Whether a message came from the home page. */
@@ -39,32 +36,9 @@ type Deps = {
   random?: () => number
 }
 
-/** The view of a plan the page is given: no answers. */
-function view(plan: SessionPlan, video?: LastVideo): SessionView {
-  const { challenge } = plan
-  return {
-    cards: plan.cards,
-    video: video?.title,
-    say: plan.say && { original: plan.say.original, translation: plan.say.translation },
-    challenge:
-      challenge?.kind === 'recall'
-        ? {
-            kind: 'recall',
-            before: challenge.recall.before,
-            after: challenge.recall.after,
-            spaceBefore: challenge.recall.spaceBefore,
-            spaceAfter: challenge.recall.spaceAfter,
-            choices: challenge.recall.choices,
-            translation: challenge.line.translation
-          }
-        : challenge && { kind: 'meaning', original: challenge.line.original }
-  }
-}
-
 export class DailySession {
-  private plan?: SessionPlan
-  private language: Language = 'es'
-  private question?: string
+  private round?: Round
+  private video?: LastVideo
 
   constructor({ log, cards, voice, quiz, owns, setReminder, random = Math.random }: Deps) {
     // Every step is the home page's, and works on the plan made for it.
@@ -74,53 +48,33 @@ export class DailySession {
         return work(...args)
       })
     }
-    const planned = (): SessionPlan => {
-      if (!this.plan) throw new Error('Start today’s session first.')
-      return this.plan
+    const round = (): Round => {
+      if (!this.round) throw new Error('Start today’s session first.')
+      return this.round
     }
 
     handle('plan', (): SessionView => {
-      const video = log.lastVideo()
+      const video = (this.video = log.lastVideo())
       const { due, newAvailable } = cards.counts()
-      this.plan = planSession({ due: due + newAvailable, lines: video?.lines ?? [], words: video?.words ?? [], random })
-      this.language = video?.language ?? this.language
-      this.question = undefined
-      return view(this.plan, video)
+      const plan = planSession({ due: due + newAvailable, lines: video?.lines ?? [], words: video?.words ?? [], random })
+      this.round = new Round({ cards, log, coach: voice?.coach, quiz }, video, plan.say, plan.challenge)
+      return {
+        cards: plan.cards,
+        video: video?.title,
+        say: plan.say && { original: plan.say.original, translation: plan.say.translation },
+        challenge: challengeView(plan.challenge)
+      }
     })
     handle('speak', async (): Promise<SessionAudio> => {
-      const line = planned().say
-      if (!line) throw new Error('Today’s session has no line to say.')
+      const line = round().say
+      if (!line || !this.video) throw new Error('Today’s session has no line to say.')
       if (!voice) throw new Error(NO_KEY)
-      return voice.tts.speak(line.original, this.language)
+      return voice.tts.speak(line.original, this.video.language)
     })
-    handle('coach', async (clip): Promise<LineAttempt> => {
-      const line = planned().say
-      if (!line) throw new Error('Today’s session has no line to say.')
-      const recording = clip as Partial<SessionAudio> | undefined
-      if (!(recording?.data instanceof Uint8Array) || !recording.data.length || recording.data.length > MAX_RECORDING_BYTES)
-        throw new Error('That recording could not be used. Try recording again.')
-      if (!voice) throw new Error(NO_KEY)
-      return voice.coach.coach({ data: recording.data, mimeType: 'audio/wav' }, { original: line.original, translation: line.translation, language: this.language })
-    })
-    handle('check-recall', (choice) => {
-      const challenge = planned().challenge
-      if (challenge?.kind !== 'recall') throw new Error('Today’s session has no word to recall.')
-      return { correct: choice === challenge.recall.answer, answer: challenge.recall.answer }
-    })
-    handle('meaning-question', async () => {
-      const challenge = planned().challenge
-      if (challenge?.kind !== 'meaning') throw new Error('Today’s session has no line to ask about.')
-      if (!quiz) throw new Error(NO_KEY)
-      this.question = await quiz.ask(challenge.line, this.language)
-      return { question: this.question }
-    })
-    handle('meaning-check', async (answer) => {
-      const challenge = planned().challenge
-      if (challenge?.kind !== 'meaning' || !this.question) throw new Error('Ask the question first.')
-      if (typeof answer !== 'string' || !answer.trim()) throw new Error('Write an answer first.')
-      if (!quiz) throw new Error(NO_KEY)
-      return quiz.mark(challenge.line, this.question, answer.trim().slice(0, MAX_ANSWER), this.language)
-    })
+    handle('coach', (clip) => round().coach(clip))
+    handle('check-recall', (choice) => round().checkRecall(choice))
+    handle('meaning-question', () => round().meaningQuestion())
+    handle('meaning-check', (answer) => round().meaningCheck(answer))
     handle('set-reminder', (time) => {
       const parsed = parseReminder(time)
       if (time !== null && !parsed) throw new Error('Pick a time for the reminder, like 19:30.')

@@ -35,6 +35,11 @@ export function videoKey(video: { site: Site; id: string }): string {
   return `${video.site}:${video.id}`
 }
 
+/** The site's id for a video, from its key (site:videoId, see videoKey). */
+function videoIdOf(key: string, site: Site): string {
+  return key.slice(site.length + 1)
+}
+
 type VideoRow = {
   id: string
   site: Site
@@ -48,7 +53,7 @@ function summary(row: VideoRow): WatchedVideoSummary {
   return {
     key: row.id,
     site: row.site,
-    videoId: row.id.slice(row.site.length + 1), // the key is site:videoId (see videoKey)
+    videoId: videoIdOf(row.id, row.site),
     title: row.title ?? undefined,
     position: row.position ?? undefined,
     lastWatched: row.last_watched,
@@ -56,8 +61,19 @@ function summary(row: VideoRow): WatchedVideoSummary {
   }
 }
 
-/** The last video's lines and words, for the daily session (see lastVideo). */
-export type LastVideo = { key: string; title?: string; language: Language; lines: MetLine[]; words: string[] }
+type VideoLinesRow = { id: string; site: Site; title: string | null; language: Language }
+
+/** A video's lines and words: the last video's for the daily session (lastVideo), the one on screen's
+ * for a checkpoint (videoLines). */
+export type LastVideo = {
+  key: string
+  site: Site
+  videoId: string
+  title?: string
+  language: Language
+  lines: MetLine[]
+  words: string[]
+}
 
 /** A line met, as kept: its processed form (translation and word pairs). */
 export type MetLine = { id: number; original: string; translation: string; processed: ProcessedLine; start?: number }
@@ -137,16 +153,31 @@ export class WatchLog {
   lastVideo(limit = 40): LastVideo | undefined {
     const video = database()
       .prepare(
-        `SELECT id, title, language FROM videos WHERE id IN (SELECT video_id FROM lines)
+        `SELECT id, site, title, language FROM videos WHERE id IN (SELECT video_id FROM lines)
          ORDER BY last_watched DESC LIMIT 1`
       )
-      .get() as { id: string; title: string | null; language: Language } | undefined
-    if (!video) return undefined
+      .get() as VideoLinesRow | undefined
+    return video && this.withLines(video, 0, limit)
+  }
+
+  /** A video's lines met since `since` (ms), newest first, and the words looked at in it, for a
+   * checkpoint; undefined when the video isn't on record. */
+  videoLines(key: string, since: number, limit = 40): LastVideo | undefined {
+    const video = database().prepare('SELECT id, site, title, language FROM videos WHERE id = ?').get(key) as VideoLinesRow | undefined
+    return video && this.withLines(video, since, limit)
+  }
+
+  /** How many videos have been watched with Duet. */
+  videoCount(): number {
+    return (database().prepare('SELECT COUNT(*) n FROM videos').get() as { n: number }).n
+  }
+
+  private withLines(video: VideoLinesRow, since: number, limit: number): LastVideo {
     const rows = database()
       .prepare(
-        'SELECT id, original, translation, processed, start FROM lines WHERE video_id = ? AND language = ? ORDER BY met_at DESC LIMIT ?'
+        'SELECT id, original, translation, processed, start FROM lines WHERE video_id = ? AND language = ? AND met_at >= ? ORDER BY met_at DESC LIMIT ?'
       )
-      .all(video.id, video.language, limit) as { id: number; original: string; translation: string | null; processed: string | null; start: number | null }[]
+      .all(video.id, video.language, since, limit) as { id: number; original: string; translation: string | null; processed: string | null; start: number | null }[]
     const lines = rows.flatMap((row) => {
       const processed = parseProcessed(row.processed)
       return processed
@@ -158,7 +189,15 @@ export class WatchLog {
         `SELECT text FROM word_events WHERE video_id = ? AND kind IN ('hovered', 'saved') GROUP BY text ORDER BY MAX(at) DESC`
       )
       .all(video.id) as { text: string }[]
-    return { key: video.id, title: video.title ?? undefined, language: video.language, lines, words: words.map((word) => word.text) }
+    return {
+      key: video.id,
+      site: video.site,
+      videoId: videoIdOf(video.id, video.site),
+      title: video.title ?? undefined,
+      language: video.language,
+      lines,
+      words: words.map((word) => word.text)
+    }
   }
 
   /** A line the learner met. Only translated lines count; returns whether it was added. */

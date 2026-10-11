@@ -111,6 +111,9 @@ export type OverlaySettings = {
   overlayPosition?: { x: number; y: number }
   /** Where the side panel was last left, and its size. */
   panelBounds?: { x: number; y: number; width: number; height: number }
+  /** Checkpoints while watching (a glow on the strip at a pause or a break). Unset until chosen:
+   * Duet turns them on after the third video watched (see src/main/checkpoints). */
+  checkpoints?: boolean
   /** The daily reminder's time ("19:30", local); none means no reminder. */
   reminder?: string
   /** Which defaults saved settings have been brought up to (see SETTINGS_VERSION in main/settings.ts). */

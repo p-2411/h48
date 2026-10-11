@@ -115,14 +115,6 @@
   align-self: flex-start;
 }
 
-/* The daily session (daily/): one step at a time, in a column. */
+/* The daily session (daily/): one step at a time, in a column (the steps: components/challenges). */
 .daily { display: flex; flex-direction: column; gap: 12px; max-width: 640px; }
-.daily-step .big-line { font-size: 22px; line-height: 1.4; }
-.daily-blank { display: inline-block; min-width: 3em; padding: 0 6px; border-bottom: 2px solid var(--fg-2); text-align: center; }
-.daily-blank.is-right { color: #32d74b; border-color: #32d74b; }
-.daily-blank.is-wrong { color: #ff9f0a; border-color: #ff9f0a; }
-.daily-feedback:empty { display: none; }
-.daily-feedback p { margin: 0; }
-.daily-answer { display: flex; gap: 8px; width: 100%; }
-.daily-answer input { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); color: var(--fg); font: inherit; }
 .daily .review { align-self: stretch; max-width: none; }

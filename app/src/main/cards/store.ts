@@ -201,6 +201,21 @@ export class CardStore {
     return !!database().prepare('SELECT 1 FROM cards WHERE deleted_at IS NULL LIMIT 1').get()
   }
 
+  /** Makes a card due now (it was due later): the learner missed its word. Early reviews are fine for
+   * the scheduler. The revision goes up, as the outcomes shown before no longer apply. */
+  bringForward(id: string, now = Date.now()): Card {
+    const row = database().prepare('SELECT * FROM cards WHERE id = ? AND deleted_at IS NULL').get(id) as CardRow | undefined
+    if (!row) throw new Error('That card no longer exists.')
+    if (row.due > now) {
+      const fsrs = revive(row.fsrs)
+      fsrs.due = new Date(now)
+      database()
+        .prepare('UPDATE cards SET fsrs = ?, due = ?, revision = revision + 1, updated_at = ? WHERE id = ?')
+        .run(serialize(fsrs), now, now, id)
+    }
+    return this.get(id)!
+  }
+
   /** A content edit. Scheduling is kept: use it for corrections that test the same thing. */
   update(id: string, content: CardContent, now = Date.now()): Card {
     const row = database().prepare('SELECT * FROM cards WHERE id = ? AND deleted_at IS NULL').get(id) as CardRow | undefined

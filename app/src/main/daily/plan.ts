@@ -42,12 +42,24 @@ export function planSession({
   // The challenge uses another line when there is one, so it isn't the line just said back.
   const others = lines.filter((line) => line !== say)
   const pool = others.length ? others : lines
+  const recall = findRecall(pool, lines, looked, random)
+  return { cards, say, challenge: recall ?? { kind: 'meaning', line: pool[0] } }
+}
+
+/** A recall challenge on a word the learner looked at, from one of `pool` (the other choices from
+ * any of `lines`); undefined when none can be made. */
+export function findRecall(
+  pool: MetLine[],
+  lines: MetLine[],
+  looked: Set<string>,
+  random: () => number
+): Extract<SessionChallenge, { kind: 'recall' }> | undefined {
   for (const line of pool) {
     for (const pair of lookedAt(line, looked)) {
       const rest = lines.filter((item) => item !== line).map((item) => item.processed)
       const recall = recallChallenge(line.processed, pair, rest, random)
-      if (recall) return { cards, say, challenge: { kind: 'recall', line, recall } }
+      if (recall) return { kind: 'recall', line, recall }
     }
   }
-  return { cards, say, challenge: { kind: 'meaning', line: pool[0] } }
+  return undefined
 }

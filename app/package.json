@@ -8,7 +8,7 @@
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
-    "test": "npm run test:tutor && npm run test:tutor-actions && npm run test:overlay && npm run test:languages && npm run test:player && npm run test:tutor-window && npm run test:conversation && npm run test:cards-ui && npm run test:watch-log && npm run test:home && npm run test:daily",
+    "test": "npm run test:tutor && npm run test:tutor-actions && npm run test:overlay && npm run test:languages && npm run test:player && npm run test:tutor-window && npm run test:conversation && npm run test:cards-ui && npm run test:watch-log && npm run test:home && npm run test:daily && npm run test:checkpoints",
     "test:tutor": "jiti scripts/smoke-tutor.mjs",
     "test:tutor-actions": "jiti scripts/test-tutor-actions.mjs",
     "test:overlay": "jiti scripts/test-overlay.mjs",
@@ -19,6 +19,7 @@
     "test:watch-log": "node scripts/test-watch-log.mjs",
     "test:home": "node scripts/test-home.mjs",
     "test:daily": "node scripts/test-daily.mjs",
+    "test:checkpoints": "node scripts/test-checkpoints.mjs",
     "test:cards-ui": "jiti scripts/test-cards-ui.mjs",
     "test:native-reader": "node scripts/smoke-native-reader.mjs",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",

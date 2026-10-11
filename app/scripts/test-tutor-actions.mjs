@@ -286,6 +286,27 @@ await test('8: a start-session offer without an SDP string is refused', async ()
   expect(error?.message === 'INVALID_SDP_OFFER', `start-session gave ${error?.message}`)
 })
 
+await test('9: a missed word becomes a card, or its card comes due now', () => {
+  const draft = {
+    type: 'understand',
+    language: 'ja',
+    source: { kind: 'video', moment: moment('親友と映画を見た') },
+    expression: '親友',
+    meaning: 'best friend',
+    target: '親友 = best friend'
+  }
+  const first = cards.missed(draft)
+  expect(first.made === true, 'a word with no card gets one')
+  // Its card was reviewed and is due in ten days; missing the word again brings it forward.
+  const later = Date.now() + 10 * 86_400_000
+  database().prepare('UPDATE cards SET due = ? WHERE id = ?').run(later, first.card.id)
+  const again = cards.missed(draft)
+  expect(again.made === false && again.card.id === first.card.id, 'the same word from the same line is the same card')
+  expect(again.card.due <= Date.now(), `the card should be due now, not ${new Date(again.card.due).toISOString()}`)
+  const stored = database().prepare('SELECT due, fsrs FROM cards WHERE id = ?').get(first.card.id)
+  expect(stored.due <= Date.now() && new Date(JSON.parse(stored.fsrs).due).getTime() <= Date.now(), 'the scheduler state is due now too')
+})
+
 panel.emit('closed')
 database().close()
 rmSync(folder, { recursive: true, force: true })

@@ -5,6 +5,8 @@
 // DUET_FRAME="x,y,width,height" says where the video is on screen (the strip sits on it).
 // DUET_SAY=file: each JSON line written to that file is passed on as if the reader said it, to act
 // out a page changing, e.g. {"type":"frame","x":0,"y":0,"width":1440,"height":900} for fullscreen.
+// Two lines are for the stand-in itself, as if the viewer pressed the player's button:
+// {"type":"stand-in","press":"pause"} and {"type":"stand-in","press":"play"}.
 import { existsSync, readFileSync, watchFile } from 'fs'
 
 const url = process.env.DUET_VIDEO ?? 'https://www.youtube.com/watch?v=eRsGyueVLvQ'
@@ -20,7 +22,17 @@ if (say) {
   let read = existsSync(say) ? readFileSync(say, 'utf8').length : 0
   watchFile(say, { interval: 200 }, () => {
     const text = readFileSync(say, 'utf8')
-    for (const line of text.slice(read).split('\n').filter(Boolean)) process.stdout.write(line + '\n')
+    for (const line of text.slice(read).split('\n').filter(Boolean)) {
+      const own = (() => {
+        try {
+          return JSON.parse(line)
+        } catch {
+          return undefined
+        }
+      })()
+      if (own?.type === 'stand-in') playing = own.press === 'play'
+      else process.stdout.write(line + '\n')
+    }
     read = text.length
   })
 }

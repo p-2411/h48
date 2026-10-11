@@ -11,6 +11,8 @@ import { say } from '../components/errors'
 import { LevelMeter } from './LevelMeter'
 import { LineView } from './LineView'
 import { actionable, quiet, statusDot } from './notice'
+import type { CheckpointView } from '../../../shared/checkpoints'
+import { Checkpoint } from './Checkpoint'
 import { SettingsPopover } from './SettingsPopover'
 import { useOverlay } from './useOverlay'
 import { useSolid } from './useSolid'
@@ -46,6 +48,18 @@ export function Overlay(): React.JSX.Element {
   const [toast, setToast] = useState<Toast>()
   // Stars given in this run, by line and word ("12:3", or "12:line"), so they show as saved.
   const [stars, setStars] = useState<Record<string, string>>({})
+  // A checkpoint offered (the strip glows; a click opens it) and the one open.
+  const [offer, setOffer] = useState<'pause' | 'break' | null>(null)
+  const [checkpoint, setCheckpoint] = useState<CheckpointView>()
+  useEffect(() => window.duet.checkpoint.onOffer(setOffer), [])
+  // Where the pointer went down on the strip, so a click can be told from a drag.
+  const pressedAt = useRef<{ x: number; y: number }>(undefined)
+  const openCheckpoint = (event: React.MouseEvent<HTMLElement>): void => {
+    const pressed = pressedAt.current
+    const moved = pressed ? Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) > 4 : true
+    if (!offer || checkpoint || moved || (event.target as Element).closest(NOT_FOR_DRAGGING)) return
+    window.duet.checkpoint.open().then(setCheckpoint, (cause) => setToast({ text: say(cause, 'That checkpoint has gone.') }))
+  }
 
   useEffect(() => {
     if (!toast) return
@@ -169,7 +183,17 @@ export function Overlay(): React.JSX.Element {
           </button>
         </div>
 
-        <div className="strip" onPointerDown={startDrag}>
+        {checkpoint && <Checkpoint view={checkpoint} onClose={() => setCheckpoint(undefined)} />}
+        <div
+          // Glowing while a checkpoint is offered, and on while it's being done.
+          className={`strip${offer || checkpoint ? ' glow' : ''}`}
+          title={offer && !checkpoint ? 'A quick checkpoint: click the strip' : undefined}
+          onPointerDown={(event) => {
+            pressedAt.current = { x: event.clientX, y: event.clientY }
+            startDrag(event)
+          }}
+          onClick={openCheckpoint}
+        >
           <i
             className={`dot ${dot.tone}`}
             title={dot.text}

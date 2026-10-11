@@ -1,7 +1,7 @@
 // Records the microphone while the learner says a line back, as 16 kHz WAV (wav.ts). It stops by
 // itself after MAX_SECONDS, so a forgotten recording doesn't run on.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { say } from '../../components/errors'
+import { say } from '../errors'
 import { downsample, encodeWav } from './wav'
 
 const RATE = 16_000

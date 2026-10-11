@@ -6,9 +6,9 @@ import type { HomeToday } from '../../../../shared/home'
 import type { SessionView } from '../../../../shared/daily'
 import { say } from '../../components/errors'
 import { Review } from '../../review/Review'
-import { Meaning } from './Meaning'
-import { Recall } from './Recall'
-import { SayLine } from './SayLine'
+import { Meaning } from '../../components/challenges/Meaning'
+import { Recall } from '../../components/challenges/Recall'
+import { SayLine } from '../../components/challenges/SayLine'
 
 type Step = 'cards' | 'say' | 'challenge' | 'done'
 
@@ -55,11 +55,11 @@ export function DailySession({ onClose }: { onClose: () => void }): React.JSX.El
         {plan.video && step !== 'cards' && step !== 'done' && ` · from ${plan.video}`}
       </p>
       {step === 'cards' && <Review limit={plan.cards} onEnd={next} />}
-      {step === 'say' && plan.say && <SayLine line={plan.say} onNext={next} />}
-      {step === 'challenge' && plan.challenge?.kind === 'recall' && <Recall challenge={plan.challenge} onNext={next} />}
-      {step === 'challenge' && plan.challenge?.kind === 'meaning' && <Meaning challenge={plan.challenge} onNext={next} />}
+      {step === 'say' && plan.say && <SayLine line={plan.say} api={window.duet.daily} onNext={next} />}
+      {step === 'challenge' && plan.challenge?.kind === 'recall' && <Recall challenge={plan.challenge} api={window.duet.daily} onNext={next} />}
+      {step === 'challenge' && plan.challenge?.kind === 'meaning' && <Meaning challenge={plan.challenge} api={window.duet.daily} onNext={next} />}
       {step === 'done' && (
-        <section className="card-box daily-step" aria-label="Done for today">
+        <section className="card-box" aria-label="Done for today">
           <span className="label">Done for today</span>
           <p className="home-number">{streak ? `${streak.days} ${streak.days === 1 ? 'day' : 'days'}` : '…'}</p>
           <p className="muted">{steps.length === 1 ? 'You’re all caught up: nothing due, and nothing watched lately.' : 'That’s today. See you tomorrow.'}</p>

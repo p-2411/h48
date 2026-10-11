@@ -67,6 +67,9 @@ export function connectOverlay(
   ipcMain.on('duet:set-wait', (_, waitForTranslation: boolean) =>
     settings.update({ waitForTranslation })
   )
+  ipcMain.on('duet:set-checkpoints', (_, checkpoints: unknown) => {
+    if (typeof checkpoints === 'boolean') settings.update({ checkpoints })
+  })
   ipcMain.on('duet:set', (_, change: Partial<Pick<OverlaySettings, 'pauseForHelp'>>) =>
     settings.update({ pauseForHelp: change.pauseForHelp })
   )

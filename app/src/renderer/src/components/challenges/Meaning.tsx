@@ -1,27 +1,29 @@
 // What did they mean?: one question about a line the learner met, answered in their own words.
 import { useEffect, useState } from 'react'
 import type { SessionView } from '../../../../shared/daily'
-import { say } from '../../components/errors'
+import { say } from '../errors'
+import type { ChallengeApi } from './api'
+import './challenges.css'
 
 type MeaningView = Extract<NonNullable<SessionView['challenge']>, { kind: 'meaning' }>
 
-export function Meaning({ challenge, onNext }: { challenge: MeaningView; onNext: () => void }): React.JSX.Element {
+export function Meaning({ challenge, api, onNext }: { challenge: MeaningView; api: ChallengeApi; onNext: (answered: boolean) => void }): React.JSX.Element {
   const [question, setQuestion] = useState<string>()
   const [answer, setAnswer] = useState('')
   const [note, setNote] = useState<string>()
   const [checking, setChecking] = useState(false)
   const [error, setError] = useState<string>()
   useEffect(() => {
-    window.duet.daily.meaningQuestion().then(
+    api.meaningQuestion().then(
       (asked) => setQuestion(asked.question),
       (cause) => setError(say(cause, 'Duet could not ask about this line.'))
     )
-  }, [])
+  }, [api])
   const check = async (): Promise<void> => {
     setChecking(true)
     setError(undefined)
     try {
-      setNote((await window.duet.daily.meaningCheck(answer)).note)
+      setNote((await api.meaningCheck(answer)).note)
     } catch (cause) {
       setError(say(cause, 'That answer could not be checked.'))
     } finally {
@@ -29,36 +31,42 @@ export function Meaning({ challenge, onNext }: { challenge: MeaningView; onNext:
     }
   }
   return (
-    <section className="card-box daily-step" aria-label="What did they mean?">
-      <span className="label">What did they mean?</span>
-      <p className="big-line">{challenge.original}</p>
-      {question ? <p>{question}</p> : !error && <p className="faint">Thinking of a question…</p>}
+    <section className="challenge" aria-label="What did they mean?">
+      <span className="challenge-label">What did they mean?</span>
+      <p className="challenge-line">{challenge.original}</p>
+      {question ? <p>{question}</p> : !error && <p className="challenge-faint">Thinking of a question…</p>}
       {question && !note && (
         <form
-          className="daily-answer"
+          className="challenge-answer"
           onSubmit={(event) => {
             event.preventDefault()
             if (answer.trim()) void check()
           }}
         >
-          <label className="sr-only" htmlFor="daily-answer">
+          <label className="sr-only" htmlFor="challenge-answer">
             Your answer
           </label>
-          <input id="daily-answer" value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="In your own words" />
-          <button type="submit" className="btn primary" disabled={!answer.trim() || checking}>
+          <input
+            id="challenge-answer"
+            value={answer}
+            onFocus={() => api.takeKeyboard?.()}
+            onChange={(event) => setAnswer(event.target.value)}
+            placeholder="In your own words"
+          />
+          <button type="submit" className="challenge-btn primary" disabled={!answer.trim() || checking}>
             {checking ? 'Checking…' : 'Check'}
           </button>
         </form>
       )}
-      <div role="status" className="daily-feedback">
+      <div role="status" className="challenge-feedback">
         {note && <p>{note}</p>}
       </div>
       {error && (
-        <p className="notice error" role="alert">
+        <p className="challenge-error" role="alert">
           {error}
         </p>
       )}
-      <button type="button" className={`btn${note ? ' primary' : ' quiet'}`} onClick={onNext}>
+      <button type="button" className={`challenge-btn${note ? ' primary' : ' quiet'}`} onClick={() => onNext(!!note)}>
         {note ? 'Next' : 'Skip'}
       </button>
     </section>

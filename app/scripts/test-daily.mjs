@@ -27,7 +27,7 @@ const at = (y, m, d, h = 12, min = 0) => new Date(y, m - 1, d, h, min).getTime()
 // Lines as the watch log keeps them: words with jobs and pairs (see shared/types ProcessedLine).
 const word = (text, job, pair, space = true) => ({ text, job, pair, space })
 const processed = (translation, ...source) => ({ translation, source, english: [] })
-// "I watched a movie with a friend yesterday."
+// "I watched a movie with a friend yesterday." (with its English pairs, as real lines have)
 const movie = processed(
   'I watched a movie with a friend yesterday.',
   word('저는', 'p', 0),
@@ -39,6 +39,15 @@ const movie = processed(
   word('봤어요', 'v', 5, false),
   word('.', 'g', null, false)
 )
+movie.english = [
+  word('I', 'p', 0),
+  word('watched', 'v', 5),
+  word('a movie', 'n', 4),
+  word('with', 'g', 3),
+  word('a friend', 'n', 2),
+  word('yesterday', 'a', 1, false),
+  word('.', 'g', null, false)
+]
 // "If I go this way, will I reach the market?"
 const market = processed(
   'If I go this way, will I reach the market?',
@@ -110,6 +119,7 @@ try {
   // --- The session's IPC --------------------------------------------------------------------------
   const electron = await jiti.import(fakeElectron)
   const { WatchLog } = await jiti.import(join(root, 'watchlog/index.ts'))
+  const { database } = await jiti.import(join(root, 'store/db.ts'))
   const { DailySession } = await jiti.import(join(root, 'daily/index.ts'))
   const log = new WatchLog()
   const video = { site: 'youtube', id: 'sess', url: 'https://www.youtube.com/watch?v=sess', title: 'Sintel' }
@@ -132,7 +142,8 @@ try {
   }
   let home = {}
   const reminders = []
-  new DailySession({ setReminder: (time) => reminders.push(time), log, cards: { counts: () => ({ due: 3, newAvailable: 1 }) }, voice, quiz, owns: (sender) => sender === home, random: first })
+  const missed = []
+  new DailySession({ setReminder: (time) => reminders.push(time), log, cards: { counts: () => ({ due: 3, newAvailable: 1 }), missed: (draft) => (missed.push(draft), { made: true }) }, voice, quiz, owns: (sender) => sender === home, random: first })
   const fromHome = { sender: home }
   const fromElsewhere = { sender: {} }
   // Like Electron's ipcMain.handle, a handler that throws gives the page a rejected promise.
@@ -155,9 +166,19 @@ try {
   assert.deepEqual(coached, [['audio/wav', '이 길로 가면 시장이 나와요?']], 'the attempt is judged against the planned line')
   await assert.rejects(call('daily:coach', fromHome, { data: 'not audio', mimeType: 'audio/wav' }), /recording/i, 'a recording must be audio')
 
+  assert.deepEqual(await call('daily:check-recall', fromHome, '친구'), { correct: true, answer: '친구' })
+  assert.equal(missed.length, 0, 'a word recalled is not a miss')
   const wrong = await call('daily:check-recall', fromHome, plan.challenge.choices.find((choice) => choice !== '친구'))
   assert.deepEqual(wrong, { correct: false, answer: '친구' })
-  assert.deepEqual(await call('daily:check-recall', fromHome, '친구'), { correct: true, answer: '친구' })
+  // A word missed becomes a card (or its card comes due now), from the line it was in, and the watch
+  // log records the miss.
+  assert.equal(missed.length, 1)
+  assert.equal(missed[0].expression, '친구')
+  assert.equal(missed[0].source.moment.line.original, '저는 어제 친구랑 영화를 봤어요.')
+  assert.deepEqual([missed[0].source.moment.video.site, missed[0].source.moment.video.id], ['youtube', 'sess'])
+  assert.equal(database().prepare("SELECT COUNT(*) n FROM word_events WHERE kind = 'missed' AND text = '친구' AND video_id = 'youtube:sess'").get().n, 1)
+  await call('daily:check-recall', fromHome, plan.challenge.choices.find((choice) => choice !== '친구'))
+  assert.equal(missed.length, 1, 'one miss per challenge, however many wrong picks')
 
   // The reminder's time, from Settings: a time, or none (off); anything else is refused.
   await call('daily:set-reminder', fromHome, '19:30')
@@ -170,7 +191,7 @@ try {
   assert.equal(done.keptToday, true, 'finishing the session keeps the day')
 
   // With no words looked at, the challenge is "what did they mean?", asked and marked by the quiz model.
-  new DailySession({ setReminder: () => {}, log: { lastVideo: () => ({ key: 'youtube:plain', title: 'Plain', language: 'ko', lines: [met(1, movie), met(2, market)], words: [] }), markSessionDone: () => {}, streak: () => ({}) }, cards: { counts: () => ({ due: 0, newAvailable: 0 }) }, voice, quiz, owns: () => true, random: first })
+  new DailySession({ setReminder: () => {}, log: { lastVideo: () => ({ key: 'youtube:plain', title: 'Plain', language: 'ko', lines: [met(1, movie), met(2, market)], words: [] }), markSessionDone: () => {}, streak: () => ({}) }, cards: { counts: () => ({ due: 0, newAvailable: 0 }), missed: () => ({ made: true }) }, voice, quiz, owns: () => true, random: first })
   const planned = await call('daily:plan', fromHome)
   assert.equal(planned.challenge.kind, 'meaning')
   const question = await call('daily:meaning-question', fromHome)
@@ -196,7 +217,7 @@ try {
   assert.equal(notified.length, 1, 'no reminder once today is kept')
 
   // --- The recording, as WAV ------------------------------------------------------------------------
-  const { encodeWav, downsample } = await jiti.import(resolve('src/renderer/src/home/daily/wav.ts'))
+  const { encodeWav, downsample } = await jiti.import(resolve('src/renderer/src/components/challenges/wav.ts'))
   const wav = encodeWav(new Float32Array([0, 1, -1, 0.5]), 16_000)
   const text = (from, to) => String.fromCharCode(...wav.slice(from, to))
   assert.equal(text(0, 4), 'RIFF')

@@ -1,0 +1,21 @@
+/* A challenge (Recall, SayLine, Meaning): self-contained, so it looks the same in the home base and
+   above the strip, which loads none of the home base's styles. */
+.challenge { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: rgba(22, 22, 24, 0.92); color: var(--fg); }
+.challenge p { margin: 0; }
+.challenge-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.challenge-line { font-size: 22px; line-height: 1.4; }
+.challenge-hint { font-size: 14px; color: var(--text-2); }
+.challenge-faint { font-size: 13px; color: var(--text-3); }
+.challenge-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.challenge-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; background: var(--fill); color: var(--fg); font-size: 14px; }
+.challenge-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.16); }
+.challenge-btn.primary { background: #fff; color: #111; }
+.challenge-btn.quiet { background: none; color: var(--text-2); padding-inline: 4px; }
+.challenge-btn.quiet:hover:not(:disabled) { background: none; color: var(--fg); }
+.challenge-blank { display: inline-block; min-width: 3em; padding: 0 6px; border-bottom: 2px solid var(--fg-2); text-align: center; }
+.challenge-blank.is-right { color: #32d74b; border-color: #32d74b; }
+.challenge-blank.is-wrong { color: #ff9f0a; border-color: #ff9f0a; }
+.challenge-feedback:empty { display: none; }
+.challenge-error { font-size: 13px; color: #ff6961; }
+.challenge-answer { display: flex; gap: 8px; width: 100%; }
+.challenge-answer input { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); color: var(--fg); font: inherit; }

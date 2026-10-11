@@ -2,6 +2,7 @@
 // work on one window never touches another's bridge.
 import { contextBridge } from 'electron'
 import { cardsApi } from './cards'
+import { checkpointApi } from './checkpoint'
 import { explainApi } from './explain'
 import { homeApi } from './home'
 import { dailyApi } from './daily'
@@ -10,7 +11,7 @@ import { panelApi } from './panel'
 import { tutorApi } from './tutor'
 import { welcomeApi } from './welcome'
 
-const duet = { ...overlayApi, tutor: tutorApi, panel: panelApi, explain: explainApi, cards: cardsApi, home: homeApi, daily: dailyApi, welcome: welcomeApi }
+const duet = { ...overlayApi, tutor: tutorApi, panel: panelApi, explain: explainApi, cards: cardsApi, checkpoint: checkpointApi, home: homeApi, daily: dailyApi, welcome: welcomeApi }
 
 export type DuetApi = typeof duet
 

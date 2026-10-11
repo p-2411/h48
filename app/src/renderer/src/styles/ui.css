@@ -36,4 +36,3 @@ details p { margin-top: 8px; font-size: 13px; line-height: 1.45; color: var(--fg
 .segment button[aria-pressed='true'], .segment button[aria-selected='true'] { background: #636366; color: #fff; font-weight: 500; }
 .big { font-size: 22px; line-height: 1.35; }
 /* Read by screen readers, not shown. */
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

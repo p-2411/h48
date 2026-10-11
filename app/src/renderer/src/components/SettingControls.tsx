@@ -59,6 +59,12 @@ export function QuickToggles({ settings }: { settings: OverlaySettings }): React
         hint="While the Explain panel is open"
         onChange={window.duet.setPauseForHelp}
       />
+      <Toggle
+        on={settings.checkpoints === true}
+        label="Checkpoints"
+        hint="A glow on the strip at a pause or a break: one quick challenge"
+        onChange={window.duet.setCheckpoints}
+      />
     </>
   )
 }

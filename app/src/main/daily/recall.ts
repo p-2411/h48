@@ -13,6 +13,8 @@ export type RecallChallenge = {
   /** Three words, in a random order; one is the answer. */
   choices: string[]
   answer: string
+  /** The answer's pair in the line (to make a card for it when it's missed). */
+  pair: number
 }
 
 /** Every pair in a line, written out (what the strip names), with the job its words do. */
@@ -59,6 +61,7 @@ export function recallChallenge(
     spaceBefore: at[0] > 0 && line.source[at[0] - 1].space,
     spaceAfter: line.source[at.at(-1)!].space,
     choices: take([answer, ...wrong], 3, random),
-    answer
+    answer,
+    pair
   }
 }
