@@ -481,6 +481,63 @@
     setMode();
   });
 
+  // At your level: the same sentence with more of it in Spanish at each level. Level 1 swaps the
+  // things, 2 the actions too, 3 the describing words, 4 the people, and 5 is the full Spanish line.
+  // Each word is [text, job, swapped]. When the step plays it runs through 1 to 5 once and settles
+  // on 2; picking a level stops that.
+  const LEVELS = {
+    1: [['She', 'p'], ['looks for', 'v'], ['the', 'g'], ['dragón', 'n', 1], ['in the', 'g'], ['dark', 'a'], ['bosque', 'n', 1]],
+    2: [['She', 'p'], ['busca', 'v', 1], ['the', 'g'], ['dragón', 'n', 1], ['in the', 'g'], ['dark', 'a'], ['bosque', 'n', 1]],
+    3: [['She', 'p'], ['busca', 'v', 1], ['the', 'g'], ['dragón', 'n', 1], ['in the', 'g'], ['oscuro', 'a', 1], ['bosque', 'n', 1]],
+    4: [['Ella', 'p', 1], ['busca', 'v', 1], ['the', 'g'], ['dragón', 'n', 1], ['in the', 'g'], ['oscuro', 'a', 1], ['bosque', 'n', 1]],
+    5: [['Ella', 'p', 1], ['busca', 'v', 1], ['el', 'g', 1], ['dragón', 'n', 1], ['en el', 'g', 1], ['bosque', 'n', 1], ['oscuro', 'a', 1]]
+  };
+  const LEVEL_NOTES = {
+    1: 'Level 1: things',
+    2: 'Level 2: things and actions',
+    3: 'Level 3: adds describing words',
+    4: 'Level 4: adds people',
+    5: 'Level 5: all Spanish'
+  };
+  document.querySelectorAll('[data-levels]').forEach(demo => {
+    const line = demo.querySelector('[data-level-line]');
+    const note = demo.querySelector('[data-level-note]');
+    const buttons = [...demo.querySelectorAll('[data-level]')];
+    const pane = demo.closest('.stepper-pane');
+    let tour = null;
+    const setLevel = level => {
+      buttons.forEach(button => {
+        const on = Number(button.dataset.level) === level;
+        button.classList.toggle('on', on);
+        button.setAttribute('aria-pressed', String(on));
+      });
+      const parts = [];
+      LEVELS[level].forEach(([text, type, swapped], index) => {
+        const word = document.createElement('span');
+        word.className = swapped ? 'w sw' : 'w';
+        word.dataset.t = type;
+        word.textContent = text;
+        if (index) parts.push(' ');
+        parts.push(word);
+      });
+      line.replaceChildren(...parts, '.');
+      if (note) note.textContent = LEVEL_NOTES[level];
+    };
+    const stopTour = () => { clearTimeout(tour); tour = null; };
+    buttons.forEach(button => button.addEventListener('click', () => { stopTour(); setLevel(Number(button.dataset.level)); }));
+    const runTour = (level = 1) => {
+      setLevel(level);
+      tour = setTimeout(() => (level < 5 ? runTour(level + 1) : (setLevel(2), tour = null)), level < 5 ? 700 : 1400);
+    };
+    if (pane && 'MutationObserver' in window) {
+      new MutationObserver(() => {
+        const playing = pane.classList.contains('is-playing');
+        if (playing && !tour && !motion.matches && !demo.dataset.toured) { demo.dataset.toured = ''; runTour(); }
+        if (!playing) { stopTour(); delete demo.dataset.toured; setLevel(2); }
+      }).observe(pane, { attributes: true, attributeFilter: ['class'] });
+    }
+  });
+
   // The sticky email bar steps aside while the final sign-up section is on screen. The header's
   // Join button puts you in whichever email field is showing.
   const dock = document.querySelector('.join-dock');

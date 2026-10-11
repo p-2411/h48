@@ -64,6 +64,7 @@ main{position:relative;isolation:isolate;overflow-x:clip}
 h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text-wrap:balance}
 .hero-body{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,8fr);gap:clamp(32px,4vw,64px);align-items:start;margin-top:clamp(36px,5vh,56px)}
 .hero-copy>p{font-size:18px;line-height:1.55;color:var(--fg-2);max-width:32ch}
+.hero-copy>p.hero-meta{margin-top:10px;font-size:15px;color:var(--text-2)}
 
 /* The email bar: one rounded box, the field on top and the button across the bottom. */
 .join{display:flex;flex-direction:column;align-items:stretch;gap:6px;max-width:460px;margin-top:32px;padding:6px;background:rgba(255,255,255,.04);border:1px solid var(--line-2);border-radius:24px;transition:border-color .2s,box-shadow .3s var(--ease)}
@@ -180,6 +181,10 @@ h1{font-size:clamp(52px,8.4vw,128px);line-height:.98;letter-spacing:-.035em;text
   .duet-panel{height:auto;min-height:0}
   .duet-controls,.duet-legend,.duet-tabs,.duet-script,.browser-nav,.browser-extension{display:none}
 }
+
+/* Duet is its own floating window, not part of the page: in the hero it breaks out past the browser's
+   edge, lifted on a deep shadow, in its translucent dark glass. */
+.duet-panel.floating{position:relative;z-index:2;transform:translate(clamp(8px,1.4vw,22px),clamp(-22px,-1.4vw,-8px));border-color:rgba(255,255,255,.18);background:rgba(24,24,28,.78);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);box-shadow:0 30px 80px rgba(0,0,0,.65),0 0 0 1px rgba(0,0,0,.4)}
 
 /* The real video sits over the drawn still and starts on its own poster frame. It is scenery: no clicks. */
 .video-still .hero-player{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:cover;background:#000;pointer-events:none;z-index:1}
@@ -360,6 +365,45 @@ html:has(.stepper.is-scrolly){scroll-snap-type:y proximity}
 .fix-flash .face-context{font-size:14px}
 @keyframes card-turn{to{transform:rotateY(180deg)}}
 .stepper-pane.is-playing .fix-flash .flashcard-inner{animation:card-turn .6s var(--ease) .9s forwards}
+
+/* 02 · At your level: one sentence with more of it in the target language at each level. */
+.level-label{font-size:13px;color:var(--text-2)}
+.duet-level button{min-width:28px;padding:4px 0;border-radius:6px;font-size:13px;color:var(--fg-2);transition:background .2s,color .2s}
+.duet-level button:hover{color:var(--fg)}
+.duet-level button.on{background:#636366;color:#fff;font-weight:500}
+.level-note{font-size:13px;color:var(--text-3)}
+.level-demo .card-mix .w{transition:color .3s,background .3s,box-shadow .3s}
+/* 03 · The pause option, off by default. */
+.card-setting{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08);font-size:13px;color:var(--text-2)}
+.switch.is-off{background:rgba(118,118,128,.4)}
+.switch.is-off i{right:auto;left:2px;background:#fff}
+/* 04 · Talk it through: the voice tutor, then pronunciation feedback on one word. */
+.jp{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",var(--sans)}
+.tutor{gap:10px}
+.mic-dot{width:7px;height:7px;border-radius:50%;background:var(--c-x);box-shadow:0 0 8px var(--c-x)}
+.wave{display:inline-flex;align-items:center;gap:3px;height:16px}
+.wave i{width:3px;height:6px;border-radius:2px;background:var(--fg-2)}
+@keyframes wave{50%{height:16px}}
+.stepper-pane.is-playing .wave i{animation:wave .9s var(--ease) infinite}
+.stepper-pane.is-playing .wave i:nth-child(2){animation-delay:.12s}
+.stepper-pane.is-playing .wave i:nth-child(3){animation-delay:.24s}
+.stepper-pane.is-playing .wave i:nth-child(4){animation-delay:.36s}
+.stepper-pane.is-playing .wave i:nth-child(5){animation-delay:.48s}
+.tutor .bubble{max-width:90%;font-size:clamp(14px,1.15vw,16px)}
+.pron{display:flex;flex-direction:column;gap:6px;margin-top:4px;padding:14px 16px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(0,0,0,.25)}
+.pron-label{font-size:12px;color:var(--text-3)}
+.pron-word{font-size:clamp(28px,2.6vw,38px);line-height:1.2;letter-spacing:.02em}
+.pron-word mark{color:var(--c-v);background:color-mix(in srgb,var(--c-v) 18%,transparent);border-radius:6px;padding:0 .08em;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c-v) 55%,transparent)}
+.pron-note{font-size:14px;line-height:1.45;color:var(--text-2)}
+.pron-actions{display:flex;gap:8px;margin-top:4px}
+.pron-actions span{padding:4px 12px;border-radius:999px;background:rgba(118,118,128,.24);font-size:13px;color:var(--fg-2)}
+
+/* 05 · The review: the card turns over, then you rate how well you remembered it. */
+.review{display:flex;flex-direction:column;gap:12px;min-width:0}
+.rate{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.rate span{padding:8px 0;border-radius:10px;background:rgba(118,118,128,.24);font-size:14px;text-align:center;color:var(--fg-2);transition:background .3s var(--ease),color .3s var(--ease)}
+.stepper-pane.is-playing .rate .pick,.stepper-box:not(.is-animated) .rate .pick{background:#fff;color:#000;transition-delay:1.95s}
+.rate-note{font-size:14px;color:var(--text-2)}
 
 /* Playing: with motion allowed, each part of a pane waits, then arrives on its own delay (--d) when
    the pane plays. Without script or under reduced motion, everything simply shows. */
