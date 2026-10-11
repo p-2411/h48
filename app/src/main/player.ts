@@ -72,7 +72,7 @@ export class Player extends EventEmitter {
 
   /** Moves the video to a point, in seconds. The clock follows once the reader sees the jump. */
   seek(seconds: number): void {
-    this.command({ type: 'seek', seconds: Math.max(0, seconds) })
+    this.command({ type: 'seek', seconds: Math.max(0, seconds), from: this.now() })
   }
 
   isHeldBy(holder: Holder): boolean {

@@ -67,7 +67,8 @@ export class LineSession extends EventEmitter {
   moment(id?: number): { line: OverlayLine; earlier: MomentLine[] } | undefined {
     const line = id === undefined ? this.current : this.lines.find((item) => item.id === id)
     if (!line) return undefined
-    const when = (item: OverlayLine): number => item.start ?? item.at / 1000
+    // Transcript lines are timed in video seconds; caption lines by when they appeared.
+    const when = (item: OverlayLine): number => (this.transcript ? item.start! : item.at / 1000)
     const earlier: MomentLine[] = []
     let chars = 0
     for (const item of this.lines.slice(0, this.lines.indexOf(line)).reverse()) {
@@ -124,10 +125,10 @@ export class LineSession extends EventEmitter {
     this.show(index >= 0 ? this.lines[index] : undefined)
   }
 
-  /** A finished caption line read from the screen. */
-  add(original: string, at: number): void {
+  /** A finished caption line read from the screen; `start` is where the video was when it appeared. */
+  add(original: string, at: number, start?: number): void {
     if (this.transcript) return
-    const line: OverlayLine = { id: nextId++, original, at, state: 'pending' }
+    const line: OverlayLine = { id: nextId++, original, at, start, state: 'pending' }
     this.lines.push(line)
     this.show(line)
     const waiting = this.lines.filter((item) => item.state === 'pending' && !this.inFlight.includes(item))

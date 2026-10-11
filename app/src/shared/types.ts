@@ -42,7 +42,8 @@ export type OverlayLine = {
   id: number
   original: string
   at: number
-  /** When the line is spoken, in seconds into the video; only lines from a transcript have it. */
+  /** When the line is spoken, in seconds into the video: exact for transcript lines, where the video
+   * was when the caption appeared for lines read from the screen (when known). */
   start?: number
   end?: number
   state: 'pending' | 'ready' | 'failed'

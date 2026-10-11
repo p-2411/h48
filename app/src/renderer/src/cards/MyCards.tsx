@@ -13,7 +13,7 @@ export function MyCards(): React.JSX.Element {
   const [cards, setCards] = useState<Card[]>([])
   const [selected, setSelected] = useState<string>()
   const [detail, setDetail] = useState<CardDetail>()
-  const [deleted, setDeleted] = useState<string>()
+  const [deleted, setDeleted] = useState<string[]>([])
   const [message, setMessage] = useState<string>()
 
   // The list and the open card, loaded again whenever the query, the selection or any card changes.
@@ -43,11 +43,12 @@ export function MyCards(): React.JSX.Element {
     []
   )
 
-  useEffect(() => {
-    if (!deleted) return
-    const timer = setTimeout(() => setDeleted(undefined), UNDO_MS)
-    return () => clearTimeout(timer)
-  }, [deleted])
+  // Each deleted card can be brought back for a few seconds.
+  const forget = (id: string): void => setDeleted((ids) => ids.filter((item) => item !== id))
+  const markDeleted = (id: string): void => {
+    setDeleted((ids) => [...ids, id])
+    setTimeout(() => forget(id), UNDO_MS)
+  }
 
   const file = async (work: () => Promise<unknown>, done: (result: never) => string | undefined): Promise<void> => {
     try {
@@ -89,22 +90,22 @@ export function MyCards(): React.JSX.Element {
           </button>
         </p>
       )}
-      {deleted && (
-        <p className="notice row">
+      {deleted.map((id) => (
+        <p key={id} className="notice row">
           <span>Card deleted.</span>
           <button
             type="button"
             className="btn quiet"
             onClick={async () => {
-              await window.duet.cards.restore(deleted)
-              setSelected(deleted)
-              setDeleted(undefined)
+              await window.duet.cards.restore(id)
+              setSelected(id)
+              forget(id)
             }}
           >
             Undo
           </button>
         </p>
-      )}
+      ))}
       <p className="faint">Cards are kept on this computer only. Back up to keep a copy.</p>
 
       {tab === 'review' ? (
@@ -117,7 +118,7 @@ export function MyCards(): React.JSX.Element {
               key={detail.id}
               card={detail}
               onDeleted={(id) => {
-                setDeleted(id)
+                markDeleted(id)
                 setSelected(undefined)
               }}
             />

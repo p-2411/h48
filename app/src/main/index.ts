@@ -43,7 +43,12 @@ const TICK_MS = 100
 
 let tray: Tray | undefined
 
+// One Duet at a time: a second copy would read the same captions and write the same database.
+const primary = app.requestSingleInstanceLock()
+if (!primary) app.quit()
+
 app.whenReady().then(() => {
+  if (!primary) return
   electronApp.setAppUserModelId('io.useduet.app')
   // An overlay app lives in the menu bar, not the Dock.
   if (process.platform === 'darwin') app.dock?.hide()

@@ -42,9 +42,11 @@ export class Cards {
     const handle = (channel: string, work: (...args: never[]) => unknown): void => {
       ipcMain.handle(`cards:${channel}`, (_, ...args) => work(...(args as never[])))
     }
+    // Tells My cards to reload once the work is done (after it settles, for async work).
     const changing = <A extends unknown[], R>(work: (...args: A) => R) => (...args: A): R => {
       const result = work(...args)
-      this.changed()
+      if (result instanceof Promise) void result.finally(() => this.changed()).catch(() => undefined)
+      else this.changed()
       return result
     }
 

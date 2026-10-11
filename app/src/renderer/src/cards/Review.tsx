@@ -72,6 +72,14 @@ export function Review({ onBrowse }: { onBrowse: () => void }): React.JSX.Elemen
     }
   }, [])
 
+  // New settings apply from the next card shown, so the queue is loaded again.
+  const saveSettings = (change: ReviewSettings): void => {
+    window.duet.cards.setSettings(change).then((saved) => {
+      setSettings(saved)
+      void act(() => window.duet.cards.reviewQueue())
+    })
+  }
+
   useEffect(() => {
     window.duet.cards.startReview().then(setQueue)
     window.duet.cards.getSettings().then(setSettings)
@@ -172,8 +180,8 @@ export function Review({ onBrowse }: { onBrowse: () => void }): React.JSX.Elemen
               step={0.01}
               value={settings.desiredRetention}
               onChange={(event) => setSettings({ ...settings, desiredRetention: Number(event.target.value) })}
-              onMouseUp={() => window.duet.cards.setSettings(settings).then(setSettings)}
-              onKeyUp={() => window.duet.cards.setSettings(settings).then(setSettings)}
+              onMouseUp={() => saveSettings(settings)}
+              onKeyUp={() => saveSettings(settings)}
             />
           </label>
           <label className="field">
@@ -184,7 +192,7 @@ export function Review({ onBrowse }: { onBrowse: () => void }): React.JSX.Elemen
               max={100}
               value={settings.newPerDay}
               onChange={(event) => setSettings({ ...settings, newPerDay: Number(event.target.value) })}
-              onBlur={() => window.duet.cards.setSettings(settings).then(setSettings).then(() => act(() => window.duet.cards.reviewQueue()))}
+              onBlur={() => saveSettings(settings)}
             />
           </label>
           <p className="faint">Changes apply to the next ratings; cards already scheduled keep their dates.</p>

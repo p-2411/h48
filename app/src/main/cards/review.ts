@@ -17,6 +17,8 @@ import { sourceKey, type CardRow, type CardStore, type ReviewRow } from './store
 
 // The study day rolls over at 04:00 local time, so a late-night session counts as the same day.
 const ROLLOVER_HOUR = 4
+// Outcomes worked out when a card was shown are saved only if rated soon after.
+const SHOWN_FOR_MS = 10 * 60_000
 
 function studyDayStart(now: number): Date {
   const start = new Date(now)
@@ -55,7 +57,7 @@ export class ReviewSession {
   private skipped = new Set<string>()
   private introduced = new Set<string>()
   private rated: string[] = []
-  private shown?: { card: Card; fsrs: string; outcomes: Record<Rating, Outcome> }
+  private shown?: { card: Card; fsrs: string; outcomes: Record<Rating, Outcome>; at: number; scheduler: Scheduler }
 
   constructor(
     private store: CardStore,
@@ -88,14 +90,15 @@ export class ReviewSession {
       ...(newAvailable > 0 ? (db.prepare(`SELECT * FROM cards WHERE ${live} AND state = 0 ORDER BY created_at`).all() as CardRow[]) : [])
     ]
     const nextRow = candidates.find(
-      (row) => !this.skipped.has(row.id) && !(row.state === 0 && this.introduced.has(sourceKey(JSON.parse(row.source))))
+      (row) => !this.skipped.has(row.id) && !(row.state === 0 && this.introduced.has(sourceKey(JSON.parse(row.source), row.expression)))
     )
     this.shown = undefined
     let next: ReviewQueue['next']
     if (nextRow) {
       const card = this.store.get(nextRow.id)!
-      const outcomes = this.scheduler().outcomes(revive(nextRow.fsrs), now)
-      this.shown = { card, fsrs: nextRow.fsrs, outcomes }
+      const scheduler = this.scheduler()
+      const outcomes = scheduler.outcomes(revive(nextRow.fsrs), now)
+      this.shown = { card, fsrs: nextRow.fsrs, outcomes, at: now, scheduler }
       next = {
         card,
         outcomes: Object.fromEntries(
@@ -120,6 +123,9 @@ export class ReviewSession {
     const row = db.prepare('SELECT * FROM cards WHERE id = ? AND deleted_at IS NULL').get(cardId) as CardRow | undefined
     if (!shown || !row || shown.card.id !== cardId || row.revision !== revision || row.fsrs !== shown.fsrs)
       throw new StaleReviewError('This card changed since it was shown. The queue has been refreshed.')
+    // Shown too long ago, on another study day, or before the settings changed: show it afresh.
+    if (now - shown.at > SHOWN_FOR_MS || studyDay(now) !== studyDay(shown.at) || shown.scheduler !== this.scheduler())
+      throw new StaleReviewError('That card was on screen a while. Here it is again, up to date.')
     const outcome = shown.outcomes[rating]
     const after = serialize(outcome.card)
     transaction(() => {
@@ -127,12 +133,12 @@ export class ReviewSession {
         `INSERT INTO reviews (id, card_id, card_revision, rating, reviewed_at, study_day, was_new, before, after, log, scheduler)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).run(eventId, cardId, revision, ratingNumber(rating), now, studyDay(now), row.state === 0 ? 1 : 0, row.fsrs, after,
-        JSON.stringify(outcome.log), JSON.stringify(this.scheduler().config))
+        JSON.stringify(outcome.log), JSON.stringify(shown.scheduler.config))
       db.prepare('UPDATE cards SET fsrs = ?, state = ?, due = ?, updated_at = ? WHERE id = ?').run(after, outcome.card.state,
         outcome.card.due.getTime(), now, cardId)
     })
     this.rated.push(eventId)
-    if (row.state === 0) this.introduced.add(sourceKey(JSON.parse(row.source)))
+    if (row.state === 0) this.introduced.add(sourceKey(JSON.parse(row.source), row.expression))
     return this.queue(now)
   }
 
@@ -160,7 +166,7 @@ export class ReviewSession {
       db.prepare('UPDATE reviews SET undone_at = ? WHERE id = ?').run(now, eventId)
     })
     this.rated.pop()
-    if (review.was_new) this.introduced.delete(sourceKey(JSON.parse(card.source)))
+    if (review.was_new) this.introduced.delete(sourceKey(JSON.parse(card.source), card.expression))
     this.skipped.delete(card.id)
     return this.queue(now)
   }

@@ -68,7 +68,8 @@ let db: DatabaseSync | undefined
 /** The database, opened (and brought up to date) on first use. */
 export function database(): DatabaseSync {
   if (db) return db
-  db = new DatabaseSync(join(app.getPath('userData'), 'duet.db'))
+  // Wait up to 2 s if another connection is writing, instead of failing at once.
+  db = new DatabaseSync(join(app.getPath('userData'), 'duet.db'), { timeout: 2000 })
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;')
   const { user_version: version } = db.prepare('PRAGMA user_version').get() as { user_version: number }
   for (let index = version; index < MIGRATIONS.length; index++) {

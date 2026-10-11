@@ -26,7 +26,7 @@ export type CaptionStatus = {
 
 export type CaptionLine = { text: string; url?: string; at: number }
 
-export type PlayerCommand = { type: 'pause' } | { type: 'play' } | { type: 'seek'; seconds: number }
+export type PlayerCommand = { type: 'pause' } | { type: 'play' } | { type: 'seek'; seconds: number; from?: number }
 
 // A caption counts as finished when it has stopped changing for this long, or when the next
 // caption is not just a longer version of it (YouTube's auto captions grow word by word).
@@ -98,10 +98,12 @@ export class CaptionSource extends EventEmitter {
     }
     if (message.type !== 'caption') return
     const text = (message.text ?? '').trim()
-    const line: CaptionLine = { text, url: message.url, at: message.at ?? Date.now() }
+    const previous = this.pending?.text ?? ''
+    // A caption that grows word by word keeps the time it first appeared.
+    const growing = previous && text.startsWith(previous)
+    const line: CaptionLine = { text, url: message.url, at: growing ? this.pending!.at : (message.at ?? Date.now()) }
     // Show what is on screen straight away; the finished line follows once it settles.
     this.emit('live', line)
-    const previous = this.pending?.text ?? ''
     if (previous && !text.startsWith(previous)) this.finish()
     clearTimeout(this.timer)
     this.pending = text ? line : undefined

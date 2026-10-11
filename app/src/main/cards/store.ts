@@ -1,6 +1,7 @@
 // The card collection in the local database: saving, finding, editing, pausing, deleting, and
 // backing up. Scheduling a review is review.ts; this file only stores what that decides.
 import { randomUUID } from 'crypto'
+import { z } from 'zod'
 import type {
   Card,
   CardContent,
@@ -58,8 +59,8 @@ type ReviewRow = {
 }
 
 /** The source line a card came from: cards from the same line are siblings. */
-export function sourceKey(source: CardSource): string {
-  if (source.kind === 'tutor') return 'tutor'
+export function sourceKey(source: CardSource, expression = ''): string {
+  if (source.kind === 'tutor') return `tutor:${expression.trim().toLocaleLowerCase()}`
   const { video, line } = source.moment
   return `${video.site}:${video.id ?? video.url ?? ''}:${line.original}`
 }
@@ -67,7 +68,7 @@ export function sourceKey(source: CardSource): string {
 // The same source line, target and type is the same card. The same wording from somewhere else is a
 // different card on purpose: a different situation is worth keeping.
 function dedupeKey(card: CardContent & { source: CardSource }): string {
-  const source = card.source.kind === 'tutor' ? `tutor:${card.expression.trim().toLocaleLowerCase()}` : sourceKey(card.source)
+  const source = sourceKey(card.source, card.expression)
   return [source, card.target.trim().toLocaleLowerCase(), card.type].join('|')
 }
 
@@ -171,8 +172,9 @@ export class CardStore {
     const where = ['deleted_at IS NULL']
     const values: (string | number)[] = []
     if (query.search?.trim()) {
-      where.push('(expression LIKE ? OR meaning LIKE ? OR target LIKE ? OR note LIKE ?)')
-      values.push(...Array(4).fill(`%${query.search.trim()}%`))
+      // Searched as plain text: %, _ and \ in the search mean themselves.
+      where.push("(expression LIKE ? ESCAPE '\\' OR meaning LIKE ? ESCAPE '\\' OR target LIKE ? ESCAPE '\\' OR note LIKE ? ESCAPE '\\')")
+      values.push(...Array(4).fill(`%${query.search.trim().replace(/[\\%_]/g, (char) => `\\${char}`)}%`))
     }
     if (query.type) {
       where.push('type = ?')
@@ -241,29 +243,39 @@ export class CardStore {
     return { format: 'duet-backup', version: 1, exportedAt: Date.now(), scheduler: scheduler.config, cards, reviews }
   }
 
-  /** Adds the backup's cards and reviews that are not here yet; existing ones are left alone. */
-  restoreBackup(backup: unknown): { cards: number; reviews: number } {
-    if (!isBackup(backup)) throw new Error('That file is not a Duet backup.')
+  /** Adds the backup's cards and reviews that are not here yet; existing ones are left alone. Every
+   * row is checked first, so a damaged file is refused whole rather than half restored. */
+  restoreBackup(file: unknown): { cards: number; reviews: number } {
+    const backup = checkBackup(file)
+    const db = database()
+    const known = new Set(backup.cards.map((row) => row.id))
+    for (const row of backup.reviews)
+      if (!known.has(row.card_id) && !db.prepare('SELECT 1 FROM cards WHERE id = ?').get(row.card_id))
+        throw new Error('That backup has reviews for cards it does not contain.')
     return transaction(() => {
       let cards = 0
       let reviews = 0
-      const insertCard = database().prepare(
-        `INSERT OR IGNORE INTO cards (id, revision, type, language, expression, reading, meaning, target, situation,
+      // A card deleted here moments ago (still undoable) is replaced by the backup's copy.
+      const dropDeleted = db.prepare('DELETE FROM cards WHERE id = ? AND deleted_at IS NOT NULL')
+      const insertCard = db.prepare(
+        `INSERT INTO cards (id, revision, type, language, expression, reading, meaning, target, situation,
            alternative, note, source, explanation, dedupe_key, paused, deleted_at, fsrs, fsrs_version, state, due,
            created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT (id) DO NOTHING`
       )
       for (const row of backup.cards) {
-        revive(row.fsrs) // throws on a state the scheduler can't read
+        dropDeleted.run(row.id)
         cards += Number(
           insertCard.run(row.id, row.revision, row.type, row.language, row.expression, row.reading, row.meaning, row.target,
             row.situation, row.alternative, row.note, row.source, row.explanation, row.dedupe_key, row.paused, row.fsrs,
             row.fsrs_version, row.state, row.due, row.created_at, row.updated_at).changes
         )
       }
-      const insertReview = database().prepare(
-        `INSERT OR IGNORE INTO reviews (id, card_id, card_revision, rating, reviewed_at, study_day, was_new, before, after,
-           log, scheduler, undone_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      const insertReview = db.prepare(
+        `INSERT INTO reviews (id, card_id, card_revision, rating, reviewed_at, study_day, was_new, before, after,
+           log, scheduler, undone_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT (id) DO NOTHING`
       )
       for (const row of backup.reviews)
         reviews += Number(
@@ -296,17 +308,82 @@ export type Backup = {
   reviews: ReviewRow[]
 }
 
-function isBackup(value: unknown): value is Backup {
-  const backup = value as Backup
-  return (
-    !!backup &&
-    backup.format === 'duet-backup' &&
-    backup.version === 1 &&
-    Array.isArray(backup.cards) &&
-    Array.isArray(backup.reviews) &&
-    backup.cards.every((row) => typeof row?.id === 'string' && typeof row.fsrs === 'string' && typeof row.expression === 'string') &&
-    backup.reviews.every((row) => typeof row?.id === 'string' && typeof row.card_id === 'string')
-  )
+// What a backup's rows must look like. JSON columns are checked by reading them the way the app
+// will: a row the app could not show is refused at restore, not discovered later.
+const nonEmpty = z.string().min(1)
+const optionalText = z.string().nullable()
+const integer = z.number().int()
+const json = (check: (value: unknown) => unknown): z.ZodType<string> =>
+  z.string().refine((value) => {
+    try {
+      check(JSON.parse(value))
+      return true
+    } catch {
+      return false
+    }
+  })
+const fsrsState = z.string().refine((value) => {
+  try {
+    return !Number.isNaN(revive(value).due.getTime())
+  } catch {
+    return false
+  }
+})
+const CardRowSchema = z.object({
+  id: nonEmpty,
+  revision: integer.min(1),
+  type: z.enum(['understand', 'use']),
+  language: z.enum(['es', 'ja', 'ko']),
+  expression: nonEmpty,
+  reading: optionalText,
+  meaning: nonEmpty,
+  target: nonEmpty,
+  situation: optionalText,
+  alternative: optionalText,
+  note: optionalText,
+  source: json((value) => {
+    const source = value as CardSource
+    if (source.kind === 'video' ? typeof source.moment?.line?.original !== 'string' || !source.moment.video?.site : source.kind !== 'tutor')
+      throw new Error('bad source')
+  }),
+  explanation: json((value) => {
+    if (value !== null && typeof (value as { meaning?: unknown }).meaning !== 'string') throw new Error('bad explanation')
+  }).nullable(),
+  dedupe_key: nonEmpty,
+  paused: z.union([z.literal(0), z.literal(1)]),
+  deleted_at: z.number().nullable().optional(),
+  fsrs: fsrsState,
+  fsrs_version: nonEmpty,
+  state: z.number().int().min(0).max(3),
+  due: z.number(),
+  created_at: z.number(),
+  updated_at: z.number()
+})
+const ReviewRowSchema = z.object({
+  id: nonEmpty,
+  card_id: nonEmpty,
+  card_revision: integer,
+  rating: z.number().int().min(1).max(4),
+  reviewed_at: z.number(),
+  study_day: nonEmpty,
+  was_new: z.union([z.literal(0), z.literal(1)]),
+  before: fsrsState,
+  after: fsrsState,
+  log: json(() => undefined),
+  scheduler: json(() => undefined),
+  undone_at: z.number().nullable()
+})
+const BackupSchema = z.object({
+  format: z.literal('duet-backup'),
+  version: z.literal(1),
+  cards: z.array(CardRowSchema),
+  reviews: z.array(ReviewRowSchema)
+})
+
+function checkBackup(value: unknown): Pick<Backup, 'cards' | 'reviews'> {
+  const result = BackupSchema.safeParse(value)
+  if (!result.success) throw new Error('That file is not a Duet backup, or it is damaged.')
+  return result.data as Pick<Backup, 'cards' | 'reviews'>
 }
 
 export type { CardRow, ReviewRow }

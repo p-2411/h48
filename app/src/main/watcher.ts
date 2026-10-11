@@ -49,8 +49,15 @@ export class Watcher extends EventEmitter {
       const source = sourceFor(change.url)
       this.setStatus({ ...change, error: change.error, site: source?.site, siteName: source?.name, controls: source?.controls })
       const id = change.url ? source?.videoId(change.url) : undefined
-      if (source && id && change.url && (id !== this.video?.id || source !== this.video.source)) {
-        this.video = { source, id, url: change.url }
+      if (source && id && change.url) {
+        if (id !== this.video?.id || source !== this.video.source) {
+          this.video = { source, id, url: change.url }
+          player.reset()
+          this.open()
+        }
+      } else if (this.video) {
+        // Left the video (another page, or no video page found): nothing is being watched.
+        this.video = undefined
         player.reset()
         this.open()
       }
@@ -58,7 +65,11 @@ export class Watcher extends EventEmitter {
     captions.on('live', (line: { text: string }) => {
       if (!this.session?.hasTranscript) this.emit('live', line.text)
     })
-    captions.on('line', (line: { text: string; at: number }) => this.session?.add(line.text, line.at))
+    captions.on('line', (line: { text: string; at: number }) => {
+      // Where the video was when the caption appeared, so Replay can go back to it.
+      const now = player.now()
+      this.session?.add(line.text, line.at, now === undefined ? undefined : Math.max(0, now - (Date.now() - line.at) / 1000))
+    })
     captions.on('time', (time: PlayerTime) => player.update(time))
     settings.on('change', (_, changed) => {
       if ('language' in changed && this.video) this.open()
@@ -135,7 +146,7 @@ export class Watcher extends EventEmitter {
     const target = video ? this.sessionFor(`${video.source.site}:${video.id}|${language}`) : undefined
     this.session = target
     this.emit('current', null)
-    if (!target || !video) return
+    if (!target || !video) return this.setStatus({ source: undefined })
     target.resume()
     this.setStatus({ source: target.hasTranscript ? 'transcript' : 'captions' })
     const { id, source } = video

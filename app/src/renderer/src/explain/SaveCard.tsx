@@ -28,6 +28,7 @@ export function SaveCard({ moment, explanation }: { moment: Moment; explanation:
   const [step, setStep] = useState<Step>({ name: 'closed' })
   const [content, setContent] = useState(() => draftOf(explanation))
   const [error, setError] = useState<string>()
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (step.name !== 'saved' || !step.undo) return
@@ -36,12 +37,16 @@ export function SaveCard({ moment, explanation }: { moment: Moment; explanation:
   }, [step])
 
   const save = async (again = false): Promise<void> => {
+    if (saving) return
+    setSaving(true)
     setError(undefined)
     try {
       const result = await window.duet.cards.save({ ...content, language: moment.language, source: { kind: 'video', moment }, explanation }, again)
       setStep('saved' in result ? { name: 'saved', card: result.saved, undo: true } : { name: 'duplicate', card: result.duplicate })
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'Could not save the card.')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -79,7 +84,7 @@ export function SaveCard({ moment, explanation }: { moment: Moment; explanation:
         <button type="button" className="btn quiet" onClick={() => window.duet.cards.open(step.card.id)}>
           Open it
         </button>
-        <button type="button" className="btn quiet" onClick={() => save(true)}>
+        <button type="button" className="btn quiet" disabled={saving} onClick={() => save(true)}>
           Save another
         </button>
       </div>
@@ -90,7 +95,7 @@ export function SaveCard({ moment, explanation }: { moment: Moment; explanation:
       <CardForm value={content} onChange={setContent} lang={moment.language}>
         {error && <p className="notice error">{error}</p>}
         <div className="row">
-          <button type="button" className="btn primary" disabled={!cardReady(content)} onClick={() => save()}>
+          <button type="button" className="btn primary" disabled={!cardReady(content) || saving} onClick={() => save()}>
             Save
           </button>
           <button type="button" className="btn quiet" onClick={() => setStep({ name: 'closed' })}>
