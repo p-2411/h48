@@ -3,6 +3,15 @@
 html, body, #root { background: #101013; overflow: auto; }
 body { color: var(--fg); font-size: 14px; }
 h1, h2, h3, p { margin: 0; }
+/* The surface the home base and the side panel are drawn on: one neutral tone, a little lighter at
+   the top like a lit room, with a fine grain so it reads as a material rather than a screen (the
+   grain is part of the background, not a layer blended over the window, so it costs nothing while
+   things move). No colour: the colour is the content. */
+:root {
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 .2 0 0 0 -.05'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* The grain's tile drawn at half its size, so each speck is one pixel on a Retina screen. */
+  --surface: var(--grain) 0 0 / 90px 90px, linear-gradient(180deg, #1b1b1f 0%, #131316 38%, #111114 100%);
+}
 /* Pushes what follows it in a row to the far end. */
 .spacer { flex: 1; }
 /* Buttons are pills, as on the strip. */

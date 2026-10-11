@@ -7,11 +7,9 @@
 .center { text-align: center; margin-top: 40%; }
 
 /* Explain's line card: the line large, the words worth noticing glowing in their rung's colour, on
-   glass with a faint indigo glow of its own. */
-.line-card { position: relative; isolation: isolate; overflow: hidden; gap: 8px; flex: none;
+   glass a step lighter than the window, as the home base's tiles are. */
+.line-card { gap: 8px; flex: none;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035)); border-color: rgba(255, 255, 255, 0.11); }
-.line-card::before { content: ''; position: absolute; z-index: -1; left: -25%; top: -70%; width: 75%; height: 140%; border-radius: 50%;
-  background: #5e5ce6; filter: blur(46px); opacity: 0.35; pointer-events: none; }
 .line-card .line { font-size: 22px; line-height: 1.35; letter-spacing: -0.01em; }
 /* Inside Duet's messages: the explanation's parts, and the label on one that was heard. */
 .bubble .lead { color: #fff; }

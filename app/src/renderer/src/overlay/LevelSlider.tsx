@@ -1,8 +1,8 @@
 // How much of the language the line swaps in, on the strip's hover row: one circle with the level's
 // number (A for Auto). A swipe moves it one level (two fingers dragged right or left on the strip, or
 // any scroll on the circle: useLevelStep, wheel.ts) and the circle is tugged that way: it stretches,
-// presses against the side it was pulled to, springs back as it fills in from the other side, and the
-// number changes inside it. At either end it tugs and springs back with no change. A swipe never
+// presses against the side it was pulled to and springs back, and the number changes inside it (the
+// white circle is only the open slider's handle). At either end it tugs and springs back with no change. A swipe never
 // opens the levels; hovering, clicking or focusing the circle does: it slides open into the six
 // levels and becomes a slider (the white circle is its handle; pressing a level or dragging across
 // them moves it there; so do a swipe on it, one level a swipe, and the arrow keys). Moving away, or Esc, folds it back. Each level's name is
@@ -26,7 +26,7 @@ const SETTLE_MS = 500
 const SNAP = [0.34, 1.56, 0.64, 1] as const
 
 // The number: the old one leaves the way the circle was pulled; the new one comes in from the
-// other side as the circle fills back in.
+// other side as the circle springs back.
 const DIGIT: Variants = {
   enter: (way: number) => ({ x: -9 * way, opacity: 0 }),
   center: { x: 0, opacity: 1, transition: { delay: 0.14, duration: 0.18, ease: EASE_OUT } },
@@ -85,7 +85,6 @@ export function LevelSlider({
 
   // Each swipe plays its tug on the circle.
   const [blob, animate] = useAnimate<HTMLSpanElement>()
-  const fill = useRef<HTMLSpanElement>(null)
   const way = tug?.direction ?? 1
   useEffect(() => {
     if (!tug || !blob.current || reducedMotion()) return
@@ -101,9 +100,6 @@ export function LevelSlider({
       { x: [0, 3 * pull, 12 * pull, 0], scaleX: [1, 1.3, 0.78, 1], scaleY: [1, 0.86, 1.12, 1] },
       { duration: 0.48, times: [0, 0.3, 0.52, 1], ease: [EASE_OUT, EASE_IN, SNAP] }
     )
-    // Filling back in from the other side, as the new number comes in.
-    if (fill.current)
-      animate(fill.current, { scaleX: [0, 1, 1], opacity: [0.95, 0.95, 0] }, { delay: 0.2, duration: 0.32, times: [0, 0.55, 1], ease: EASE_OUT })
   }, [tug, blob, animate])
 
   return (
@@ -172,12 +168,10 @@ export function LevelSlider({
           ))}
         </div>
       ) : (
-        // The circle the swipes tug: it stretches from the side it's pulled from (origin), and
-        // fills back in from there.
+        // The circle the swipes tug: it stretches from the side it's pulled from (origin).
         // Its frame keeps it round while the button folds (layout); inside, the circle itself.
         <motion.span layout className="level-frame">
         <motion.span ref={blob} className="level-blob" style={{ originX: way > 0 ? 0 : 1 }}>
-          <motion.span ref={fill} className="level-fill" style={{ originX: way > 0 ? 0 : 1 }} aria-hidden="true" />
           <AnimatePresence initial={false} mode="popLayout" custom={way}>
             <motion.span
               key={settings.level}

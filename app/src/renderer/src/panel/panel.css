@@ -1,15 +1,9 @@
-/* The side panel: a fixed header with tabs, and the tab below it scrolling on its own. The window
-   is macOS sidebar material; a dark tint over it keeps it the strip's dark glass. The header sits
-   below the window buttons and drags the window. */
+/* The side panel: a fixed header with tabs, and the tab below it scrolling on its own, on the
+   surface the home base uses (ui.css). The header sits below the window buttons and drags the window. */
 html, body, #root { height: 100%; overflow: hidden; background: transparent; }
 .window {
-  --tint: rgba(22, 22, 24, 0.72); height: 100%; display: flex; flex-direction: column; gap: 14px; padding: 40px 16px 0;
-  /* Over the tint, the faint aura of the logo's colours, as in the home base. */
-  background:
-    radial-gradient(75% 40% at 0% -5%, rgba(10, 132, 255, 0.2), transparent 70%),
-    radial-gradient(60% 35% at 85% -8%, rgba(94, 92, 230, 0.15), transparent 70%),
-    radial-gradient(75% 40% at 105% 105%, rgba(255, 159, 10, 0.11), transparent 70%),
-    var(--tint);
+  height: 100%; display: flex; flex-direction: column; gap: 14px; padding: 40px 16px 0;
+  background: var(--surface);
 }
 .window-head { -webkit-app-region: drag; margin-top: -40px; padding-top: 40px; }
 .window-head button { -webkit-app-region: no-drag; }
