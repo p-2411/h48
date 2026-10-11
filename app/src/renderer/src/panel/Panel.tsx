@@ -7,7 +7,7 @@ import { useExplain } from './useExplain'
 import { usePanel } from './usePanel'
 
 export function Panel(): React.JSX.Element {
-  const { tab, setTab, script, current } = usePanel()
+  const { tab, setTab, script, current, loaded } = usePanel()
   const explain = useExplain()
   return (
     <main className="window">
@@ -26,10 +26,20 @@ export function Panel(): React.JSX.Element {
       </header>
       {/* Keyed by tab, so a tab that broke can be left and come back fresh, and the others still work. */}
       <ErrorBoundary key={tab} what="This tab">
-        {tab === 'script' ? (
+        {!loaded ? (
+          <p className="faint" role="status">
+            Loading…
+          </p>
+        ) : tab === 'script' ? (
           <Script script={script} current={current} />
         ) : tab === 'explain' ? (
-          <ExplainView state={explain} onReplay={window.duet.explain.replay} onRetry={window.duet.explain.retry} />
+          explain ? (
+            <ExplainView state={explain} onReplay={window.duet.explain.replay} onRetry={window.duet.explain.retry} />
+          ) : (
+            <p className="faint" role="status">
+              Loading…
+            </p>
+          )
         ) : (
           <Review onEnd={() => setTab('script')} />
         )}

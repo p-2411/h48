@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { LANGUAGE_CODES, languageName } from '../../../shared/languages'
 import type { OverlaySettings } from '../../../shared/types'
+import { say } from '../components/errors'
 import { accelerator, symbols } from './keys'
 import { LEVELS } from './words'
 
@@ -32,7 +33,11 @@ function ShortcutRecorder({ keys }: { keys: string }): React.JSX.Element {
       const next = accelerator(event)
       if (!next) return
       setRecording(false)
-      setError(await window.duet.setShortcut(next))
+      try {
+        setError(await window.duet.setShortcut(next))
+      } catch (error) {
+        setError(say(error, 'Could not change the keys. Try another combination.'))
+      }
     }
     window.addEventListener('keydown', press)
     return () => window.removeEventListener('keydown', press)

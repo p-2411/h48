@@ -40,6 +40,8 @@
 
 /* Top-right corner: cards due, and the quiet status dot (its words on hover). */
 .corner { position: absolute; top: 9px; right: 10px; display: flex; align-items: center; gap: 7px; }
+/* The "N due" badge needs room of its own, or it covers the line's last word. */
+.strip:has(.due) { padding-right: 86px; }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
 .dot.on { background: #32d74b; box-shadow: 0 0 6px #32d74b; }
 .due { font-size: 10.5px; font-weight: 600; color: #111; background: #fff; border-radius: 999px; padding: 2px 7px; }
@@ -78,7 +80,9 @@
 
 /* A word's popup, above it and above the actions row. */
 .popup {
-  position: absolute; z-index: 3; bottom: calc(100% + 40px); transform: translateX(-50%); width: max-content; max-width: 280px;
+  /* Centred on its word, but kept inside the strip so a first or last word's popup doesn't leave the window. */
+  position: absolute; z-index: 3; bottom: calc(100% + 40px); left: clamp(140px, var(--x), calc(100% - 140px));
+  transform: translateX(-50%); width: max-content; max-width: 280px;
   background: #fff; color: #111; border-radius: 12px; padding: 9px 12px; display: flex; flex-direction: column; gap: 2px;
   font-size: 13px;
 }
@@ -93,7 +97,8 @@
 
 /* The settings, above the strip on the right. */
 .settings {
-  position: absolute; z-index: 4; bottom: calc(100% + 40px); right: 0; width: 330px; padding: 14px; border-radius: 16px;
+  /* Capped so a tall strip below it can't push its top out of the window; it scrolls instead. */
+  position: absolute; z-index: 4; bottom: calc(100% + 40px); right: 0; width: 330px; max-height: 440px; overflow-y: auto; padding: 14px; border-radius: 16px;
   background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg); display: flex; flex-direction: column; gap: 9px;
 }
 .settings .label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }

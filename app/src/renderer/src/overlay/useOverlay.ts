@@ -14,6 +14,11 @@ export type OverlayState = {
   /** Caption text on screen that is not yet a finished line (only when reading the screen, and
    * only while there is no line to show). */
   building: string
+  /** How wide the strip may be to stay inside the video; null when it can be as wide as it likes. */
+  fit: number | null
+  /** The first state has arrived from the main process. Until then the defaults stand in, and the
+   * strip says nothing about them (no false "needs permission" flash). */
+  loaded: boolean
 }
 
 
@@ -47,14 +52,23 @@ export function useOverlay(): OverlayState {
   const [lines, setLines] = useState<OverlayLine[]>([])
   const [live, setLive] = useState('')
   const [currentId, setCurrentId] = useState<number | null>(null)
+  const [fit, setFit] = useState<number | null>(null)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    window.duet.getState().then((state) => {
-      setSettings(state.settings)
-      setStatus(state.status)
-      setDue(state.due)
-    })
+    window.duet
+      .getState()
+      .then((state) => {
+        setSettings(state.settings)
+        setStatus(state.status)
+        setDue(state.due)
+        setFit(state.fit)
+      })
+      // Without the first state the strip still works on its defaults, and updates fill it in.
+      .catch((error) => console.error('[duet] could not read the overlay state', error))
+      .finally(() => setLoaded(true))
     const unsubscribe = [
+      window.duet.onFit(setFit),
       window.duet.onStatus(setStatus),
       window.duet.onSettings(setSettings),
       window.duet.onDue(setDue),
@@ -75,5 +89,5 @@ export function useOverlay(): OverlayState {
   const { current, next } = chooseLine(onScreen, lines, shown, { url: status.url, language: settings.language })
   if (next !== shown) setShown(next)
   const building = !current && status.source !== 'transcript' ? live : ''
-  return { settings, status, due: due.due + due.newAvailable, current, building }
+  return { settings, status, due: due.due + due.newAvailable, current, building, fit, loaded }
 }

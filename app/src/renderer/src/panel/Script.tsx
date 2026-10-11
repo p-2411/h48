@@ -9,8 +9,17 @@ import { Words } from '../components/Words'
 
 export function Script({ script, current }: { script: ScriptData; current: number | null }): React.JSX.Element {
   const list = useRef<HTMLOListElement>(null)
-  // Lines starred from here in this run.
+  // Lines starred from here in this run, being starred now, and whose star failed (pressing again retries).
   const [saved, setSaved] = useState<Set<number>>(new Set())
+  const [saving, setSaving] = useState<Set<number>>(new Set())
+  const [failed, setFailed] = useState<Set<number>>(new Set())
+  const mark = (set: (update: (now: Set<number>) => Set<number>) => void, id: number, on: boolean): void =>
+    set((now) => {
+      const next = new Set(now)
+      if (on) next.add(id)
+      else next.delete(id)
+      return next
+    })
   const timed = script.source === 'transcript'
   const lines = timed ? script.lines : [...script.lines].reverse()
   const currentIndex = script.lines.findIndex((line) => line.id === current)
@@ -53,13 +62,21 @@ export function Script({ script, current }: { script: ScriptData; current: numbe
               <button
                 type="button"
                 className="btn quiet"
-                disabled={!processed || saved.has(line.id)}
+                disabled={!processed || saved.has(line.id) || saving.has(line.id)}
+                title={failed.has(line.id) ? 'Saving failed. Press to try again.' : undefined}
                 onClick={async () => {
-                  const result = await window.duet.save(line.id)
-                  if (result) setSaved((now) => new Set(now).add(line.id))
+                  mark(setSaving, line.id, true)
+                  mark(setFailed, line.id, false)
+                  try {
+                    if (await window.duet.save(line.id)) mark(setSaved, line.id, true)
+                  } catch {
+                    mark(setFailed, line.id, true)
+                  } finally {
+                    mark(setSaving, line.id, false)
+                  }
                 }}
               >
-                {saved.has(line.id) ? '★ Saved' : '☆ Save'}
+                {saved.has(line.id) ? '★ Saved' : saving.has(line.id) ? 'Saving…' : failed.has(line.id) ? 'Retry save' : '☆ Save'}
               </button>
             </span>
           </li>

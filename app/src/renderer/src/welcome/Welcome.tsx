@@ -46,13 +46,18 @@ export function Welcome(): React.JSX.Element {
   const [step, setStep] = useState(0)
   const [settings, setSettings] = useState<OverlaySettings>()
   const [status, setStatus] = useState<OverlayStatus>()
+  const [loadError, setLoadError] = useState(false)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
-    void window.duet.getState().then((state) => {
-      setSettings(state.settings)
-      setStatus(state.status)
-    })
-  }, [])
+    window.duet
+      .getState()
+      .then((state) => {
+        setSettings(state.settings)
+        setStatus(state.status)
+      })
+      .catch(() => setLoadError(true))
+  }, [attempt])
   // The permissions change in System Settings, outside Duet: read them again while that step shows.
   useEffect(() => {
     if (STEPS[step] !== 'Permissions') return
@@ -60,7 +65,30 @@ export function Welcome(): React.JSX.Element {
     return () => clearInterval(timer)
   }, [step])
 
-  if (!settings) return <main className="welcome" />
+  if (!settings)
+    return (
+      <main className="welcome">
+        {loadError ? (
+          <div className="notice error row" role="alert">
+            <span>Duet could not load your settings.</span>
+            <button
+              type="button"
+              className="btn quiet"
+              onClick={() => {
+                setLoadError(false)
+                setAttempt((count) => count + 1)
+              }}
+            >
+              Try again
+            </button>
+          </div>
+        ) : (
+          <p className="faint" role="status">
+            Loading…
+          </p>
+        )}
+      </main>
+    )
   const language = settings.language
   const sample = languageModule(language).sample
   const setLanguage = (next: Language): void => {
@@ -79,7 +107,7 @@ export function Welcome(): React.JSX.Element {
       <header>
         {step === 0 && (
           <div className="mascot-stage">
-            <Mascot state="idle" scale={0.72} />
+            <Mascot state="idle" scale={0.5} />
           </div>
         )}
         <h1>Welcome to Duet</h1>

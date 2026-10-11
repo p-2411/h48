@@ -63,7 +63,7 @@ export function LineView({
   return (
     <div className="line" onMouseLeave={() => setHover(undefined)}>
       {hover && word && (
-        <div className="popup" data-solid style={{ left: hover.left }} onMouseEnter={() => setHover(hover)}>
+        <div className="popup" data-solid style={{ '--x': `${hover.left}px` } as React.CSSProperties} onMouseEnter={() => setHover(hover)}>
           <span className="job" data-t={hover.job}>
             {JOBS[hover.job]}
           </span>

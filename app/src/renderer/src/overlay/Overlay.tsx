@@ -4,8 +4,9 @@
 // show on the strip itself only when the learner can act on them (see notice.ts). The strip sits on
 // the video, no wider than it (the main process moves the window; see placement.ts), and can be
 // dragged anywhere by its background.
-import { useEffect, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import type { SaveResult } from '../../../shared/cards'
+import { say } from '../components/errors'
 import { LevelMeter } from './LevelMeter'
 import { LineView } from './LineView'
 import { actionable, quiet } from './notice'
@@ -39,18 +40,12 @@ function startDrag(event: PointerEvent<HTMLElement>): void {
 
 export function Overlay(): React.JSX.Element {
   useSolid()
-  const { settings, status, due, current, building } = useOverlay()
+  const { settings, status, due, current, building, fit, loaded } = useOverlay()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [toast, setToast] = useState<Toast>()
   // Stars given in this run, by line and word ("12:3", or "12:line"), so they show as saved.
   const [stars, setStars] = useState<Record<string, string>>({})
   const [pausedLong, setPausedLong] = useState(false)
-  // How wide the strip may be to stay inside the video.
-  const [fit, setFit] = useState<number | null>(null)
-  useEffect(() => {
-    void window.duet.getState().then((state) => setFit(state.fit))
-    return window.duet.onFit(setFit)
-  }, [])
 
   useEffect(() => {
     if (!toast) return
@@ -69,8 +64,10 @@ export function Overlay(): React.JSX.Element {
   }, [status.playing, status.url])
 
   const key = (pair?: number): string => `${current?.id}:${pair ?? 'line'}`
+  // A star in progress: a second press waits for the first to finish.
+  const starring = useRef(false)
   const star = async (pair?: number): Promise<void> => {
-    if (!current) return
+    if (!current || starring.current) return
     const existing = stars[key(pair)]
     if (existing) {
       window.duet.unsave(existing)
@@ -78,14 +75,23 @@ export function Overlay(): React.JSX.Element {
       setToast({ text: 'Star removed' })
       return
     }
-    const result: SaveResult | undefined = await window.duet.save(current.id, pair)
+    starring.current = true
+    let result: SaveResult | undefined
+    try {
+      result = await window.duet.save(current.id, pair)
+    } catch (error) {
+      setToast({ text: say(error, 'Could not save that. Try again.') })
+      return
+    } finally {
+      starring.current = false
+    }
     if (!result) return
     const card = 'saved' in result ? result.saved : result.duplicate
     setStars((now) => ({ ...now, [key(pair)]: card.id }))
     setToast('saved' in result ? { text: `★ Saved “${card.expression}”`, cardId: card.id } : { text: `Already saved “${card.expression}”` })
   }
 
-  const notice = actionable(status, settings.language)
+  const notice = loaded ? actionable(status, settings.language) : undefined
   const state = quiet(status, settings.language)
   const ready = current?.state === 'ready'
   const nudge = pausedLong && due > 0 && !notice
