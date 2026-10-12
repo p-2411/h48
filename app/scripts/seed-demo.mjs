@@ -1,6 +1,7 @@
 // Builds a demo profile for Duet in Japanese, from scratch, for a live demo: settings, three videos
 // in Continue watching (one with its 48 real lines), ten cards with two weeks of reviews, the
-// knowledge ladder and a 12-day streak that ends yesterday. It writes through the app's own modules
+// knowledge ladder (with words from the video played on stage) and a 12-day streak that ends
+// yesterday. It writes through the app's own modules
 // (src/main/...) with a small fake "electron" module whose data folder is the demo folder, so the
 // schema is the app's. The real data folder is only read (the lines of one video), never written.
 //
@@ -693,6 +694,61 @@ try {
   )
   for (const word of [...USABLE, ...SPEAKABLE, ...KNOWN])
     if (!met.has(key(word))) throw new Error(`Not a word in the lines: ${word}`)
+
+  // Words from the stage video ("A Day in Tokyo", dtAvmNUriDY, its first minutes), learnt in earlier
+  // videos, so its strip lights up from the first lines. Dictionary forms, as the line model keys them.
+  const STAGE = {
+    usable: [
+      ['仕事', 'n'],
+      ['行く', 'v']
+    ],
+    speakable: [
+      ['駅', 'n'],
+      ['電車', 'n'],
+      ['乗る', 'v'],
+      ['買う', 'v'],
+      ['食べる', 'v'],
+      ['朝', 'n']
+    ],
+    known: [
+      ['自転車', 'n'],
+      ['本屋', 'n'],
+      ['帰り', 'n'],
+      ['終わり', 'n'],
+      ['向かう', 'v'],
+      ['探す', 'v'],
+      ['場所', 'n'],
+      ['右', 'n'],
+      ['左', 'n'],
+      ['席', 'n'],
+      ['着く', 'v'],
+      ['降りる', 'v'],
+      ['有名', 'a'],
+      ['見える', 'v'],
+      ['おいしい', 'a'],
+      ['本', 'n']
+    ]
+  }
+  const stageWords = Object.values(STAGE).flat()
+  const stageLine = {
+    translation: '',
+    source: stageWords.map(([word, job], index) => ({
+      text: word,
+      base: word,
+      job,
+      pair: index + 1,
+      space: false
+    })),
+    english: []
+  }
+  knowledge.noteSeen('ja', stageLine, at(ago(12), 20, 30))
+  knowledge.noteSeen('ja', stageLine, at(ago(6), 20, 30))
+  for (const [rung, words] of [
+    [USABLE, STAGE.usable],
+    [SPEAKABLE, STAGE.speakable],
+    [KNOWN, STAGE.known]
+  ])
+    for (const [word] of words) if (!rung.includes(word)) rung.push(word)
   const attempts = (words, kind, context) =>
     words.map((word) => ({
       key: key(word),
@@ -707,6 +763,8 @@ try {
   knowledge.noteAttempts('ja', attempts([...SPEAKABLE, ...USABLE], 'say'), at(ago(6), 21, 10))
   knowledge.noteAttempts('ja', attempts([...SPEAKABLE, ...USABLE], 'say'), at(ago(2), 21, 10))
   const SENTENCES = {
+    仕事: ['明日は仕事で大阪に行きます。', '仕事のあとでカフェに行きました。'],
+    行く: ['週末、友達と山に行きました。', '毎朝、自転車で駅に行きます。'],
     子供: ['子供の時、サッカーが好きでした。', '私の子供はまだ小さいです。'],
     話: ['友達と旅行の話をしました。', 'その話、もう一回聞きたいです。'],
     みんな: ['みんなで日本に行きたいです。', 'みんなと同じ電車に乗りました。'],
@@ -783,16 +841,16 @@ try {
   check(videos.length === 3 && videos[0].key === MAIN_KEY, 'three videos, the main one first')
   check(lastVideo.lines.length === 40 && lines.length === 48, '48 lines kept')
   check(
-    summary.counts.known >= 30 && summary.counts.known <= 40,
-    `30–40 known (${summary.counts.known})`
+    summary.counts.known >= 45 && summary.counts.known <= 55,
+    `45–55 known (${summary.counts.known})`
   )
   check(
-    summary.counts.speakable >= 8 && summary.counts.speakable <= 12,
-    `8–12 speakable (${summary.counts.speakable})`
+    summary.counts.speakable >= 14 && summary.counts.speakable <= 18,
+    `14–18 speakable (${summary.counts.speakable})`
   )
   check(
-    summary.counts.usable >= 3 && summary.counts.usable <= 5,
-    `3–5 usable (${summary.counts.usable})`
+    summary.counts.usable >= 5 && summary.counts.usable <= 7,
+    `5–7 usable (${summary.counts.usable})`
   )
   check(
     hoverStates[key('純粋')] === 'known' &&
@@ -800,6 +858,17 @@ try {
       hoverStates[key('子供')] === 'usable',
     '純粋 known, 変わる speakable, 子供 usable'
   )
+  const stageStates = knowledge.statesFor(
+    'ja',
+    stageWords.map(([word]) => key(word)),
+    now
+  )
+  for (const [rung, words] of Object.entries(STAGE))
+    for (const [word] of words)
+      check(
+        stageStates[key(word)] === rung,
+        `stage word ${word} ${rung} (${stageStates[key(word)]})`
+      )
 
   const dots = { kept: '●', frozen: '❄', missed: '○', today: '◎', ahead: '·' }
   console.log(`Duet demo profile: ${folder}`)
@@ -818,6 +887,11 @@ try {
   console.log(`             Review shows ${reviewableNow(counts)} (due + new allowed today)`)
   console.log(
     `  Words      known ${summary.counts.known}, can say ${summary.counts.speakable}, can use ${summary.counts.usable}, seen ${summary.counts.encountered}, ignored ${summary.counts.ignored}`
+  )
+  console.log(
+    `  Stage      dtAvmNUriDY: ${Object.entries(STAGE)
+      .map(([rung, words]) => `${rung} ${words.map(([word]) => word).join(' ')}`)
+      .join('; ')}`
   )
   console.log(`  Hover      ${hover.map((word) => `${word} ${hoverStates[key(word)]}`).join(', ')}`)
   console.log(
