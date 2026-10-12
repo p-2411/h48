@@ -105,6 +105,14 @@ main{position:relative;overflow-x:clip}
 .flyer.is-calling .duet-mascot[data-state='idle'] .socket:nth-of-type(2){animation:duet-socket-idle-right 5.2s cubic-bezier(.45,0,.55,1) -2.6s infinite,duet-flop-right 3.6s linear infinite}
 .flyer.is-hovered .duet-mascot{scale:1.05;transition:scale .3s var(--ease)}
 .flyer .duet-mascot{transition:scale .3s var(--ease)}
+/* Content at the closing: the app's dot eyes (as when it listens), its idle mouth bent into a
+   smile, and only the slow blink moving. */
+.flyer.is-happy .duet-mascot[data-state] .socket:first-of-type,.flyer.is-happy .duet-mascot[data-state] .socket:nth-of-type(2){animation:none}
+.flyer.is-happy .duet-mascot[data-state] .eye{width:20px;height:20px;border-radius:50%}
+.flyer.is-happy .duet-mascot[data-state] .mouth{animation:none;opacity:.9;transform:translateX(-50%);filter:drop-shadow(0 0 4px rgba(255,255,255,.3))}
+/* The idle mouth (a 4px white line, round at the ends) bent into a smile: the same line, drawn as a
+   mask, so it keeps its thickness and round ends; its glow is on the mouth around it. */
+.flyer.is-happy .duet-mascot[data-state] .mouth-core{width:27px;height:8px;border:0;border-radius:0;background:var(--duet-white);box-shadow:none;animation:none;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 27 8'%3E%3Cpath d='M2 2.5Q13.5 8.5 25 2.5' fill='none' stroke='%23000' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 27 8'%3E%3Cpath d='M2 2.5Q13.5 8.5 25 2.5' fill='none' stroke='%23000' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat}
 @keyframes duet-shake{
   0%,68%{rotate:0deg;translate:0 0;scale:1}
   71%{rotate:0deg;translate:0 3px;scale:1.04 .94}

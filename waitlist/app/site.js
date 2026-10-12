@@ -335,7 +335,9 @@
 
   // Duet: its state (the app's mascot states), and the boxes it flies to.
   let opening = !still();
-  const setState = state => { if (!opening) mascot.dataset.state = state; };
+  // At the closing Duet stays content (wasHappy, set each frame below): idle, smiling; the scene's
+  // states wait.
+  const setState = state => { if (!opening && (!wasHappy || state === 'idle')) mascot.dataset.state = state; };
   if (opening) setTimeout(() => { opening = false; mascot.dataset.state = 'idle'; }, 2450);
   else mascot.dataset.state = 'idle';
   const anchor = name => document.querySelector(`[data-anchor="${name}"]`);
@@ -645,6 +647,7 @@
   // hero and the scene, and the scene and the closing, its place is a blend of the two boxes by how
   // far you have scrolled; inside the scene it is the beat's box. It eases toward that place, so a
   // new box is a short flight and scrolling is a gentle follow.
+  let wasHappy = false;
   const BASE_WIDTH = 210;
   const BASE_HEIGHT = 95;
   const shown = { x: 0, y: 0, w: 0 };
@@ -686,6 +689,15 @@
     const invitingNow = inviting();
     flyer.classList.toggle('is-calling', invitingNow && !still());
     heroAnchor?.classList.toggle('is-calling', invitingNow);
+    // At the closing ("Be first in line.") Duet is content: its idle face, still, with a smile
+    // (styles.css .is-happy); as it was when it leaves.
+    const happy = out > .6;
+    if (happy !== wasHappy) {
+      wasHappy = happy;
+      flyer.classList.toggle('is-happy', happy);
+      if (happy) hush();
+      setState('idle');
+    }
     // At rest in the hero, or at the closing ("Be first in line."): not on its way, not in the scene.
     followPointer(dt, (into < .2 && out === 0) || out > .6);
     requestAnimationFrame(tick);
