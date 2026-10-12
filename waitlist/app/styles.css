@@ -97,12 +97,12 @@ main{position:relative;overflow-x:clip}
 @keyframes call-arrow{0%,100%{translate:0 -50%}50%{translate:9px -50%}}
 /* Duet calling for a click, the way a dog shakes its head when it's wet or wants a pat: a little
    crouch, then quick swings that die away, around a point a little below its middle, the eyes (its ears) flopping a beat
-   behind. Every few seconds (site.js adds it after Duet's opening, and takes it away once clicked
+   behind. Every 2.4 seconds, the first soon after the opening (site.js adds it after Duet's opening, and takes it away once clicked
    or scrolled past). */
-.flyer.is-calling .duet-mascot{transform-origin:50% 62%;animation:duet-shake 3.6s linear infinite}
+.flyer.is-calling .duet-mascot{transform-origin:50% 62%;animation:duet-shake 2.4s linear infinite}
 /* With the idle sockets' own breathing (mascot.css), not instead of it. */
-.flyer.is-calling .duet-mascot[data-state='idle'] .socket:first-of-type{animation:duet-socket-idle-left 5.2s cubic-bezier(.45,0,.55,1) infinite,duet-flop 3.6s linear infinite}
-.flyer.is-calling .duet-mascot[data-state='idle'] .socket:nth-of-type(2){animation:duet-socket-idle-right 5.2s cubic-bezier(.45,0,.55,1) -2.6s infinite,duet-flop-right 3.6s linear infinite}
+.flyer.is-calling .duet-mascot[data-state='idle'] .socket:first-of-type{animation:duet-socket-idle-left 5.2s cubic-bezier(.45,0,.55,1) infinite,duet-flop 2.4s linear infinite}
+.flyer.is-calling .duet-mascot[data-state='idle'] .socket:nth-of-type(2){animation:duet-socket-idle-right 5.2s cubic-bezier(.45,0,.55,1) -2.6s infinite,duet-flop-right 2.4s linear infinite}
 .flyer.is-hovered .duet-mascot{scale:1.05;transition:scale .3s var(--ease)}
 .flyer .duet-mascot{transition:scale .3s var(--ease)}
 /* Content at the closing: the app's dot eyes (as when it listens), its idle mouth bent into a
@@ -114,38 +114,39 @@ main{position:relative;overflow-x:clip}
    mask, so it keeps its thickness and round ends; its glow is on the mouth around it. */
 .flyer.is-happy .duet-mascot[data-state] .mouth-core{width:27px;height:8px;border:0;border-radius:0;background:var(--duet-white);box-shadow:none;animation:none;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 27 8'%3E%3Cpath d='M2 2.5Q13.5 8.5 25 2.5' fill='none' stroke='%23000' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 27 8'%3E%3Cpath d='M2 2.5Q13.5 8.5 25 2.5' fill='none' stroke='%23000' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat}
 @keyframes duet-shake{
-  0%,68%{rotate:0deg;translate:0 0;scale:1}
-  71%{rotate:0deg;translate:0 3px;scale:1.04 .94}
-  73.5%{rotate:-12deg;translate:-5px 0;scale:1}
-  76%{rotate:11deg;translate:5px 0}
-  78.5%{rotate:-9deg;translate:-4px 0}
-  81%{rotate:7deg;translate:3px 0}
-  83.5%{rotate:-5deg;translate:-2px 0}
-  86%{rotate:3deg;translate:1px 0}
-  88.5%{rotate:-1.5deg;translate:0 0}
-  91%,100%{rotate:0deg;translate:0 0;scale:1}
+  0%,20%{rotate:0deg;translate:0 0;scale:1}
+  24.5%{rotate:0deg;translate:0 3px;scale:1.04 .94}
+  28.25%{rotate:-12deg;translate:-5px 0;scale:1}
+  32%{rotate:11deg;translate:5px 0}
+  35.75%{rotate:-9deg;translate:-4px 0}
+  39.5%{rotate:7deg;translate:3px 0}
+  43.25%{rotate:-5deg;translate:-2px 0}
+  47%{rotate:3deg;translate:1px 0}
+  50.75%{rotate:-1.5deg;translate:0 0}
+  54.5%,100%{rotate:0deg;translate:0 0;scale:1}
 }
 /* The ears lag the head: each swing reaches them a moment later, pulled the other way. */
 @keyframes duet-flop{
-  0%,72%{translate:0 0}
-  74.5%{translate:7px -3px}
-  77%{translate:-7px 2px}
-  79.5%{translate:6px -2px}
-  82%{translate:-4px 1px}
-  84.5%{translate:3px 0}
-  87%{translate:-1.5px 0}
-  91%,100%{translate:0 0}
+  0%,26%{translate:0 0}
+  29.75%{translate:7px -3px}
+  33.5%{translate:-7px 2px}
+  37.25%{translate:6px -2px}
+  41%{translate:-4px 1px}
+  44.75%{translate:3px 0}
+  48.5%{translate:-1.5px 0}
+  54.5%,100%{translate:0 0}
 }
 @keyframes duet-flop-right{
-  0%,72%{translate:0 0}
-  74.5%{translate:7px 2px}
-  77%{translate:-7px -3px}
-  79.5%{translate:6px 1px}
-  82%{translate:-4px -2px}
-  84.5%{translate:3px 0}
-  87%{translate:-1.5px 0}
-  91%,100%{translate:0 0}
+  0%,26%{translate:0 0}
+  29.75%{translate:7px 2px}
+  33.5%{translate:-7px -3px}
+  37.25%{translate:6px 1px}
+  41%{translate:-4px -2px}
+  44.75%{translate:3px 0}
+  48.5%{translate:-1.5px 0}
+  54.5%,100%{translate:0 0}
 }
+
 h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height:.98;letter-spacing:-.045em;text-wrap:balance}
 .hero-copy{margin-top:22px;max-width:34ch;font-size:clamp(17px,1.4vw,19px);line-height:1.55;color:var(--fg-2)}
 .join-hero{margin-top:32px}
@@ -322,6 +323,40 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
 .talk-row .anchor{width:11cqw}
 .talk-row p{color:var(--fg-2);font-size:1.1em}
 
+/* The daily session, grown out of the Today tile (the app's useSurface.ts, home.css, review.css),
+   at the frame's scale (the app's 1px is about .1cqw of this window). */
+.hub-button{transition:transform .2s var(--ease),background .2s}
+.hub-button.is-pressed{transform:scale(.96);background:#e6e6e6}
+.grow-surface{position:absolute;inset:0;z-index:5;background:#1d1d20;opacity:0;pointer-events:none;transform-origin:0 0;will-change:transform,opacity}
+.session{position:absolute;inset:0;z-index:6;visibility:hidden;opacity:0;display:flex;flex-direction:column;align-items:center;padding:2cqw;background:var(--grain) 0 0/90px 90px,linear-gradient(180deg,#1b1b1f,#111114);font-size:max(10px,1.3cqw);line-height:1.45}
+.session.is-open{visibility:visible;opacity:1}
+.home-back{position:absolute;top:1.6cqw;left:2cqw;padding:.4cqw 1.3cqw;border-radius:999px;background:rgba(255,255,255,.08)}
+.session-steps{display:flex;gap:.5cqw;margin-top:3.6cqw}
+.session-steps i{width:4.2cqw;height:.3cqw;min-height:2px;border-radius:2px;background:rgba(255,255,255,.14)}
+.session-steps i.on{background:rgba(255,255,255,.6)}
+.card-stage{display:flex;flex-direction:column;align-items:center;gap:1.2cqw;width:min(62cqw,100%);padding-top:3cqw;text-align:center}
+.stage-label{font-size:max(9px,1.05cqw);font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
+.stage-front{font-size:max(18px,3cqw);line-height:1.35}
+.stage-back{font-size:max(12px,1.7cqw);color:var(--fg-2);filter:blur(7px);opacity:.6;transition:filter .3s var(--ease),opacity .3s var(--ease)}
+.session.is-revealed .stage-back{filter:none;opacity:1}
+.hub-button.stage-reveal{align-self:center;margin-top:.6cqw;padding:.8cqw 2.2cqw;font-size:max(11px,1.4cqw)}
+.session.is-revealed .stage-reveal{display:none}
+.stage-answer{display:none;flex-direction:column;gap:.7cqw;width:100%;padding:1.6cqw;border-radius:1.6cqw;background:rgba(0,0,0,.25);border:.5px solid rgba(255,255,255,.1);text-align:left}
+.stage-answer .faint{color:var(--text-2)}
+.stage-source{display:flex;flex-wrap:wrap;gap:.4cqw 1.4cqw;align-items:baseline;padding-top:.9cqw;border-top:.5px solid rgba(255,255,255,.1)}
+.session.is-revealed .stage-answer{display:flex}
+.ratings{display:none;grid-template-columns:repeat(4,1fr);gap:.8cqw;width:100%}
+.session.is-revealed .ratings{display:grid}
+.rate{display:flex;flex-direction:column;align-items:center;gap:.1cqw;padding:.8cqw;border-radius:999px;background:rgba(255,255,255,.08);transition:background .2s,transform .2s}
+.rate i{font-style:normal;font-size:.9em;color:var(--text-2)}
+.rate.again{box-shadow:inset 0 0 0 1px rgba(255,105,97,.5)}
+.rate.good{box-shadow:inset 0 0 0 1px rgba(50,215,75,.5)}
+.rate.is-picked{background:rgba(50,215,75,.22);transform:scale(.97)}
+.stage-skips{display:flex;gap:2.6cqw;color:var(--text-2)}
+/* Duet isn't in the session (the app's has none): it steps out while it is open. */
+.js .flyer{transition:opacity .25s}
+.js .flyer.is-away{opacity:0}
+
 /* The closing moment: Duet asks, then the email bar. */
 .closing{display:flex;flex-direction:column;align-items:center;text-align:center;padding-block:clamp(64px,12vh,140px)}
 .closing-anchor{width:clamp(160px,16vw,200px)}
@@ -407,6 +442,20 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
   .counts b{font-size:6cqw}
   .chips{display:none}
   .talk-row .anchor{width:22cqw}
+  .session{padding:4cqw;font-size:max(11px,3.1cqw)}
+  .home-back{top:3.4cqw;left:4cqw;padding:1cqw 3cqw}
+  .session-steps{margin-top:11cqw;gap:1.4cqw}
+  .session-steps i{width:11cqw}
+  .card-stage{width:100%;gap:2.6cqw;padding-top:5cqw}
+  .stage-label{font-size:max(9px,2.5cqw)}
+  .stage-front{font-size:max(18px,6cqw)}
+  .stage-back{font-size:max(12px,3.8cqw)}
+  .hub-button.stage-reveal{padding:2cqw 5cqw;font-size:max(12px,3.5cqw)}
+  .stage-answer{padding:3.4cqw;border-radius:3.4cqw;gap:1.6cqw}
+  .stage-source .faint:last-child{display:none}
+  .ratings{grid-template-columns:repeat(2,1fr);gap:2cqw}
+  .rate{padding:1.8cqw}
+  .stage-skips{gap:6cqw}
   .beat-nav button{padding:6px 10px}
 }
 @media(max-width:600px){

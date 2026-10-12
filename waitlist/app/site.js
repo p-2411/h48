@@ -199,6 +199,15 @@
   const challenge = card.querySelector('.challenge');
   const blank = card.querySelector('[data-blank]');
   const rightChoice = card.querySelector('[data-right]');
+  const hub = frame.querySelector('.hub');
+  const today = frame.querySelector('[data-today]');
+  const startButton = frame.querySelector('[data-start]');
+  const surface = frame.querySelector('[data-surface]');
+  const session = frame.querySelector('[data-session]');
+  const revealButton = frame.querySelector('[data-reveal]');
+  const goodRating = frame.querySelector('[data-good]');
+  const revealed = [...session.querySelectorAll('.stage-answer, .ratings')];
+  let sessionOpen = false;
   const beatItems = [...document.querySelectorAll('[data-beat]:not([data-frame])')];
   const navButtons = [...document.querySelectorAll('[data-go]')];
 
@@ -334,12 +343,29 @@
   };
 
   // Duet: its state (the app's mascot states), and the boxes it flies to.
-  let opening = !still();
+  // Its opening (the mark turning into Duet) plays only in the hero: on a fresh visit to the top the
+  // inline script in index.html starts it before the first paint; after a refresh or Back, once the
+  // page has loaded and the browser has put the scroll back, only if that is the hero.
+  let opening = mascot.dataset.state === 'opening';
+  let deciding = !opening;
   // At the closing Duet stays content (wasHappy, set each frame below): idle, smiling; the scene's
   // states wait.
   const setState = state => { if (!opening && (!wasHappy || state === 'idle')) mascot.dataset.state = state; };
-  if (opening) setTimeout(() => { opening = false; mascot.dataset.state = 'idle'; }, 2450);
-  else mascot.dataset.state = 'idle';
+  const endOpening = () => setTimeout(() => { opening = false; mascot.dataset.state = 'idle'; }, 2450);
+  if (opening) endOpening();
+  else {
+    const decide = () => setTimeout(() => {
+      deciding = false;
+      if (!still() && scrollY <= innerHeight * .3) {
+        opening = true;
+        mascot.dataset.state = 'opening';
+        endOpening();
+      }
+      mascot.style.visibility = '';
+    }, 0);
+    if (document.readyState === 'complete') decide();
+    else addEventListener('load', decide, { once: true });
+  }
   const anchor = name => document.querySelector(`[data-anchor="${name}"]`);
   const anchors = { hero: anchor('hero'), popup: anchor('popup'), panel: anchor('panel'), hub: anchor('hub'), closing: anchor('closing') };
   const BEAT_ANCHOR = ['popup', 'panel', 'popup', 'hub'];
@@ -465,6 +491,48 @@
     card.animate([{ height: `${from}px` }, { height: '0px' }], { duration: 200, delay: 80, easing: EASE_IN }).onfinish = () => stripRow.classList.remove('has-card');
   };
 
+  // The Today tile grows into the daily session, as the app's useSurface.ts: a solid surface covers
+  // the tile (80ms), grows to fill the window by transform alone (340ms, its corners scaled the
+  // other way so they keep the tile's), then thins away (200ms) under the page as it rises in (the
+  // app's fadeUp(8, 0.28)).
+  const FULL = { transform: 'translate(0px, 0px) scale(1, 1)', borderRadius: '0px / 0px' };
+  const frameOf = element => {
+    const a = element.getBoundingClientRect();
+    const b = hub.getBoundingClientRect();
+    const x = a.width / b.width;
+    const y = a.height / b.height;
+    const radius = parseFloat(getComputedStyle(element).borderTopLeftRadius) || 0;
+    return { transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${x}, ${y})`, borderRadius: `${radius / x}px / ${radius / y}px` };
+  };
+  const openSession = async mine => {
+    sessionOpen = true;
+    if (!still()) {
+      const tile = frameOf(today);
+      await surface.animate([{ ...tile, opacity: 0 }, { ...tile, opacity: 1 }], { duration: 80, fill: 'forwards' }).finished;
+      if (mine !== run) return;
+      await surface.animate([tile, FULL], { duration: 340, easing: EASE_OUT, fill: 'forwards' }).finished;
+      if (mine !== run) return;
+    }
+    session.classList.add('is-open');
+    if (still()) return;
+    session.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: EASE_OUT });
+    surface.animate([{ ...FULL, opacity: 1 }, { ...FULL, opacity: 0 }], { duration: 200, fill: 'forwards' });
+  };
+  const closeSession = () => {
+    sessionOpen = false;
+    [surface, session, ...revealed].forEach(element => element.getAnimations().forEach(animation => animation.cancel()));
+    session.classList.remove('is-open', 'is-revealed');
+    startButton.classList.remove('is-pressed');
+    revealButton.classList.remove('is-pressed');
+    goodRating.classList.remove('is-picked');
+  };
+  // A button pressed, as a finger would: down, a moment, up.
+  const press = async (button, mine) => {
+    button.classList.add('is-pressed');
+    await wait(200);
+    if (mine === run) button.classList.remove('is-pressed');
+  };
+
   // The beats. Each starts its own little scene; leaving it puts its pieces back.
   let beat = -1;
   let run = 0;
@@ -491,6 +559,7 @@
     blank.classList.remove('is-right');
     rightChoice.classList.remove('primary');
     frame.classList.remove('is-swiped');
+    closeSession();
   };
   // Steps the level on its own, out to 5 and back to 1, until the visitor swipes it themselves.
   let autoWay = 1;
@@ -547,7 +616,22 @@
     async mine => {
       say('');
       await wait(700);
-      if (mine === run) speak('back', 1800);
+      if (mine !== run) return;
+      speak('back', 1800);
+      // The session starts while Duet is still asking.
+      await wait(700);
+      if (mine !== run) return;
+      await press(startButton, mine);
+      if (mine !== run) return;
+      await openSession(mine);
+      await wait(1700);
+      if (mine !== run) return;
+      await press(revealButton, mine);
+      if (mine !== run) return;
+      session.classList.add('is-revealed');
+      if (!still()) revealed.forEach(element => element.animate([{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: EASE_OUT }));
+      await wait(1600);
+      if (mine === run) goodRating.classList.add('is-picked');
     }
   ];
   // Beat -1 is the scene before it is pinned: it looks like the first beat, but nothing has been
@@ -603,7 +687,7 @@
   const heroAnchor = anchors.hero;
   let called = false;
   // Inviting: the arrow shows (still, for reduced motion); the shake only with motion.
-  const inviting = () => !called && !opening && scrollY < innerHeight * .3;
+  const inviting = () => !called && !opening && !deciding && scrollY < innerHeight * .3;
   heroAnchor?.addEventListener('pointerenter', () => flyer.classList.add('is-hovered'));
   heroAnchor?.addEventListener('pointerleave', () => flyer.classList.remove('is-hovered'));
   heroAnchor?.addEventListener('click', event => {
@@ -686,6 +770,7 @@
     flyer.style.transform = `translate3d(${shown.x.toFixed(1)}px,${(shown.y - BASE_HEIGHT * scale / 2).toFixed(1)}px,0) scale(${scale.toFixed(4)})`;
 
     followMouth(now, dt);
+    flyer.classList.toggle('is-away', sessionOpen && out < .05);
     const invitingNow = inviting();
     flyer.classList.toggle('is-calling', invitingNow && !still());
     heroAnchor?.classList.toggle('is-calling', invitingNow);

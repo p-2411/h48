@@ -41,7 +41,7 @@
         <span class="call-arrow" aria-hidden="true"><svg viewBox="0 0 30 18"><path d="M3 9h22M17 2.5 25 9l-8 6.5"/></svg></span>
         <!-- Duet travels down the page (site.js): it starts here, and stays here without script. -->
         <div class="flyer" aria-hidden="true">
-          <div class="duet-mascot" data-state="opening" style="--scale:.5;--opening-duration:2350ms">
+          <div class="duet-mascot" data-state="idle" style="--scale:.5;--opening-duration:2350ms">
             <div class="mascot-canvas">
               <div class="particle-field"><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span></div>
               <div class="sound-ring"></div>
@@ -50,6 +50,10 @@
           </div>
         </div>
       </a>
+      <!-- Duet's opening (the mark turning into Duet) only on a fresh visit to the top, started here
+           before the first paint; after a refresh or Back, Duet waits unseen and site.js decides once
+           the scroll is back. -->
+      <script>(function () { var n = performance.getEntriesByType && performance.getEntriesByType('navigation')[0]; var duet = document.querySelector('.hero-anchor .duet-mascot'); if (n && n.type !== 'navigate') duet.style.visibility = 'hidden'; else if (!location.hash && !matchMedia('(prefers-reduced-motion: reduce)').matches) duet.dataset.state = 'opening'; })();</script>
       <h1 id="hero-title">Watch the show.<br>Keep the words.</h1>
       <p class="hero-copy">Duet sits on top of YouTube and Netflix and turns what you watch into Japanese, Spanish or Korean you remember.</p>
       <!-- Sign-ups go to /api/join (api/join.js). -->
@@ -70,7 +74,7 @@
         <ol class="beats" data-beats>
           <li class="beat is-on" data-beat="0">
             <h3>Words you know light up.</h3>
-            <p>Orange: you know it. Blue: you can say it. Green: you use it. Swipe the subtitles for more Japanese.</p>
+            <p>Orange: you know it. Blue: you’ve learnt to say it. Green: you’ve learnt to use it. Swipe the subtitles for more Japanese.</p>
           </li>
           <li class="beat" data-beat="1">
             <h3>Ask about any line.</h3>
@@ -145,11 +149,11 @@
           </div>
 
           <div class="hub">
-            <div class="tile today">
+            <div class="tile today" data-today>
               <p class="tile-label">Today</p>
               <p class="hello">Good evening.<br><span>5 minutes today?</span></p>
               <p class="tile-copy">Your 6 cards, a line to say back, and one challenge.</p>
-              <span class="hub-button">Start today’s session</span>
+              <span class="hub-button" data-start>Start today’s session</span>
               <p class="tile-label streak-label">12 days in a row</p>
               <p class="days"><i class="on">M</i><i class="on">T</i><i class="on">W</i><i class="on">T</i><i class="now">F</i><i>S</i><i>S</i></p>
             </div>
@@ -167,6 +171,26 @@
             <div class="tile talk-tile">
               <p class="tile-label">Talk to Duet</p>
               <div class="talk-row"><div class="anchor" data-anchor="hub"></div><p>Want to try <span class="s" lang="ja">探す</span> in a sentence?</p></div>
+            </div>
+            <!-- The Today tile grows into the daily session, as in the app (useSurface.ts): a solid
+                 surface covers the tile, grows to the window, and thins away under the page. -->
+            <div class="grow-surface" data-surface></div>
+            <div class="session" data-session>
+              <span class="home-back">‹ Home</span>
+              <p class="session-steps"><i class="on"></i><i></i><i></i></p>
+              <div class="card-stage">
+                <span class="stage-label">Card 1 of 6 · Do you know it?</span>
+                <p class="stage-front" lang="ja">人を探しているの</p>
+                <p class="stage-back">I’m searching for someone.</p>
+                <span class="hub-button stage-reveal" data-reveal>Show the English</span>
+                <div class="stage-answer">
+                  <p class="faint">What it tests: <span lang="ja">探す</span></p>
+                  <p><span lang="ja">探している</span> is <span lang="ja">探す</span> (to look for) plus <span lang="ja">いる</span>: something still going on.</p>
+                  <p class="stage-source"><span lang="ja">人を探しているの。</span><span class="faint">Sintel · 2:15</span><span class="faint">Replay</span></p>
+                </div>
+                <div class="ratings"><span class="rate again">Again<i>10 min</i></span><span class="rate">Hard<i>15 min</i></span><span class="rate good" data-good>Good<i>1 d</i></span><span class="rate">Easy<i>2 d</i></span></div>
+                <p class="stage-skips"><span>Skip</span><span>Skip the rest</span></p>
+              </div>
             </div>
           </div>
         </div>
