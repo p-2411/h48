@@ -4,223 +4,175 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
-  <title>Duet, the on-screen language assistant</title>
-  <meta name="description" content="Duet is an on-screen language assistant for Spanish, Japanese and Korean. It floats over YouTube and Netflix with live translations, every word coloured by what it does, and a voice tutor. Join the waitlist.">
+  <title>Duet, learn a language from what you watch</title>
+  <meta name="description" content="Duet sits on top of YouTube and Netflix and turns what you watch into Japanese, Spanish or Korean you remember. Words you know light up, you can ask about any line, and five minutes a day keeps them. Join the waitlist.">
   <meta property="og:title" content="Duet">
-  <meta property="og:description" content="The on-screen language assistant for Spanish, Japanese and Korean, on YouTube and Netflix.">
+  <meta property="og:description" content="Watch the show. Keep the words. Learn Japanese, Spanish or Korean from YouTube and Netflix.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Duet">
   <meta property="og:url" content="https://useduet.io/">
   <meta property="og:image" content="https://useduet.io/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Duet, your on-screen language assistant. A subtitle line with Spanish words mixed into English, each coloured by what it does.">
+  <meta property="og:image:alt" content="Duet, your on-screen language assistant.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://useduet.io/og.png">
   <link rel="canonical" href="https://useduet.io/">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="stylesheet" href="./styles.css">
-  <link rel="preload" as="image" href="./media/sintel-scene.jpg">
-  <script defer src="./sintel-lines.js"></script>
+  <link rel="stylesheet" href="./mascot.css">
   <script defer src="./site.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
-  <div class="scroll-rail" aria-hidden="true"><span class="scroll-thumb"></span></div>
   <header class="site-header">
     <nav class="nav" aria-label="Main navigation">
       <a class="brand" href="#top" aria-label="Duet home"><svg class="mark" viewBox="0 0 30 24" width="30" height="24" aria-hidden="true"><rect x="1" y="2" width="17" height="12" rx="4" fill="#fff"/><rect x="10" y="9" width="19" height="13" rx="4" fill="#fff" stroke="#000" stroke-width="2"/></svg><span>Duet</span></a>
-      <div class="nav-links"><a class="nav-secondary" href="#fixes">How it works</a><a class="nav-secondary" href="#faq">FAQ</a><a class="button" href="#waitlist" data-join-focus><span>Join the waitlist</span></a></div>
+      <div class="nav-links"><a class="nav-secondary" href="#how">How it works</a><a class="button" href="#waitlist" data-join-focus><span>Join the waitlist</span></a></div>
     </nav>
   </header>
   <main id="main">
-    <div class="aura" aria-hidden="true"></div>
 
+    <!-- The hero: Duet itself (the app's mascot), the promise, and the email bar. -->
     <section class="hero container" id="top" aria-labelledby="hero-title">
-      <h1 id="hero-title">Your on&#8209;screen language assistant.</h1>
-      <div class="hero-body">
-        <div class="hero-copy">
-          <p>Learn from real people saying real things, without leaving the show.</p>
-          <p class="hero-meta">Spanish, Japanese and Korean, on YouTube and Netflix.</p>
-        </div>
-        <figure class="demo-card hero-demo">
-          <div class="demo-frame browser">
-            <div class="browser-bar" aria-hidden="true">
-              <span class="terminal-lights"><i></i><i></i><i></i></span>
-              <span class="browser-nav"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg><svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5"/></svg><svg viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3h-3"/></svg></span>
-              <span class="browser-address"><svg viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>youtube.com/watch?v=eRsGyueVLvQ</span>
-            </div>
-            <div class="watch">
-              <div class="watch-main">
-                <div class="video-still" aria-hidden="true"><video class="hero-player" autoplay muted loop playsinline preload="auto" poster="./media/sintel-scene.jpg" tabindex="-1"><source src="./media/sintel-scene.webm" type="video/webm"><source src="./media/sintel-scene.mp4" type="video/mp4"></video><span class="still-sun"></span><span class="still-hills far"></span><span class="still-hills near"></span><div class="still-controls"><span class="still-pause"></span><span class="still-track"><i></i></span><span class="still-time">1:47 / 14:48</span></div></div>
-              </div>
-              <div class="panel duet-panel floating" data-pairs>
-                <div class="duet-bar" aria-hidden="true"><span class="duet-logo"><svg viewBox="0 0 30 24" width="18" height="14" aria-hidden="true"><rect x="1" y="2" width="17" height="12" rx="4" fill="#fff"/><rect x="10" y="9" width="19" height="13" rx="4" fill="#fff" stroke="#000" stroke-width="2"/></svg></span><span class="duet-brand"><b>Duet</b><small>Learn Spanish</small></span><span class="duet-icons"><i></i><i></i></span></div>
-                <div class="duet-controls" aria-hidden="true"><span class="duet-label">Spanish</span><span class="duet-level"><b>1</b><b class="on">2</b><b>3</b><b>4</b><b>5</b></span><span class="toggle"><span class="switch"><i></i></span>Guess first</span></div>
-                <div class="duet-now line-card">
-                    <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>Now · 1:47</p>
-                    <p class="mix"><span class="w" data-t="p" data-k="1">She</span> <span class="w sw" data-t="v" data-k="2">encontró</span> <span class="w" data-t="g">the</span> <span class="w" data-t="a" data-k="3">old</span> <span class="w sw" data-t="n" data-k="4">mapa</span> <span class="w" data-t="g">in the</span> <span class="w sw" data-t="n" data-k="5">río</span>.</p>
-                    <p class="es-line" lang="es"><span class="w" data-t="p" data-k="1">Ella</span> <span class="w" data-t="v" data-k="2">encontró</span> <span class="w" data-t="g">el</span> <span class="w" data-t="n" data-k="4">mapa</span> <span class="w" data-t="a" data-k="3">viejo</span> <span class="w" data-t="g">en el</span> <span class="w" data-t="n" data-k="5">río</span>.</p>
-                    <p class="en-line guess" tabindex="0"><span class="w" data-t="p" data-k="1">She</span> <span class="w" data-t="v" data-k="2">found</span> <span class="w" data-t="g">the</span> <span class="w" data-t="a" data-k="3">old</span> <span class="w" data-t="n" data-k="4">map</span> <span class="w" data-t="g">in the</span> <span class="w" data-t="n" data-k="5">river</span>.</p>
-                </div>
-                <div class="duet-legend" aria-hidden="true"><span data-t="n"><i></i>Things</span><span data-t="v"><i></i>Actions</span><span data-t="a"><i></i>Describing</span><span data-t="p"><i></i>People</span><span data-t="x"><i></i>Names</span><span data-t="g"><i></i>Glue</span></div>
-                <div class="duet-tabs" aria-hidden="true"><b class="on">Script</b><b>My words</b></div>
-                <ol class="duet-script" data-script aria-hidden="true"></ol>
-              </div>
-            </div>
-          </div>
-          <figcaption class="sr-only">A browser window on a muted scene from the open film Sintel, with Duet floating over the edge of the window as its own panel. The panel shows each line of dialogue as it is spoken: mixed English and Spanish, the full Spanish line, and the English line, blurred until you hover it. Under it are the colour key and the scene's script, which follows the film.</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <section class="stepper problem section" id="problem" aria-labelledby="problem-title">
-      <div class="stepper-track">
-        <div class="stepper-stage container">
-          <h2 id="problem-title" class="wide-heading">You did the lessons.<br><span>But you still can’t follow the show?</span></h2>
-          <div class="stepper-box" data-stepper>
-            <ol class="stepper-list">
-              <li class="stepper-item is-on"><button type="button" aria-pressed="true" aria-controls="stepper-pane-1"><span class="step-num">01</span><span class="step-text"><span class="step-title">Word for word</span><span class="step-line">Translators swap words. People mean things.</span><span class="step-progress" aria-hidden="true"><i></i></span></span></button></li>
-              <li class="stepper-item"><button type="button" aria-pressed="false" aria-controls="stepper-pane-2"><span class="step-num">02</span><span class="step-text"><span class="step-title">Textbook Spanish</span><span class="step-line">Nobody talks like a lesson.</span><span class="step-progress" aria-hidden="true"><i></i></span></span></button></li>
-              <li class="stepper-item"><button type="button" aria-pressed="false" aria-controls="stepper-pane-3"><span class="step-num">03</span><span class="step-text"><span class="step-title">Pausing the show</span><span class="step-line">Learning shouldn’t stop what you love.</span><span class="step-progress" aria-hidden="true"><i></i></span></span></button></li>
-            </ol>
-            <div class="stepper-board">
-              <div class="stepper-pane is-on" id="stepper-pane-1">
-                <div class="pane-caption"><span class="step-num">01</span><div><p class="step-title">Word for word</p><p class="step-line">Translators swap words. People mean things.</p></div></div>
-                <div class="align-figure" role="img" aria-label="Estoy hasta las narices, translated word for word as I am up to the noses, crossed out. What it means: I'm fed up.">
-                  <div class="align" aria-hidden="true">
-                    <span class="w" data-t="v">Estoy</span><span class="w" data-t="g">hasta</span><span class="w" data-t="g">las</span><span class="w" data-t="n">narices</span>
-                    <i class="ln" style="--d:.05s"></i><i class="ln" style="--d:.1s"></i><i class="ln" style="--d:.15s"></i><i class="ln" style="--d:.2s"></i>
-                    <span class="lit anim" style="--d:.1s">I am</span><span class="lit anim" style="--d:.15s">up to</span><span class="lit anim" style="--d:.2s">the</span><span class="lit anim" style="--d:.25s">noses</span>
-                  </div>
-                  <p class="literal anim" style="--d:.35s" aria-hidden="true"><span style="--d:.6s">“I am up to the noses.”</span></p>
-                  <div class="bracket anim" style="--d:.8s" aria-hidden="true"></div>
-                  <p class="meaning anim" style="--d:.95s" aria-hidden="true">“I’m fed up.”</p>
-                </div>
-              </div>
-              <div class="stepper-pane" id="stepper-pane-2" aria-hidden="true">
-                <div class="pane-caption"><span class="step-num">02</span><div><p class="step-title">Textbook Spanish</p><p class="step-line">Nobody talks like a lesson.</p></div></div>
-                <div class="chat-phone" role="img" aria-label="A chat with Lucía. She writes: ¿Qué pasa, tío? The reply, straight from lesson 3: Buenos días. ¿Cómo está usted? She answers: ¿Usted? Jaja.">
-                  <p class="chat-name" aria-hidden="true">Lucía</p>
-                  <p class="bubble them anim" style="--d:.05s" lang="es" aria-hidden="true">¿Qué pasa, tío?</p>
-                  <p class="bubble you anim" style="--d:.4s" lang="es" aria-hidden="true">Buenos días. ¿Cómo está usted?</p>
-                  <p class="bubble-meta anim" style="--d:.55s" aria-hidden="true">Straight from lesson 3</p>
-                  <p class="bubble them anim" style="--d:.9s" lang="es" aria-hidden="true">¿Usted? Jaja</p>
-                </div>
-              </div>
-              <div class="stepper-pane" id="stepper-pane-3" aria-hidden="true">
-                <div class="pane-caption"><span class="step-num">03</span><div><p class="step-title">Pausing the show</p><p class="step-line">Learning shouldn’t stop what you love.</p></div></div>
-                <div class="paused-show" role="img" aria-label="A paused show at 1:47, covered by a pop-up: Don't lose your streak! Time for today's lesson. Start lesson.">
-                  <div class="video-still" aria-hidden="true"><span class="still-sun"></span><span class="still-hills far"></span><span class="still-hills near"></span><div class="still-controls"><span class="still-play"></span><span class="still-track"><i></i></span><span class="still-time">Paused · 1:47 / 14:48</span></div></div>
-                  <div class="pop-layer" aria-hidden="true"><div class="lesson-pop anim" style="--d:.1s"><p><strong>Don’t lose your streak!</strong></p><p>Time for today’s lesson.</p><span>Start lesson</span></div></div>
-                </div>
-              </div>
+      <div class="anchor hero-anchor" data-anchor="hero">
+        <!-- Duet travels down the page (site.js): it starts here, and stays here without script. -->
+        <div class="flyer" aria-hidden="true">
+          <div class="duet-mascot" data-state="opening" style="--scale:.5;--opening-duration:2350ms">
+            <div class="mascot-canvas">
+              <div class="particle-field"><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span></div>
+              <div class="sound-ring"></div>
+              <div class="duet-face"><span class="brow brow-left"></span><span class="brow brow-right"></span><div class="socket"><span class="eye eye-left"></span></div><div class="socket"><span class="eye eye-right"></span></div><span class="mouth"><span class="mouth-core"></span></span></div>
             </div>
           </div>
         </div>
       </div>
+      <h1 id="hero-title">Watch the show.<br>Keep the words.</h1>
+      <p class="hero-copy">Duet sits on top of YouTube and Netflix and turns what you watch into Japanese, Spanish or Korean you remember.</p>
+      <!-- Sign-ups go to /api/join (api/join.js). -->
+      <form class="join join-hero" action="/api/join" method="post" novalidate data-source="hero">
+        <input type="email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
+        <input class="join-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="button" type="submit"><span>Join the waitlist</span></button>
+        <p class="join-done">You’re on the list. We’ll email you when Duet is ready.</p>
+      </form>
+      <p class="hero-meta">Free early access · Mac and Windows</p>
     </section>
 
-    <section class="stepper fixes section" id="fixes" aria-labelledby="fixes-title">
-      <div class="stepper-track">
-        <div class="stepper-stage container">
-          <h2 id="fixes-title" class="wide-heading">Learn from the show.<br><span>Not instead of it.</span></h2>
-          <div class="stepper-box" data-stepper>
-            <ol class="stepper-list">
-              <li class="stepper-item is-on"><button type="button" aria-pressed="true" aria-controls="fix-pane-1"><span class="step-num">01</span><span class="step-text"><span class="step-title">Meaning, not words</span><span class="step-line">Idioms come through as what they mean.</span><span class="step-progress" aria-hidden="true"><i></i></span></span></button></li>
-              <li class="stepper-item"><button type="button" aria-pressed="false" aria-controls="fix-pane-2"><span class="step-num">02</span><span class="step-text"><span class="step-title">At your level</span><span class="step-line">Swap in as much of the language as you can take, from 1 to 5.</span><span class="step-progress" aria-hidden="true"><i></i></span></span></button></li>
-              <li class="stepper-item"><button type="button" aria-pressed="false" aria-controls="fix-pane-3"><span class="step-num">03</span><span class="step-text"><span class="step-title">Never pauses the show</span><span class="step-line">It keeps playing. Turn on pausing if you want it.</span><span class="step-progress" aria-hidden="true"><i></i></span></span></button></li>
-              <li class="stepper-item"><button type="button" aria-pressed="false" aria-controls="fix-pane-4"><span class="step-num">04</span><span class="step-text"><span class="step-title">Talk it through</span><span class="step-line">Ask the voice tutor, then say it and get feedback.</span><span class="step-progress" aria-hidden="true"><i></i></span></span></button></li>
-              <li class="stepper-item"><button type="button" aria-pressed="false" aria-controls="fix-pane-5"><span class="step-num">05</span><span class="step-text"><span class="step-title">Remembers for you</span><span class="step-line">Save any line as a flashcard. It comes back right before you forget it.</span><span class="step-progress" aria-hidden="true"><i></i></span></span></button></li>
-            </ol>
-            <div class="stepper-board">
-              <div class="stepper-pane is-on" id="fix-pane-1">
-                <div class="pane-caption"><span class="step-num">01</span><div><p class="step-title">Meaning, not words</p><p class="step-line">Idioms come through as what they mean.</p></div></div>
-                <div class="duet-card" role="img" aria-label="The Duet panel shows I’m hasta las narices, then Estoy hasta las narices, then I’m fed up. A note on the idiom reads: hasta las narices means fed up, not up to the noses.">
-                  <p class="eyebrow" aria-hidden="true"><span class="live-dot"></span>Now · 2:01</p>
-                  <p class="card-mix" aria-hidden="true">I’m <span class="w sw idiom" data-t="a">hasta las narices</span>.</p>
-                  <p class="card-es" lang="es" aria-hidden="true"><span class="w" data-t="v">Estoy</span> <span class="w idiom" data-t="a">hasta las narices</span>.</p>
-                  <p class="card-en" aria-hidden="true">I’m <span class="w idiom" data-t="a">fed up</span>.</p>
-                  <div class="card-tip anim" style="--d:.45s" aria-hidden="true"><b>hasta las narices</b><span>Means “fed up”. Not “up to the noses”.</span></div>
-                </div>
-              </div>
-              <div class="stepper-pane" id="fix-pane-2" aria-hidden="true">
-                <div class="pane-caption"><span class="step-num">02</span><div><p class="step-title">At your level</p><p class="step-line">Swap in as much of the language as you can take, from 1 to 5.</p></div></div>
-                <div class="duet-card level-demo" data-levels>
-                  <div class="card-top"><span class="level-label">Spanish</span><span class="duet-level" role="group" aria-label="How much Spanish"><button type="button" data-level="1" aria-pressed="false">1</button><button type="button" data-level="2" class="on" aria-pressed="true">2</button><button type="button" data-level="3" aria-pressed="false">3</button><button type="button" data-level="4" aria-pressed="false">4</button><button type="button" data-level="5" aria-pressed="false">5</button></span></div>
-                  <p class="card-mix" data-level-line aria-live="polite"><span class="w" data-t="p">She</span> <span class="w sw" data-t="v">busca</span> <span class="w" data-t="g">the</span> <span class="w sw" data-t="n">dragón</span> <span class="w" data-t="g">in the</span> <span class="w" data-t="a">dark</span> <span class="w sw" data-t="n">bosque</span>.</p>
-                  <p class="level-note" data-level-note>Level 2: things and actions</p>
-                  <p class="card-en"><span class="w" data-t="p">She</span> <span class="w" data-t="v">looks for</span> <span class="w" data-t="g">the</span> <span class="w" data-t="n">dragon</span> <span class="w" data-t="g">in the</span> <span class="w" data-t="a">dark</span> <span class="w" data-t="n">forest</span>.</p>
-                </div>
-              </div>
-              <div class="stepper-pane" id="fix-pane-3" aria-hidden="true">
-                <div class="pane-caption"><span class="step-num">03</span><div><p class="step-title">Never pauses the show</p><p class="step-line">It keeps playing. Turn on pausing if you want it.</p></div></div>
-                <div class="fix-watch" role="img" aria-label="A video keeps playing while the Duet panel beside it shows the line: Estoy buscando a alguien. The English, I’m searching for someone, is blurred, then clears. A setting, Pause when I ask, is switched off.">
-                  <div class="video-still is-playing" aria-hidden="true"><span class="still-sun"></span><span class="still-hills far"></span><span class="still-hills near"></span><div class="still-controls"><span class="still-pause"></span><span class="still-track"><i></i></span><span class="still-time">2:15 / 14:48</span></div></div>
-                  <div class="duet-card" aria-hidden="true">
-                    <div class="card-top"><p class="eyebrow"><span class="live-dot"></span>Now · 2:15</p><span class="toggle"><span class="switch"><i></i></span>Guess first</span></div>
-                    <div class="card-setting"><span>Pause when I ask</span><span class="toggle"><span class="switch is-off"><i></i></span>Off</span></div>
-                    <p class="card-es" lang="es"><span class="w" data-t="v">Estoy</span> <span class="w" data-t="v">buscando</span> <span class="w" data-t="g">a</span> <span class="w" data-t="p">alguien</span>.</p>
-                    <p class="card-en guess">I’m <span class="w" data-t="v">searching</span> <span class="w" data-t="g">for</span> <span class="w" data-t="p">someone</span>.</p>
-                  </div>
-                </div>
-              </div>
-              <div class="stepper-pane" id="fix-pane-4" aria-hidden="true">
-                <div class="pane-caption"><span class="step-num">04</span><div><p class="step-title">Talk it through</p><p class="step-line">Ask the voice tutor, then say it and get feedback.</p></div></div>
-                <div class="duet-card tutor" role="img" aria-label="The voice tutor. You ask what the difference is between obasan and obaasan. The tutor says obasan is aunt and obaasan is grandmother, and the long a changes the word. Then you practise obaasan; the feedback says the a was held too short, so it sounded like obasan, and to hold it for two beats.">
-                  <div class="card-top" aria-hidden="true"><p class="eyebrow"><span class="mic-dot"></span>Voice tutor · listening</p><span class="wave"><i></i><i></i><i></i><i></i><i></i></span></div>
-                  <p class="bubble you anim" style="--d:.05s" aria-hidden="true">What’s the difference between <span class="jp" lang="ja">おばさん</span> and <span class="jp" lang="ja">おばあさん</span>?</p>
-                  <p class="bubble them anim" style="--d:.45s" aria-hidden="true"><span class="jp" lang="ja">おばさん</span> is aunt. <span class="jp" lang="ja">おばあさん</span> is grandmother. The long あ changes the word.</p>
-                  <div class="pron anim" style="--d:.9s" aria-hidden="true">
-                    <p class="pron-label">Practise this line</p>
-                    <p class="pron-word jp" lang="ja">お<mark>ばあ</mark>さん</p>
-                    <p class="pron-note">You held the あ too short, so it sounded like <span class="jp" lang="ja">おばさん</span>. Hold it for two beats.</p>
-                    <p class="pron-actions"><span>Replay</span><span>Try again</span></p>
-                  </div>
-                </div>
-              </div>
-              <div class="stepper-pane" id="fix-pane-5" aria-hidden="true">
-                <div class="pane-caption"><span class="step-num">05</span><div><p class="step-title">Remembers for you</p><p class="step-line">Save any line as a flashcard. It comes back right before you forget it.</p></div></div>
-                <div class="fix-save" role="img" aria-label="The My words tab lists dragón, dragon; hoja, blade; buscando, searching. A review card for dragón, saved from the line Un dragón in Sintel at 2:23, turns over to show its meaning, dragon. You rate it Good from Again, Hard, Good and Easy, and it comes back in a few days.">
-                  <div class="duet-card" aria-hidden="true">
-                    <div class="duet-tabs"><b>Script</b><b class="on">My words</b></div>
-                    <ul class="word-rows">
-                      <li class="anim" style="--d:.05s" data-t="n"><i></i><span class="w" data-t="n">dragón</span><span>dragon</span></li>
-                      <li class="anim" style="--d:.15s" data-t="n"><i></i><span class="w" data-t="n">hoja</span><span>blade</span></li>
-                      <li class="anim" style="--d:.25s" data-t="v"><i></i><span class="w" data-t="v">buscando</span><span>searching</span></li>
-                    </ul>
-                  </div>
-                  <div class="review" aria-hidden="true">
-                    <div class="flashcard fix-flash"><div class="flashcard-inner"><div class="face front"><p class="face-label">Review · from Sintel, 2:23</p><p class="face-word"><span class="w" data-t="n">dragón</span></p><p class="face-context" lang="es">Un dragón.</p></div><div class="face back"><p class="face-label">Meaning</p><p class="face-word">dragon</p><p class="face-context">“A dragon.” What she is searching for.</p></div></div></div>
-                    <p class="rate anim" style="--d:1.6s"><span>Again</span><span>Hard</span><span class="pick">Good</span><span>Easy</span></p>
-                    <p class="rate-note anim" style="--d:2.1s">Good. It comes back in a few days.</p>
-                  </div>
+    <!-- How it works: one scene, pinned while you scroll through four beats. Duet docks above the
+         subtitles and says one line per beat, as it does in the app (site.js runs it). -->
+    <section class="how" id="how" aria-labelledby="how-title">
+      <h2 id="how-title" class="sr-only">How Duet works</h2>
+      <div class="how-pin">
+        <ol class="beats" data-beats>
+          <li class="beat is-on" data-beat="0">
+            <p class="beat-step"><span>01</span>Watch</p>
+            <h3>Words you know light up.</h3>
+            <p>Orange: you know it. Blue: you can say it. Green: you use it. Swipe the subtitles for more Japanese.</p>
+          </li>
+          <li class="beat" data-beat="1">
+            <p class="beat-step"><span>02</span>Ask</p>
+            <h3>Ask about any line.</h3>
+            <p>Duet explains what was just said, by text or out loud, and helps you say it yourself.</p>
+          </li>
+          <li class="beat" data-beat="2">
+            <p class="beat-step"><span>03</span>Keep</p>
+            <h3>Words stick, without pausing.</h3>
+            <p>At the end of a scene, a ten-second question grows out of the subtitles.</p>
+          </li>
+          <li class="beat" data-beat="3">
+            <p class="beat-step"><span>04</span>Come back</p>
+            <h3>Five minutes a day.</h3>
+            <p>A short session made from what you watched, your words climbing, and a streak to keep.</p>
+          </li>
+        </ol>
+
+        <div class="frame" data-frame data-beat="0" aria-hidden="true">
+          <div class="scene">
+            <video class="scene-video" autoplay muted loop playsinline preload="auto" poster="./media/sintel-scene.jpg" tabindex="-1"><source src="./media/sintel-scene.webm" type="video/webm"><source src="./media/sintel-scene.mp4" type="video/mp4"></video>
+          </div>
+
+          <!-- Duet pops up here, above the subtitles, and says its line under itself. -->
+          <div class="popup"><div class="anchor" data-anchor="popup"></div><p class="said" data-said></p></div>
+
+          <div class="strip-area">
+            <div class="actions"><span class="act act-explain">Explain</span><span class="act"><svg viewBox="0 0 16 16"><path d="m8 2 1.8 3.8 4.2.5-3.1 2.9.8 4.1L8 11.3l-3.7 2 .8-4.1L2 6.3l4.2-.5Z"/></svg></span><span class="act"><svg viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 2.5v3h3"/></svg></span></div>
+            <div class="strip-row">
+              <span class="talk"><svg viewBox="0 0 30 24"><rect x="1" y="2" width="17" height="12" rx="4" fill="#fff"/><rect x="10" y="9" width="19" height="13" rx="4" fill="#fff" stroke="#1e1e20" stroke-width="2"/></svg></span>
+              <div class="strip">
+                <span class="level"><b data-level>2</b></span>
+                <div class="lines">
+                  <p class="mix" data-mix></p>
+                  <p class="ja" lang="ja" data-ja></p>
+                  <p class="en" data-en></p>
                 </div>
               </div>
             </div>
+            <div class="swipe-hint"><i></i>Two-finger swipe</div>
+            <div class="checkpoint">
+              <p class="cp-label">Checkpoint</p>
+              <p class="cp-q">What is she doing?</p>
+              <p class="cp-line" lang="ja">人を<span class="blank"><span>探している</span></span>の。</p>
+              <div class="cp-opts"><span class="right">探している</span><span>待っている</span><span>忘れている</span></div>
+            </div>
+          </div>
+
+          <div class="explain">
+            <div class="ex-top"><span class="seg"><b>Script</b><b class="on">Explain</b></span><div class="anchor" data-anchor="panel"></div></div>
+            <div class="ex-card">
+              <p class="ex-ja" lang="ja">人を探しているの。</p>
+              <p class="ex-en">I’m searching for someone.</p>
+              <p class="ex-src">Sintel · 2:15</p>
+              <p class="ex-btns"><span>Replay</span><span class="save">Save</span></p>
+            </div>
+            <div class="ex-chat">
+              <p class="bub duet" data-step="1">“I’m looking for someone.” <span lang="ja">探している</span> is <span lang="ja">探す</span> (to look for) plus <span lang="ja">いる</span>: still going on. The <span lang="ja">の</span> makes it personal.</p>
+              <p class="bub me" data-step="2">Can I say this to a friend?</p>
+              <p class="bub duet" data-step="3">Yes. With friends, <span lang="ja">人を探してるの</span> sounds even more natural.</p>
+            </div>
+            <div class="ex-chips"><span>Explain more</span><span>Can I say this?</span></div>
+            <div class="ex-bar"><span>Ask about this line, or practise it</span><i></i><i></i></div>
+          </div>
+
+          <div class="hub">
+            <div class="tile today">
+              <p class="tile-label">Today</p>
+              <p class="hello">Good evening.<br><span>5 minutes today?</span></p>
+              <p class="tile-copy">Your 6 cards, a line to say back, and one challenge.</p>
+              <span class="hub-button">Start today’s session</span>
+              <p class="tile-label streak-label">12 days in a row</p>
+              <p class="days"><i class="on">M</i><i class="on">T</i><i class="on">W</i><i class="on">T</i><i class="now">F</i><i>S</i><i>S</i></p>
+            </div>
+            <div class="tile watching">
+              <p class="tile-label">Continue watching</p>
+              <div class="thumb"><img src="./media/sintel-scene.jpg" alt=""><i style="--left:.3"></i></div>
+              <p class="tile-copy">Sintel · Left off at 2:15</p>
+            </div>
+            <div class="tile words">
+              <p class="tile-label">Your words <span class="due">6 due</span></p>
+              <p class="counts"><span class="k"><b>35</b>Known</span><span class="s"><b>10</b>You can say it</span><span class="u"><b>4</b>You can use it</span></p>
+              <p class="bar"><i class="k" style="flex:35"></i><i class="s" style="flex:10"></i><i class="u" style="flex:4"></i></p>
+              <p class="chips" lang="ja"><span class="k">探す</span><span class="s">人</span><span class="k">旅</span><span class="u">ありがとう</span><span class="k">剣</span></p>
+            </div>
+            <div class="tile talk-tile">
+              <p class="tile-label">Talk to Duet</p>
+              <div class="talk-row"><div class="anchor" data-anchor="hub"></div><p>Want to try <span class="s" lang="ja">探す</span> in a sentence?</p></div>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
 
-    <!-- Placeholder answers: confirm languages, price and sites before launch. -->
-    <section class="faq section container" id="faq" aria-labelledby="faq-title">
-      <div class="split-grid"><div class="section-intro"><h2 id="faq-title">A few things<br> to know.</h2></div><div class="faq-items">
-        <details><summary>Which languages can I learn?<span aria-hidden="true">+</span></summary><p>Spanish, Japanese and Korean, from English.</p></details>
-        <details><summary>What do I install?<span aria-hidden="true">+</span></summary><p>A desktop app for Mac and Windows. Duet floats on top of your screen, so there is no browser extension to add. One shortcut shows or hides it.</p></details>
-        <details><summary>Which sites does it work on?<span aria-hidden="true">+</span></summary><p>YouTube and Netflix first. More after launch.</p></details>
-        <details><summary>Does Duet cover the video?<span aria-hidden="true">+</span></summary><p>Only if you put it there. It floats wherever you drag it: beside the video, under it, or over the black bars.</p></details>
-        <details><summary>Can it pause the video for me?<span aria-hidden="true">+</span></summary><p>If you want. By default the show keeps playing. Turn on Pause when I ask, and Duet pauses while you read an explanation or talk to the tutor.</p></details>
-        <details><summary>How much does it cost?<span aria-hidden="true">+</span></summary><p>Early access is free. We will share pricing before it changes.</p></details>
-        <details><summary>What does Duet keep?<span aria-hidden="true">+</span></summary><p>Your saved words, what you have watched with it, and your settings, on your Mac.</p></details>
-        <details><summary>When can I start?<span aria-hidden="true">+</span></summary><p>Join the waitlist and we will email you when your invite is ready.</p></details>
-      </div></div>
+        <nav class="beat-nav" aria-label="How it works, step by step">
+          <button type="button" data-go="0" aria-current="step">Watch</button><button type="button" data-go="1">Ask</button><button type="button" data-go="2">Keep</button><button type="button" data-go="3">Come back</button>
+        </nav>
+      </div>
     </section>
 
     <section class="closing container" id="waitlist" aria-labelledby="waitlist-title">
+      <div class="anchor closing-anchor" data-anchor="closing"></div>
+      <p class="said closing-said" data-closing-said>Want in?</p>
       <h2 id="waitlist-title" class="closing-heading">Be first in line.</h2>
-      <p class="closing-copy">We will email you when Duet is ready. Nothing else.</p>
+      <p class="closing-copy">We’ll email you when Duet is ready. Nothing else.</p>
       <form class="join join-large" action="/api/join" method="post" novalidate data-source="closing">
         <input type="email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
         <input class="join-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
@@ -229,17 +181,25 @@
       </form>
       <p class="join-note">We only use your email to tell you about Duet. <a href="/privacy">Privacy</a></p>
     </section>
+
+    <section class="faq container" id="faq" aria-labelledby="faq-title">
+      <h2 id="faq-title">A few things to know.</h2>
+      <div class="faq-items">
+        <details><summary>Which languages can I learn?<span aria-hidden="true">+</span></summary><p>Japanese, Spanish and Korean, from English.</p></details>
+        <details><summary>What do I install?<span aria-hidden="true">+</span></summary><p>A desktop app for Mac and Windows. Duet floats on top of your screen, so there is no browser extension to add.</p></details>
+        <details><summary>Which sites does it work on?<span aria-hidden="true">+</span></summary><p>YouTube and Netflix first. More after launch.</p></details>
+        <details><summary>Does it pause the show?<span aria-hidden="true">+</span></summary><p>No. The show keeps playing while you read, ask or answer. Pause it yourself whenever you like.</p></details>
+        <details><summary>How much does it cost?<span aria-hidden="true">+</span></summary><p>Early access is free. We will tell you about pricing before it changes.</p></details>
+      </div>
+    </section>
   </main>
-  <footer class="site-footer container"><div class="footer-inner"><span>© 2026 Duet</span><div class="footer-links"><a href="#fixes">How it works</a><a href="#faq">FAQ</a><a href="/privacy">Privacy</a></div><span>Film: <a href="https://durian.blender.org/">Sintel</a> © Blender Foundation, CC BY 3.0</span></div></footer>
-  <!-- Sign-ups go to /api/join (api/join.js). -->
+  <footer class="site-footer container"><div class="footer-inner"><span>© 2026 Duet</span><div class="footer-links"><a href="#how">How it works</a><a href="#faq">FAQ</a><a href="/privacy">Privacy</a><a href="mailto:hello@useduet.io">Contact</a></div><span>Film: <a href="https://durian.blender.org/">Sintel</a> © Blender Foundation, CC BY 3.0</span></div></footer>
   <form class="join join-dock" action="/api/join" method="post" novalidate data-source="dock" aria-label="Join the waitlist">
     <input type="email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
     <input class="join-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
     <button class="button" type="submit"><span>Join the waitlist</span></button>
     <p class="join-done">You’re on the list.</p>
   </form>
-  <div class="cursor cursor-blend" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 30 30" fill="none"><g transform="rotate(-32 15 15)"><path d="M15 3 L24 25 L15 22 L6 25 Z" fill="#fff"></path></g></svg></div>
-  <div class="cursor cursor-solid" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 30 30" fill="none"><g transform="rotate(-32 15 15)"><path d="M15 3 L24 25 L15 22 L6 25 Z" fill="transparent"></path></g></svg></div>
   <div class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 </body>
 </html>
