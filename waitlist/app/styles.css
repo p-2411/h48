@@ -500,6 +500,8 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
 }
 @media(max-width:600px){
   html{scroll-padding-top:88px}
+  /* The headline stays on its two lines. */
+  h1{font-size:clamp(32px,10vw,46px)}
   .site-header{padding:10px 10px 0}
   .nav{padding:7px 7px 7px 16px;gap:16px}
   .nav-secondary{display:none}
