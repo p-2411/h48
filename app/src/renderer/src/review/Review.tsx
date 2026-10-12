@@ -44,6 +44,8 @@ function CardStage({
 }): React.JSX.Element {
   const rung = useRung(card.language, card.wordKey ?? wordKey(card.language, card.expression))
   const use = card.type === 'use'
+  // Only a reading that says something the phrase itself doesn't (Japanese, Korean; not Spanish).
+  const reading = card.reading && card.reading !== card.expression ? card.reading : undefined
   return (
     <div className="card-stage">
       <span className="label">{label}</span>
@@ -53,6 +55,8 @@ function CardStage({
           {use ? card.meaning : card.expression}
         </span>
       </p>
+      {/* How the phrase is read, in Latin letters, under it (with it, so blurred while it's the answer). */}
+      {!use && reading && <p className="stage-reading">{reading}</p>}
       {!use && card.situation && <p className="muted">{card.situation}</p>}
       {/* The answer, blurred until shown; hidden from screen readers until then too. */}
       <p className={revealed ? 'stage-back' : 'stage-back is-hidden'} lang={use ? card.language : undefined} aria-hidden={!revealed}>
@@ -64,6 +68,14 @@ function CardStage({
           card.meaning
         )}
       </p>
+      {use && reading && (
+        <p
+          className={revealed ? 'stage-reading' : 'stage-reading is-hidden'}
+          aria-hidden={!revealed}
+        >
+          {reading}
+        </p>
+      )}
       {revealed && <Answer card={card} onReplay={onReplay} />}
     </div>
   )
