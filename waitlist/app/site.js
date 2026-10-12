@@ -71,8 +71,8 @@
     });
   });
 
-  // The sticky email bar steps aside while another email bar (the hero's, the closing one) is on
-  // screen. The header's Join button puts you in whichever email field is showing.
+  // The sticky email bar steps aside while another email bar (the hero's, the closing one) or the
+  // footer is on screen. The header's Join button puts you in whichever email field is showing.
   const dock = document.querySelector('.join-dock');
   const heroJoin = document.querySelector('.join-hero');
   const finalJoin = document.querySelector('.join-large');
@@ -82,7 +82,7 @@
       entries.forEach(entry => (entry.isIntersecting ? onScreen.add(entry.target) : onScreen.delete(entry.target)));
       dock.classList.toggle('is-hidden', onScreen.size > 0);
     }, { threshold: .2 });
-    [heroJoin, finalJoin].forEach(bar => bar && watch.observe(bar));
+    [heroJoin, finalJoin, document.querySelector('.site-footer')].forEach(bar => bar && watch.observe(bar));
   }
 
   // FAQ: the answer is revealed by the item growing (and hidden by it shrinking), like a curtain.
@@ -131,7 +131,7 @@
   });
   document.querySelectorAll('[data-join-focus]').forEach(link => {
     link.addEventListener('click', event => {
-      const shown = [...onScreen][0] || (dock && !dock.classList.contains('is-hidden') ? dock : finalJoin);
+      const shown = [...onScreen].find(element => element.matches('form')) || (dock && !dock.classList.contains('is-hidden') ? dock : finalJoin);
       const input = shown?.querySelector('input');
       if (!input) return;
       event.preventDefault();
