@@ -90,6 +90,7 @@
           </li>
         </ol>
 
+        <div class="frame-wrap">
         <div class="frame" data-frame data-beat="0" aria-hidden="true">
           <div class="scene">
             <video class="scene-video" autoplay muted loop playsinline preload="auto" poster="./media/sintel-scene.jpg" tabindex="-1"><source src="./media/sintel-scene.webm" type="video/webm"><source src="./media/sintel-scene.mp4" type="video/mp4"></video>
@@ -140,9 +141,9 @@
               <p class="ex-btns"><span>Replay</span><span class="save">Save</span></p>
             </div>
             <div class="ex-chat">
-              <p class="bub duet" data-step="1">“I’m looking for someone.” <span lang="ja">探している</span> is <span lang="ja">探す</span> (to look for) plus <span lang="ja">いる</span>: still going on. The <span lang="ja">の</span> makes it personal.</p>
-              <p class="bub me" data-step="2">Can I say this to a friend?</p>
-              <p class="bub duet" data-step="3">Yes. With friends, <span lang="ja">人を探してるの</span> sounds even more natural.</p>
+              <p class="bub duet" data-step="1">“I’m looking for someone.” She says it softly, almost to herself. <b class="ro">Sagashite iru</b> is <b class="ro">sagasu</b> (to look for) plus <b class="ro">iru</b>: still going on, and the <b class="ro">no</b> makes it personal.</p>
+              <div class="bub me voice-note" data-step="2" aria-label="A voice message, 3 seconds"><span class="voice-play"><svg viewBox="0 0 12 12"><path d="M3 1.8v8.4L10 6z"/></svg></span><span class="voice-wave"><i style="--h:0.35"></i><i style="--h:0.55"></i><i style="--h:0.8"></i><i style="--h:0.5"></i><i style="--h:0.9"></i><i style="--h:0.65"></i><i style="--h:1"></i><i style="--h:0.7"></i><i style="--h:0.45"></i><i style="--h:0.85"></i><i style="--h:0.6"></i><i style="--h:0.95"></i><i style="--h:0.5"></i><i style="--h:0.75"></i><i style="--h:0.4"></i><i style="--h:0.6"></i><i style="--h:0.3"></i><i style="--h:0.45"></i></span><span class="voice-time">0:03</span></div>
+              <p class="bub duet" data-step="3">Close! The <b class="ro">shi</b> in <b class="ro">sagashite</b> is almost silent: <b class="ro">sa-gash-te</b>. And keep <b class="ro">iru</b> light and short.</p>
             </div>
             <div class="ex-chips"><span>Explain more</span><span>Can I say this?</span></div>
             <div class="ex-bar"><span>Ask about this line, or practise it</span><i></i><i></i></div>
@@ -194,6 +195,9 @@
               </div>
             </div>
           </div>
+        </div>
+        <!-- While Duet is talking: cut it short and go on (Escape too). Above the scene's corner. -->
+        <button type="button" class="skip-line" data-skip aria-label="Skip what Duet is saying">Skip<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5 8 8l-5.5 4.5zM8.5 3.5 14 8l-5.5 4.5z"/></svg></button>
         </div>
 
         <nav class="beat-nav" aria-label="How it works, step by step">

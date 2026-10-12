@@ -444,10 +444,12 @@
   const speak = (name, silentMs) => new Promise(resolve => {
     hush();
     setState('speaking');
+    frame.classList.add('is-speaking');
     let done = false;
     const finish = () => {
       if (done) return;
       done = true;
+      frame.classList.remove('is-speaking');
       clearTimeout(timer);
       if (playing === audio) playing = null;
       setState('idle');
@@ -467,6 +469,12 @@
       unheard = { name, run };
       timer = setTimeout(finish, still() ? 0 : silentMs);
     }
+  });
+
+  // Skip (its button, or Escape): the beat jumps to its last picture (skipBeat, below).
+  document.querySelector('[data-skip]')?.addEventListener('click', () => skipBeat());
+  window.addEventListener('keydown', event => {
+    if (event.key === 'Escape') skipBeat();
   });
 
   // The checkpoint card grows up out of the strip on the app's spring, its content fading in just
@@ -573,7 +581,7 @@
       say('Orange means you know it. Swipe, and I’ll swap in more.');
       if (!still()) levelTimer = setInterval(autoStep, 1600);
       await wait(500);
-      if (mine === run) speak('watch', 2400);
+      if (mine === run) await speak('watch', 2400);
     },
     async mine => {
       say('');
@@ -583,16 +591,17 @@
       await wait(600);
       if (mine !== run) return;
       bubbles[0].classList.add('is-on');
-      await speak('ask-1', 3000);
+      await speak('ask-1', 4500);
       if (mine !== run) return;
       await wait(300);
       if (mine !== run) return;
+      // Your voice message comes in; Duet listens to it.
       bubbles[1].classList.add('is-on');
       setState('listening');
-      await wait(900);
+      await wait(1400);
       if (mine !== run) return;
       bubbles[2].classList.add('is-on');
-      speak('ask-3', 2200);
+      await speak('ask-3', 3200);
     },
     async mine => {
       stripRow.classList.add('is-glowing');
@@ -634,6 +643,43 @@
       if (mine === run) goodRating.classList.add('is-picked');
     }
   ];
+  // Each beat's last picture, at once (Skip): what it shows when it has played out.
+  const sayNow = text => { said.textContent = text; said.classList.add('is-on'); };
+  const END = [
+    () => sayNow('Orange means you know it. Swipe, and I’ll swap in more.'),
+    () => bubbles.forEach(bubble => bubble.classList.add('is-on')),
+    () => {
+      stripRow.classList.add('is-glowing', 'has-card');
+      card.getAnimations().forEach(animation => animation.cancel());
+      challenge.getAnimations().forEach(animation => animation.cancel());
+      card.style.height = `${challenge.offsetHeight + 1}px`;
+      challenge.style.opacity = '1';
+      blank.textContent = '探している';
+      blank.classList.add('is-right');
+      rightChoice.classList.add('primary');
+      sayNow('Quick one before the next scene.');
+    },
+    () => {
+      sessionOpen = true;
+      [surface, session, ...revealed].forEach(element => element.getAnimations().forEach(animation => animation.cancel()));
+      startButton.classList.remove('is-pressed');
+      revealButton.classList.remove('is-pressed');
+      session.classList.add('is-open', 'is-revealed');
+      goodRating.classList.add('is-picked');
+    }
+  ];
+  // Skip: Duet stops, and the beat jumps to its last picture.
+  const skipBeat = () => {
+    if (beat < 0 || !frame.classList.contains('is-playing')) return;
+    run += 1;
+    timers.forEach(clearTimeout);
+    timers = [];
+    hush();
+    END[beat]();
+    setState('idle');
+    frame.classList.remove('is-playing');
+  };
+
   // Beat -1 is the scene before it is pinned: it looks like the first beat, but nothing has been
   // said yet, so Duet says its first line when you get there.
   const setBeat = next => {
@@ -648,7 +694,10 @@
       if (level !== 2) stepLevel(2 - level);
       showLine(HELD);
     }
-    if (beat >= 0) START[beat](run);
+    frame.classList.toggle('is-playing', beat >= 0);
+    if (beat < 0) return;
+    const mine = run;
+    START[beat](mine).catch(() => {}).finally(() => { if (mine === run) frame.classList.remove('is-playing'); });
   };
   navButtons.forEach(button => button.addEventListener('click', () => {
     const range = how.offsetHeight - innerHeight;
