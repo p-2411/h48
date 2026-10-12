@@ -36,7 +36,9 @@
 
     <!-- The hero: Duet itself (the app's mascot), the promise, and the email bar. -->
     <section class="hero container" id="top" aria-labelledby="hero-title">
-      <div class="anchor hero-anchor" data-anchor="hero">
+      <!-- Duet calls for a click (a nudge every few seconds): clicking lets it speak, and takes you to how it works. -->
+      <a class="anchor hero-anchor" href="#how" data-anchor="hero" aria-label="Hear Duet show you how it works">
+        <span class="call-arrow" aria-hidden="true"><svg viewBox="0 0 30 18"><path d="M3 9h22M17 2.5 25 9l-8 6.5"/></svg></span>
         <!-- Duet travels down the page (site.js): it starts here, and stays here without script. -->
         <div class="flyer" aria-hidden="true">
           <div class="duet-mascot" data-state="opening" style="--scale:.5;--opening-duration:2350ms">
@@ -47,7 +49,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </a>
       <h1 id="hero-title">Watch the show.<br>Keep the words.</h1>
       <p class="hero-copy">Duet sits on top of YouTube and Netflix and turns what you watch into Japanese, Spanish or Korean you remember.</p>
       <!-- Sign-ups go to /api/join (api/join.js). -->
@@ -93,28 +95,36 @@
             <video class="scene-video" autoplay muted loop playsinline preload="auto" poster="./media/sintel-scene.jpg" tabindex="-1"><source src="./media/sintel-scene.webm" type="video/webm"><source src="./media/sintel-scene.mp4" type="video/mp4"></video>
           </div>
 
-          <!-- Duet pops up here, above the subtitles, and says its line under itself. -->
-          <div class="popup"><div class="anchor" data-anchor="popup"></div><p class="said" data-said></p></div>
-
           <div class="strip-area">
-            <div class="actions"><span class="act act-explain">Explain</span><span class="act"><svg viewBox="0 0 16 16"><path d="m8 2 1.8 3.8 4.2.5-3.1 2.9.8 4.1L8 11.3l-3.7 2 .8-4.1L2 6.3l4.2-.5Z"/></svg></span><span class="act"><svg viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 2.5v3h3"/></svg></span></div>
+            <!-- Duet pops up above the subtitles (and above a checkpoint, as it grows), and says its line under itself. -->
+            <div class="popup"><div class="anchor" data-anchor="popup"></div><p class="said" data-said></p></div>
+            <!-- The hover row, as in the app: the level circle on the left (a sideways swipe tugs it), the actions on the right. -->
+            <div class="actions">
+              <span class="level-blob" data-level-blob><span class="level-digit" data-level>2</span></span>
+              <span class="swipe-hint">Two-finger swipe on the subtitles</span>
+              <span class="act-gap"></span>
+              <span class="act act-explain">Explain</span><span class="act"><svg viewBox="0 0 16 16"><path d="m8 2 1.8 3.8 4.2.5-3.1 2.9.8 4.1L8 11.3l-3.7 2 .8-4.1L2 6.3l4.2-.5Z"/></svg></span><span class="act"><svg viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 2.5v3h3"/></svg></span>
+            </div>
             <div class="strip-row">
               <span class="talk"><svg viewBox="0 0 30 24"><rect x="1" y="2" width="17" height="12" rx="4" fill="#fff"/><rect x="10" y="9" width="19" height="13" rx="4" fill="#fff" stroke="#1e1e20" stroke-width="2"/></svg></span>
+              <!-- A checkpoint: the app's glow around the strip, and the card growing up out of it. -->
+              <div class="strip-glow"><span class="glow-layer"></span><span class="glow-layer"></span><span class="glow-layer"></span><span class="glow-layer"></span></div>
+              <div class="checkpoint" data-checkpoint>
+                <div class="challenge">
+                  <span class="challenge-label">Which word goes here?</span>
+                  <p class="challenge-line" lang="ja">人を<span class="challenge-blank" data-blank>　　</span>の。</p>
+                  <p class="challenge-hint">I’m searching for someone.</p>
+                  <div class="challenge-row"><span class="challenge-btn" data-right lang="ja">探している</span><span class="challenge-btn" lang="ja">待っている</span><span class="challenge-btn" lang="ja">忘れている</span></div>
+                  <span class="challenge-skip">Skip</span>
+                </div>
+              </div>
               <div class="strip">
-                <span class="level"><b data-level>2</b></span>
                 <div class="lines">
                   <p class="mix" data-mix></p>
                   <p class="ja" lang="ja" data-ja></p>
                   <p class="en" data-en></p>
                 </div>
               </div>
-            </div>
-            <div class="swipe-hint"><i></i>Two-finger swipe</div>
-            <div class="checkpoint">
-              <p class="cp-label">Checkpoint</p>
-              <p class="cp-q">What is she doing?</p>
-              <p class="cp-line" lang="ja">人を<span class="blank"><span>探している</span></span>の。</p>
-              <div class="cp-opts"><span class="right">探している</span><span>待っている</span><span>忘れている</span></div>
             </div>
           </div>
 
@@ -170,7 +180,6 @@
 
     <section class="closing container" id="waitlist" aria-labelledby="waitlist-title">
       <div class="anchor closing-anchor" data-anchor="closing"></div>
-      <p class="said closing-said" data-closing-said>Want in?</p>
       <h2 id="waitlist-title" class="closing-heading">Be first in line.</h2>
       <p class="closing-copy">We’ll email you when Duet is ready. Nothing else.</p>
       <form class="join join-large" action="/api/join" method="post" novalidate data-source="closing">

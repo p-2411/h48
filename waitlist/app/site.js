@@ -170,14 +170,40 @@
   const jaLine = frame.querySelector('[data-ja]');
   const enLine = frame.querySelector('[data-en]');
   const lines = frame.querySelector('.lines');
-  const levelBox = frame.querySelector('.level');
-  const levelNumber = frame.querySelector('[data-level]');
+  const blob = frame.querySelector('[data-level-blob]');
   const said = frame.querySelector('[data-said]');
   const bubbles = [...frame.querySelectorAll('.bub')];
-  const checkpoint = frame.querySelector('.checkpoint');
+  const stripRow = frame.querySelector('.strip-row');
+  const card = frame.querySelector('[data-checkpoint]');
+  const challenge = card.querySelector('.challenge');
+  const blank = card.querySelector('[data-blank]');
+  const rightChoice = card.querySelector('[data-right]');
   const beatItems = [...document.querySelectorAll('[data-beat]:not([data-frame])')];
   const navButtons = [...document.querySelectorAll('[data-go]')];
 
+  // The app's motion (components/motion/presets.ts): easings, and its spring drawn as a CSS
+  // linear() curve, so the browser plays exactly that spring.
+  const EASE_OUT = 'cubic-bezier(.16,1,.3,1)';
+  const EASE_IN = 'cubic-bezier(.4,0,1,1)';
+  const SNAP = 'cubic-bezier(.34,1.56,.64,1)';
+  const spring = (stiffness, damping, mass) => {
+    let x = 0;
+    let v = 0;
+    const points = [0];
+    const step = 1 / 120;
+    for (let t = 0; t < 2; t += step) {
+      v += ((-stiffness * (x - 1) - damping * v) / mass) * step;
+      x += v * step;
+      points.push(+x.toFixed(4));
+      if (Math.abs(x - 1) < 5e-4 && Math.abs(v) < 5e-3) break;
+    }
+    points[points.length - 1] = 1;
+    const curve = `linear(${points.join(',')})`;
+    return { duration: Math.round((points.length - 1) * step * 1000), easing: CSS.supports?.('transition-timing-function', curve) ? curve : EASE_OUT };
+  };
+  const SPRING = spring(520, 42, .8);
+
+  // The line on the strip: English with words swapped in up to the level.
   const drawMix = (line, level) => {
     mixLine.replaceChildren();
     line.mix.forEach((part, index) => {
@@ -193,14 +219,11 @@
     });
   };
   let shownLine = null;
-  let shownLevel = 0;
-  const showLine = (line, level) => {
-    if (line === shownLine && level === shownLevel) return;
-    const fresh = line !== shownLine;
+  let level = 2;
+  const showLine = line => {
+    if (line === shownLine) return;
     shownLine = line;
-    shownLevel = level;
-    levelNumber.textContent = String(level);
-    if (!fresh || still()) {
+    if (still()) {
       drawMix(line, level);
       jaLine.textContent = line.ja;
       enLine.textContent = line.en;
@@ -208,13 +231,57 @@
     }
     lines.classList.add('is-changing');
     setTimeout(() => {
-      drawMix(shownLine, shownLevel);
+      drawMix(shownLine, level);
       jaLine.textContent = shownLine.ja;
       enLine.textContent = shownLine.en;
       lines.classList.remove('is-changing');
     }, 180);
   };
   const lineAt = time => LINES.reduce((found, line) => (line.at <= time ? line : found), LINES[LINES.length - 1]);
+
+  // The level circle, as LevelSlider.tsx plays a swipe: pulled (stretching), pressed against the
+  // side (squashing), sprung back, the old number leaving the way it was pulled and the new one
+  // coming in from the other side. At either end (1 and 3 here) it tugs and springs back.
+  const LOWEST = 1;
+  let shownDigit = blob.querySelector('.level-digit');
+  const HIGHEST = 3;
+  const stepLevel = direction => {
+    const next = Math.min(HIGHEST, Math.max(LOWEST, level + direction));
+    const moved = next !== level;
+    if (!still()) {
+      blob.style.transformOrigin = direction > 0 ? 'left center' : 'right center';
+      if (moved) {
+        blob.animate([
+          { transform: 'translateX(0) scale(1, 1)', offset: 0, easing: EASE_OUT },
+          { transform: `translateX(${3 * direction}px) scale(1.3, .86)`, offset: .3, easing: EASE_IN },
+          { transform: `translateX(${12 * direction}px) scale(.78, 1.12)`, offset: .52, easing: SNAP },
+          { transform: 'translateX(0) scale(1, 1)', offset: 1 }
+        ], { duration: 480 });
+      } else {
+        blob.animate([
+          { transform: 'translateX(0) scale(1, 1)' },
+          { transform: `translateX(${4 * direction}px) scale(1.16, .92)` },
+          { transform: 'translateX(0) scale(1, 1)' }
+        ], { duration: 340, easing: EASE_OUT });
+      }
+    }
+    if (!moved) return;
+    level = next;
+    // Only the shown number and the one leaving are ever there (quick steps cut the leaving short).
+    blob.querySelectorAll('.level-digit').forEach(digit => digit !== shownDigit && digit.remove());
+    const old = shownDigit;
+    const digit = old.cloneNode();
+    digit.textContent = String(level);
+    blob.append(digit);
+    shownDigit = digit;
+    if (still()) old.remove();
+    else {
+      old.animate([{ transform: 'translateX(0)', opacity: 1 }, { transform: `translateX(${9 * direction}px)`, opacity: 0 }], { duration: 120, easing: EASE_IN, fill: 'forwards' });
+      setTimeout(() => old.remove(), 130);
+      digit.animate([{ transform: `translateX(${-9 * direction}px)`, opacity: 0 }, { transform: 'translateX(0)', opacity: 1 }], { duration: 180, delay: 140, easing: EASE_OUT, fill: 'backwards' });
+    }
+    if (shownLine) drawMix(shownLine, level);
+  };
 
   // Duet: its state (the app's mascot states), and the boxes it flies to.
   let opening = !still();
@@ -225,56 +292,209 @@
   const anchors = { hero: anchor('hero'), popup: anchor('popup'), panel: anchor('panel'), hub: anchor('hub'), closing: anchor('closing') };
   const BEAT_ANCHOR = ['popup', 'panel', 'popup', 'hub'];
 
+  // Duet's voice: its own lines, said by the app's voice (media/voice). Browsers only let a page
+  // play sound after the visitor has clicked, tapped or pressed a key, so until then Duet speaks
+  // silently (the speaking face, for as long as the line would take). While a line plays, the mouth
+  // follows its loudness as the app's does (useSpeechMouth.ts): sampled 30 times a second, eased by
+  // a critically damped spring.
+  const mouth = mascot.querySelector('.mouth-core');
+  const clips = {};
+  let sound = null;
+  const unlock = () => {
+    if (sound) return;
+    try {
+      const context = new AudioContext();
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.connect(context.destination);
+      sound = { context, analyser, samples: new Float32Array(256) };
+      context.resume().catch(() => {});
+    } catch { /* No Web Audio: Duet speaks silently. */ }
+    // The line on screen was said before sound was allowed: say it now, aloud (one-line beats only;
+    // Ask's answers are a conversation already moving on).
+    if (sound && unheard && unheard.run === run && !unheard.name.startsWith('ask')) speak(unheard.name, 0);
+    unheard = null;
+  };
+  ['pointerdown', 'keydown', 'touchend'].forEach(type => window.addEventListener(type, unlock, { passive: true }));
+  const clipFor = name => {
+    if (!clips[name]) {
+      const audio = new Audio(`./media/voice/${name}.mp3`);
+      audio.preload = 'auto';
+      try { sound.context.createMediaElementSource(audio).connect(sound.analyser); } catch { /* Plays without the mouth following. */ }
+      clips[name] = audio;
+    }
+    return clips[name];
+  };
+  let mouthLevel = 0;
+  let mouthSpeed = 0;
+  let mouthTarget = 0;
+  let lastSample = 0;
+  let playing = null;
+  const followMouth = (now, dt) => {
+    if (!sound || !mouth) return;
+    if (now - lastSample >= 1000 / 30) {
+      lastSample = now;
+      let energy = 0;
+      if (playing && !playing.paused) {
+        sound.analyser.getFloatTimeDomainData(sound.samples);
+        for (const sample of sound.samples) energy += sample * sample;
+      }
+      const rms = Math.sqrt(energy / sound.samples.length);
+      mouthTarget = Math.pow(clamp((rms - .008) * 6), .75);
+    }
+    const omega = 32;
+    const offset = mouthLevel - mouthTarget;
+    const impulse = mouthSpeed + omega * offset;
+    const decay = Math.exp(-omega * dt);
+    mouthLevel = mouthTarget + (offset + impulse * dt) * decay;
+    mouthSpeed = (mouthSpeed - omega * impulse * dt) * decay;
+    if (playing || mouthLevel > .002) {
+      mascot.dataset.audioMouth = 'true';
+      mouth.style.height = `${10 + mouthLevel * 13}px`;
+      mouth.style.borderRadius = `0 0 ${50 - mouthLevel * 12}% ${50 - mouthLevel * 12}% / 0 0 ${100 - mouthLevel * 24}% ${100 - mouthLevel * 24}%`;
+    } else if (mascot.dataset.audioMouth) {
+      delete mascot.dataset.audioMouth;
+      mouth.style.removeProperty('height');
+      mouth.style.removeProperty('border-radius');
+    }
+  };
+  let hush = () => {};
+  // The last line said without sound, in which beat: said aloud once sound is allowed, if still on screen.
+  let unheard = null;
+  // Says a line: with sound, until it ends; silently, for `silentMs`. Resolves when done (or
+  // stopped), then Duet goes back to idle.
+  const speak = (name, silentMs) => new Promise(resolve => {
+    hush();
+    setState('speaking');
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (playing === audio) playing = null;
+      setState('idle');
+      resolve();
+    };
+    let timer = 0;
+    const audio = sound ? clipFor(name) : null;
+    hush = () => { audio?.pause(); finish(); };
+    if (audio) {
+      sound.context.resume().catch(() => {});
+      audio.currentTime = 0;
+      audio.onended = finish;
+      playing = audio;
+      audio.play().catch(() => { playing = null; timer = setTimeout(finish, silentMs); });
+      timer = setTimeout(finish, 15000);
+    } else {
+      unheard = { name, run };
+      timer = setTimeout(finish, still() ? 0 : silentMs);
+    }
+  });
+
+  // The checkpoint card grows up out of the strip on the app's spring, its content fading in just
+  // after; it folds back the other way, content first.
+  const growCard = () => {
+    stripRow.classList.add('has-card');
+    card.getAnimations().forEach(animation => animation.cancel());
+    const height = challenge.offsetHeight + 1;
+    if (still()) { card.style.height = `${height}px`; challenge.style.opacity = '1'; return; }
+    card.animate([{ height: '0px' }, { height: `${height}px` }], { duration: SPRING.duration, easing: SPRING.easing, fill: 'forwards' });
+    challenge.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, delay: 80, easing: EASE_OUT, fill: 'forwards' });
+  };
+  const foldCard = () => {
+    const open = stripRow.classList.contains('has-card');
+    card.getAnimations().forEach(animation => animation.cancel());
+    challenge.getAnimations().forEach(animation => animation.cancel());
+    card.style.height = '';
+    challenge.style.opacity = '';
+    if (!open || still()) { stripRow.classList.remove('has-card'); return; }
+    const from = card.offsetHeight || challenge.offsetHeight;
+    challenge.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 80, fill: 'forwards' });
+    card.animate([{ height: `${from}px` }, { height: '0px' }], { duration: 200, delay: 80, easing: EASE_IN }).onfinish = () => stripRow.classList.remove('has-card');
+  };
+
   // The beats. Each starts its own little scene; leaving it puts its pieces back.
   let beat = -1;
+  let run = 0;
   let timers = [];
   let levelTimer = null;
-  const later = (ms, run) => timers.push(setTimeout(run, still() ? 0 : ms));
-  const speak = ms => { setState('speaking'); later(ms, () => setState('idle')); };
+  const later = (ms, then) => timers.push(setTimeout(then, still() ? 0 : ms));
+  const wait = ms => new Promise(resolve => later(ms, resolve));
   const say = (text, ms = 500) => {
     said.classList.remove('is-on');
     if (!text) return;
     later(ms, () => { said.textContent = text; said.classList.add('is-on'); });
   };
   const reset = () => {
+    run += 1;
     timers.forEach(clearTimeout);
     timers = [];
     clearInterval(levelTimer);
     levelTimer = null;
+    hush();
     bubbles.forEach(bubble => bubble.classList.remove('is-on'));
-    checkpoint.classList.remove('is-answered');
-    levelBox.classList.remove('is-tug');
+    stripRow.classList.remove('is-glowing');
+    foldCard();
+    blank.textContent = '　　';
+    blank.classList.remove('is-right');
+    rightChoice.classList.remove('primary');
+    frame.classList.remove('is-swiped');
+  };
+  // Steps the level on its own, out to 3 and back to 1, until the visitor swipes it themselves.
+  let autoWay = 1;
+  const autoStep = () => {
+    if (level >= HIGHEST) autoWay = -1;
+    if (level <= LOWEST) autoWay = 1;
+    stepLevel(autoWay);
   };
   const START = [
-    () => {
+    async mine => {
       say('Orange means you know it. Swipe, and I’ll swap in more.');
-      later(500, () => speak(2200));
-      if (still()) return;
-      // The swipe: one level more every few seconds, round from 1 to 3.
-      let level = 2;
-      levelTimer = setInterval(() => {
-        level = level >= 3 ? 1 : level + 1;
-        levelBox.classList.add('is-tug');
-        setTimeout(() => levelBox.classList.remove('is-tug'), 350);
-        showLine(shownLine, level);
-      }, 2600);
+      if (!still()) levelTimer = setInterval(autoStep, 1600);
+      await wait(500);
+      if (mine === run) speak('watch', 2400);
     },
-    () => {
+    async mine => {
       say('');
-      later(500, () => setState('thinking'));
-      later(1100, () => { bubbles[0].classList.add('is-on'); speak(1800); });
-      later(3000, () => { bubbles[1].classList.add('is-on'); setState('listening'); });
-      later(3900, () => { bubbles[2].classList.add('is-on'); speak(1600); });
+      await wait(500);
+      if (mine !== run) return;
+      setState('thinking');
+      await wait(600);
+      if (mine !== run) return;
+      bubbles[0].classList.add('is-on');
+      await speak('ask-1', 3000);
+      if (mine !== run) return;
+      await wait(300);
+      if (mine !== run) return;
+      bubbles[1].classList.add('is-on');
+      setState('listening');
+      await wait(900);
+      if (mine !== run) return;
+      bubbles[2].classList.add('is-on');
+      speak('ask-3', 2200);
     },
-    () => {
+    async mine => {
+      stripRow.classList.add('is-glowing');
       say('Quick one before the next scene.');
-      later(500, () => speak(1600));
-      later(2400, () => { checkpoint.classList.add('is-answered'); setState('success'); });
-      later(4000, () => setState('idle'));
+      await wait(500);
+      if (mine !== run) return;
+      speak('keep', 1600);
+      await wait(1000);
+      if (mine !== run) return;
+      growCard();
+      await wait(1800);
+      if (mine !== run) return;
+      blank.textContent = '探している';
+      blank.classList.add('is-right');
+      rightChoice.classList.add('primary');
+      setState('success');
+      await wait(1600);
+      if (mine === run) setState('idle');
     },
-    () => {
+    async mine => {
       say('');
-      later(700, () => speak(1500));
+      await wait(700);
+      if (mine === run) speak('back', 1800);
     }
   ];
   // Beat -1 is the scene before it is pinned: it looks like the first beat, but nothing has been
@@ -287,28 +507,88 @@
     frame.dataset.beat = shownBeat;
     beatItems.forEach(item => item.classList.toggle('is-on', item.dataset.beat === shownBeat));
     navButtons.forEach(button => (button.dataset.go === shownBeat ? button.setAttribute('aria-current', 'step') : button.removeAttribute('aria-current')));
-    if (beat > 0) showLine(HELD, 2);
-    if (beat >= 0) START[beat]();
+    if (beat > 0) {
+      if (level !== 2) stepLevel(2 - level);
+      showLine(HELD);
+    }
+    if (beat >= 0) START[beat](run);
   };
   navButtons.forEach(button => button.addEventListener('click', () => {
     const range = how.offsetHeight - innerHeight;
     scrollTo({ top: how.offsetTop + range * (Number(button.dataset.go) + .5) / 4, behavior: still() ? 'auto' : 'smooth' });
   }));
 
-  // The closing: Duet asks once when it gets there.
-  const closingSaid = document.querySelector('[data-closing-said]');
-  let asked = false;
+  // A real two-finger swipe on the subtitles (a trackpad, sideways) steps the level, one step a
+  // swipe, as on the app's strip (wheel.ts): 40px of sideways scrolling makes a step, then the rest
+  // of that swipe (and its coasting) is let go. Up and down still scroll the page.
+  const STEP_PX = 40;
+  const AFTER_STEP_MS = 250;
+  const COASTING_MS = 120;
+  let pending = 0;
+  let lockedUntil = 0;
+  frame.addEventListener('wheel', event => {
+    if (beat !== 0) return;
+    const across = Math.abs(event.deltaX) > Math.abs(event.deltaY);
+    if (!across) return;
+    event.preventDefault();
+    const now = event.timeStamp;
+    if (now < lockedUntil) { lockedUntil = Math.max(lockedUntil, now + COASTING_MS); return; }
+    pending += event.deltaX;
+    if (Math.abs(pending) < STEP_PX) return;
+    const direction = Math.sign(pending);
+    pending = 0;
+    lockedUntil = now + AFTER_STEP_MS;
+    clearInterval(levelTimer);
+    levelTimer = null;
+    frame.classList.add('is-swiped');
+    stepLevel(direction);
+  }, { passive: false });
 
-  // Duet's eyes (its whole face, a little) turn toward the pointer.
-  const face = mascot.querySelector('.duet-face');
-  let lookX = 0;
-  let lookY = 0;
-  window.addEventListener('pointermove', event => {
-    const box = flyer.getBoundingClientRect();
-    lookX = clamp((event.clientX - (box.left + box.width / 2)) / 500, -1, 1);
-    lookY = clamp((event.clientY - (box.top + box.height / 2)) / 400, -1, 1);
-    if (face && !still()) face.style.translate = `${(lookX * 9).toFixed(1)}px ${(lookY * 6).toFixed(1)}px`;
-  }, { passive: true });
+  // In the hero, Duet calls for a click: after its opening it nudges every few seconds until it is
+  // clicked or scrolled past. Clicking it (which lets the page play sound) takes you to the scene's
+  // first beat, where Duet says its first line aloud.
+  const heroAnchor = anchors.hero;
+  let called = false;
+  // Inviting: the arrow shows (still, for reduced motion); the shake only with motion.
+  const inviting = () => !called && !opening && scrollY < innerHeight * .3;
+  heroAnchor?.addEventListener('pointerenter', () => flyer.classList.add('is-hovered'));
+  heroAnchor?.addEventListener('pointerleave', () => flyer.classList.remove('is-hovered'));
+  heroAnchor?.addEventListener('click', event => {
+    event.preventDefault();
+    called = true;
+    flyer.classList.remove('is-calling', 'is-hovered');
+    const range = how.offsetHeight - innerHeight;
+    scrollTo({ top: how.offsetTop + range * .5 / 4, behavior: still() ? 'auto' : 'smooth' });
+  });
+
+  // In the hero and at the closing, Duet's eyes follow the pointer: each moves inside its socket toward it (in the
+  // mascot's own units, before scaling), eased each frame; anywhere else they ease back to centre.
+  const eyes = [...mascot.querySelectorAll('.eye')];
+  const EYE_X = 26;
+  const EYE_Y = 12;
+  let pointer = null;
+  const look = { x: 0, y: 0 };
+  window.addEventListener('pointermove', event => { pointer = { x: event.clientX, y: event.clientY }; }, { passive: true });
+  document.documentElement.addEventListener('pointerleave', () => { pointer = null; });
+  const followPointer = (dt, inHero) => {
+    let x = 0;
+    let y = 0;
+    if (inHero && pointer && !still()) {
+      const box = flyer.getBoundingClientRect();
+      const dx = pointer.x - (box.left + box.width / 2);
+      const dy = pointer.y - (box.top + box.height / 2);
+      // Full turn about 300px away; nearer, a little less, so the eyes settle as it comes close.
+      const reach = Math.min(1, Math.hypot(dx, dy) / 300);
+      const angle = Math.atan2(dy, dx);
+      x = Math.cos(angle) * reach;
+      y = Math.sin(angle) * reach;
+    }
+    const k = 1 - Math.exp(-dt / .08);
+    look.x += (x - look.x) * k;
+    look.y += (y - look.y) * k;
+    const shift = Math.abs(look.x) < .002 && Math.abs(look.y) < .002 ? '' : `${(look.x * EYE_X).toFixed(1)}px ${(look.y * EYE_Y).toFixed(1)}px`;
+    eyes.forEach(eye => { eye.style.translate = shift; });
+  };
 
   // Each frame: pick the beat from the scroll, and fly Duet toward where it should be now. Between the
   // hero and the scene, and the scene and the closing, its place is a blend of the two boxes by how
@@ -332,7 +612,7 @@
     const area = how.getBoundingClientRect();
     const progress = clamp(-area.top / Math.max(1, area.height - vh));
     setBeat(area.top > 0 ? -1 : Math.min(3, Math.floor(progress * 4)));
-    if (beat <= 0 && video && !video.paused) showLine(lineAt(video.currentTime), shownLevel || 2);
+    if (beat <= 0 && video && !video.paused) showLine(lineAt(video.currentTime));
 
     let target;
     const into = clamp(1 - area.top / vh);
@@ -351,12 +631,12 @@
     const scale = shown.w / BASE_WIDTH;
     flyer.style.transform = `translate3d(${shown.x.toFixed(1)}px,${(shown.y - BASE_HEIGHT * scale / 2).toFixed(1)}px,0) scale(${scale.toFixed(4)})`;
 
-    if (!asked && out > .85 && closingSaid) {
-      asked = true;
-      closingSaid.classList.add('is-on');
-      setState('speaking');
-      setTimeout(() => setState('idle'), 1200);
-    }
+    followMouth(now, dt);
+    const invitingNow = inviting();
+    flyer.classList.toggle('is-calling', invitingNow && !still());
+    heroAnchor?.classList.toggle('is-calling', invitingNow);
+    // At rest in the hero, or at the closing ("Be first in line."): not on its way, not in the scene.
+    followPointer(dt, (into < .2 && out === 0) || out > .6);
     requestAnimationFrame(tick);
   };
 
@@ -370,6 +650,6 @@
 
   document.body.append(flyer);
   root.classList.add('js');
-  showLine(lineAt(0), 2);
+  showLine(lineAt(0));
   requestAnimationFrame(tick);
 })();

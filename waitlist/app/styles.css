@@ -87,7 +87,57 @@ main{position:relative;overflow-x:clip}
 
 /* Hero */
 .hero{min-height:calc(100svh - 70px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-block:clamp(32px,7vh,80px) clamp(72px,12vh,120px)}
-.hero-anchor{width:clamp(200px,22vw,280px);display:grid;place-items:center}
+.hero-anchor{width:clamp(200px,22vw,280px);display:grid;place-items:center;border-radius:40px;cursor:pointer}
+.hero-anchor{position:relative}
+.hero-anchor:focus-visible{outline-offset:8px}
+/* An arrow left of Duet, bouncing toward it while it calls for a click. */
+.call-arrow{position:absolute;right:calc(100% + 4px);top:50%;width:clamp(26px,2.3vw,33px);translate:0 -50%;opacity:0;transition:opacity .5s linear;pointer-events:none}
+.call-arrow svg{display:block;width:100%;fill:none;stroke:rgba(255,255,255,.85);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.hero-anchor.is-calling .call-arrow{opacity:1;animation:call-arrow 1.6s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes call-arrow{0%,100%{translate:0 -50%}50%{translate:9px -50%}}
+/* Duet calling for a click, the way a dog shakes its head when it's wet or wants a pat: a little
+   crouch, then quick swings that die away, around a point a little below its middle, the eyes (its ears) flopping a beat
+   behind. Every few seconds (site.js adds it after Duet's opening, and takes it away once clicked
+   or scrolled past). */
+.flyer.is-calling .duet-mascot{transform-origin:50% 62%;animation:duet-shake 3.6s linear infinite}
+/* With the idle sockets' own breathing (mascot.css), not instead of it. */
+.flyer.is-calling .duet-mascot[data-state='idle'] .socket:first-of-type{animation:duet-socket-idle-left 5.2s cubic-bezier(.45,0,.55,1) infinite,duet-flop 3.6s linear infinite}
+.flyer.is-calling .duet-mascot[data-state='idle'] .socket:nth-of-type(2){animation:duet-socket-idle-right 5.2s cubic-bezier(.45,0,.55,1) -2.6s infinite,duet-flop-right 3.6s linear infinite}
+.flyer.is-hovered .duet-mascot{scale:1.05;transition:scale .3s var(--ease)}
+.flyer .duet-mascot{transition:scale .3s var(--ease)}
+@keyframes duet-shake{
+  0%,68%{rotate:0deg;translate:0 0;scale:1}
+  71%{rotate:0deg;translate:0 3px;scale:1.04 .94}
+  73.5%{rotate:-12deg;translate:-5px 0;scale:1}
+  76%{rotate:11deg;translate:5px 0}
+  78.5%{rotate:-9deg;translate:-4px 0}
+  81%{rotate:7deg;translate:3px 0}
+  83.5%{rotate:-5deg;translate:-2px 0}
+  86%{rotate:3deg;translate:1px 0}
+  88.5%{rotate:-1.5deg;translate:0 0}
+  91%,100%{rotate:0deg;translate:0 0;scale:1}
+}
+/* The ears lag the head: each swing reaches them a moment later, pulled the other way. */
+@keyframes duet-flop{
+  0%,72%{translate:0 0}
+  74.5%{translate:7px -3px}
+  77%{translate:-7px 2px}
+  79.5%{translate:6px -2px}
+  82%{translate:-4px 1px}
+  84.5%{translate:3px 0}
+  87%{translate:-1.5px 0}
+  91%,100%{translate:0 0}
+}
+@keyframes duet-flop-right{
+  0%,72%{translate:0 0}
+  74.5%{translate:7px 2px}
+  77%{translate:-7px -3px}
+  79.5%{translate:6px 1px}
+  82%{translate:-4px -2px}
+  84.5%{translate:3px 0}
+  87%{translate:-1.5px 0}
+  91%,100%{translate:0 0}
+}
 h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height:.98;letter-spacing:-.045em;text-wrap:balance}
 .hero-copy{margin-top:22px;max-width:34ch;font-size:clamp(17px,1.4vw,19px);line-height:1.55;color:var(--fg-2)}
 .join-hero{margin-top:32px}
@@ -122,38 +172,41 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
 .scene-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
 .scene::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,.55))}
 
-/* The subtitles strip, as in the app: the line with words swapped in, then the Japanese and the
-   English; the level circle on the left; the talk button beside it; the actions on hover. */
-.strip-area{position:absolute;left:50%;bottom:3.2cqw;width:min(66cqw,760px);transform:translateX(-50%);transition:transform .6s}
-.strip-row{position:relative;transition:opacity .25s}
-.strip{display:flex;align-items:flex-start;gap:1.2cqw;padding:1.1cqw 1.5cqw;border-radius:1.4cqw;background:rgba(28,28,30,.93);border:.5px solid rgba(255,255,255,.08)}
-.level{flex:none;display:grid;place-items:center;width:2.6cqw;height:2.6cqw;min-width:20px;min-height:20px;margin-top:.15cqw;border-radius:50%;background:rgba(255,255,255,.08);font-size:max(11px,1.15cqw);font-weight:600;font-variant-numeric:tabular-nums}
-.level b{display:block;transition:transform .35s var(--ease),opacity .2s}
-.level.is-tug b{transform:translateX(.5cqw) scale(1.15)}
+/* The subtitles strip, as in the app (overlay.css), drawn to the frame's scale: the line with
+   words swapped in, then the Japanese and the English; the talk button on its left; above it the
+   hover row: the level circle on the left, the actions on the right. --sr is the strip's corner. */
+.strip-area{--sr:1.5cqw;position:absolute;left:50%;bottom:3.2cqw;width:min(66cqw,760px);transform:translateX(-50%);transition:transform .6s}
+.strip-row{position:relative;display:flex;flex-direction:column;align-items:stretch}
+.strip{position:relative;z-index:1;padding:1.1cqw 1.5cqw;border-radius:var(--sr);background:rgba(28,28,30,.93);border:.5px solid rgba(255,255,255,.08);transition:border-radius .2s}
 .lines{min-width:0}
 .mix{font-size:max(13px,2cqw);line-height:1.3;letter-spacing:-.01em}
-.mix .w{font-weight:500;transition:color .4s}
+.mix .w{font-weight:500}
 .ja{margin-top:.3cqw;font-size:max(11px,1.5cqw);line-height:1.4;color:rgba(255,255,255,.88)}
 .en{margin-top:.15cqw;font-size:max(10px,1.2cqw);line-height:1.4;color:rgba(255,255,255,.5)}
 .lines p{transition:opacity .25s}
 .lines.is-changing p{opacity:0}
-.talk{position:absolute;right:calc(100% + 1cqw);bottom:.2cqw;display:grid;place-items:center;width:3.6cqw;height:3.6cqw;min-width:24px;min-height:24px;border-radius:50%;background:rgba(30,30,32,.92);border:.5px solid rgba(255,255,255,.1)}
+.talk{position:absolute;z-index:1;right:calc(100% + 1cqw);bottom:.2cqw;display:grid;place-items:center;width:3.6cqw;height:3.6cqw;min-width:24px;min-height:24px;border-radius:50%;background:rgba(30,30,32,.92);border:.5px solid rgba(255,255,255,.1)}
 .talk svg{width:52%}
-.actions{position:absolute;right:0;bottom:calc(100% + .8cqw);display:flex;gap:.6cqw;opacity:0;transform:translateY(4px);transition:opacity .3s,transform .3s}
-.act{display:grid;place-items:center;height:3.4cqw;min-height:22px;min-width:3.4cqw;padding:0 1.3cqw;border-radius:999px;background:rgba(30,30,32,.92);font-size:max(11px,1.3cqw);transition:background .25s,color .25s,transform .25s}
+.actions{position:absolute;left:0;right:0;bottom:calc(100% + .8cqw);display:flex;align-items:center;gap:.6cqw;opacity:0;transform:translateY(4px);transition:opacity .3s,transform .3s;pointer-events:none}
+.act-gap{flex:1}
+.act{display:grid;place-items:center;height:3.4cqw;min-height:22px;min-width:3.4cqw;padding:0 1.3cqw;border-radius:999px;background:rgba(30,30,32,.92);border:.5px solid rgba(255,255,255,.1);font-size:max(11px,1.3cqw);transition:background .25s,color .25s}
 .act svg{width:max(11px,1.5cqw);fill:none;stroke:#fff;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .act-explain{padding:0 1.6cqw}
-.swipe-hint{position:absolute;left:0;bottom:calc(100% + .9cqw);display:flex;align-items:center;gap:.7cqw;font-size:max(10px,1.15cqw);color:rgba(255,255,255,.8);text-shadow:0 1px 2px rgba(0,0,0,.8);opacity:0;transition:opacity .3s}
-.swipe-hint i{position:relative;width:3.4cqw;height:.3cqw;min-width:22px;border-radius:2px;background:rgba(255,255,255,.3)}
-.swipe-hint i::after{content:"";position:absolute;left:0;top:50%;width:1.1cqw;height:1.1cqw;min-width:7px;min-height:7px;border-radius:50%;background:#fff;transform:translate(0,-50%)}
-.frame[data-beat="0"] .swipe-hint{opacity:1}
-.frame[data-beat="0"] .swipe-hint i::after{animation:swipe 1.8s var(--ease) infinite}
-@keyframes swipe{0%,20%{left:0;opacity:0}35%{opacity:1}80%{left:calc(100% - 1.1cqw);opacity:1}100%{left:calc(100% - 1.1cqw);opacity:0}}
+/* The level circle (LevelSlider.tsx, folded): its number on a circle a swipe tugs (site.js plays
+   the app's tug and the number's way in and out). */
+.level-blob{position:relative;flex:none;display:grid;place-items:center;width:3.4cqw;height:3.4cqw;min-width:22px;min-height:22px;border-radius:50%;overflow:hidden;background:rgba(30,30,32,.92);border:.5px solid rgba(255,255,255,.1)}
+.level-digit{grid-area:1/1;font-size:max(11px,1.25cqw);font-weight:600;font-variant-numeric:tabular-nums;color:#fff}
+.swipe-hint{font-size:max(10px,1.15cqw);color:rgba(255,255,255,.85);text-shadow:0 1px 2px rgba(0,0,0,.8);transition:opacity .3s}
+/* The hover row shows while "you" point at the strip: swiping (01) and asking (02). */
+.frame[data-beat="0"] .actions,.frame[data-beat="1"] .actions{opacity:1;transform:none}
+.frame:not([data-beat="0"]) .swipe-hint,.frame.is-swiped .swipe-hint{opacity:0}
+/* Phones and tablets can't swipe two fingers on the subtitles: the level steps on its own. */
+@media(hover:none),(pointer:coarse){.swipe-hint{display:none}}
 
-/* Duet above the subtitles, with its line under it. */
-.popup{--lift:0px;position:absolute;left:50%;bottom:calc(3.2cqw + 13cqw);width:46cqw;transform:translate(-50%,calc(-1 * var(--lift)));display:flex;flex-direction:column;align-items:center;gap:.6cqw;transition:opacity .3s,transform .5s}
-/* The checkpoint is taller than the strip: Duet rises with it. */
-.frame[data-beat="2"] .popup{--lift:8cqw}
+/* Duet above the subtitles (TalkBubble.tsx), with its line under it: it rides on the strip, so it
+   rises as a checkpoint grows. */
+.popup{position:absolute;left:50%;bottom:calc(100% + 5cqw);width:46cqw;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.6cqw;transition:opacity .3s,bottom .3s}
+.frame[data-beat="2"] .popup{bottom:calc(100% + 1.6cqw)}
 .popup .anchor{width:clamp(84px,15cqw,170px)}
 .popup .said{font-size:max(12px,1.55cqw)}
 
@@ -188,22 +241,39 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
 .ex-bar span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ex-bar i{width:2.4cqw;height:2.4cqw;min-width:16px;min-height:16px;border-radius:50%;background:rgba(255,255,255,.12)}
 
-/* 03 · Keep: the checkpoint grows out of the strip, asks, and the right answer turns green. */
-.checkpoint{position:absolute;left:0;right:0;bottom:0;padding:1.4cqw 1.6cqw 1.6cqw;border-radius:1.4cqw;background:#1c1c1e;border:.5px solid rgba(255,255,255,.1);transform-origin:50% 100%;transform:scaleY(.35);opacity:0;pointer-events:none;transition:transform .5s,opacity .25s;font-size:max(11px,1.3cqw)}
-.checkpoint>*{opacity:0;transition:opacity .25s}
-.frame[data-beat="2"] .checkpoint{transform:none;opacity:1}
-.frame[data-beat="2"] .checkpoint>*{opacity:1;transition-delay:.25s}
-.frame[data-beat="2"] .strip-row{opacity:0}
-.cp-label{font-size:.85em;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
-.cp-q{margin-top:.3cqw;color:var(--text-2)}
-.cp-line{margin-top:.4cqw;font-size:max(15px,2.3cqw);line-height:1.3}
-.blank{display:inline-block;min-width:6.5em;border-bottom:2px solid rgba(255,255,255,.35);text-align:center}
-.blank span{opacity:0;transition:opacity .3s}
-.cp-opts{display:flex;gap:.8cqw;margin-top:1cqw}
-.cp-opts span{flex:1;padding:.7cqw;border-radius:1cqw;background:#2a2a2e;text-align:center;font-family:var(--ja);transition:background .3s,color .3s}
-.checkpoint.is-answered .right{background:color-mix(in srgb,var(--u) 22%,#2a2a2e);color:var(--u)}
-.checkpoint.is-answered .blank{border-color:var(--u)}
-.checkpoint.is-answered .blank span{opacity:1;color:var(--u)}
+/* 03 · Keep: as in the app (overlay.css): the strip glows in the Apple Intelligence colours, then the
+   checkpoint card grows up out of it, the two one shape inside the glow. Four layers behind them: a
+   stroke on the edge, then three glows, each wider and softer, turning and swelling on their own. */
+@property --glow-strength{syntax:'<number>';inherits:true;initial-value:1}
+@property --glow-turn{syntax:'<angle>';inherits:false;initial-value:0deg}
+@property --glow-reach{syntax:'<length>';inherits:false;initial-value:0px}
+.strip-glow{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .5s cubic-bezier(.4,0,1,1)}
+.strip-row.is-glowing .strip-glow{opacity:1;transition:opacity .3s cubic-bezier(.16,1,.3,1);animation:glow-settle 1.8s ease-out forwards}
+.glow-layer{--reach-from:2px;--reach-to:4px;position:absolute;inset:calc(-1 * var(--glow-reach));border-radius:calc(var(--sr) + var(--glow-reach));background:conic-gradient(from var(--glow-turn),var(--glow-colours));animation:glow-turn var(--turn-time) linear infinite var(--turn-way,normal),glow-reach var(--reach-time) ease-in-out infinite alternate}
+.glow-layer:nth-child(1){--glow-colours:#bc82f3,#f5b9ea,#8d9fff,#ff6778,#ffba71,#c686ff,#bc82f3;--turn-time:6s;--reach-from:1.5px;--reach-to:1.5px;--reach-time:1s;filter:blur(.5px);opacity:calc(.5 + .5 * var(--glow-strength))}
+.glow-layer:nth-child(2){--glow-colours:#f5b9ea,#8d9fff 20%,#bc82f3 35%,#ffba71 55%,#ff6778 70%,#c686ff 85%,#f5b9ea;--turn-time:8s;--turn-way:reverse;--reach-from:2px;--reach-to:5px;--reach-time:2.7s;filter:blur(4px);opacity:calc(.9 * var(--glow-strength))}
+.glow-layer:nth-child(3){--glow-colours:#8d9fff,#ff6778 25%,#ffba71 40%,#bc82f3 60%,#f5b9ea 80%,#8d9fff;--turn-time:10s;--reach-from:4px;--reach-to:10px;--reach-time:3.6s;filter:blur(12px);opacity:calc(.8 * var(--glow-strength))}
+.glow-layer:nth-child(4){--glow-colours:#c686ff,#8d9fff 30%,#f5b9ea 50%,#ff6778 65%,#ffba71 85%,#c686ff;--turn-time:14s;--turn-way:reverse;--reach-from:8px;--reach-to:16px;--reach-time:4.7s;filter:blur(22px);opacity:calc(.6 * var(--glow-strength))}
+@keyframes glow-turn{to{--glow-turn:360deg}}
+@keyframes glow-reach{from{--glow-reach:var(--reach-from)}to{--glow-reach:var(--reach-to)}}
+@keyframes glow-settle{0%,30%{--glow-strength:1}100%{--glow-strength:.35}}
+@media(prefers-reduced-motion:reduce){.strip-row.is-glowing .strip-glow{animation:none;--glow-strength:.35}.glow-layer{animation:none;--glow-reach:var(--reach-from)}}
+/* The card sits flush on the strip, as wide as it; its top corners round and the strip's square.
+   site.js grows its height with the app's spring and fades its content in after. */
+.checkpoint{position:relative;z-index:1;height:0;overflow:hidden;border-radius:var(--sr) var(--sr) 0 0;background:rgba(28,28,30,.97);border:.5px solid rgba(255,255,255,.1);border-bottom-color:rgba(255,255,255,.06);border-width:0}
+.strip-row.has-card .checkpoint{border-width:.5px}
+.strip-row.has-card .strip{border-top-left-radius:0;border-top-right-radius:0;border-top-color:transparent}
+/* The challenge inside (components/challenges): Recall, a word blanked and three to choose from. */
+.challenge{display:flex;flex-direction:column;align-items:flex-start;gap:.66cqw;padding:1.15cqw 1.65cqw 1cqw;opacity:0}
+.challenge-label{font-size:max(9px,.9cqw);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+.challenge-line{font-size:max(15px,1.85cqw);line-height:1.4}
+.challenge-hint{font-size:max(11px,1.15cqw);color:var(--text-2)}
+.challenge-row{display:flex;flex-wrap:wrap;gap:.66cqw}
+.challenge-btn{padding:.58cqw 1.15cqw;border-radius:999px;background:rgba(255,255,255,.1);font-size:max(11px,1.15cqw);transition:background .2s,color .2s}
+.challenge-btn.primary{background:#fff;color:#111}
+.challenge-skip{padding:0 .33cqw;font-size:max(10px,1.1cqw);color:var(--text-2)}
+.challenge-blank{display:inline-block;min-width:3em;padding:0 .5cqw;border-bottom:2px solid var(--fg-2);text-align:center}
+.challenge-blank.is-right{color:var(--u);border-color:var(--u)}
 
 /* 04 · Come back: the scene gives way to the home window. */
 .hub{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1.7fr;grid-template-rows:auto auto 1fr;gap:1.4cqw;padding:1.8cqw;background:var(--grain) 0 0/90px 90px,linear-gradient(180deg,#1b1b1f,#111114);opacity:0;transform:scale(1.03);transition:opacity .5s,transform .7s;font-size:max(10px,1.25cqw);line-height:1.4}
@@ -242,7 +312,6 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
 /* The closing moment: Duet asks, then the email bar. */
 .closing{display:flex;flex-direction:column;align-items:center;text-align:center;padding-block:clamp(64px,12vh,140px)}
 .closing-anchor{width:clamp(160px,16vw,200px)}
-.closing-said{margin-top:10px;font-size:18px}
 .closing-heading{margin-top:18px;font-size:clamp(44px,6.4vw,92px);line-height:.98;letter-spacing:-.045em;text-wrap:balance}
 .closing-copy{margin-top:18px;font-size:18px;line-height:1.55;color:var(--fg-2)}
 .join-large{margin-top:30px}
@@ -283,20 +352,22 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
 /* Phones: a taller scene, so the side panel and the home window can cover it whole. */
 @media(max-width:720px){
   .frame{width:min(100%,(100svh - 380px) * 4 / 5);aspect-ratio:4/5}
-  .strip-area{width:84cqw;bottom:5cqw}
-  .strip{padding:2.4cqw 3cqw;border-radius:3cqw;gap:2.4cqw}
+  .strip-area{--sr:3.2cqw;width:84cqw;bottom:5cqw}
+  .strip{padding:2.4cqw 3cqw}
   .mix{font-size:max(14px,4.4cqw)}
   .ja{font-size:max(12px,3.6cqw)}
   .en{font-size:max(11px,3cqw)}
-  .level{width:6cqw;height:6cqw;font-size:max(11px,2.8cqw)}
   .talk{display:none}
-  .popup{bottom:calc(5cqw + 30cqw);width:84cqw}
-  .frame[data-beat="2"] .popup{--lift:22cqw}
+  .popup{bottom:calc(100% + 11cqw);width:84cqw}
+  .frame[data-beat="2"] .popup{bottom:calc(100% + 3cqw)}
   .popup .anchor{width:26cqw}
   .popup .said{font-size:max(13px,3.8cqw)}
-  .act{height:7cqw;padding:0 3cqw;font-size:max(12px,3cqw)}
+  .actions{gap:1.6cqw;bottom:calc(100% + 2cqw)}
+  .act,.level-blob{height:7.4cqw;min-width:7.4cqw}
+  .level-blob{width:7.4cqw}
+  .act{padding:0 3cqw;font-size:max(12px,3cqw)}
   .act svg{width:3.6cqw}
-  .swipe-hint{font-size:max(11px,3cqw);bottom:calc(100% + 2cqw)}
+  .level-digit{font-size:max(12px,3cqw)}
   .frame[data-beat="1"] .strip-area{width:84cqw;transform:translateX(-50%)}
   .explain{top:3cqw;left:3cqw;right:3cqw;bottom:3cqw;width:auto;gap:2.4cqw;padding:3.4cqw;border-radius:4cqw;font-size:max(12px,3.3cqw)}
   .ex-top .anchor{width:20cqw}
@@ -304,10 +375,12 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
   .ex-ja{font-size:max(15px,4.6cqw)}
   .seg b,.ex-chips span,.ex-btns span{padding:1cqw 2.6cqw}
   .ex-bar i{width:6cqw;height:6cqw}
-  .checkpoint{padding:3.4cqw 3.6cqw 3.8cqw;border-radius:3cqw;font-size:max(12px,3.3cqw)}
-  .cp-line{font-size:max(16px,5.4cqw)}
-  .cp-opts{gap:2cqw;margin-top:2.6cqw}
-  .cp-opts span{padding:2cqw 1cqw;border-radius:2.4cqw}
+  .challenge{gap:1.6cqw;padding:3cqw 3.6cqw 2.6cqw}
+  .challenge-label{font-size:max(10px,2.6cqw)}
+  .challenge-line{font-size:max(16px,5cqw)}
+  .challenge-hint,.challenge-btn{font-size:max(12px,3.2cqw)}
+  .challenge-btn{padding:1.4cqw 3cqw}
+  .challenge-row{gap:1.6cqw}
   .hub{grid-template-columns:1fr;grid-template-rows:auto auto auto;gap:3cqw;padding:4cqw;font-size:max(11px,3.1cqw)}
   .today{grid-row:auto}
   .watching{display:none}
