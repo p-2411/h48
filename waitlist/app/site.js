@@ -142,21 +142,44 @@
 
   // ---- How it works ------------------------------------------------------------------------------
   // The scene's subtitles: the clip's lines (Sintel, 1:45–2:27) as Duet shows them in Japanese. The
-  // top line is the English with words swapped for Japanese, coloured by how well "you" know them;
-  // a word swaps in at its level (`lv`) or above. Times are seconds into the clip.
+  // top line is the English with words swapped for Japanese, coloured by how well "you" know them
+  // (k known, s can say, u can use, e met). As in the app (shared/levels.ts, overlay/words.ts), a
+  // level swaps words in by their job: 1 things (n), 2 and actions (v), 3 and describing words (a),
+  // 4 and people and names (p); 5 is the whole line in the language (`all`, in its reading). Times
+  // are seconds into the clip.
   const LINES = [
-    { at: 2.25, en: 'This blade has a dark past.', ja: 'この剣には暗い過去がある。', mix: ['This', ['blade', 'ken', 'k', 1], 'has a', ['dark', 'kurai', 's', 2], ['past', 'kako', 'e', 3], '.'] },
-    { at: 6.8, en: 'It has shed much innocent blood.', ja: '罪のない血をたくさん流してきた。', mix: ['It has shed', ['much', 'takusan', 'k', 1], 'innocent', ['blood', 'chi', 's', 2], '.'] },
-    { at: 13, en: 'You’re a fool for traveling alone, so completely unprepared.', ja: '何の準備もなく一人で旅をするなんて、ばかだ。', mix: ['You’re a', ['fool', 'baka', 'k', 1], 'for', ['traveling', 'tabi o suru', 's', 2], ['alone', 'hitori de', 'u', 1], ', so completely unprepared.'] },
-    { at: 16.75, en: 'You’re lucky your blood’s still flowing.', ja: 'まだ血が流れているだけ運がいい。', mix: ['You’re lucky your', ['blood', 'chi', 's', 1], 'is', ['still', 'mada', 'k', 2], 'flowing.'] },
-    { at: 20.25, en: 'Thank you.', ja: 'ありがとう。', mix: [['Thank you', 'arigatou', 'u', 1], '.'] },
-    { at: 22.5, en: 'So…', ja: 'それで…', mix: [['So', 'sorede', 'k', 2], '…'] },
-    { at: 24.4, en: 'What brings you to the land of the gatekeepers?', ja: '門番の地に何の用だ？', mix: [['What', 'nani', 'k', 1], 'brings you to the', ['land', 'chi', 'e', 3], 'of the gatekeepers?'] },
-    { at: 30, en: 'I’m searching for someone.', ja: '人を探しているの。', mix: ['I’m', ['searching', 'sagashite iru', 'k', 1], 'for', ['someone', 'hito', 's', 2], '.'] },
-    { at: 33, en: 'Someone very dear? A kindred spirit?', ja: '大切な人か？ 心の友か？', mix: [['Someone', 'hito', 's', 1], 'very', ['dear', 'taisetsu', 'e', 3], '? A kindred', ['spirit', 'kokoro', 'k', 2], '?'] },
-    { at: 38.4, en: 'A dragon.', ja: 'ドラゴンよ。', mix: ['A', ['dragon', 'doragon', 'u', 1], '.'] }
+    { at: 2.25, en: 'This blade has a dark past.', ja: 'この剣には暗い過去がある。',
+      mix: ['This', ['blade', 'ken', 'k', 'n'], ['has', 'aru', 's', 'v'], 'a', ['dark', 'kurai', 's', 'a'], ['past', 'kako', 'e', 'n'], '.'],
+      all: ['Kono', ['ken', 'k'], 'ni wa', ['kurai', 's'], ['kako', 'e'], 'ga', ['aru', 's'], '.'] },
+    { at: 6.8, en: 'It has shed much innocent blood.', ja: '罪のない血をたくさん流してきた。',
+      mix: ['It', ['has shed', 'nagashite kita', 'e', 'v'], ['much', 'takusan', 'k', 'a'], ['innocent', 'tsumi no nai', 'e', 'a'], ['blood', 'chi', 's', 'n'], '.'],
+      all: [['Tsumi no nai', 'e'], ['chi', 's'], 'o', ['takusan', 'k'], ['nagashite kita', 'e'], '.'] },
+    { at: 13, en: 'You’re a fool for traveling alone, so completely unprepared.', ja: '何の準備もなく一人で旅をするなんて、ばかだ。',
+      mix: ['You’re a', ['fool', 'baka', 'k', 'n'], 'for', ['traveling', 'tabi o suru', 's', 'v'], ['alone', 'hitori de', 'u', 'a'], ', so completely', ['unprepared', 'junbi mo naku', 'e', 'a'], '.'],
+      all: ['Nan no', ['junbi mo naku', 'e'], ['hitori de', 'u'], ['tabi o suru', 's'], 'nante,', ['baka', 'k'], 'da.'] },
+    { at: 16.75, en: 'You’re lucky your blood’s still flowing.', ja: 'まだ血が流れているだけ運がいい。',
+      mix: ['You’re', ['lucky', 'un ga ii', 's', 'a'], 'your', ['blood', 'chi', 's', 'n'], 'is', ['still', 'mada', 'k', 'a'], ['flowing', 'nagarete iru', 'e', 'v'], '.'],
+      all: [['Mada', 'k'], ['chi', 's'], 'ga', ['nagarete iru', 'e'], 'dake', ['un ga ii', 's'], '.'] },
+    { at: 20.25, en: 'Thank you.', ja: 'ありがとう。',
+      mix: [['Thank you', 'arigatou', 'u', 'v'], '.'],
+      all: [['Arigatou', 'u'], '.'] },
+    { at: 22.5, en: 'So…', ja: 'それで…',
+      mix: [['So', 'sorede', 'k', 'p'], '…'],
+      all: [['Sorede', 'k'], '…'] },
+    { at: 24.4, en: 'What brings you to the land of the gatekeepers?', ja: '門番の地に何の用だ？',
+      mix: [['What', 'nani', 'k', 'p'], 'brings you to the', ['land', 'chi', 'e', 'n'], 'of the', ['gatekeepers', 'monban', 'e', 'n'], '?'],
+      all: [['Monban', 'e'], 'no', ['chi', 'e'], 'ni', ['nan', 'k'], 'no yō da?'] },
+    { at: 30, en: 'I’m searching for someone.', ja: '人を探しているの。',
+      mix: ['I’m', ['searching', 'sagashite iru', 'k', 'v'], 'for', ['someone', 'hito', 's', 'n'], '.'],
+      all: [['Hito', 's'], 'o', ['sagashite iru', 'k'], 'no.'] },
+    { at: 33, en: 'Someone very dear? A kindred spirit?', ja: '大切な人か？ 心の友か？',
+      mix: [['Someone', 'hito', 's', 'n'], 'very', ['dear', 'taisetsu', 'e', 'a'], '? A', ['kindred spirit', 'kokoro no tomo', 'k', 'n'], '?'],
+      all: [['Taisetsu na', 'e'], ['hito', 's'], 'ka?', ['Kokoro no tomo', 'k'], 'ka?'] },
+    { at: 38.4, en: 'A dragon.', ja: 'ドラゴンよ。',
+      mix: ['A', ['dragon', 'doragon', 'u', 'n'], '.'],
+      all: [['Doragon', 'u'], 'yo.'] }
   ];
-  // Explain and the checkpoint are about this line, so the strip holds it in those beats.
+  const SWAPS = { 1: ['n'], 2: ['n', 'v'], 3: ['n', 'v', 'a'], 4: ['n', 'v', 'a', 'p'] };
   const HELD = LINES[7];
 
   const frame = document.querySelector('[data-frame]');
@@ -166,10 +189,8 @@
   if (!frame || !how || !flyer || !mascot) { root.classList.add('js'); return; }
 
   const video = frame.querySelector('.scene-video');
-  const mixLine = frame.querySelector('[data-mix]');
-  const jaLine = frame.querySelector('[data-ja]');
-  const enLine = frame.querySelector('[data-en]');
-  const lines = frame.querySelector('.lines');
+  const lines = frame.querySelector('[data-lines]');
+  const strip = frame.querySelector('.strip');
   const blob = frame.querySelector('[data-level-blob]');
   const said = frame.querySelector('[data-said]');
   const bubbles = [...frame.querySelectorAll('.bub')];
@@ -204,47 +225,76 @@
   const SPRING = spring(520, 42, .8);
 
   // The line on the strip: English with words swapped in up to the level.
-  const drawMix = (line, level) => {
-    mixLine.replaceChildren();
-    line.mix.forEach((part, index) => {
-      const text = typeof part === 'string' ? part : null;
-      if (index > 0 && !(text && /^[.,!?…’]/.test(text))) mixLine.append(' ');
-      if (text) { mixLine.append(text); return; }
-      const [english, romaji, rung, from] = part;
-      if (level < from) { mixLine.append(english); return; }
-      const word = document.createElement('span');
-      word.className = `w ${rung}`;
-      word.textContent = romaji;
-      mixLine.append(word);
+  // The words of a line at a level, as the app's Words.tsx writes them: one span a word, the ones
+  // swapped in marked (sw) with their rung's colour, the rest plain. Drawn into the shown line's
+  // spans by place, so a word that changes with the level changes colour smoothly (CSS), as in the
+  // app.
+  const wordsOf = (line, level) => {
+    const whole = level >= 5;
+    return (whole ? line.all : line.mix).map(part => {
+      if (typeof part === 'string') return { text: part };
+      if (whole) return { text: part[0], rung: part[1] };
+      const [english, romaji, rung, job] = part;
+      return SWAPS[level].includes(job) ? { text: romaji, rung } : { text: english };
     });
+  };
+  const drawWords = (mix, words) => {
+    while (mix.children.length > words.length) mix.lastElementChild.remove();
+    words.forEach((word, index) => {
+      let slot = mix.children[index];
+      if (!slot) {
+        slot = document.createElement('span');
+        slot.append(document.createElement('span'), '');
+        mix.append(slot);
+      }
+      const [span] = slot.childNodes;
+      span.className = word.rung ? `w sw ${word.rung}` : 'w';
+      span.textContent = word.text;
+      const next = words[index + 1];
+      slot.lastChild.textContent = next && !/^[.,!?…’]/.test(next.text) ? ' ' : '';
+    });
+  };
+  // The strip glides to its new height when its line changes size (the app's GLIDE: 0.2s, ease out).
+  const glide = change => {
+    const from = strip.offsetHeight;
+    change();
+    const to = strip.offsetHeight;
+    if (still() || Math.abs(to - from) < 1) return;
+    strip.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: 200, easing: EASE_OUT });
   };
   let shownLine = null;
   let level = 2;
+  const shownEl = () => lines.querySelector('.line:not(.is-leaving)');
+  const drawLevel = () => glide(() => drawWords(shownEl().querySelector('.mix'), wordsOf(shownLine, level)));
+  // A new line rises in as the last fades out (the app's fadeUp(4, 0.18), the old one popped out
+  // of the layout and fading at 70% of that, easing in).
   const showLine = line => {
     if (line === shownLine) return;
+    const first = !shownLine;
     shownLine = line;
-    if (still()) {
-      drawMix(line, level);
-      jaLine.textContent = line.ja;
-      enLine.textContent = line.en;
-      return;
-    }
-    lines.classList.add('is-changing');
-    setTimeout(() => {
-      drawMix(shownLine, level);
-      jaLine.textContent = shownLine.ja;
-      enLine.textContent = shownLine.en;
-      lines.classList.remove('is-changing');
-    }, 180);
+    const old = shownEl();
+    const fresh = old.cloneNode(true);
+    fresh.querySelector('.mix').replaceChildren();
+    drawWords(fresh.querySelector('.mix'), wordsOf(line, level));
+    fresh.querySelector('.ja').textContent = line.ja;
+    fresh.querySelector('.en').textContent = line.en;
+    glide(() => {
+      if (first || still()) { old.replaceWith(fresh); return; }
+      old.classList.add('is-leaving');
+      old.style.width = `${old.offsetWidth}px`;
+      old.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 126, easing: EASE_IN, fill: 'forwards' }).onfinish = () => old.remove();
+      lines.prepend(fresh);
+    });
+    if (!first && !still()) fresh.animate([{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 180, easing: EASE_OUT });
   };
   const lineAt = time => LINES.reduce((found, line) => (line.at <= time ? line : found), LINES[LINES.length - 1]);
 
   // The level circle, as LevelSlider.tsx plays a swipe: pulled (stretching), pressed against the
   // side (squashing), sprung back, the old number leaving the way it was pulled and the new one
-  // coming in from the other side. At either end (1 and 3 here) it tugs and springs back.
+  // coming in from the other side. At either end (1 and 5) it tugs and springs back.
   const LOWEST = 1;
   let shownDigit = blob.querySelector('.level-digit');
-  const HIGHEST = 3;
+  const HIGHEST = 5;
   const stepLevel = direction => {
     const next = Math.min(HIGHEST, Math.max(LOWEST, level + direction));
     const moved = next !== level;
@@ -280,7 +330,7 @@
       setTimeout(() => old.remove(), 130);
       digit.animate([{ transform: `translateX(${-9 * direction}px)`, opacity: 0 }, { transform: 'translateX(0)', opacity: 1 }], { duration: 180, delay: 140, easing: EASE_OUT, fill: 'backwards' });
     }
-    if (shownLine) drawMix(shownLine, level);
+    if (shownLine) drawLevel();
   };
 
   // Duet: its state (the app's mascot states), and the boxes it flies to.
@@ -440,7 +490,7 @@
     rightChoice.classList.remove('primary');
     frame.classList.remove('is-swiped');
   };
-  // Steps the level on its own, out to 3 and back to 1, until the visitor swipes it themselves.
+  // Steps the level on its own, out to 5 and back to 1, until the visitor swipes it themselves.
   let autoWay = 1;
   const autoStep = () => {
     if (level >= HIGHEST) autoWay = -1;
@@ -479,10 +529,11 @@
       await wait(500);
       if (mine !== run) return;
       speak('keep', 1600);
-      await wait(1000);
+      // The card grows while Duet is still saying it.
+      await wait(100);
       if (mine !== run) return;
       growCard();
-      await wait(1800);
+      await wait(2400);
       if (mine !== run) return;
       blank.textContent = '探している';
       blank.classList.add('is-right');

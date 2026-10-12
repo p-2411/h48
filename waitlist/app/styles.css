@@ -178,13 +178,17 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
 .strip-area{--sr:1.5cqw;position:absolute;left:50%;bottom:3.2cqw;width:min(66cqw,760px);transform:translateX(-50%);transition:transform .6s}
 .strip-row{position:relative;display:flex;flex-direction:column;align-items:stretch}
 .strip{position:relative;z-index:1;padding:1.1cqw 1.5cqw;border-radius:var(--sr);background:rgba(28,28,30,.93);border:.5px solid rgba(255,255,255,.08);transition:border-radius .2s}
-.lines{min-width:0}
-.mix{font-size:max(13px,2cqw);line-height:1.3;letter-spacing:-.01em}
-.mix .w{font-weight:500}
+.lines{position:relative;min-width:0}
+/* The line on its way out is taken out of the layout as it fades (site.js), so the new one takes its place. */
+.line.is-leaving{position:absolute;top:0;left:0;pointer-events:none}
+.mix{font-size:max(13px,2cqw);line-height:1.3;letter-spacing:-.012em;text-wrap:balance}
+/* As the app (base.css, overlay.css): words left in English one plain light grey; the swapped ones a
+   little heavier, in their rung's colour with a soft glow of it, and changing colour smoothly. */
+.mix .w{color:#b4b4b8;transition:color .4s var(--ease),text-shadow .4s var(--ease)}
+.mix .w.sw{font-weight:500;color:var(--c);text-shadow:0 0 14px color-mix(in srgb,var(--c) 60%,transparent)}
+.mix .w.k{--c:var(--k)}.mix .w.s{--c:var(--s)}.mix .w.u{--c:var(--u)}.mix .w.e{--c:var(--e)}
 .ja{margin-top:.3cqw;font-size:max(11px,1.5cqw);line-height:1.4;color:rgba(255,255,255,.88)}
 .en{margin-top:.15cqw;font-size:max(10px,1.2cqw);line-height:1.4;color:rgba(255,255,255,.5)}
-.lines p{transition:opacity .25s}
-.lines.is-changing p{opacity:0}
 .talk{position:absolute;z-index:1;right:calc(100% + 1cqw);bottom:.2cqw;display:grid;place-items:center;width:3.6cqw;height:3.6cqw;min-width:24px;min-height:24px;border-radius:50%;background:rgba(30,30,32,.92);border:.5px solid rgba(255,255,255,.1)}
 .talk svg{width:52%}
 .actions{position:absolute;left:0;right:0;bottom:calc(100% + .8cqw);display:flex;align-items:center;gap:.6cqw;opacity:0;transform:translateY(4px);transition:opacity .3s,transform .3s;pointer-events:none}
