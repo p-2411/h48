@@ -734,6 +734,17 @@
   // clicked or scrolled past. Clicking it (which lets the page play sound) takes you to the scene's
   // first beat, where Duet says its first line aloud.
   const heroAnchor = anchors.hero;
+  // "Click me!" is written out like a pen would: each stroke as long as its length takes at an even
+  // speed, one after another, with a pen-lift between (styles.css .call-label).
+  const PEN_SPEED = 400; // drawing units a second
+  const PEN_LIFT = .035; // seconds between strokes
+  let penAt = 0;
+  heroAnchor?.querySelectorAll('.call-label path').forEach(stroke => {
+    const takes = Math.max(.04, stroke.getTotalLength() / PEN_SPEED);
+    stroke.style.setProperty('--d', `${takes.toFixed(3)}s`);
+    stroke.style.setProperty('--delay', `${penAt.toFixed(3)}s`);
+    penAt += takes + PEN_LIFT;
+  });
   let called = false;
   // Inviting: the arrow shows (still, for reduced motion); the shake only with motion.
   const inviting = () => !called && !opening && !deciding && scrollY < innerHeight * .3;

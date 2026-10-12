@@ -90,6 +90,18 @@ main{position:relative;overflow-x:clip}
 .hero-anchor{width:clamp(200px,22vw,280px);display:grid;place-items:center;border-radius:40px;cursor:pointer}
 .hero-anchor{position:relative}
 .hero-anchor:focus-visible{outline-offset:8px}
+/* "Click me!", drawn by hand above Duet (a few pen strokes, index.html), a little tilted. While Duet
+   calls for a click it is written out like a pen would: one stroke after another, each as long as
+   its length takes at an even speed, with a pen-lift between (site.js sets --d and --delay). It is
+   there at once (no fade in) and fades away with the arrow. */
+.call-label{position:absolute;bottom:calc(100% - 4px);left:-6%;width:clamp(88px,8.4vw,118px);rotate:-10deg;overflow:visible;fill:none;stroke:rgba(255,255,255,.88);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity .5s linear;pointer-events:none}
+/* Unseen until its turn: the line is pushed wholly off the path (a round end left on it would show
+   as a dot), and the stroke is hidden until it starts. */
+.call-label path{stroke-dasharray:1 2;stroke-dashoffset:1.01;opacity:0}
+.hero-anchor.is-calling .call-label{opacity:1;transition:none}
+.hero-anchor.is-calling .call-label path{animation:write-on var(--d,.2s) cubic-bezier(.45,.05,.55,.95) var(--delay,0s) forwards}
+@keyframes write-on{from{opacity:1;stroke-dashoffset:1.01}to{opacity:1;stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){.call-label path{stroke-dashoffset:0;opacity:1}}
 /* An arrow left of Duet, bouncing toward it while it calls for a click. */
 .call-arrow{position:absolute;right:calc(100% + 4px);top:50%;width:clamp(26px,2.3vw,33px);translate:0 -50%;opacity:0;transition:opacity .5s linear;pointer-events:none}
 .call-arrow svg{display:block;width:100%;fill:none;stroke:rgba(255,255,255,.85);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
