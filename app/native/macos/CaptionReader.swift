@@ -402,7 +402,8 @@ func seek(to seconds: Double, from position: Double?, thenPlay play: Bool) {
 // already in the state asked for.
 FileHandle.standardInput.readabilityHandler = { handle in
   let data = handle.availableData
-  guard !data.isEmpty, let text = String(data: data, encoding: .utf8) else { return }
+  if data.isEmpty { exit(0) }  // the app went away: don't keep reading the browser on our own
+  guard let text = String(data: data, encoding: .utf8) else { return }
   for line in text.split(separator: "\n") {
     guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
           let type = object["type"] as? String else { continue }

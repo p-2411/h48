@@ -458,6 +458,8 @@ internal static class CaptionReader
                 // Ignore malformed input; the app sends one isolated JSON command per line.
             }
         }
+        // stdin closed: the app went away, so stop rather than keep reading the browser on our own.
+        Environment.Exit(0);
     }
 
     private static void SelfTest()
