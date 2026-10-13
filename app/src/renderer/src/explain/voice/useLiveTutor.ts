@@ -525,6 +525,16 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
     return () => window.clearInterval(timer)
   }, [status, end])
 
+  // Duet's server ended the call (a cap reached): end it here too, and say why.
+  useEffect(
+    () =>
+      window.duet.tutor.onVoiceStop((sentence) => {
+        end()
+        setError(sentence)
+      }),
+    [end]
+  )
+
   const toggleMicrophone = useCallback((): void => {
     const next = !mutedRef.current
     mutedRef.current = next

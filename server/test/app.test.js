@@ -123,6 +123,25 @@ test('at the credits cap the call is refused with 402 and never reaches OpenAI',
   assert.equal(calls.length, 1);
 });
 
+test('a refusal tells the OpenAI SDK not to try again', async () => {
+  const { send } = await setup();
+  const response = await send('/v1/responses', { body: lunaBody() });
+  assert.equal(response.status, 409);
+  assert.equal(response.headers.get('x-should-retry'), 'false');
+});
+
+test('a Free account blocked on its device is told why at once', async () => {
+  const { send, db, calls } = await setup();
+  await send('/v1/duet/me', { method: 'GET' });
+  await db.query(`update users set free_blocked = true`);
+  const response = await send('/v1/responses', { body: lunaBody(), headers: { 'x-duet-feature': 'explain' } });
+  assert.equal(response.status, 402);
+  const { error } = await response.json();
+  assert.equal(error.cap, 'credits');
+  assert.equal(error.blocked, true);
+  assert.equal(calls.length, 0);
+});
+
 test('a call refused by the rules costs nothing', async () => {
   const { send, calls, db } = await setup();
   const response = await send('/v1/responses', { body: lunaBody({ model: 'gpt-6-sol' }), headers: { 'x-duet-feature': 'explain' } });

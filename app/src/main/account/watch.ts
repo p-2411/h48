@@ -45,7 +45,9 @@ export class ServerWatch {
       const id = this.mine
       this.drop()
       void this.run(async () => {
-        await this.server.request(`/duet/watch/${encodeURIComponent(id)}/end`, {}).catch(() => undefined)
+        await this.server
+          .request(`/duet/watch/${encodeURIComponent(id)}/end`, {})
+          .catch(() => undefined)
       })
     }
   }

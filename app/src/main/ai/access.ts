@@ -9,8 +9,8 @@ export type OpenAIAccess = Pick<ClientOptions, 'apiKey' | 'baseURL' | 'fetch'>
 
 let duetServer: OpenAIAccess | undefined
 
-/** Called once at startup (src/main/index.ts) when Duet's server is set up. */
-export function useDuetServer(access: OpenAIAccess | undefined): void {
+/** Called once at startup (src/main/account/setup.ts) when Duet’s server is set up. */
+export function setDuetServer(access: OpenAIAccess | undefined): void {
   duetServer = access
 }
 

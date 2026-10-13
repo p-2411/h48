@@ -27,10 +27,13 @@ type Options = {
 }
 
 const signedOutReply = (): Response =>
-  new Response(JSON.stringify({ error: { type: 'duet', code: 'signed_out', message: 'Sign in to Duet.' } }), {
-    status: 401,
-    headers: { 'content-type': 'application/json', 'x-should-retry': 'false' }
-  })
+  new Response(
+    JSON.stringify({ error: { type: 'duet', code: 'signed_out', message: 'Sign in to Duet.' } }),
+    {
+      status: 401,
+      headers: { 'content-type': 'application/json', 'x-should-retry': 'false' }
+    }
+  )
 
 export class DuetServer extends EventEmitter {
   /** The open watch session, sent with each call (watch.ts keeps it). */
@@ -66,10 +69,14 @@ export class DuetServer extends EventEmitter {
   }
 
   /** The OpenAI SDK's fetch. A call refused for want of a watch session opens one and is sent once more. */
-  readonly openAIFetch = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+  readonly openAIFetch = async (
+    input: string | URL | Request,
+    init?: RequestInit
+  ): Promise<Response> => {
     const url = String(input instanceof Request ? input.url : input)
     const response = await this.send(url, init)
-    if (response.status !== 409 || (await errorOf(response.clone()))?.code !== 'watch_required') return response
+    if (response.status !== 409 || (await errorOf(response.clone()))?.code !== 'watch_required')
+      return response
     if (!(await this.openWatch())) return response
     return this.send(url, init)
   }
@@ -93,7 +100,9 @@ export class DuetServer extends EventEmitter {
   async request<T>(path: string, body?: unknown, method: 'GET' | 'POST' = 'POST'): Promise<T> {
     const response = await this.send(`${this.baseURL}${path}`, {
       method,
-      ...(body !== undefined ? { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {})
+      ...(body !== undefined
+        ? { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
+        : {})
     })
     if (response.ok) return (await response.json()) as T
     const error = await errorOf(response)

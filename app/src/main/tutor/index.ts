@@ -18,6 +18,7 @@
 //
 // IPC (all "tutor:*", from the window that owns the conversation; window.duet.tutor in src/preload/tutor.ts):
 //   tutor:start-session / tutor:voice-ended   voice starts (holding the video) and ends
+//   tutor:voice-stop   ← Duet's server ended the call (a cap): the window ends voice and says why
 //   tutor:translate, tutor:romanise, tutor:execute-tool, tutor:confirm-action,
 //   tutor:undo, tutor:learner-turn, tutor:heard
 //   tutor:pending-action / tutor:action-result / tutor:card   ← sent to that window
@@ -111,6 +112,9 @@ function safeError(error: unknown): string {
 /** The window a conversation lives in: whether a message came from its page, and sending to it. */
 export type TutorWindow = { owns(sender: WebContents): boolean; send(channel: string, value: unknown): void }
 
+/** Live voice minutes on Duet's server (src/main/account/live.ts); none with a development key. */
+export type LiveMinutes = { started(sessionId: string): void; ended(): void }
+
 export class Tutor {
   private context?: TutorContext
   private window?: TutorWindow
@@ -124,20 +128,25 @@ export class Tutor {
   constructor(
     private readonly player: Player,
     private readonly cards: Cards,
-    knowledge?: Pick<Knowledge, 'practiceWords' | 'noteAttempt'>
+    knowledge?: Pick<Knowledge, 'practiceWords' | 'noteAttempt'>,
+    private readonly minutes?: LiveMinutes
   ) {
     this.practice = new PracticeWords(knowledge)
     // Voice holds the video while it is live, so Duet and the video don't talk over each other.
-    ipcMain.handle('tutor:start-session', (event, offer: TutorSessionOffer) => {
+    ipcMain.handle('tutor:start-session', async (event, offer: TutorSessionOffer) => {
       this.assertTutor(event)
       if (!this.context) throw new Error('Open Explain on a line before starting voice.')
       if (typeof offer?.sdp !== 'string') throw new Error('INVALID_SDP_OFFER')
       this.player.hold('tutor')
       // Voice reads whether the saved cards are open (savedCardsOpenToDuet) from its context when it starts.
-      return createLiveSession(offer.sdp, { ...this.context, exploreEnabled: this.exploreEnabled })
+      const answer = await createLiveSession(offer.sdp, { ...this.context, exploreEnabled: this.exploreEnabled })
+      this.minutes?.started(answer.sessionId)
+      return answer
     })
     ipcMain.on('tutor:voice-ended', (event) => {
-      if (this.isTutor(event.sender)) this.player.release('tutor')
+      if (!this.isTutor(event.sender)) return
+      this.player.release('tutor')
+      this.minutes?.ended()
     })
     ipcMain.handle('tutor:translate', (event, text: string) => {
       this.assertTutor(event)
@@ -234,7 +243,14 @@ export class Tutor {
     return replyInText({ ...context, exploreEnabled: this.exploreEnabled }, message, async (name, args) => (await this.executeTool({ callId: randomUUID(), name, arguments: args })).output)
   }
 
+  /** Duet's server ended the call (a cap reached): the window ends voice and shows `sentence`. */
+  stopVoice(sentence: string): void {
+    this.window?.send('tutor:voice-stop', sentence)
+  }
+
   private reset(): void {
+    // A conversation over (its window closed) ends its call's minutes too.
+    this.minutes?.ended()
     this.context = undefined
     this.window = undefined
     this.exploreEnabled = false

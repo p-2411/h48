@@ -197,48 +197,51 @@ export async function createLiveSession(
   const client = tutorClient(env, 'start voice')
   const language = contextLanguage(context)
   try {
-    const result = await client.live.create({
-      session: {
-        model: 'gpt-live-1',
-        store: false,
-        audio: { output: { voice: env.DUET_LIVE_VOICE || 'marin' } },
-        instructions: liveInstructions(language),
-        input: [
-          {
-            type: 'message',
-            role: 'developer',
-            content: [{ type: 'input_text', text: `Context: ${contextText(context)}` }]
-          }
-        ],
-        client: {
-          data_channel: {
-            allowed_client_events: [
-              'session.input_audio.mute',
-              'session.input_audio.unmute',
-              'session.instructions.append',
-              'session.commentary.append',
-              'response.item.create',
-              'response.create',
-              'session.close'
-            ],
-            allowed_server_events: 'all'
+    const result = await client.live.create(
+      {
+        session: {
+          model: 'gpt-live-1',
+          store: false,
+          audio: { output: { voice: env.DUET_LIVE_VOICE || 'marin' } },
+          instructions: liveInstructions(language),
+          input: [
+            {
+              type: 'message',
+              role: 'developer',
+              content: [{ type: 'input_text', text: `Context: ${contextText(context)}` }]
+            }
+          ],
+          client: {
+            data_channel: {
+              allowed_client_events: [
+                'session.input_audio.mute',
+                'session.input_audio.unmute',
+                'session.instructions.append',
+                'session.commentary.append',
+                'response.item.create',
+                'response.create',
+                'session.close'
+              ],
+              allowed_server_events: 'all'
+            }
+          },
+          delegation: {
+            type: 'responses',
+            responses: {
+              model: backendModel(env),
+              instructions: backendInstructions(language),
+              max_output_tokens: 1_200,
+              parallel_tool_calls: false,
+              reasoning: { effort: 'low' },
+              tool_choice: 'auto',
+              tools
+            }
           }
         },
-        delegation: {
-          type: 'responses',
-          responses: {
-            model: backendModel(env),
-            instructions: backendInstructions(language),
-            max_output_tokens: 1_200,
-            parallel_tool_calls: false,
-            reasoning: { effort: 'low' },
-            tool_choice: 'auto',
-            tools
-          }
-        }
+        transport: { type: 'webrtc', sdp }
       },
-      transport: { type: 'webrtc', sdp }
-    }, TUTOR_CALL)
+      TUTOR_CALL
+    )
     return { sessionId: result.session.id, sdp: result.transport.sdp }
   } catch (error) {
     throw safeLiveError(error, 'Could not start voice')
@@ -255,17 +258,20 @@ export async function translateForLearner(
   if (!input || input.length > 2_000) throw new Error('INVALID_TRANSLATION_TEXT')
   const client = tutorClient(env, 'reveal a translation')
   try {
-    const response = await client.responses.create({
-      model: backendModel(env),
-      store: false,
-      instructions:
-        `Translate the ${languageName(language)} Duet just spoke into concise, natural English for a learner. Return only the translation. Preserve uncertainty and tone; do not add notes, romanisation, labels or quotation marks.`,
-      input,
-      // A plain rewrite needs no reasoning; with it on, reasoning used up the budget and long turns
-      // came back empty.
-      max_output_tokens: 1_200,
-      reasoning: { effort: 'none' }
-    }, TUTOR_CALL)
+    const response = await client.responses.create(
+      {
+        model: backendModel(env),
+        store: false,
+        instructions:
+          `Translate the ${languageName(language)} Duet just spoke into concise, natural English for a learner. Return only the translation. Preserve uncertainty and tone; do not add notes, romanisation, labels or quotation marks.`,
+        input,
+        // A plain rewrite needs no reasoning; with it on, reasoning used up the budget and long turns
+        // came back empty.
+        max_output_tokens: 1_200,
+        reasoning: { effort: 'none' }
+      },
+      TUTOR_CALL
+    )
     const translation = response.output_text.trim()
     if (!translation) throw new Error('EMPTY_TRANSLATION')
     return translation
@@ -292,16 +298,19 @@ export async function romaniseForLearner(
   if (cached) return cached
   const client = tutorClient(env, `show ${reading.name}`)
   try {
-    const response = await client.responses.create({
-      model: backendModel(env),
-      store: false,
-      instructions: reading.instructions,
-      input,
-      // A plain rewrite needs no reasoning; with it on, reasoning used up the budget and long turns
-      // came back empty.
-      max_output_tokens: 1_200,
-      reasoning: { effort: 'none' }
-    }, TUTOR_CALL)
+    const response = await client.responses.create(
+      {
+        model: backendModel(env),
+        store: false,
+        instructions: reading.instructions,
+        input,
+        // A plain rewrite needs no reasoning; with it on, reasoning used up the budget and long turns
+        // came back empty.
+        max_output_tokens: 1_200,
+        reasoning: { effort: 'none' }
+      },
+      TUTOR_CALL
+    )
     const romanised = response.output_text.trim()
     if (!romanised) throw new Error('EMPTY_READING')
     readingCache.set(key, romanised)

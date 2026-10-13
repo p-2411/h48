@@ -25,15 +25,18 @@ export function textModel(env: NodeJS.ProcessEnv = process.env): TextModel | und
   if (!access) return undefined
   return async ({ instructions, input, format, maxTokens, context }) => {
     try {
-      const response = await openAIClient(access).responses.create({
-        model: backendModel(env),
-        store: false,
-        instructions,
-        input,
-        ...(format && { text: { format } }),
-        max_output_tokens: maxTokens,
-        reasoning: { effort: 'low' }
-      }, { headers: { 'x-duet-feature': 'challenge' } })
+      const response = await openAIClient(access).responses.create(
+        {
+          model: backendModel(env),
+          store: false,
+          instructions,
+          input,
+          ...(format && { text: { format } }),
+          max_output_tokens: maxTokens,
+          reasoning: { effort: 'low' }
+        },
+        { headers: { 'x-duet-feature': 'challenge' } }
+      )
       const text = response.output_text.trim()
       if (!text) throw new Error('EMPTY_ANSWER')
       return text

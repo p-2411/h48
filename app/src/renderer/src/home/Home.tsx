@@ -10,6 +10,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary'
 import { Icon } from '../components/Icon'
 import { DURATION, EASE_IN, fadeUp } from '../components/motion'
 import { useSettings } from '../components/useSettings'
+import { AccountBanner } from './AccountBanner'
 import { LanguageMenu } from './LanguageMenu'
 import { SettingsPage } from './SettingsPage'
 import { TalkPage } from './TalkPage'
@@ -163,6 +164,9 @@ export function Home(): React.JSX.Element {
           <Icon name="settings" size={15} />
         </button>
       </header>
+      <div className="home-banner-wrap" inert={hidden}>
+        <AccountBanner />
+      </div>
       <div className="hub" inert={hidden}>
         <TodayTile onOpen={(tile) => open({ page: 'today' }, tile)} />
         <WatchingTile onOpen={(tile) => open({ page: 'watching' }, tile)} />

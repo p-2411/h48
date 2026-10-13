@@ -29,7 +29,9 @@ export class LiveMeter {
     this.stopTimer()
     if (!session) return
     this.session = undefined
-    void this.server.request(`/duet/live/${encodeURIComponent(session)}/end`, {}).catch(() => undefined)
+    void this.server
+      .request(`/duet/live/${encodeURIComponent(session)}/end`, {})
+      .catch(() => undefined)
   }
 
   private stopTimer(): void {
@@ -39,7 +41,10 @@ export class LiveMeter {
 
   private async minute(sessionId: string): Promise<void> {
     try {
-      const reply = await this.server.request<{ stop: boolean }>(`/duet/live/${encodeURIComponent(sessionId)}/minute`, {})
+      const reply = await this.server.request<{ stop: boolean }>(
+        `/duet/live/${encodeURIComponent(sessionId)}/minute`,
+        {}
+      )
       if (!reply.stop || this.session !== sessionId) return
       // The server already ended and hung up the call: nothing more to tell it.
       this.session = undefined

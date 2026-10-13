@@ -42,5 +42,7 @@ export const tutorApi = {
   onPendingAction: (listener: (action: PendingTutorAction) => void) =>
     subscribe('tutor:pending-action', listener),
   onActionResult: (listener: (result: TutorActionResult) => void) =>
-    subscribe('tutor:action-result', listener)
+    subscribe('tutor:action-result', listener),
+  /** Duet's server ended the call (a cap reached), with the sentence to show. */
+  onVoiceStop: (listener: (sentence: string) => void) => subscribe('tutor:voice-stop', listener)
 }

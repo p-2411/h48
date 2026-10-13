@@ -76,19 +76,22 @@ export async function replyInText(
   ]
   try {
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const response = await client.responses.create({
-        model: backendModel(env),
-        store: false,
-        instructions: textInstructions(contextLanguage(context), 'moment' in context ? 'line' : 'free'),
-        input,
-        tools: textTools,
-        text: { format: replyFormat },
-        parallel_tool_calls: false,
-        reasoning: { effort: 'low' },
-        // Nothing is stored, so the reasoning travels with the next round's input.
-        include: ['reasoning.encrypted_content'],
-        max_output_tokens: 1_200
-      }, TUTOR_CALL)
+      const response = await client.responses.create(
+        {
+          model: backendModel(env),
+          store: false,
+          instructions: textInstructions(contextLanguage(context), 'moment' in context ? 'line' : 'free'),
+          input,
+          tools: textTools,
+          text: { format: replyFormat },
+          parallel_tool_calls: false,
+          reasoning: { effort: 'low' },
+          // Nothing is stored, so the reasoning travels with the next round's input.
+          include: ['reasoning.encrypted_content'],
+          max_output_tokens: 1_200
+        },
+        TUTOR_CALL
+      )
       const calls = response.output.filter((item) => item.type === 'function_call')
       if (!calls.length) {
         const reply = readReply(response.output_text)

@@ -13,10 +13,16 @@ const run: Run = (command, args) => execFileSync(command, args, { encoding: 'utf
 const read: Read = (path) => readFileSync(path, 'utf8')
 
 /** The computer's hardware id: macOS IOPlatformUUID, Windows MachineGuid, Linux machine-id. */
-export function hardwareId(platform: NodeJS.Platform = process.platform, runCommand: Run = run, readFile: Read = read): string | undefined {
+export function hardwareId(
+  platform: NodeJS.Platform = process.platform,
+  runCommand: Run = run,
+  readFile: Read = read
+): string | undefined {
   try {
     if (platform === 'darwin')
-      return /"IOPlatformUUID"\s*=\s*"([^"]+)"/.exec(runCommand('ioreg', ['-rd1', '-c', 'IOPlatformExpertDevice']))?.[1]
+      return /"IOPlatformUUID"\s*=\s*"([^"]+)"/.exec(
+        runCommand('ioreg', ['-rd1', '-c', 'IOPlatformExpertDevice'])
+      )?.[1]
     if (platform === 'win32')
       return /MachineGuid\s+REG_SZ\s+(\S+)/.exec(
         runCommand('reg', ['query', 'HKLM\\SOFTWARE\\Microsoft\\Cryptography', '/v', 'MachineGuid'])

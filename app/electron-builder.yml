@@ -1,5 +1,10 @@
 appId: io.useduet.app
 productName: Duet
+# Sign-in comes back to Duet from the browser by a duet:// link (src/main/account).
+protocols:
+  - name: Duet
+    schemes:
+      - duet
 directories:
   buildResources: build
 files:

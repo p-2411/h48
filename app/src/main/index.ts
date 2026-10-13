@@ -20,12 +20,18 @@
 //   audio.ts, listen.ts, hearing.ts, spoken.ts   the video's sound: hearing lines, how they were said
 //   detect.ts       which language a caption line is in; replay.ts going back to a line
 //   settings.ts, shortcut.ts, welcome.ts, demo.ts   settings, the show/hide keys, first run, demos
+//   account/        sign-in (WorkOS) and Duet's server, which holds the OpenAI key and meters each
+//                   learner: credits, watch hours, live voice minutes, the plan
 // First: where the data lives, before any other module can read it.
 import './pin-data-folder'
 import { app, globalShortcut, nativeTheme, Notification, type Tray } from 'electron'
 import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import type { Moment } from '../shared/moment'
+import { setupAccount } from './account/setup'
+import { connectAccount } from './account/connect'
+import { LiveMeter } from './account/live'
+import { ServerWatch } from './account/watch'
 import { createModels, type Models } from './ai'
 import { createVoiceModels, type VoiceModels } from './ai/voice'
 import { demoEnabled, demoMoment } from './demo'
@@ -94,6 +100,10 @@ app.whenReady().then(() => {
   if (is.dev && process.platform === 'darwin') app.dock?.setIcon(appIcon)
   app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 
+  // Sign-in and Duet's server come first: the models reach OpenAI through it (src/main/account).
+  const { account, server } = setupAccount(() => home.open())
+  account?.register()
+
   let models: Models | undefined
   let modelError: string | undefined
   try {
@@ -139,7 +149,9 @@ app.whenReady().then(() => {
   const knowledge = new Knowledge()
   // Explain and the conversation about a line are one: the explanation first, then text or voice
   // with the tutor, which reads and saves cards in the same collection as My cards.
-  const tutor = new Tutor(player, cards, knowledge)
+  // Live voice minutes on Duet's server; at the cap the server ends the call and voice says why.
+  const liveMeter = server && new LiveMeter(server, (sentence) => tutor.stopVoice(sentence))
+  const tutor = new Tutor(player, cards, knowledge, liveMeter)
   const explain = new Explain({
     explainer: models?.explainer,
     replay: replayMoment,
@@ -175,10 +187,22 @@ app.whenReady().then(() => {
     shown: () => !overlay.isDestroyed() && overlay.isVisible()
   })
   app.on('before-quit', () => logLink.finish())
+  // Watching, as the watch log counts it: Duet's server counts the same time on its own clock.
+  const watching = (): boolean => !!watcher.currentVideo && !overlay.isDestroyed() && overlay.isVisible() && player.playing
+  const serverWatch = server && new ServerWatch(server)
   // The home base: opened from the Dock, the menu bar, the strip's ⚙ and when Duet starts.
   const home = new Home({ log: watchLog, cards, settings, openWelcome: () => welcome.open(true) })
   // Talk in the home base: a free conversation with Duet, in the language being learnt.
   const talk = new Talk({ tutor, settings, window: home })
+  // The plan and its meters in the home base; read again when a video starts and when Duet comes
+  // back to the front (after paying in the browser).
+  const accountLink = connectAccount({ account, server, home })
+  let videoSeen: string | undefined
+  watcher.on('status', () => {
+    const video = watcher.currentVideo && `${watcher.currentVideo.site}:${watcher.currentVideo.id}`
+    if (video && video !== videoSeen) void accountLink.refresh()
+    videoSeen = video
+  })
   // The text model's quiz (what did they mean?), for the daily session and checkpoints.
   const quiz = openAIQuiz()
   // The daily session in the home base's Today: reviews, a line said back, one challenge.
@@ -290,6 +314,7 @@ app.whenReady().then(() => {
   const open = (): void => openDuet({ onboarded: settings.current.onboarded, home, welcome })
   open()
   app.on('activate', open)
+  app.on('activate', () => void accountLink.refresh())
   settings.on('change', (_, changed) => {
     if (changed.onboarded) home.open()
   })
@@ -312,6 +337,7 @@ app.whenReady().then(() => {
     wait.tick()
     player.sample()
     logLink.tick()
+    serverWatch?.tick(watching())
     checkpoints.tick()
     watcher.setPlayback({
       playing: player.playing,
@@ -337,6 +363,7 @@ app.whenReady().then(() => {
     captions.stop()
     audio.stop()
     tray?.destroy()
+    account?.cleanup()
   })
 })
 

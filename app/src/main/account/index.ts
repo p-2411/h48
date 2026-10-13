@@ -11,14 +11,24 @@ import { EventEmitter } from 'node:events'
 export type AccountUser = { email: string }
 
 type IpcResult<T> = { ok: true; data: T } | { ok: false; error: { code: string; message: string } }
-type Handler = (event: unknown, ...args: unknown[]) => Promise<IpcResult<unknown>> | IpcResult<unknown>
+type Handler = (
+  event: unknown,
+  ...args: unknown[]
+) => Promise<IpcResult<unknown>> | IpcResult<unknown>
 
 /** The part of @workos/authkit-electron's createAuthKit that Duet uses (injected, for tests). */
 export type CreateAuthKit = (
   config: { clientId: string; redirectUri: string },
   options: {
-    ipcMain: { handle(channel: string, handler: Handler): void; removeHandler(channel: string): void }
-    browserWindow: { getAllWindows(): Array<{ webContents: { isDestroyed(): boolean; send(channel: string, ...args: unknown[]): void } }> }
+    ipcMain: {
+      handle(channel: string, handler: Handler): void
+      removeHandler(channel: string): void
+    }
+    browserWindow: {
+      getAllWindows(): Array<{
+        webContents: { isDestroyed(): boolean; send(channel: string, ...args: unknown[]): void }
+      }>
+    }
     onSecondInstance?: () => void
   }
 ) => { registerProtocol(): void; cleanup(): void }
@@ -29,7 +39,11 @@ export class Account extends EventEmitter {
   private readonly handlers = new Map<string, Handler>()
   private readonly authKit: ReturnType<CreateAuthKit>
 
-  constructor(options: { clientId: string; createAuthKit: CreateAuthKit; onSecondInstance?: () => void }) {
+  constructor(options: {
+    clientId: string
+    createAuthKit: CreateAuthKit
+    onSecondInstance?: () => void
+  }) {
     super()
     const handlers = this.handlers
     // The SDK's "windows": one stand-in that hands its news to this account.
@@ -63,7 +77,8 @@ export class Account extends EventEmitter {
 
   private heard(channel: string, payload: unknown): void {
     if (channel === 'authkit:auth-changed') this.emit('change', userOf(payload))
-    else if (channel === 'authkit:auth-error') this.emit('error', 'Sign-in didn’t finish. Try again.')
+    else if (channel === 'authkit:auth-error')
+      this.emit('error', 'Sign-in didn’t finish. Try again.')
   }
 
   private async call<T>(channel: string, ...args: unknown[]): Promise<T | undefined> {

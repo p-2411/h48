@@ -30,7 +30,11 @@ export async function holdFor(ctx, { amount, route, model }) {
     model,
     now
   });
-  if (!chargeId) throw capReached('credits', period.resetsAt);
+  if (!chargeId) {
+    // A Free account blocked by the device rule has a cap of 0: the app says why, not "used up".
+    const blocked = user.plan !== 'paid' && Boolean(user.free_blocked);
+    throw capReached('credits', period.resetsAt, blocked ? { blocked: true } : {});
+  }
   return chargeId;
 }
 
