@@ -91,6 +91,13 @@ func isOn(_ address: String, _ site: Site) -> Bool {
 let pollInterval = 0.15
 let searchBudget = 20000  // most nodes visited when looking for the caption container
 
+// Whether to look for the caption box (and the player's parts) again on this poll: when none is
+// held, the one held has gone from the page (Netflix removes its box between lines and draws the
+// next line in a new one), the page has changed, or every 20 polls (3 s) anyway.
+func searchAgain(holding: Bool, gone: Bool, samePage: Bool, tick: Int) -> Bool {
+  !holding || gone || !samePage || tick % 20 == 0
+}
+
 func emit(_ object: [String: Any]) {
   guard let data = try? JSONSerialization.data(withJSONObject: object),
         let line = String(data: data, encoding: .utf8) else { return }
@@ -105,6 +112,8 @@ func value(_ element: AXUIElement, _ name: String) -> AnyObject? {
 func children(_ element: AXUIElement) -> [AXUIElement] { (value(element, kAXChildrenAttribute) as? [AXUIElement]) ?? [] }
 func role(_ element: AXUIElement) -> String { (value(element, kAXRoleAttribute) as? String) ?? "" }
 func classes(_ element: AXUIElement) -> [String] { (value(element, "AXDOMClassList") as? [String]) ?? [] }
+/** Whether the page has removed an element: it no longer answers for its role or its parent. */
+func isGone(_ element: AXUIElement) -> Bool { value(element, kAXRoleAttribute) == nil || value(element, kAXParentAttribute) == nil }
 /** What a control is called: its accessibility description, or its title. */
 func label(_ element: AXUIElement) -> String {
   (value(element, kAXDescriptionAttribute) as? String).flatMap { $0.isEmpty ? nil : $0 } ?? (value(element, kAXTitleAttribute) as? String) ?? ""
@@ -219,7 +228,11 @@ if CommandLine.arguments.contains("--self-test") {
     ("https://www.crunchyroll.com/watch/GRDV0019R/x", "crunchyroll.com", true),
     ("https://m.youtube.com/watch?v=a", "youtube.com", true),
   ]
-  let wrong = cases.filter { isOn($0.0, site($0.1)) != $0.2 }.map { $0.0 }
+  var wrong = cases.filter { isOn($0.0, site($0.1)) != $0.2 }.map { $0.0 }
+  // Netflix removes its caption box between lines and draws the next line in a new one: a held box
+  // that has gone is looked for again at once, not up to 3 s later.
+  if !searchAgain(holding: true, gone: true, samePage: true, tick: 1) { wrong.append("a gone caption box waits to be found again") }
+  if searchAgain(holding: true, gone: false, samePage: true, tick: 1) { wrong.append("a live caption box is searched for on every poll") }
   emit(["type": "self-test", "ok": wrong.isEmpty, "wrong": wrong])
   exit(wrong.isEmpty ? 0 : 1)
 }
@@ -345,7 +358,7 @@ Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
   currentSite = current.site
   // Labelled controls come and go with the mouse, so look for them more often (the page is small).
   if let labels = current.site.labels, slider == nil || ticks % 4 == 0 { findLabelled(current.page, labels) }
-  if container == nil || containerURL != current.url || ticks % 20 == 0 {
+  if searchAgain(holding: container != nil, gone: container.map(isGone) ?? false, samePage: containerURL == current.url, tick: ticks) {
     let site = current.site
     let found = findAll(current.page, budget: searchBudget, classNames: [site.container, site.video, site.player, site.progress, site.playButton].compactMap { $0 })
     container = site.container.flatMap { found[$0] }
