@@ -3,7 +3,8 @@
 //
 // Settings, from the environment (in development, app/.env.local):
 //   DUET_VOICE_PROVIDER  openai (the only one so far, and the default)
-//   DUET_STT_MODEL       speech to text; default gpt-4o-transcribe
+//   DUET_STT_MODEL       speech to text, for hearing videos; default gpt-4o-mini-transcribe (half
+//                        the cost of gpt-4o-transcribe per minute, close in accuracy)
 //   DUET_LISTEN_MODEL    hears how a video's line is said, for Explain; default gpt-audio-1.5
 //   DUET_TTS_MODEL       says a line to say back (daily session, checkpoints); default gpt-4o-mini-tts
 //   DUET_COACH_MODEL     hears the learner say a line back; default gpt-audio-1.5
@@ -27,7 +28,7 @@ export function createVoiceModels(env: NodeJS.ProcessEnv = process.env): VoiceMo
     case 'openai':
       if (!env.OPENAI_API_KEY) throw new Error('Add OPENAI_API_KEY to app/.env.local to hear videos.')
       return {
-        speechToText: new OpenAISpeechToText(env.DUET_STT_MODEL || 'gpt-4o-transcribe', env.OPENAI_API_KEY),
+        speechToText: new OpenAISpeechToText(env.DUET_STT_MODEL || 'gpt-4o-mini-transcribe', env.OPENAI_API_KEY),
         listener: new OpenAIDeliveryListener(env.DUET_LISTEN_MODEL || 'gpt-audio-1.5', env.OPENAI_API_KEY),
         tts: new OpenAITextToSpeech(env.DUET_TTS_MODEL || 'gpt-4o-mini-tts', env.DUET_LIVE_VOICE || 'marin', env.OPENAI_API_KEY),
         coach: new OpenAIPronunciationCoach(env.DUET_COACH_MODEL || 'gpt-audio-1.5', env.OPENAI_API_KEY)

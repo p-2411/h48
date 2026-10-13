@@ -19,8 +19,10 @@ import type { TranscriptLine } from './sources'
 
 // The context is the last CONTEXT_KEEP processed lines before the line, with its start moved in
 // steps of CONTEXT_STEP: every move changes the start of the cached context, so it should be rare.
-const CONTEXT_KEEP = 250
-const CONTEXT_STEP = 150
+// Every line kept costs ~26 tokens on every request (measured): 60 lines, several minutes of
+// dialogue, keep who is talking and the topic for about a third of what 250 did.
+const CONTEXT_KEEP = 60
+const CONTEXT_STEP = 40
 // From captions: more waiting lines than this and the oldest are skipped.
 const QUEUE_MAX = 2
 // From a transcript: how many lines past the one on screen are processed ahead, and the most lines

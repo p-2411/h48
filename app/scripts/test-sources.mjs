@@ -70,6 +70,23 @@ try {
   await settle()
   assert.equal(refused.script.lines[0].state, 'failed', 'a refusal still fails the line')
 
+  // The earlier lines sent with each request stay few: every one costs tokens on every request.
+  const histories = []
+  const counting = {
+    name: 'fake',
+    async processLines({ lines, history }) {
+      histories.push(history.length)
+      return lines.map(processed)
+    }
+  }
+  const long = new LineSession(counting, 'es')
+  for (let index = 0; index < 150; index++) {
+    long.add(`Línea número ${index}`, Date.now())
+    await settle()
+  }
+  assert.ok(Math.max(...histories) < 100, `history kept short (most: ${Math.max(...histories)})`)
+  assert.ok(Math.max(...histories) >= 60, 'but long enough for who is talking and the topic')
+
   // --- Where lines come from. ---
   const steady = { name: 'fake', processLines: async ({ lines }) => lines.map(processed) }
   const watcherOn = (url, title) => {
@@ -149,6 +166,14 @@ try {
 
   const heardOnDisney = watcherOn(play, 'Disney+')
   assert.equal(heardOnDisney.watcher.needsHearing, true, 'on Disney+ Duet hears the video at once')
+
+  // Hearing a video uses the cheaper transcriber by default (half the cost per minute).
+  const { createVoiceModels } = await jiti.import('../src/main/ai/voice/index.ts')
+  assert.equal(
+    createVoiceModels({ OPENAI_API_KEY: 'test' }).speechToText.name,
+    'openai/gpt-4o-mini-transcribe',
+    'videos are heard with gpt-4o-mini-transcribe unless DUET_STT_MODEL says otherwise'
+  )
 
   // With no video open, the strip names every site Duet works on.
   const { quiet } = await jiti.import('../src/renderer/src/overlay/notice.ts')
