@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { languageName, type Language } from '../../../../shared/languages'
 import { say } from '../../components/errors'
 import { voiceGreeting, type VoiceTopic } from './prompts'
-import { LIVE_REPLY_FALLBACK_MS } from './timing'
+import { LIVE_REPLY_FALLBACK_MS, SILENCE_CHECK_MS, silentTooLong } from './timing'
 import { nextReconnectAttempt, RECONNECT_LIMIT } from './reconnect'
 
 export type TutorLiveStatus =
@@ -138,6 +138,9 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
   // Bumped on every release, so a start() still awaiting the microphone or network knows to stop.
   const generation = useRef(0)
   const manuallyEnded = useRef(false)
+  // When someone (the learner or Duet) last spoke, or the session last started: a minute after it,
+  // with no one speaking, the session ends on its own (see SILENT_END_MS).
+  const lastSpeech = useRef(0)
   // A connect() is under way (from the microphone to the session's answer).
   const starting = useRef(false)
   const startRef = useRef<(preserveConversation?: boolean) => Promise<void>>(async () => undefined)
@@ -291,6 +294,7 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
             send({ type: 'session.input_audio.mute', event_id: `microphone-${crypto.randomUUID()}` })
           }
           healthySince.current = Date.now()
+          lastSpeech.current = Date.now()
           setError(undefined)
           setStatus('listening')
           const greeting = voiceGreeting(topicRef.current)
@@ -309,6 +313,7 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
           break
         }
         case 'session.input_transcript.delta':
+          lastSpeech.current = Date.now()
           window.clearTimeout(outputSettledTimer.current)
           setStatus('listening')
           appendTranscript('learner', event.delta ?? '', event.start_ms ?? 0, event.end_ms ?? 0)
@@ -335,6 +340,7 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
         case 'session.output_transcript.delta':
           // Duet answering ends the learner's turn: their next words start a new one.
           learnerSpeaking.current = false
+          lastSpeech.current = Date.now()
           window.clearTimeout(replyFallbackTimer.current)
           window.clearTimeout(outputSettledTimer.current)
           replyFallbackTimer.current = undefined
@@ -508,6 +514,16 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
     send({ type: 'session.close', event_id: `close-${crypto.randomUUID()}` })
     closeTimer.current = window.setTimeout(() => release('ended'), 3_000)
   }, [release, send])
+
+  // A minute with nobody speaking ends the session, quietly, the way End does: it is billed for
+  // every minute it stays open, even while the learner has gone back to the show.
+  useEffect(() => {
+    if (!isConnected(status)) return
+    const timer = window.setInterval(() => {
+      if (silentTooLong(lastSpeech.current, Date.now())) end()
+    }, SILENCE_CHECK_MS)
+    return () => window.clearInterval(timer)
+  }, [status, end])
 
   const toggleMicrophone = useCallback((): void => {
     const next = !mutedRef.current
