@@ -1,7 +1,8 @@
-# Usage caps, piece A: accounts, the proxy and credits
+# Usage caps: accounts, the proxy, credits, hours and payments
 
-Status: draft for the owner's review, 2026-10-13. The choices below come from the questions asked in
-chat that day. Items marked **Open** are not decided yet.
+Status: piece A approved by the owner on 2026-10-13 ("approved, api.useduet.io is fine, go build do
+all parts"). Pieces B, C and D (sections 11-13) were designed while building, on that go-ahead;
+the owner reviews them in the report.
 
 ## Intent
 
@@ -62,7 +63,7 @@ Success for piece A:
 
 - **Where:** a new Vercel project in the owner's account, with its own Neon database, in a new
   folder `server/` in this repo. It is apart from the waitlist project, so a push of the site does
-  not change the proxy. The domain is `api.useduet.io` (**Open:** the owner confirms the name).
+  not change the proxy. The domain is `api.useduet.io` (confirmed).
 - **Shape: pass-through with rules.** The app keeps its prompts. Its OpenAI clients point at
   `https://api.useduet.io/v1` and send the user's token instead of a key. The server lets through
   only the endpoints and models Duet uses (section 4), holds a cost estimate first, forwards the
@@ -79,7 +80,12 @@ Success for piece A:
 - The app uses `@workos/authkit-electron`: the system browser, PKCE, and the `duet://` deep link back
   to the app. Tokens stay in the main process, encrypted with Electron `safeStorage`. The renderer
   never sees a token.
-- **Open:** the exact SDK calls. The first build step reads the SDK's README and records them here.
+- **SDK calls (spike, `@workos/authkit-electron` 0.1.2):** main calls `createAuthKit({ clientId,
+  redirectUri: 'duet://auth/callback' })` and `registerProtocol()` inside `app.whenReady()`; the home
+  preload calls `exposeAuthKit()`; the home renderer uses `AuthKitProvider` and `useAuth()`. The SDK
+  keeps the session with `safeStorage` and needs no API key. `createAuthKit` does not give main the
+  access token, so Duet passes it an `ipcMain` that also keeps the SDK's handlers, and main calls the
+  `authkit:get-access-token` handler itself. `electron-builder.yml` declares the `duet` scheme.
 - The server checks each request's access token against WorkOS's JWKS with `jose`: the signature,
   the issuer, the client id and the expiry. The token's `sub` is the user id. A user row is made on
   the first request. WorkOS makes sure the email is verified before it gives a token.
@@ -91,7 +97,8 @@ Success for piece A:
 **One free tier per Mac (light guard).**
 
 - The app sends `X-Duet-Device`: a SHA-256 of the machine's hardware id (macOS `IOPlatformUUID`;
-  Windows `MachineGuid`; Linux `/etc/machine-id`) with a fixed Duet salt. It does not change when
+  Windows `MachineGuid`; Linux `/etc/machine-id`) with a fixed Duet salt in the app. (The salt is
+  in the app, not on the server, so `DEVICE_SALT` is not needed.) It does not change when
   Duet is removed and installed again. The raw hardware id never leaves the Mac.
 - The server links each user to the devices it has seen. On a device that is already linked to 2
   other Free accounts, a new Free account gets 0 credits. It sees "Free Duet is limited to two
@@ -184,12 +191,15 @@ call after 60 s with nobody speaking (`timing.ts`).
 - **End:** `POST /v1/duet/live/<id>/end` with the seconds. The server charges the seconds, but never
   less than the time from the start to the last minute call. A call with no end is charged at the
   time up to its last minute call plus one minute, when the user's next call comes.
-- **What a changed app can do:** skip the minute calls and keep the audio going. It pays 5 minutes
-  and can talk until OpenAI ends the session. **Open (first build step):** look in the OpenAI SDK
-  for a way for the server to end a live session or read its usage (a hang-up call or a server-side
-  control connection to the same session). If one exists, the server ends calls at the cap and
-  piece A uses it. If not, this gap stays, and the limit of one open call caps the loss at one
-  session.
+- **Spike result:** the OpenAI SDK has `POST /live/sessions/<id>/hangup`. So the server can end a
+  call, and it charges by its own clock, not by what the app reports:
+  - The charge is the time from the start to the end (or to now), at the per-minute price.
+  - A minute call or an end call that finds the cap reached hangs the session up and says `stop`.
+  - A session with no minute call for 90 s is hung up and charged up to its last minute call plus
+    one minute. A sweep finds these: on each request from that user, and on a Vercel Cron every
+    minute (`/v1/duet/cron/sweep`, with `CRON_SECRET`). Vercel's Hobby plan runs crons only once a
+    day; then only the per-user sweep runs.
+  - A changed app that skips the minute calls is hung up within about 90 s (plus the cron delay).
 
 ## 7. The app
 
@@ -211,14 +221,18 @@ call after 60 s with nobody speaking (`timing.ts`).
 ## 8. Out of scope for A
 
 The hours cap and watch sessions (B), the usage screen and Upgrade button (C, apart from the cap
-message above), payments (D), and Anthropic through the server.
+message above), payments (D), and Anthropic through the server. B, C and D have their own sections
+below.
 
 ## 9. What the owner does (Claude does not sign in to services)
 
-1. Make a WorkOS account and an AuthKit app: the redirect `duet://auth/callback`, email + Google +
-   Apple turned on. Give the client id (not secret) for the app's config.
+1. Make a WorkOS account and an AuthKit app: the redirect `duet://auth/callback`, a logout URI
+   (`https://useduet.io`), email + Google + Apple turned on. Put the client id (not a secret) in the
+   app's build as `MAIN_VITE_WORKOS_CLIENT_ID`, and in Vercel as `WORKOS_CLIENT_ID`.
 2. Make the Vercel project from `server/` and a Neon database for it. Set `OPENAI_API_KEY`,
-   `DATABASE_URL`, `WORKOS_CLIENT_ID` and `DEVICE_SALT` in Vercel. Point `api.useduet.io` at it.
+   `DATABASE_URL`, `WORKOS_CLIENT_ID`, `CRON_SECRET` and (piece D) `STRIPE_SECRET_KEY`,
+   `STRIPE_PRICE_ID` and `STRIPE_WEBHOOK_SECRET` in Vercel. Point `api.useduet.io` at it. Run
+   `npm run migrate` once with the database URL.
 3. Set a monthly budget on the OpenAI project.
 
 ## 10. Build order
@@ -248,3 +262,52 @@ Each step starts with a failing test, then the code, then the full `npm test` (s
     Explain and the tutor; live voice minute calls and `stop`.
 12. **End to end, by hand with the owner:** the app against a local server with a real sign-in
     (the owner signs in), then against the deployed server.
+
+## 11. Piece B: hours counted on the server
+
+- **Watch sessions.** When the learner watches with Duet (a video on screen, the strip shown, the
+  video playing: the same rule as the local watch log), main opens a watch session:
+  `POST /v1/duet/watch/start`. Each 30 s while watching, main sends `POST /v1/duet/watch/<id>/beat`.
+- **The server's clock counts.** Each beat adds the time since the last beat, but at most 45 s, to
+  the user's watched time for the period. A gap longer than 45 s (the app stopped, the Mac slept)
+  counts as 45 s at most. The app's own count is never used.
+- **Periods.** Free: 2 h a week, from Monday 00:00 UTC. Paid: 40 h a month, the same month as the
+  credits.
+- **At the cap,** start and beat reply 402 with `cap: 'hours'`, and lines and hearing stop.
+- **Lines and hearing need an open session.** Calls whose `X-Duet-Feature` is `lines` or `hearing`
+  must send `X-Duet-Watch: <id>` of the user's session, with a beat in the last 60 s. If not, the
+  reply is 409 `watch_required`. The app then opens a session and tries again.
+- **What a changed app can do:** label line calls as another feature, or never open a session. It
+  then avoids the hours cap but still pays credits, so the cost stays capped. The hours cap is a
+  product rule; the credits cap is the money guard.
+
+## 12. Piece C: usage in the app
+
+- `GET /v1/duet/me` gives: plan, credits used and cap, hours used and cap, the reset time of each,
+  whether the free tier is blocked on this device, and whether billing is set up.
+- **Home:** a "Your plan" tile in the top bar's menu (under the gear): plan name, two bars (hours
+  this week or month; credits this month), when each resets, and **Upgrade** (Free) or **Manage
+  plan** (Paid). Signed out: **Sign in**.
+- **At a cap:** the strip shows the cap sentence with the reset date. Home shows the same sentence
+  in a banner above the hub, with **Upgrade** for Free users.
+- Main asks `/me` at sign-in, when a video starts, after a cap reply, and every 5 minutes while
+  Duet is open.
+
+## 13. Piece D: payments
+
+- **Stripe Checkout** in subscription mode with one price (`STRIPE_PRICE_ID`, $15.99/month).
+  `POST /v1/duet/billing/checkout` makes a Checkout session for the user (with the user id as
+  `client_reference_id` and in the subscription's metadata) and gives its URL. Main opens it in the
+  browser.
+- **Customer portal:** `POST /v1/duet/billing/portal` gives a portal URL for Paid users, to change
+  the card or cancel.
+- **Webhook** `POST /v1/stripe/webhook` checks Stripe's signature (`STRIPE_WEBHOOK_SECRET`). On
+  `checkout.session.completed` and `customer.subscription.created|updated|deleted`, the server reads
+  the subscription and sets the user's plan: Paid while the subscription is `active` or
+  `trialing`, else Free. It keeps the Stripe customer id and the current period's start and end.
+- **Paid periods** follow the billing period: credits and hours reset when Stripe starts a new
+  period. Free periods stay as in section 1.
+- After checkout, Stripe sends the browser to `https://useduet.io/?upgraded=1`. The app asks `/me`
+  again when it next comes to the front.
+- **The owner sets up** a Stripe product and price, the webhook endpoint, and `STRIPE_SECRET_KEY`,
+  `STRIPE_PRICE_ID` and `STRIPE_WEBHOOK_SECRET` in Vercel.
