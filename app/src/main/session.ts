@@ -8,6 +8,9 @@
 //   line is ready before it is spoken. A seek starts again from the new position.
 // - From the captions on screen, one by one as they finish. Lines that wait are sent together; if
 //   too many wait, the oldest are skipped so the overlay never falls behind the video.
+//
+// When the translator can't be reached (or is busy), the lines aren't failed: they wait and are tried
+// again after a moment, longer each time, and the strip says so until the translator answers.
 import { EventEmitter } from 'events'
 import type { MomentLine } from '../shared/moment'
 import type { Language, OverlayLine, Script } from '../shared/types'
@@ -34,6 +37,15 @@ const FIRST_CHUNK = 3
 const MOMENT_SECONDS = 120
 const MOMENT_CHARS = 4000
 
+// Trying again when the translator can't be reached: the first wait, doubled each time up to the last.
+const RETRY_FIRST_MS = 2000
+const RETRY_MOST_MS = 15000
+// What the strip says while it tries again, by why the translator didn't answer.
+const RETRYING: Partial<Record<ModelError['kind'], string>> = {
+  network: 'Can’t reach the translator. Trying again…',
+  rate_limit: 'The translator is busy. Trying again…'
+}
+
 // Line ids are unique across sessions, so the overlay never mixes up lines from two of them.
 let nextId = 1
 
@@ -47,6 +59,9 @@ export class LineSession extends EventEmitter {
   private inFlight: OverlayLine[] = []
   private abort?: AbortController
   private paused = false
+  // While the translator can't be reached: how long the last wait was, and the wait under way.
+  private retryMs = 0
+  private retry?: NodeJS.Timeout
 
   constructor(
     private model: LineModel,
@@ -151,6 +166,11 @@ export class LineSession extends EventEmitter {
   pause(): void {
     this.paused = true
     this.cancel()
+    // Its "trying again" notice goes with it; the session on screen says its own.
+    if (this.retryMs) {
+      this.retryMs = 0
+      this.emit('model-error', undefined)
+    }
   }
 
   /** Back on screen: shows the current line again and carries on where it stopped. */
@@ -161,11 +181,13 @@ export class LineSession extends EventEmitter {
     void this.next()
   }
 
-  /** Stops the chunk in flight; its lines stay pending. */
+  /** Stops the chunk in flight, and any wait to try again; their lines stay pending. */
   private cancel(): void {
     this.abort?.abort()
     this.busy = false
     this.inFlight = []
+    clearTimeout(this.retry)
+    this.retry = undefined
   }
 
   /** The next chunk to process, in order. */
@@ -195,7 +217,7 @@ export class LineSession extends EventEmitter {
   }
 
   private async next(): Promise<void> {
-    if (this.busy || this.paused) return
+    if (this.busy || this.paused || this.retry) return
     const chunk = this.pick()
     if (!chunk.length) return
     this.busy = true
@@ -208,13 +230,34 @@ export class LineSession extends EventEmitter {
         abort.signal
       )
       // A reset while this chunk was in flight means it belongs to an old session.
-      if (!abort.signal.aborted) chunk.forEach((line, index) => this.update(line, { state: 'ready', processed: processed[index] }))
+      if (!abort.signal.aborted) {
+        chunk.forEach((line, index) =>
+          this.update(line, { state: 'ready', processed: processed[index] })
+        )
+        if (this.retryMs) {
+          this.retryMs = 0
+          this.emit('model-error', undefined)
+        }
+      }
     } catch (error) {
       if (!abort.signal.aborted) {
-        const message = error instanceof ModelError ? error.message : 'Could not translate this line.'
-        if (!(error instanceof ModelError)) console.error('[duet] lines failed', error)
-        for (const line of chunk) this.update(line, { state: 'failed', error: message })
-        if (error instanceof ModelError && error.kind === 'auth') this.emit('model-error', message)
+        const retrying = error instanceof ModelError ? RETRYING[error.kind] : undefined
+        if (retrying) {
+          // The lines stay pending and are tried again after a moment, longer each time.
+          this.retryMs = Math.min(Math.max(this.retryMs * 2, RETRY_FIRST_MS), RETRY_MOST_MS)
+          this.retry = setTimeout(() => {
+            this.retry = undefined
+            void this.next()
+          }, this.retryMs)
+          this.emit('model-error', retrying)
+        } else {
+          const message =
+            error instanceof ModelError ? error.message : 'Could not translate this line.'
+          if (!(error instanceof ModelError)) console.error('[duet] lines failed', error)
+          for (const line of chunk) this.update(line, { state: 'failed', error: message })
+          if (error instanceof ModelError && error.kind === 'auth')
+            this.emit('model-error', message)
+        }
       }
     } finally {
       if (!abort.signal.aborted) {

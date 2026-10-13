@@ -27,7 +27,8 @@ import { sourceFor, type Source } from './sources'
 
 // Videos and languages whose lines are kept after switching away.
 const SESSIONS_KEPT = 12
-// With no transcript and no captions on screen for this long, the video needs hearing.
+// With no transcript and no captions on screen for this long, the video needs hearing (at once, on
+// sites that listen first).
 const NO_CAPTIONS_MS = 6000
 // How many recent lines (read or heard) decide which language the video is in.
 const RECENT_LINES = 4
@@ -216,7 +217,10 @@ export class Watcher extends EventEmitter {
           `[duet] ${language} line ${line.id} ${line.state}: ${line.original}${line.processed ? ` → ${line.processed.translation}` : ''}${line.error ? ` (${line.error})` : ''}`
         )
       )
-    created.on('model-error', (message: string) => this.setStatus({ modelError: message }))
+    // A problem with the translator, or undefined once it is answering again.
+    created.on('model-error', (message: string | undefined) =>
+      this.setStatus({ modelError: message })
+    )
     this.sessions.set(key, created)
     if (this.sessions.size > SESSIONS_KEPT) this.sessions.delete(this.sessions.keys().next().value!)
     return created
@@ -226,8 +230,8 @@ export class Watcher extends EventEmitter {
   private open(): void {
     this.fetching?.abort()
     // Give a new video (or language) time to show captions or find a transcript before hearing it,
-    // and judge its language afresh.
-    this.captionSeenAt = Date.now()
+    // unless its site listens first, and judge its language afresh.
+    this.captionSeenAt = this.video?.source.listensFirst ? -Infinity : Date.now()
     this.recentLanguages = []
     if (this._status.otherLanguage || this._status.spokenLanguage) this.setStatus({ otherLanguage: undefined, spokenLanguage: undefined })
     this.session?.pause()

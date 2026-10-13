@@ -9,7 +9,7 @@
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
-    "test": "npm run test:tutor && npm run test:tutor-actions && npm run test:overlay && npm run test:languages && npm run test:player && npm run test:tutor-window && npm run test:conversation && npm run test:cards-ui && npm run test:watch-log && npm run test:home && npm run test:daily && npm run test:checkpoints && npm run test:talk && npm run test:lines && npm run test:knowledge && npm run test:words-join",
+    "test": "npm run test:tutor && npm run test:tutor-actions && npm run test:overlay && npm run test:languages && npm run test:player && npm run test:tutor-window && npm run test:conversation && npm run test:cards-ui && npm run test:watch-log && npm run test:home && npm run test:daily && npm run test:checkpoints && npm run test:talk && npm run test:lines && npm run test:knowledge && npm run test:words-join && npm run test:sources",
     "test:tutor": "jiti scripts/smoke-tutor.mjs",
     "test:tutor-actions": "jiti scripts/test-tutor-actions.mjs",
     "test:overlay": "jiti scripts/test-overlay.mjs",
@@ -25,6 +25,7 @@
     "test:lines": "jiti scripts/test-lines.mjs",
     "test:knowledge": "node scripts/test-knowledge.mjs",
     "test:words-join": "jiti scripts/test-words-join.mjs",
+    "test:sources": "jiti scripts/test-sources.mjs",
     "test:cards-ui": "jiti scripts/test-cards-ui.mjs",
     "test:native-reader": "node scripts/smoke-native-reader.mjs",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
