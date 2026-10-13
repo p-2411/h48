@@ -311,3 +311,22 @@ Each step starts with a failing test, then the code, then the full `npm test` (s
   again when it next comes to the front.
 - **The owner sets up** a Stripe product and price, the webhook endpoint, and `STRIPE_SECRET_KEY`,
   `STRIPE_PRICE_ID` and `STRIPE_WEBHOOK_SECRET` in Vercel.
+
+## 14. Changes made while building (2026-10-13)
+
+- **Every refusal says `x-should-retry: false`.** The OpenAI SDK retries 409 and 5xx replies on its
+  own; Duet's refusals must not be retried.
+- **A cap reply says when a Free account is blocked** by the device rule (`blocked: true`), so the
+  app shows "Free Duet is limited to two accounts on one computer" and not "used up".
+- **A reply whose usage cannot be read is charged at its hold**, not at 0.
+- **Live voice holds 2 minutes ahead** of the server's clock. Each minute call tops the hold up. A
+  call with no minute call for 90 s is hung up by the next request from anyone, or by the cron.
+- **The cron runs once a day** in `vercel.json` (the Hobby plan's most). On Pro, set it to every
+  minute.
+- **Lines need a watch session; the app opens one by itself** on the server's 409 and sends the call
+  again. A watch session opened that way counts no time until the app's next beat.
+- **WorkOS tokens carry no email.** With `WORKOS_API_KEY` set, the server looks it up once.
+- **In the app, the WorkOS SDK's IPC handlers stay in main.** No page can ask for a token. Pages use
+  Duet's own `account:*` channels, and only the home page may.
+- **Each OpenAI call names its feature** (`x-duet-feature`): lines, explain, hearing, talk, listen,
+  speech, coach, challenge, tutor.
