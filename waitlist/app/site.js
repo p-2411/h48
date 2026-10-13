@@ -20,6 +20,35 @@
   const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   const joinForms = [...document.querySelectorAll('.join')];
   const JOINED = 'duet-joined';
+  // Just after joining: one tap for which language, so the list can be sorted by it. A card where
+  // the sticky bar sits; it saves on tap (api/join.js) and can be closed without answering.
+  const ask = document.querySelector('[data-ask]');
+  const askLanguage = email => {
+    if (!ask) return;
+    ask.hidden = false;
+    requestAnimationFrame(() => ask.classList.add('is-on'));
+    const close = () => { ask.classList.remove('is-on'); setTimeout(() => { ask.hidden = true; }, 300); };
+    ask.querySelector('[data-ask-close]').onclick = close;
+    ask.querySelectorAll('[data-language]').forEach(button => {
+      button.onclick = async () => {
+        ask.querySelectorAll('[data-language]').forEach(other => { other.disabled = true; });
+        try {
+          const response = await fetch('/api/join', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, language: button.dataset.language })
+          });
+          if (!response.ok) throw new Error(String(response.status));
+          ask.querySelector('[data-ask-text]').textContent = 'Thanks. We’ll have it ready for you.';
+          ask.classList.add('is-done');
+          setTimeout(close, 1800);
+        } catch {
+          ask.querySelectorAll('[data-language]').forEach(other => { other.disabled = false; });
+          announce('Couldn’t save that just now. Try again in a moment.');
+        }
+      };
+    });
+  };
   const markJoined = (quietly = false) => {
     joinForms.forEach(form => form.classList.add('is-joined'));
     const dockBar = document.querySelector('.join-dock');
@@ -56,6 +85,7 @@
         try { localStorage.setItem(JOINED, '1'); } catch { /* Fine: only skips remembering. */ }
         markJoined();
         announce(result.already ? 'You’re already on the list.' : 'You’re on the list. We’ll email you when Duet is ready.');
+        if (!result.already) setTimeout(() => askLanguage(email), 1200);
       } catch (error) {
         if (error.message === 'email') {
           form.dataset.invalid = '';
@@ -368,7 +398,8 @@
   }
   const anchor = name => document.querySelector(`[data-anchor="${name}"]`);
   const anchors = { hero: anchor('hero'), popup: anchor('popup'), panel: anchor('panel'), hub: anchor('hub'), closing: anchor('closing') };
-  const BEAT_ANCHOR = ['popup', 'panel', 'popup', 'hub'];
+  const BEAT_ANCHOR = ['popup', 'panel', 'panel', 'popup', 'hub'];
+  const BEATS = BEAT_ANCHOR.length;
 
   // Duet's voice: its own lines, said by the app's voice (media/voice). Browsers only let a page
   // play sound after the visitor has clicked, tapped or pressed a key, so until then Duet speaks
@@ -560,7 +591,9 @@
     clearInterval(levelTimer);
     levelTimer = null;
     hush();
-    bubbles.forEach(bubble => bubble.classList.remove('is-on'));
+    setState('idle');
+    bubbles.forEach(bubble => bubble.classList.remove('is-on', 'is-still'));
+    if (lines.querySelector('.hl')) drawLevel();
     stripRow.classList.remove('is-glowing');
     foldCard();
     blank.textContent = '　　';
@@ -583,25 +616,31 @@
       await wait(500);
       if (mine === run) await speak('watch', 2400);
     },
+    // Ask: Explain opens, and Duet says what was said and how.
     async mine => {
       say('');
-      await wait(500);
+      await wait(400);
       if (mine !== run) return;
       setState('thinking');
-      await wait(600);
+      await wait(400);
       if (mine !== run) return;
       bubbles[0].classList.add('is-on');
-      await speak('ask-1', 4500);
-      if (mine !== run) return;
+      speak('ask-1', 2600);
+    },
+    // Speak: your voice message comes in, Duet listens, then corrects it, and the syllable it
+    // corrects lights up in the subtitles.
+    async mine => {
+      say('');
+      bubbles[0].classList.add('is-on', 'is-still');
       await wait(300);
       if (mine !== run) return;
-      // Your voice message comes in; Duet listens to it.
       bubbles[1].classList.add('is-on');
       setState('listening');
-      await wait(1400);
+      await wait(1100);
       if (mine !== run) return;
       bubbles[2].classList.add('is-on');
-      await speak('ask-3', 3200);
+      lightSyllable();
+      speak('ask-3', 3000);
     },
     async mine => {
       stripRow.classList.add('is-glowing');
@@ -647,7 +686,8 @@
   const sayNow = text => { said.textContent = text; said.classList.add('is-on'); };
   const END = [
     () => sayNow('Orange means you know it. Swipe, and I’ll swap in more.'),
-    () => bubbles.forEach(bubble => bubble.classList.add('is-on')),
+    () => bubbles[0].classList.add('is-on', 'is-still'),
+    () => { bubbles.forEach(bubble => bubble.classList.add('is-on', 'is-still')); lightSyllable(); },
     () => {
       stripRow.classList.add('is-glowing', 'has-card');
       card.getAnimations().forEach(animation => animation.cancel());
@@ -668,6 +708,11 @@
       goodRating.classList.add('is-picked');
     }
   ];
+  // Speak: the "shi" Duet corrects, lit in the subtitles' sagashite.
+  const lightSyllable = () => {
+    const word = [...lines.querySelectorAll('.line:not(.is-leaving) .mix .w')].find(span => span.textContent === 'sagashite iru');
+    if (word) word.innerHTML = 'saga<span class="hl">shi</span>te iru';
+  };
   // Skip: Duet stops, and the beat jumps to its last picture.
   const skipBeat = () => {
     if (beat < 0 || !frame.classList.contains('is-playing')) return;
@@ -701,7 +746,7 @@
   };
   navButtons.forEach(button => button.addEventListener('click', () => {
     const range = how.offsetHeight - innerHeight;
-    scrollTo({ top: how.offsetTop + range * (Number(button.dataset.go) + .5) / 4, behavior: still() ? 'auto' : 'smooth' });
+    scrollTo({ top: how.offsetTop + range * (Number(button.dataset.go) + .5) / BEATS, behavior: still() ? 'auto' : 'smooth' });
   }));
 
   // A real two-finger swipe on the subtitles (a trackpad, sideways) steps the level, one step a
@@ -755,7 +800,7 @@
     called = true;
     flyer.classList.remove('is-calling', 'is-hovered');
     const range = how.offsetHeight - innerHeight;
-    scrollTo({ top: how.offsetTop + range * .5 / 4, behavior: still() ? 'auto' : 'smooth' });
+    scrollTo({ top: how.offsetTop + range * .5 / BEATS, behavior: still() ? 'auto' : 'smooth' });
   });
 
   // In the hero and at the closing, Duet's eyes follow the pointer: each moves inside its socket toward it (in the
@@ -809,13 +854,16 @@
     const vh = innerHeight;
     const area = how.getBoundingClientRect();
     const progress = clamp(-area.top / Math.max(1, area.height - vh));
-    setBeat(area.top > 0 ? -1 : Math.min(3, Math.floor(progress * 4)));
+    setBeat(area.top > 0 ? -1 : Math.min(BEATS - 1, Math.floor(progress * BEATS)));
     if (beat <= 0 && video && !video.paused) showLine(lineAt(video.currentTime));
 
     let target;
     const into = clamp(1 - area.top / vh);
     const out = clamp((vh - area.bottom) / (vh * .9));
-    if (out > 0) target = blend(boxOf(BEAT_ANCHOR[3]), boxOf('closing'), ease(out));
+    // The sections between the scene and the closing are Duet-free: it leaves with the scene and
+    // flies in to the closing as that comes up the screen.
+    const near = clamp((vh - (anchors.closing?.getBoundingClientRect().top ?? Infinity)) / (vh * .6));
+    if (near > 0) target = blend(boxOf(BEAT_ANCHOR[BEATS - 1]), boxOf('closing'), ease(near));
     else if (into < 1) target = blend(boxOf('hero'), boxOf('popup'), ease(into));
     else target = boxOf(BEAT_ANCHOR[Math.max(0, beat)]);
     if (!placed || still()) Object.assign(shown, target);
@@ -836,7 +884,7 @@
     heroAnchor?.classList.toggle('is-calling', invitingNow);
     // At the closing ("Be first in line.") Duet is content: its idle face, still, with a smile
     // (styles.css .is-happy); as it was when it leaves.
-    const happy = out > .6;
+    const happy = near > .6;
     if (happy !== wasHappy) {
       wasHappy = happy;
       flyer.classList.toggle('is-happy', happy);
@@ -844,7 +892,7 @@
       setState('idle');
     }
     // At rest in the hero, or at the closing ("Be first in line."): not on its way, not in the scene.
-    followPointer(dt, (into < .2 && out === 0) || out > .6);
+    followPointer(dt, (into < .2 && out === 0) || near > .6);
     requestAnimationFrame(tick);
   };
 

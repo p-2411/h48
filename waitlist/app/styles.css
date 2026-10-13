@@ -163,12 +163,74 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
 .hero-copy{margin-top:22px;max-width:34ch;font-size:clamp(17px,1.4vw,19px);line-height:1.55;color:var(--fg-2)}
 .join-hero{margin-top:32px}
 .hero-meta{margin-top:14px;font-size:14px;color:var(--text-3)}
+/* The win: Hack48's mark and a few words, set on the headline (space above it from Duet, close
+   to the headline below). */
+.win{display:inline-flex;align-items:center;gap:8px;margin-top:clamp(26px,4.4vh,44px);font-size:13px;font-weight:500;color:var(--text-2)}
+.win img{width:20px;height:20px;border-radius:5px}
+.win+h1{margin-top:clamp(8px,1.4vh,12px)}
+
+/* Where it works: one quiet row under the hero. */
+.works{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:clamp(-72px,-6vh,-32px);padding-block:0 clamp(20px,3vh,32px);text-align:center}
+.works-label{font-size:13px;letter-spacing:.02em;color:var(--text-3)}
+.works-list{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:14px clamp(28px,4vw,48px);font-size:clamp(18px,2vw,24px);font-weight:600;letter-spacing:-.02em;color:var(--fg-2)}
+.brand{display:inline-flex;align-items:center;color:var(--text-3)}
+.brand svg{width:clamp(28px,2.6vw,36px);height:clamp(28px,2.6vw,36px);flex:none;fill:currentColor}
+.brand svg.wide{width:auto;height:clamp(34px,3.1vw,44px);aspect-ratio:1041/565}
+
+/* Why: the problem, and who it's for. */
+.why{max-width:1080px;padding-block:clamp(16px,3vh,40px) clamp(56px,10vh,112px);text-align:center}
+.why h2,.progress h2{font-size:clamp(32px,4.4vw,60px);line-height:1.02;letter-spacing:-.04em;text-wrap:balance}
+.why h2 span{color:var(--text-2)}
+.why p{max-width:58ch;margin:22px auto 0;font-size:clamp(17px,1.4vw,19px);line-height:1.6;color:var(--fg-2)}
+.why .why-who{margin-top:14px;font-size:15px;color:var(--text-3)}
+
+/* Progress: how much you understood, your words, and the shows you master. */
+.progress{max-width:1160px;padding-block:clamp(56px,10vh,120px);text-align:center}
+.progress-lead{max-width:56ch;margin:20px auto 0;font-size:clamp(16px,1.3vw,18px);line-height:1.6;color:var(--fg-2)}
+.progress-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:clamp(32px,6vh,56px);text-align:left}
+.stat-card{display:flex;flex-direction:column;padding:24px;border-radius:22px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.1)}
+.stat-title{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.stat-note{margin-top:auto;padding-top:16px;font-size:14px;line-height:1.5;color:var(--text-3)}
+/* The ring: known, can say and can use words filling it in their colours (--k, --s, --u in %). */
+.ring{--hole:#121214;position:relative;display:grid;place-items:center;width:128px;aspect-ratio:1;margin-bottom:16px;border-radius:50%;background:radial-gradient(closest-side,var(--hole) 76%,transparent 77%),conic-gradient(var(--k-c,#ff9f0a) 0 calc(var(--k) * 1%),var(--s-c,#4da3ff) 0 calc((var(--k) + var(--s)) * 1%),var(--u-c,#32d74b) 0 calc((var(--k) + var(--s) + var(--u)) * 1%),rgba(255,255,255,.1) 0)}
+.ring b{font-size:30px;font-weight:600;letter-spacing:-.03em}
+.ladder,.levels{list-style:none;padding:0;margin:14px 0 0;display:flex;flex-direction:column;gap:8px}
+.ladder li{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.07);font-size:15px}
+.ladder li:last-child{border-bottom:0;padding-bottom:0}
+.ladder b{font-variant-numeric:tabular-nums;font-weight:600}
+.levels li{position:relative;display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);font-size:14px;overflow:hidden}
+.levels li i{font-style:normal;color:var(--text-3)}
+.levels li.done i{color:var(--u)}
+.levels em{position:absolute;left:0;bottom:0;height:2px;width:calc(var(--p) * 100%);background:var(--k)}
+
+/* The details: three short notes. */
+.details{max-width:1160px;padding-block:clamp(24px,6vh,64px) clamp(32px,6vh,72px)}
+.details-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(20px,3vw,40px)}
+.details h3{font-size:18px;letter-spacing:-.015em}
+.details p{margin-top:8px;font-size:15px;line-height:1.6;color:var(--text-2)}
+
+/* Practice: the home window's Continue watching says how much of the episode you understood. */
+.understood{margin-top:.3cqw;color:var(--text-2)}
+.understood b{color:var(--k);font-weight:600}
+
+.team-line{margin-top:10px;font-size:14px;color:var(--text-3)}
+/* After joining: which language. Where the sticky bar sits, as glass. */
+.join-ask{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));z-index:61;width:min(520px,calc(100% - 24px));padding:16px 44px 16px 18px;border-radius:22px;background:rgba(24,24,26,.82);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.16);box-shadow:0 10px 40px rgba(0,0,0,.5);opacity:0;transform:translate(-50%,16px);transition:opacity .3s var(--ease),transform .3s var(--ease)}
+.join-ask.is-on{opacity:1;transform:translate(-50%,0)}
+.join-ask p{font-size:15px;font-weight:500}
+.join-ask-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.join-ask-row button{padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-size:14px;transition:background .2s}
+.join-ask-row button:hover{background:rgba(255,255,255,.16)}
+.join-ask-row button:disabled{opacity:.5;cursor:progress}
+.join-ask.is-done .join-ask-row{display:none}
+.join-ask-close{position:absolute;top:10px;right:12px;width:28px;height:28px;border-radius:50%;font-size:20px;line-height:1;color:var(--text-2)}
+.join-ask-close:hover{color:var(--fg)}
 
 /* How it works: the beats' words, the scene, and the step buttons. With script, the section is tall
    and the scene stays pinned while you scroll through it; site.js picks the beat. */
 .how{position:relative}
 .how-pin{display:grid;grid-template-rows:auto auto minmax(0,1fr);justify-items:center;align-content:start;gap:clamp(12px,2vh,20px);padding:clamp(80px,11vh,96px) clamp(12px,3vw,36px) 88px}
-.js .how{height:460svh}
+.js .how{height:560svh}
 .js .how-pin{position:sticky;top:0;height:100svh}
 .beats{list-style:none;padding:0;display:grid;gap:28px;width:min(100%,760px);text-align:center}
 .beat h3{font-size:clamp(26px,3vw,40px);line-height:1.08;letter-spacing:-.03em}
@@ -227,7 +289,7 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
 /* Not the app's: a word under the strip saying it can be swiped, until it is. */
 .swipe-hint{position:absolute;left:0;right:0;top:calc(100% + .5cqw);text-align:center;font-size:max(10px,1.05cqw);color:rgba(255,255,255,.75);text-shadow:0 1px 2px rgba(0,0,0,.8);transition:opacity .3s}
 /* The hover row shows while "you" point at the strip: swiping (01) and asking (02). */
-.frame[data-beat="0"] .actions,.frame[data-beat="1"] .actions{opacity:1;transform:none}
+.frame[data-beat="0"] .actions,.frame[data-beat="1"] .actions,.frame[data-beat="2"] .actions{opacity:1;transform:none}
 .frame:not([data-beat="0"]) .swipe-hint,.frame.is-swiped .swipe-hint{opacity:0}
 /* Phones and tablets can't swipe two fingers on the subtitles: the level steps on its own. */
 @media(hover:none),(pointer:coarse){.swipe-hint{display:none}}
@@ -235,17 +297,17 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
 /* Duet above the subtitles (TalkBubble.tsx), with its line under it: it rides on the strip, so it
    rises as a checkpoint grows. */
 .popup{position:absolute;left:50%;bottom:calc(100% + 3.6cqw);width:46cqw;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.6cqw;transition:opacity .3s,bottom .3s}
-.frame[data-beat="2"] .popup{bottom:calc(100% + 1.6cqw)}
+.frame[data-beat="3"] .popup{bottom:calc(100% + 1.6cqw)}
 .popup .anchor{width:clamp(84px,15cqw,170px)}
 .popup .said{font-size:max(12px,1.55cqw)}
 
 /* 02 · Ask: the actions show, Explain is pressed, and the Explain side panel slides in. */
-.frame[data-beat="1"] .actions{opacity:1;transform:none}
+.frame[data-beat="1"] .actions,.frame[data-beat="2"] .actions{opacity:1;transform:none}
 /* The strip moves into the room left of the panel (its talk button still inside the frame). */
-.frame[data-beat="1"] .strip-area{width:56cqw;transform:translateX(calc(-50% - 16.5cqw))}
-.frame[data-beat="1"] .popup{opacity:0}
+.frame[data-beat="1"] .strip-area,.frame[data-beat="2"] .strip-area{width:56cqw;transform:translateX(calc(-50% - 16.5cqw))}
+.frame[data-beat="1"] .popup,.frame[data-beat="2"] .popup{opacity:0}
 .explain{position:absolute;top:1.6cqw;right:1.6cqw;bottom:1.6cqw;width:34cqw;display:flex;flex-direction:column;gap:1.2cqw;padding:1.4cqw;border-radius:1.6cqw;background:var(--grain) 0 0/90px 90px,linear-gradient(180deg,#1b1b1f,#111114);border:.5px solid rgba(255,255,255,.12);box-shadow:0 2cqw 6cqw rgba(0,0,0,.6);transform:translateX(calc(100% + 3cqw));transition:transform .6s;font-size:max(10px,1.2cqw);line-height:1.4}
-.frame[data-beat="1"] .explain{transform:none}
+.frame[data-beat="1"] .explain,.frame[data-beat="2"] .explain{transform:none}
 .ex-top{display:flex;align-items:center;justify-content:space-between}
 .seg{display:flex;padding:.25cqw;border-radius:999px;background:rgba(255,255,255,.08)}
 .seg b{padding:.35cqw 1.1cqw;border-radius:999px;font-weight:400;color:var(--text-2)}
@@ -258,11 +320,18 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
 .ex-btns{display:flex;justify-content:flex-end;gap:.8cqw;margin-top:.6cqw}
 .ex-btns span{padding:.3cqw 1cqw;border-radius:999px;color:var(--text-2)}
 .ex-btns .save{background:rgba(255,255,255,.1);color:#fff}
-.ex-chat{flex:1;min-height:0;display:flex;flex-direction:column;gap:.8cqw;overflow:hidden}
-.bub{max-width:88%;padding:.8cqw 1.1cqw;border-radius:1.4cqw;opacity:0;transform:translateY(6px);transition:opacity .35s,transform .35s}
+.ex-chat{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;gap:.8cqw;overflow:hidden}
+.bub{flex:none;max-width:88%;padding:.8cqw 1.1cqw;border-radius:1.4cqw}
+/* A reply arrives at the bottom and pushes the earlier ones up, as in a chat. */
+.js .bub:not(.is-on){display:none}
+.bub.is-on{animation:bub-in .35s var(--ease)}
+@keyframes bub-in{from{opacity:0;transform:translateY(6px)}}
+.bub.is-still{animation:none}
+/* Speak: the syllable Duet corrects lights up in the subtitles. */
+.mix .hl{color:#fff;text-shadow:none;background:color-mix(in srgb,var(--k) 45%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--k) 80%,transparent),0 0 14px color-mix(in srgb,var(--k) 55%,transparent);border-radius:4px;padding:0 .08em;animation:hl-in .5s var(--ease)}
+@keyframes hl-in{from{background:transparent;box-shadow:none;color:inherit}}
 .bub.duet{align-self:flex-start;background:#2a2a2e;border-bottom-left-radius:.4cqw}
 .bub.me{align-self:flex-end;background:#0a84ff;border-bottom-right-radius:.4cqw}
-.bub.is-on{opacity:1;transform:none}
 /* Japanese in the explanation, in Latin letters: a little heavier, so the words stand out. */
 .bub .ro{font-weight:600}
 /* Your voice message, iMessage style (a picture of one: no sound): play, waveform, length. */
@@ -314,8 +383,8 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
 
 /* 04 · Come back: the scene gives way to the home window. */
 .hub{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1.7fr;grid-template-rows:auto auto 1fr;gap:1.4cqw;padding:1.8cqw;background:var(--grain) 0 0/90px 90px,linear-gradient(180deg,#1b1b1f,#111114);opacity:0;transform:scale(1.03);transition:opacity .5s,transform .7s;font-size:max(10px,1.25cqw);line-height:1.4}
-.frame[data-beat="3"] .hub{opacity:1;transform:none}
-.frame[data-beat="3"] .scene,.frame[data-beat="3"] .strip-area,.frame[data-beat="3"] .popup{opacity:0}
+.frame[data-beat="4"] .hub{opacity:1;transform:none}
+.frame[data-beat="4"] .scene,.frame[data-beat="4"] .strip-area,.frame[data-beat="4"] .popup{opacity:0}
 .tile{display:flex;flex-direction:column;min-width:0;min-height:0;padding:1.6cqw;border-radius:1.6cqw;background:rgba(255,255,255,.035);border:.5px solid rgba(255,255,255,.1)}
 .tile-label{font-size:.85em;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
 .today{grid-row:1/4}
@@ -426,6 +495,8 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
 .toast.is-visible{opacity:1;transform:translate(-50%,0)}
 
 @media(max-width:900px){
+  .progress-grid,.details-grid{grid-template-columns:1fr}
+  .stat-card{text-align:left}
   .footer-inner{grid-template-columns:1fr auto;gap:20px}
   .footer-inner>span:last-child{grid-column:1/-1;text-align:center}
 }
@@ -440,7 +511,7 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
   .en{font-size:max(11px,3cqw)}
   .talk,.swipe-hint{display:none}
   .popup{bottom:calc(100% + 11cqw);width:84cqw}
-  .frame[data-beat="2"] .popup{bottom:calc(100% + 3cqw)}
+  .frame[data-beat="3"] .popup{bottom:calc(100% + 3cqw)}
   .popup .anchor{width:26cqw}
   .popup .said{font-size:max(13px,3.8cqw)}
   .actions{gap:4px;padding:0 6px 6px}
@@ -450,7 +521,7 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
   .act.icon{width:24px;padding:0}
   .act svg{width:12px}
   .level-digit{font-size:11px}
-  .frame[data-beat="1"] .strip-area{width:84cqw;transform:translateX(-50%)}
+  .frame[data-beat="1"] .strip-area,.frame[data-beat="2"] .strip-area{width:84cqw;transform:translateX(-50%)}
   .explain{top:3cqw;left:3cqw;right:3cqw;bottom:3cqw;width:auto;gap:1.6cqw;padding:3.4cqw;border-radius:4cqw;font-size:max(12px,3.3cqw)}
   .ex-top .anchor{width:20cqw}
   .ex-card,.bub{border-radius:3cqw;padding:2.4cqw 3cqw}

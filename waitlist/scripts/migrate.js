@@ -17,5 +17,6 @@ await sql`
     source text,
     created_at timestamptz not null default now()
   )`;
+await sql`alter table waitlist_signups add column if not exists language text`;
 const [{ count }] = await sql`select count(*)::int as count from waitlist_signups`;
 console.log(`waitlist_signups is ready (${count} sign-ups).`);
