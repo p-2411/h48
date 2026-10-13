@@ -4,6 +4,8 @@
 // shared with text replies (text.ts).
 import OpenAI from 'openai'
 import type { FunctionTool } from 'openai/resources/live/live'
+import { openAIAccess, openAIClient } from '../ai/access'
+import { duetModelError } from '../ai/errors'
 import { RATINGS } from '../../shared/cards'
 import type { TutorSessionAnswer } from '../../shared/tutor'
 import { languageModule, languageName, type Language } from '../../shared/languages'
@@ -11,13 +13,16 @@ import { backendInstructions, contextLanguage, contextText, liveInstructions, ty
 
 const readingCache = new Map<string, string>()
 
-// One client per API key: a new client for each call would set up its connection again.
-let cachedClient: { apiKey: string; client: OpenAI } | undefined
-
-export function openai(apiKey: string): OpenAI {
-  if (cachedClient?.apiKey !== apiKey) cachedClient = { apiKey, client: new OpenAI({ apiKey }) }
-  return cachedClient.client
+/** The client (a development key, or Duet's server with the learner's sign-in); without either,
+ * "Sign in to Duet to <doing>". */
+export function tutorClient(env: NodeJS.ProcessEnv, doing: string): OpenAI {
+  const access = openAIAccess(env)
+  if (!access) throw new Error(`Sign in to Duet to ${doing}.`)
+  return openAIClient(access)
 }
+
+// Duet's server meters the tutor's calls as one feature.
+export const TUTOR_CALL = { headers: { 'x-duet-feature': 'tutor' } }
 
 /** The text model behind the voice: it runs the tools, and it translates and romanises. */
 export function backendModel(env: NodeJS.ProcessEnv): string {
@@ -170,6 +175,9 @@ export const tools: FunctionTool[] = [
 
 /** An error the learner can read. `context` says what failed, such as "Could not translate". */
 export function safeLiveError(error: unknown, context: string): Error {
+  // Duet's server: a cap reached, or the learner signed out.
+  const duet = duetModelError(error)
+  if (duet) return new Error(duet.message)
   if (error instanceof OpenAI.AuthenticationError || error instanceof OpenAI.PermissionDeniedError)
     return new Error('The OpenAI project key was rejected or does not have GPT-Live access.')
   if (error instanceof OpenAI.RateLimitError)
@@ -185,11 +193,8 @@ export async function createLiveSession(
   context: TutorContext,
   env: NodeJS.ProcessEnv = process.env
 ): Promise<TutorSessionAnswer> {
-  if (!env.OPENAI_API_KEY)
-    throw new Error('Add OPENAI_API_KEY to app/.env.local to start voice.')
   if (!sdp.trim() || sdp.length > 100_000) throw new Error('INVALID_SDP_OFFER')
-
-  const client = openai(env.OPENAI_API_KEY)
+  const client = tutorClient(env, 'start voice')
   const language = contextLanguage(context)
   try {
     const result = await client.live.create({
@@ -233,7 +238,7 @@ export async function createLiveSession(
         }
       },
       transport: { type: 'webrtc', sdp }
-    })
+    }, TUTOR_CALL)
     return { sessionId: result.session.id, sdp: result.transport.sdp }
   } catch (error) {
     throw safeLiveError(error, 'Could not start voice')
@@ -248,10 +253,7 @@ export async function translateForLearner(
 ): Promise<string> {
   const input = text.trim()
   if (!input || input.length > 2_000) throw new Error('INVALID_TRANSLATION_TEXT')
-  if (!env.OPENAI_API_KEY)
-    throw new Error('Add OPENAI_API_KEY to app/.env.local to reveal a translation.')
-
-  const client = openai(env.OPENAI_API_KEY)
+  const client = tutorClient(env, 'reveal a translation')
   try {
     const response = await client.responses.create({
       model: backendModel(env),
@@ -263,7 +265,7 @@ export async function translateForLearner(
       // came back empty.
       max_output_tokens: 1_200,
       reasoning: { effort: 'none' }
-    })
+    }, TUTOR_CALL)
     const translation = response.output_text.trim()
     if (!translation) throw new Error('EMPTY_TRANSLATION')
     return translation
@@ -288,10 +290,7 @@ export async function romaniseForLearner(
   const key = `${language}:${input}`
   const cached = readingCache.get(key)
   if (cached) return cached
-  if (!env.OPENAI_API_KEY)
-    throw new Error(`Add OPENAI_API_KEY to app/.env.local to show ${reading.name}.`)
-
-  const client = openai(env.OPENAI_API_KEY)
+  const client = tutorClient(env, `show ${reading.name}`)
   try {
     const response = await client.responses.create({
       model: backendModel(env),
@@ -302,7 +301,7 @@ export async function romaniseForLearner(
       // came back empty.
       max_output_tokens: 1_200,
       reasoning: { effort: 'none' }
-    })
+    }, TUTOR_CALL)
     const romanised = response.output_text.trim()
     if (!romanised) throw new Error('EMPTY_READING')
     readingCache.set(key, romanised)

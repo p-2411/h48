@@ -3,7 +3,7 @@
 // the tutor (index.ts), so the same rules hold as in voice: the learner alone confirms a save or a
 // rating.
 import type { ResponseInput } from 'openai/resources/responses/responses'
-import { backendModel, openai, safeLiveError, tools } from './live'
+import { backendModel, safeLiveError, tools, tutorClient, TUTOR_CALL } from './live'
 import { contextLanguage, contextText, textInstructions, type TutorContext } from './prompts'
 
 // A reply may need a few tool calls (search, then open a card); more than this is a loop.
@@ -69,9 +69,7 @@ export async function replyInText(
   runTool: ToolRunner,
   env: NodeJS.ProcessEnv = process.env
 ): Promise<TextReply> {
-  if (!env.OPENAI_API_KEY)
-    throw new Error('Add OPENAI_API_KEY to app/.env.local to talk with Duet.')
-  const client = openai(env.OPENAI_API_KEY)
+  const client = tutorClient(env, 'talk with Duet')
   const input: ResponseInput = [
     { role: 'developer', content: `Context: ${contextText(context)}` },
     { role: 'user', content: message }
@@ -90,7 +88,7 @@ export async function replyInText(
         // Nothing is stored, so the reasoning travels with the next round's input.
         include: ['reasoning.encrypted_content'],
         max_output_tokens: 1_200
-      })
+      }, TUTOR_CALL)
       const calls = response.output.filter((item) => item.type === 'function_call')
       if (!calls.length) {
         const reply = readReply(response.output_text)
