@@ -24,6 +24,13 @@ async function exitsWhenAppGoes(name, ms = 2000) {
 }
 
 if (process.platform === 'darwin') {
+  // Its self-test checks which addresses count as a site's (no browser, no permission needed).
+  const check = spawnSync(bin('caption-reader-macos'), ['--self-test'], {
+    encoding: 'utf8',
+    timeout: 3000
+  })
+  if (check.status !== 0 || !check.stdout.includes('"type":"self-test"'))
+    throw new Error(`caption-reader-macos self-test failed: ${check.stdout}${check.stderr}`)
   await exitsWhenAppGoes('caption-reader-macos')
   await exitsWhenAppGoes('audio-reader-macos')
   console.log('macOS readers exit when the app goes.')

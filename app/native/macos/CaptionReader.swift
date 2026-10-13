@@ -25,7 +25,7 @@
 //                                        through the seek bar, landing on or just before it; "from" is
 //                                        where the app's clock says the video is (the bar's own value
 //                                        can be stale while controls hide); "play" plays it once there
-// Only on sites whose entry below names the elements needed (YouTube so far).
+// Only on sites whose entry below names the elements needed (YouTube, and Netflix by label).
 //
 // Build: swiftc -O native/macos/CaptionReader.swift -o resources/bin/caption-reader-macos
 
@@ -46,6 +46,8 @@ let browsers: [String: String] = [
 // inside those counts, so nothing else the player puts in the caption area is taken for a line. On
 // YouTube that is each caption window (Chrome exposes the text directly inside it, without the
 // inner spans' classes).
+// A nil `container` means captions aren't read on that site at all (Disney+, Crunchyroll): the app
+// hears it instead, and the reader only says which page it is and where.
 // `captionsButton` is the player's CC button, whose label says when the video has no captions.
 // `video` is the class of the element that frames the video; nil means the page itself (Netflix's
 // watch page is all video).
@@ -64,7 +66,7 @@ struct LabelControls {
   let step: Double
 }
 struct Site {
-  let host: String; let container: String; let segment: String?; let captionsButton: String?
+  let host: String; let container: String?; let segment: String?; let captionsButton: String?
   var video: String? = nil
   var player: String? = nil; var progress: String? = nil; var playButton: String? = nil
   var labels: LabelControls? = nil
@@ -75,7 +77,16 @@ let sites = [
   Site(host: "netflix.com", container: "player-timedtext", segment: nil, captionsButton: nil,
        labels: LabelControls(slider: "Seek time scrubber", play: "Play", pause: "Pause", back: "Seek back", forward: "Seek forward",
                              scale: 0.001, step: 10)),
+  Site(host: "disneyplus.com", container: nil, segment: nil, captionsButton: nil),
+  Site(host: "crunchyroll.com", container: nil, segment: nil, captionsButton: nil),
 ]
+
+/** Whether a page address is on a site: its host is the site's domain or one of its subdomains, so
+ * an address that only mentions it (a search for "netflix.com") isn't taken for the site. */
+func isOn(_ address: String, _ site: Site) -> Bool {
+  guard let host = URL(string: address)?.host?.lowercased() else { return false }
+  return host == site.host || host.hasSuffix("." + site.host)
+}
 
 let pollInterval = 0.15
 let searchBudget = 20000  // most nodes visited when looking for the caption container
@@ -180,7 +191,7 @@ func target() -> Target? {
     for window in windows {
       guard let page = find(window, budget: 600, where: { role($0) == "AXWebArea" }),
             let address = url(page),
-            let site = sites.first(where: { address.contains($0.host) }) else { continue }
+            let site = sites.first(where: { isOn(address, $0) }) else { continue }
       return Target(app: element, browser: browsers[app.bundleIdentifier ?? ""] ?? "Browser", bundle: app.bundleIdentifier ?? "", page: page, url: address,
                     title: (value(window, kAXTitleAttribute) as? String) ?? "", site: site)
     }
@@ -193,6 +204,24 @@ func status(_ fields: [String: AnyHashable]) {
   guard fields != lastStatus else { return }
   lastStatus = fields
   emit(fields)
+}
+
+// --self-test: checks which page addresses count as a site's, with no browser and no permission
+// (so before asking for it), then exits 0 if all is well (see scripts/smoke-native-reader.mjs).
+if CommandLine.arguments.contains("--self-test") {
+  func site(_ host: String) -> Site { sites.first { $0.host == host }! }
+  let cases: [(String, String, Bool)] = [
+    ("https://www.netflix.com/watch/81234567", "netflix.com", true),
+    ("https://netflix.com/watch/1", "netflix.com", true),
+    ("https://www.google.com/search?q=netflix.com", "netflix.com", false),
+    ("https://notnetflix.com/watch/1", "netflix.com", false),
+    ("https://www.disneyplus.com/play/abc", "disneyplus.com", true),
+    ("https://www.crunchyroll.com/watch/GRDV0019R/x", "crunchyroll.com", true),
+    ("https://m.youtube.com/watch?v=a", "youtube.com", true),
+  ]
+  let wrong = cases.filter { isOn($0.0, site($0.1)) != $0.2 }.map { $0.0 }
+  emit(["type": "self-test", "ok": wrong.isEmpty, "wrong": wrong])
+  exit(wrong.isEmpty ? 0 : 1)
 }
 
 let trusted = AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary)
@@ -216,7 +245,7 @@ func dump(_ element: AXUIElement, depth: Int = 0) {
 if CommandLine.arguments.contains("--dump") {
   guard AXIsProcessTrusted(), let current = target() else { print("No trusted target page found."); exit(1) }
   let arguments = CommandLine.arguments
-  let wanted = arguments.firstIndex(of: "--dump").flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil } ?? current.site.container
+  let wanted = arguments.firstIndex(of: "--dump").flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil } ?? current.site.container ?? ""
   guard let area = find(current.page, budget: searchBudget, where: { classes($0).contains(wanted) }) else {
     print("No \(wanted) on \(current.url)"); exit(1)
   }
@@ -319,7 +348,7 @@ Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
   if container == nil || containerURL != current.url || ticks % 20 == 0 {
     let site = current.site
     let found = findAll(current.page, budget: searchBudget, classNames: [site.container, site.video, site.player, site.progress, site.playButton].compactMap { $0 })
-    container = found[site.container]
+    container = site.container.flatMap { found[$0] }
     videoElement = site.video.map { found[$0] } ?? current.page
     player = site.player.flatMap { found[$0] }
     progress = site.progress.flatMap { found[$0] }

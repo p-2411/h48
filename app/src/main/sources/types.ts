@@ -1,5 +1,5 @@
 // The contract for a video site. Everything Duet knows about a site lives in one file here
-// (youtube.ts, netflix.ts), plus that site's entry in the caption reader's `sites` table
+// (youtube.ts, netflix.ts, …), plus that site's entry in the caption reader's `sites` table
 // (native/macos/CaptionReader.swift): which page elements hold the captions, the player state and
 // its buttons. Nothing else in the app checks which site it is on.
 import type { Language, Site } from '../../shared/types'

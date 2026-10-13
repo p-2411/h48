@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { joinTokens, MAX_LEVEL, mixedLine } from '../../../shared/levels'
 import { LANGUAGE_CODES, languageModule, languageName } from '../../../shared/languages'
-import { type AudioPermission, type Language, type Level, type OverlaySettings, type OverlayStatus } from '../../../shared/types'
+import { siteList, type AudioPermission, type Language, type Level, type OverlaySettings, type OverlayStatus } from '../../../shared/types'
 import { Mascot } from '../components/Mascot'
 import { SLIDE } from '../components/motion'
 import { Words } from '../components/Words'
@@ -126,7 +126,9 @@ export function Welcome(): React.JSX.Element {
           </div>
         )}
         <h1>Welcome to Duet</h1>
-        <p className="muted">Learn a language from what you already watch. Duet sits over YouTube and Netflix like subtitles.</p>
+        <p className="muted">
+          Learn a language from what you already watch. Duet sits over {siteList('and')} like subtitles.
+        </p>
         <ol className="steps" aria-label="Steps">
           {STEPS.map((name, index) => (
             <li key={name} className={index === step ? 'now' : index < step ? 'done' : ''}>

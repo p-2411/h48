@@ -21,6 +21,7 @@ const jiti = createJiti(import.meta.url, {
 const { LineSession } = await jiti.import('../src/main/session.ts')
 const { ModelError } = await jiti.import('../src/main/ai/errors.ts')
 const { Watcher } = await jiti.import('../src/main/watcher.ts')
+const { sourceFor } = await jiti.import('../src/main/sources/index.ts')
 
 // No real requests: YouTube's transcript fetch fails as if offline.
 globalThis.fetch = async () => {
@@ -96,6 +97,66 @@ try {
   assert.equal(youtube.watcher.needsHearing, false, 'YouTube gives its transcript a moment first')
   mock.timers.tick(6001)
   assert.equal(youtube.watcher.needsHearing, true, 'then, with nothing to read, Duet listens')
+
+  // --- Disney+ and Crunchyroll: heard, never read (no captions, no controls). ---
+  const play = 'https://www.disneyplus.com/play/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d'
+  const disney = sourceFor(play)
+  assert.equal(disney?.site, 'disneyplus', 'a Disney+ player page is Disney+')
+  assert.equal(
+    disney.videoId(play),
+    '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    'its video id is in the path'
+  )
+  assert.equal(
+    disney.videoId('https://www.disneyplus.com/en-gb/play/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d'),
+    '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+    'with a locale in front too'
+  )
+  assert.equal(
+    disney.videoId('https://www.disneyplus.com/browse/entity-1a2b3c4d'),
+    undefined,
+    'a series page is not a video'
+  )
+  assert.equal(disney.listensFirst, true, 'Disney+ is heard from the start')
+  assert.deepEqual(disney.controls, { playPause: false, seek: false }, 'Duet can’t work its player')
+  assert.equal(disney.videoTitle('Disney+'), undefined, 'a bare site title is no title')
+
+  const episode = 'https://www.crunchyroll.com/watch/GRDV0019R/romance-dawn'
+  const crunchyroll = sourceFor(episode)
+  assert.equal(crunchyroll?.site, 'crunchyroll', 'a Crunchyroll episode page is Crunchyroll')
+  assert.equal(crunchyroll.videoId(episode), 'GRDV0019R', 'its episode id is in the path')
+  assert.equal(
+    crunchyroll.videoId('https://www.crunchyroll.com/de/watch/GRDV0019R/romance-dawn'),
+    'GRDV0019R',
+    'with a locale in front too'
+  )
+  assert.equal(
+    crunchyroll.videoId('https://www.crunchyroll.com/series/GRMG8ZQZR/one-piece'),
+    undefined,
+    'a series page is not a video'
+  )
+  assert.equal(crunchyroll.listensFirst, true, 'Crunchyroll is heard from the start')
+  assert.equal(
+    crunchyroll.videoTitle('Watch One Piece - Romance Dawn - Crunchyroll'),
+    'One Piece - Romance Dawn',
+    'the title without the site’s words around it'
+  )
+  assert.equal(
+    sourceFor('https://evil.com/?https://www.crunchyroll.com/watch/X'),
+    undefined,
+    'only the site’s own address counts'
+  )
+
+  const heardOnDisney = watcherOn(play, 'Disney+')
+  assert.equal(heardOnDisney.watcher.needsHearing, true, 'on Disney+ Duet hears the video at once')
+
+  // With no video open, the strip names every site Duet works on.
+  const { quiet } = await jiti.import('../src/renderer/src/overlay/notice.ts')
+  assert.equal(
+    quiet({ trusted: true }, 'es').text,
+    'Open a Spanish video on YouTube, Netflix, Disney+ or Crunchyroll',
+    'the strip names every supported site'
+  )
 
   console.log('Line source and translator retry tests passed.')
 } finally {

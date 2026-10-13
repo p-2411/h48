@@ -4,26 +4,17 @@
 // finds Netflix's controls by their labels (its class names are scrambled), and they only exist
 // while they show on screen: pausing, playing and seeking work when the controls are up; the clock
 // runs on its own in between.
+import { SITE_NAMES } from '../../shared/types'
+import { onSite } from './address'
 import type { Source } from './types'
+
+const DOMAIN = 'netflix.com'
 
 export const netflix: Source = {
   site: 'netflix',
-  name: 'Netflix',
-  matches: (address) => {
-    try {
-      const host = new URL(address).hostname
-      return host === 'netflix.com' || host.endsWith('.netflix.com')
-    } catch {
-      return false
-    }
-  },
-  videoId: (address) => {
-    try {
-      return new URL(address).pathname.match(/^\/watch\/(\d+)/)?.[1]
-    } catch {
-      return undefined
-    }
-  },
+  name: SITE_NAMES.netflix,
+  matches: (address) => !!onSite(address, DOMAIN),
+  videoId: (address) => onSite(address, DOMAIN)?.pathname.match(/^\/watch\/(\d+)/)?.[1],
   // Netflix's window title is just "Netflix".
   videoTitle: (windowTitle) => (/^netflix$/i.test(windowTitle.trim()) ? undefined : windowTitle.trim() || undefined),
   listensFirst: true,

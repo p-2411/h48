@@ -5,7 +5,21 @@ export type { Language } from './languages'
 import type { Language } from './languages'
 
 /** Video sites Duet supports; each is one file in src/main/sources. */
-export type Site = 'youtube' | 'netflix'
+export type Site = 'youtube' | 'netflix' | 'disneyplus' | 'crunchyroll'
+
+/** Each site's name as the learner knows it, in the order Duet lists them. */
+export const SITE_NAMES: Record<Site, string> = {
+  youtube: 'YouTube',
+  netflix: 'Netflix',
+  disneyplus: 'Disney+',
+  crunchyroll: 'Crunchyroll'
+}
+
+/** "YouTube, Netflix, Disney+ or Crunchyroll" (with `and` instead, if asked). */
+export function siteList(join: 'or' | 'and' = 'or'): string {
+  const names = Object.values(SITE_NAMES)
+  return `${names.slice(0, -1).join(', ')} ${join} ${names.at(-1)}`
+}
 
 /** A word's job in its sentence: it chooses which words a level swaps in, and names and grammar
  * words start ignored on the knowledge ladder (the colour is the word's rung). */

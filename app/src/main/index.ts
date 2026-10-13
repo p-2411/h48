@@ -14,7 +14,7 @@
 //   daily/          the daily session: the cards, a line said back, one challenge; the reminder
 //   checkpoints/    a glow on the strip at a pause or a scene's end, one challenge when clicked
 //   challenges/     the challenges the daily session and checkpoints share
-//   sources/        each video site (YouTube, Netflix); store/ the local database
+//   sources/        each video site (YouTube, Netflix, Disney+, Crunchyroll); store/ the local database
 //   ipc/overlay.ts  the overlay's IPC; windows/ the windows; tray.ts the menu bar icon
 //   ai/             the models (lines, explain, voice), one file per provider
 //   audio.ts, listen.ts, hearing.ts, spoken.ts   the video's sound: hearing lines, how they were said
