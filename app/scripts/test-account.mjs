@@ -606,7 +606,11 @@ try {
     { sdp: 'v=0 offer' }
   )
   assert.equal(answered.sessionId, 'live_9')
-  assert.deepEqual(meterCalls.at(-1), ['started', 'live_9'], 'the meter starts with the call')
+  assert.deepEqual(
+    meterCalls.slice(-2),
+    [['ended'], ['started', 'live_9']],
+    'the meter starts with the call, ending the one before (a reconnect) first'
+  )
   tutor.stopVoice('You’ve used this month’s Duet credits. More come on 1 November.')
   assert.deepEqual(voiceWindow.sent.at(-1), [
     'tutor:voice-stop',

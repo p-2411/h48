@@ -146,6 +146,9 @@ export class Tutor {
       if (typeof offer?.sdp !== 'string') throw new Error('INVALID_SDP_OFFER')
       this.player.hold('tutor')
       const run = ++this.voiceRun
+      // A start (a reconnect, after the window let the call before go) ends the call before: the
+      // server ends it as the new one starts, and its minute call would then hear 404 and stop voice.
+      this.minutes?.ended()
       // Voice reads whether the saved cards are open (savedCardsOpenToDuet) from its context when it starts.
       const answer = await createLiveSession(offer.sdp, { ...this.context, exploreEnabled: this.exploreEnabled })
       // Voice ended while the call was being made: the window drops it, so the server ends it too,
