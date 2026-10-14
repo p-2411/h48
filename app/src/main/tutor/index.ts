@@ -113,7 +113,11 @@ function safeError(error: unknown): string {
 export type TutorWindow = { owns(sender: WebContents): boolean; send(channel: string, value: unknown): void }
 
 /** Live voice minutes on Duet's server (src/main/account/live.ts); none with a development key. */
-export type LiveMinutes = { started(sessionId: string): void; ended(): void }
+export type LiveMinutes = {
+  started(sessionId: string): void
+  ended(): void
+  dropped(sessionId: string): void
+}
 
 export class Tutor {
   private context?: TutorContext
@@ -144,9 +148,10 @@ export class Tutor {
       const run = ++this.voiceRun
       // Voice reads whether the saved cards are open (savedCardsOpenToDuet) from its context when it starts.
       const answer = await createLiveSession(offer.sdp, { ...this.context, exploreEnabled: this.exploreEnabled })
-      this.minutes?.started(answer.sessionId)
-      // Voice ended while the call was being made: the window drops it, so the server ends it too.
-      if (run !== this.voiceRun) this.minutes?.ended()
+      // Voice ended while the call was being made: the window drops it, so the server ends it too,
+      // and only it (a call started since, in this window or another, goes on).
+      if (run === this.voiceRun) this.minutes?.started(answer.sessionId)
+      else this.minutes?.dropped(answer.sessionId)
       return answer
     })
     ipcMain.on('tutor:voice-ended', (event) => {

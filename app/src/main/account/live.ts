@@ -30,8 +30,18 @@ export class LiveMeter {
     this.stopTimer()
     if (!session) return
     this.session = undefined
+    this.endOnServer(session)
+  }
+
+  /** A call that came back after voice ended: the server ends it; the call under way (if any) goes on. */
+  dropped(sessionId: string): void {
+    if (sessionId === this.session) return this.ended()
+    this.endOnServer(sessionId)
+  }
+
+  private endOnServer(sessionId: string): void {
     void this.server
-      .request(`/duet/live/${encodeURIComponent(session)}/end`, {})
+      .request(`/duet/live/${encodeURIComponent(sessionId)}/end`, {})
       .catch(() => undefined)
   }
 

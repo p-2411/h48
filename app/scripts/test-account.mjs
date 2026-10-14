@@ -391,6 +391,14 @@ try {
   assert.equal(minutes.length, after, 'no minute calls after the end')
   meter.ended()
   assert.equal(minutes.length, after, 'ending twice tells the server once')
+  // A late call dropped while another goes on: only the late one is ended.
+  meter.started('live_now')
+  meter.dropped('live_late')
+  await settle()
+  assert.equal(minutes.at(-1), '/duet/live/live_late/end', 'the late call is ended')
+  assert.ok(!minutes.includes('/duet/live/live_now/end'), 'the call under way goes on')
+  meter.ended()
+  await settle()
 
   minuteReply = { stop: true, cap: 'credits', resets_at: '2026-11-01T00:00:00.000Z' }
   meter.started('live_2')
@@ -581,7 +589,11 @@ try {
     { hold: () => undefined, release: () => undefined },
     { resetTutorReview: () => undefined },
     undefined,
-    { started: (id) => meterCalls.push(['started', id]), ended: () => meterCalls.push(['ended']) }
+    {
+      started: (id) => meterCalls.push(['started', id]),
+      ended: () => meterCalls.push(['ended']),
+      dropped: (id) => meterCalls.push(['dropped', id])
+    }
   )
   const voiceWindow = {
     sent: [],
@@ -603,7 +615,7 @@ try {
   electron.listeners.get('tutor:voice-ended')({ sender: 'panel-page' })
   assert.deepEqual(meterCalls.at(-1), ['ended'], 'and ends with it')
 
-  // Voice ended while its call was still being made: the call's minutes start and end at once.
+  // Voice ended while its call was still being made: that call alone is ended on the server.
   let answerLive
   answer = () => new Promise((done) => (answerLive = done))
   const starting = electron.handlers.get('tutor:start-session')(
@@ -618,8 +630,8 @@ try {
   await starting
   assert.deepEqual(
     meterCalls.slice(-2),
-    [['started', 'live_late'], ['ended']],
-    'a call that came back after voice ended is ended'
+    [['ended'], ['dropped', 'live_late']],
+    'a call that came back after voice ended is ended, without starting its minutes'
   )
   electron.handlers.clear()
 
