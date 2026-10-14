@@ -191,7 +191,8 @@ app.whenReady().then(() => {
   const watching = (): boolean => !!watcher.currentVideo && !overlay.isDestroyed() && overlay.isVisible() && player.playing
   const serverWatch = server && new ServerWatch(server)
   // The home base: opened from the Dock, the menu bar, the strip's ⚙ and when Duet starts.
-  const home = new Home({ log: watchLog, cards, settings, openWelcome: () => welcome.open(true) })
+  // Closing it ends Talk's conversation: its previews, its hold on the video and its voice minutes.
+  const home = new Home({ log: watchLog, cards, settings, openWelcome: () => welcome.open(true), closed: () => tutor.end(home) })
   // Talk in the home base: a free conversation with Duet, in the language being learnt.
   const talk = new Talk({ tutor, settings, window: home })
   // The plan and its meters in the home base; read again when a video starts and when Duet comes
@@ -244,9 +245,14 @@ app.whenReady().then(() => {
   })
   // A card reviewed, saved or deleted moves its word too (its FSRS memory counts).
   cards.on('changed', () => knowledge.emit('changed'))
-  // The strip's page reloaded or crashed: a checkpoint it had open goes with it.
-  overlay.webContents.on('did-start-loading', () => checkpoints.reset())
-  overlay.webContents.on('render-process-gone', () => checkpoints.reset())
+  // The strip's page reloaded or crashed: a checkpoint it had open goes with it, and so does its
+  // conversation (and any voice call's minutes on Duet's server).
+  const stripGone = (): void => {
+    checkpoints.reset()
+    tutor.end(strip)
+  }
+  overlay.webContents.on('did-start-loading', stripGone)
+  overlay.webContents.on('render-process-gone', stripGone)
   // The daily reminder (off unless a time is set in Settings); clicking it opens Today. The last one
   // is kept, so it isn't garbage-collected (and its click lost) while it's on screen.
   let shownReminder: Notification | undefined
