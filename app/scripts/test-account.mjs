@@ -392,11 +392,16 @@ try {
   meter.alive()
   await settle()
   assert.equal(minuteCalls('live_1'), 1, 'not again before 40 s more')
+  // Signs of life reach main a little early or late: two signs of life on, the next one is sent.
+  clock = 79_990
+  meter.alive()
+  await settle()
+  assert.equal(minuteCalls('live_1'), 2, 'every second sign of life, though it came a moment early')
   // The window goes quiet (closed, crashed, the call lost): no more minute calls, whatever the time,
   // so the server hangs the call up within 90 s.
   clock = 400_000
   await settle()
-  assert.equal(minuteCalls('live_1'), 1, 'nothing is sent without the window')
+  assert.equal(minuteCalls('live_1'), 2, 'nothing is sent without the window')
   meter.ended()
   await settle()
   assert.equal(minutes.at(-1), '/duet/live/live_1/end', 'ending tells the server')

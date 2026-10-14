@@ -7,9 +7,11 @@
 import { capSentence, isCapReached } from '../../shared/usage'
 import { DuetServerError, type DuetServer } from './server'
 
-// A minute call at most this often, counted from when the last good one was sent: with signs of
-// life every 20 s, the server hears within 60 s even after one failed call, inside its 90 s.
-const MINUTE_EVERY_MS = 40_000
+// A minute call at most this often, counted from when the last good one was sent: every second sign
+// of life (they come every 20 s), so the server hears within 60 s even after one failed call, inside
+// its 90 s. Under 40 s, as signs of life reach main a little early or late: two that arrive 39.99 s
+// apart must still send, or each skipped one adds 20 s.
+const MINUTE_EVERY_MS = 35_000
 // A minute call still unanswered after this long (a connection that stalled, with no reply or error
 // for minutes) no longer holds back the next one, or the server would hang up meanwhile.
 const STALLED_MS = 15_000
