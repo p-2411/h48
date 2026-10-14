@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { addWatch, grow, hold, meter, release, settle, sweepLost } from '../src/meter.js';
+import { addWatch, growTo, hold, meter, release, settle, sweepLost } from '../src/meter.js';
 import { findOrCreateUser } from '../src/users.js';
 import { at, freshDb } from './helpers.js';
 
@@ -89,14 +89,26 @@ test('a live voice hold whose call was never recorded is swept as lost', async (
   assert.deepEqual(await meter(db, 'u1', 'credits', P), { used: 300, held: 0 });
 });
 
-test('a hold can grow while the cap allows', async () => {
+test('a hold grows to a target while the cap allows', async () => {
   const db = await withUser();
   const id = await hold(db, call(300, { route: 'live' }));
-  assert.equal(await grow(db, id, 500, 1000), true);
-  assert.equal(await grow(db, id, 500, 1000), false);
+  assert.equal(await growTo(db, id, 800, 1000), true);
+  // The same target again (an overlapping or repeated minute call) adds nothing.
+  assert.equal(await growTo(db, id, 800, 1000), true);
+  assert.deepEqual(await meter(db, 'u1', 'credits', P), { used: 0, held: 800 });
+  assert.equal(await growTo(db, id, 1300, 1000), false);
   assert.deepEqual(await meter(db, 'u1', 'credits', P), { used: 0, held: 800 });
   await settle(db, id, 700, {}, NOW);
   assert.deepEqual(await meter(db, 'u1', 'credits', P), { used: 700, held: 0 });
+  assert.equal(await growTo(db, id, 900, 1000), false, 'a settled hold does not grow');
+});
+
+test('holds growing at the same moment add their room once', async () => {
+  const db = await withUser();
+  const id = await hold(db, call(300, { route: 'live' }));
+  const grown = await Promise.all([growTo(db, id, 600, 1000), growTo(db, id, 600, 1000)]);
+  assert.deepEqual(grown, [true, true]);
+  assert.deepEqual(await meter(db, 'u1', 'credits', P), { used: 0, held: 600 });
 });
 
 test('each period has its own meter', async () => {

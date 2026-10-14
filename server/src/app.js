@@ -94,6 +94,12 @@ export function createApp(deps) {
     if (!matched) throw new HttpError(404, 'not_found', 'No such route.');
     const [method, match, handler] = matched;
     if (request.method !== method) throw new HttpError(405, 'method', `Use ${method}.`);
+    let captures;
+    try {
+      captures = match.slice(1).map(decodeURIComponent);
+    } catch {
+      throw new HttpError(404, 'not_found', 'No such route.');
+    }
 
     const userId = await verify(request.headers.get('authorization'));
     const user = await findOrCreateUser(deps.db, userId, now);
@@ -104,12 +110,6 @@ export function createApp(deps) {
     await sweepLive(ctx);
     // Read after the sweeps and the device rule, so the plan and block are current.
     [ctx.user] = await deps.db.query(`select * from users where id = $1`, [userId]);
-    let captures;
-    try {
-      captures = match.slice(1).map(decodeURIComponent);
-    } catch {
-      throw new HttpError(404, 'not_found', 'No such route.');
-    }
     return handler(ctx, request, ...captures);
   }
 

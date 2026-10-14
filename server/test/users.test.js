@@ -74,3 +74,11 @@ test('a missing, expired or forged token is refused with 401', async () => {
   // Signed with another key under the same key id.
   await assert.rejects(verify(`Bearer ${await other.sign('u')}`), unauthorised);
 });
+
+test('WorkOS\'s keys out of reach is a 503, not a sign-in refused', async () => {
+  const { sign } = await keys();
+  const verify = verifier(async () => {
+    throw new TypeError('fetch failed');
+  });
+  await assert.rejects(verify(`Bearer ${await sign('u')}`), error => error.status === 503 && error.code === 'auth_unavailable');
+});

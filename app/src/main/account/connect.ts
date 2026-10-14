@@ -100,9 +100,10 @@ export function connectAccount({
 
   account?.on('change', () => void refresh())
   // The server refused the sign-in (a session ended at WorkOS): signed out here too. No request is
-  // made, so this can not loop; the next refresh or sign-in reads the account again.
-  server?.on('signed-out', () => {
-    if (!user) return
+  // made, so this can not loop; the next refresh or sign-in reads the account again. No token here
+  // is the account's own news ('change'): a refresh that failed offline is not a sign-out.
+  server?.on('signed-out', (reason?: string) => {
+    if (!user || reason === 'no-token') return
     user = null
     usage = null
     capped = undefined

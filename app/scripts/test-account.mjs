@@ -321,6 +321,23 @@ try {
     4,
     `asked at 0, 10 s, 30 s and 70 s (asked ${starts.length} times)`
   )
+  // Watching stops and starts again: asked at once, not after the long wait.
+  cappedWatch.tick(false, 72_000)
+  cappedWatch.tick(true, 73_000)
+  await settle()
+  assert.equal(starts.length, 5, 'a new stretch of watching asks again')
+  // A call opened a session meanwhile (server.ts): that one is beaten.
+  const beats = []
+  const adopted = new ServerWatch({
+    watchId: 'w-call',
+    openWatch: async () => (beats.push('start'), undefined),
+    request: async (path) => (beats.push(path), { ok: true }),
+    forgetWatch: () => undefined
+  })
+  adopted.tick(true, 0)
+  adopted.tick(true, 31_000)
+  await settle()
+  assert.deepEqual(beats, ['/duet/watch/w-call/beat'])
 
   // --- Live voice minutes. ---
   const minutes = []
@@ -362,6 +379,20 @@ try {
     !minutes.includes('/duet/live/live_2/end'),
     'a call the server ended is not ended again'
   )
+  // A minute call for a call the server already ended (404): ended here too.
+  const gone = []
+  const goneMeter = new LiveMeter(
+    {
+      request: async () => {
+        throw new DuetServerError(404, 'live', 'No such call.')
+      }
+    },
+    (sentence) => gone.push(sentence),
+    5
+  )
+  goneMeter.started('live_3')
+  await new Promise((done) => setTimeout(done, 12))
+  assert.deepEqual(gone, ['Voice ended.'], 'a call the server ended stops, once')
 
   // --- The WorkOS wrapper: the SDK's handlers are kept in main; no window can call them. ---
   let config
@@ -659,7 +690,12 @@ try {
   // The server refusing the sign-in (a session revoked at WorkOS): the home base shows signed out,
   // without asking the server again.
   const requestsBefore = routes.length
-  serverEvents.emit('signed-out')
+  // No token here (a refresh that failed offline) is not the server refusing: still signed in.
+  const sentBefore = homeSent.length
+  serverEvents.emit('signed-out', 'no-token')
+  await settle()
+  assert.equal(homeSent.length, sentBefore, 'no token here does not sign the home base out')
+  serverEvents.emit('signed-out', 'refused')
   await settle()
   const refused = homeSent.filter(([channel]) => channel === 'account:changed').at(-1)[1]
   assert.deepEqual(refused, { configured: true, user: null, usage: null, capped: undefined })

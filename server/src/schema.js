@@ -54,6 +54,8 @@ export const SCHEMA = [
     ended_at timestamptz
   )`,
   `create index if not exists live_open on live_sessions (user_id) where ended_at is null`,
+  // sweepLost asks whether a held live charge has its session.
+  `create index if not exists live_charge on live_sessions (charge_id)`,
   `create table if not exists watch_sessions (
     id text primary key,
     user_id text not null references users (id),

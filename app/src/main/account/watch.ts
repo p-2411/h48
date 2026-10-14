@@ -18,14 +18,26 @@ export class ServerWatch {
   private busy = false
   private retryAt = 0
   private failures = 0
-  // The watch session this class opened; the server may also open one for a call (server.ts).
+  // The watch session this class beats: one it opened, or one the server client opened for a call
+  // (server.ts) while watching.
   private mine?: string
 
   constructor(private readonly server: Server) {}
 
   tick(watching: boolean, now = Date.now()): void {
     if (this.busy) return
-    if (watching && !this.mine) {
+    if (!watching) {
+      // A new stretch of watching starts with a fresh wait.
+      this.failures = 0
+      this.retryAt = 0
+    }
+    if (watching && !this.mine && this.server.watchId) {
+      // A call opened a session while this one waited to try again: beat that one, or its time
+      // would go uncounted.
+      this.mine = this.server.watchId
+      this.lastBeat = now
+      this.failures = 0
+    } else if (watching && !this.mine) {
       if (now < this.retryAt) return
       void this.run(async () => {
         this.mine = await this.server.openWatch()

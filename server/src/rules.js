@@ -30,8 +30,20 @@ const SPEECH_MAX_CHARS = 1000;
 const LIVE_MODELS = new Set(['gpt-live-1']);
 const LIVE_FIELDS = new Set(['session', 'transport']);
 const LIVE_SESSION_FIELDS = new Set(['model', 'store', 'audio', 'instructions', 'input', 'client', 'delegation', 'tools', 'tool_choice']);
+const LIVE_DELEGATION_FIELDS = new Set(['type', 'responses']);
 const LIVE_BACKEND_FIELDS = new Set([
   'model', 'instructions', 'max_output_tokens', 'parallel_tool_calls', 'reasoning', 'tool_choice', 'tools'
+]);
+// The events the app may send on the call's data channel (tutor/live.ts). Anything that changes the
+// session (session.update) would undo the checks here after the call started.
+const LIVE_CLIENT_EVENTS = new Set([
+  'session.input_audio.mute',
+  'session.input_audio.unmute',
+  'session.instructions.append',
+  'session.commentary.append',
+  'response.item.create',
+  'response.create',
+  'session.close'
 ]);
 const SDP_MAX_CHARS = 100_000;
 
@@ -108,6 +120,18 @@ export function checkSpeech(body) {
   return { body, model: body.model, inputChars: input.length };
 }
 
+/** The data channel's settings: only the client events Duet sends. */
+function checkLiveClient(client) {
+  if (client === undefined) return;
+  onlyKnownFields(client, new Set(['data_channel']));
+  const channel = client.data_channel;
+  if (channel === undefined) return;
+  onlyKnownFields(channel, new Set(['allowed_client_events', 'allowed_server_events']));
+  const events = channel.allowed_client_events;
+  if (!Array.isArray(events) || events.some(event => !LIVE_CLIENT_EVENTS.has(event)))
+    throw refuse('client', 'Only the client events Duet sends are allowed.');
+}
+
 export function checkLive(body) {
   if (!body?.session || !body?.transport) throw refuse('body', 'A session and a transport are needed.');
   onlyKnownFields(body, LIVE_FIELDS);
@@ -117,8 +141,10 @@ export function checkLive(body) {
   if (typeof sdp !== 'string' || !sdp.trim() || sdp.length > SDP_MAX_CHARS) throw refuse('size', 'The SDP offer is not valid.');
   onlyKnownFields(body.session, LIVE_SESSION_FIELDS);
   onlyFunctionTools(body.session.tools);
+  checkLiveClient(body.session.client);
   const delegation = body.session.delegation;
   if (delegation) {
+    onlyKnownFields(delegation, LIVE_DELEGATION_FIELDS);
     if (delegation.type !== 'responses') throw refuse('delegation', 'Only Responses delegation is allowed.');
     const backend = delegation.responses ?? {};
     onlyKnownFields(backend, LIVE_BACKEND_FIELDS);

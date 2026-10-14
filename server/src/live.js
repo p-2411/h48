@@ -3,7 +3,7 @@
 // the session up at OpenAI, so a changed app cannot talk past the cap (spec section 6).
 import { liveCost } from './cost.js';
 import { HttpError } from './errors.js';
-import { grow, release } from './meter.js';
+import { growTo, release } from './meter.js';
 import { creditPeriod, limits } from './plans.js';
 import { price } from './prices.js';
 import { callOpenAI, holdFor } from './proxy.js';
@@ -96,8 +96,10 @@ export async function startLive(ctx, request) {
       [id, ctx.user.id, chargeId, ctx.now]
     );
   } catch (error) {
-    await release(ctx.db, chargeId, ctx.now);
+    // Hang up first: hangUp never throws, but release can fail for the reason the insert did (the
+    // database), and the call must not go on at OpenAI unmetered. A hold left here is swept.
     await hangUp(ctx, [id]);
+    await release(ctx.db, chargeId, ctx.now);
     throw error;
   }
   return new Response(text, { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
@@ -118,10 +120,10 @@ async function openSession(ctx, id) {
 export async function liveMinute(ctx, id) {
   const session = await openSession(ctx, id);
   const elapsed = ctx.now.getTime() - new Date(session.started_at).getTime();
-  const extra = liveCost(elapsed + AHEAD_MS) - Number(session.held);
-  if (extra > 0 && !(await grow(ctx.db, session.charge_id, extra, limits(ctx.user).credits))) {
+  const target = liveCost(elapsed + AHEAD_MS);
+  if (target > Number(session.held) && !(await growTo(ctx.db, session.charge_id, target, limits(ctx.user).credits))) {
     const ended = await endLive(ctx.db, ctx.now, 'id = $3 and user_id = $4', [id, ctx.user.id]);
-    // grow also fails when the call was ended meanwhile (a new call, an end, a sweep): not the cap.
+    // growTo also fails when the call was ended meanwhile (a new call, an end, a sweep): not the cap.
     if (!ended.length) throw new HttpError(404, 'live', 'No such call.');
     await hangUp(ctx, ended);
     return json({ stop: true, cap: 'credits', resets_at: creditPeriod(ctx.user, ctx.now).resetsAt.toISOString() });

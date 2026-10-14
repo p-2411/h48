@@ -2,7 +2,7 @@
 // up; each minute the app asks it to keep the call going. At the cap the server ends the call and
 // says stop, and Duet ends it here too, with the reason.
 import { capSentence, isCapReached } from '../../shared/usage'
-import type { DuetServer } from './server'
+import { DuetServerError, type DuetServer } from './server'
 
 const MINUTE_MS = 60_000
 
@@ -50,8 +50,15 @@ export class LiveMeter {
       this.session = undefined
       this.stopTimer()
       this.onStop(isCapReached(reply) ? capSentence(reply) : 'Voice ended.')
-    } catch {
-      // Offline for a moment: the server ends a call it stops hearing about (after 90 s).
+    } catch (error) {
+      // 404: the server already ended the call (it stopped hearing about it for 90 s, while the
+      // computer slept or was offline), so it is ended here too. Anything else: offline for a
+      // moment; the server ends a call it stops hearing about.
+      if (!(error instanceof DuetServerError) || error.status !== 404 || this.session !== sessionId)
+        return
+      this.session = undefined
+      this.stopTimer()
+      this.onStop('Voice ended.')
     }
   }
 }

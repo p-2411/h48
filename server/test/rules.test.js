@@ -106,6 +106,19 @@ test('Live: only known session and backend fields and function tools, and nothin
   unknown.session.recording = true;
   refused(() => checkLive(unknown), 'field');
   refused(() => checkLive({ ...body(), extra: 1 }), 'field');
+  const delegated = body();
+  delegated.session.delegation.store = true;
+  refused(() => checkLive(delegated), 'field');
+});
+
+test('Live: the data channel allows only the client events Duet sends', () => {
+  const body = events => ({
+    session: { model: 'gpt-live-1', client: { data_channel: { allowed_client_events: events, allowed_server_events: 'all' } } },
+    transport: { type: 'webrtc', sdp: 'v=0' }
+  });
+  assert.doesNotThrow(() => checkLive(body(['response.create', 'session.close'])));
+  refused(() => checkLive(body(['response.create', 'session.update'])), 'client');
+  refused(() => checkLive(body('all')), 'client');
 });
 
 test('a tools field that is not a list is refused, not a crash', () => {

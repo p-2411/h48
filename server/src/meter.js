@@ -41,22 +41,27 @@ export async function hold(db, { userId, period, cap, amount, route, model, now 
   return row ? String(row.id) : null;
 }
 
-/** Takes `extra` µ$ more for a hold still open (live voice). False when the cap is reached. */
-export async function grow(db, chargeId, extra, cap) {
+/** Grows a hold still open (live voice) to `target` µ$, if the cap allows. False when the cap is
+ * reached or the hold is no longer open. The charge row is locked first (FOR UPDATE), so a second
+ * call at the same moment waits and then sees the first one's hold: the room is taken once. */
+export async function growTo(db, chargeId, target, cap) {
   const [row] = await db.query(
     `with c as (
-       select user_id, kind, period from charges where id = $1 and status = 'held'
+       select id, user_id, kind, period, greatest($2::bigint - held, 0) as extra
+       from charges where id = $1 and status = 'held'
+       for update
      ), m as (
-       update meters set held = meters.held + $2
+       update meters set held = meters.held + c.extra
        from c
        where meters.user_id = c.user_id and meters.kind = c.kind and meters.period = c.period
-         and meters.used + meters.held + $2 <= $3
-       returning meters.user_id
+         and meters.used + meters.held + c.extra <= $3
+       returning c.extra
      )
-     update charges set held = held + $2
-     where id = $1 and exists (select 1 from m)
-     returning id`,
-    [chargeId, extra, cap]
+     update charges set held = charges.held + m.extra
+     from m
+     where charges.id = $1
+     returning charges.id`,
+    [chargeId, target, cap]
   );
   return Boolean(row);
 }

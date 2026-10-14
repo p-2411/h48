@@ -3,7 +3,8 @@
 // token (fresh each time: tokens expire within minutes), the device id and, while the learner
 // watches, the watch session (watch.ts). The token is never logged.
 //
-// Events: 'cap' (the server's cap reply: which cap and when it resets) and 'signed-out'.
+// Events: 'cap' (the server's cap reply: which cap and when it resets) and 'signed-out' ('no-token':
+// none here, signed out or a refresh that failed; 'refused': the server refused the sign-in).
 import { EventEmitter } from 'node:events'
 import { isCapReached, type CapReached } from '../../shared/usage'
 
@@ -51,7 +52,8 @@ export class DuetServer extends EventEmitter {
   private async send(url: string, init: RequestInit = {}): Promise<Response> {
     const token = await this.options.token()
     if (!token) {
-      this.emit('signed-out')
+      // No token here: signed out, or the sign-in could not be refreshed (offline for a moment).
+      this.emit('signed-out', 'no-token')
       return signedOutReply()
     }
     const headers = new Headers(init.headers)
@@ -63,7 +65,7 @@ export class DuetServer extends EventEmitter {
     if (response.status === 402 || response.status === 401) {
       const error = await errorOf(response.clone())
       if (response.status === 402 && isCapReached(error)) this.emit('cap', error)
-      if (response.status === 401 && error?.type === 'duet') this.emit('signed-out')
+      if (response.status === 401 && error?.type === 'duet') this.emit('signed-out', 'refused')
     }
     return response
   }
