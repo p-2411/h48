@@ -62,6 +62,9 @@ test('Transcription: only the mini model and files up to 4 MB', () => {
   refused(() => checkTranscription({ ...ok, model: 'whisper-1' }), 'model');
   refused(() => checkTranscription({ ...ok, fileBytes: 5_000_000 }), 'size');
   refused(() => checkTranscription({ ...ok, fields: ['file', 'model', 'stream'] }), 'field');
+  // Forwarded as it came: a second model or file would go to OpenAI unchecked.
+  refused(() => checkTranscription({ ...ok, fields: ['file', 'model', 'model'] }), 'field');
+  refused(() => checkTranscription({ ...ok, fields: ['file', 'file', 'model'] }), 'field');
 });
 
 test('Speech: only the mini voice model and up to 1,000 characters', () => {

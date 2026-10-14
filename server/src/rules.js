@@ -101,9 +101,11 @@ export function checkChat(body, userHash) {
   return { body: forward, model: body.model, maxOutput: forward.max_completion_tokens };
 }
 
-/** `fields` are the multipart field names; the file itself is forwarded as it came. */
+/** `fields` are the multipart field names, one per value; the form is forwarded as it came, so a
+ * field sent twice is refused: only the first model and file are checked, and OpenAI may read another. */
 export function checkTranscription({ model, fileBytes, fields }) {
   for (const field of fields) if (!TRANSCRIPTION_FIELDS.has(field)) throw refuse('field', `${field} is not allowed.`);
+  if (new Set(fields).size !== fields.length) throw refuse('field', 'Each field may be sent once.');
   knownModel(model, TRANSCRIPTION_MODELS);
   if (!(fileBytes > 0) || fileBytes > TRANSCRIPTION_MAX_BYTES) throw refuse('size', 'The audio must be 4 MB or less.');
   return { model };

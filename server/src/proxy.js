@@ -146,7 +146,7 @@ export async function transcription(ctx, request) {
   }
   const file = form.get('file');
   const fileBytes = file && typeof file === 'object' ? file.size : 0;
-  const { model } = checkTranscription({ model: form.get('model'), fileBytes, fields: [...new Set(form.keys())] });
+  const { model } = checkTranscription({ model: form.get('model'), fileBytes, fields: [...form.keys()] });
   const chargeId = await holdFor(ctx, { amount: estimateTranscription(model, fileBytes), route: 'transcription', model });
   return forward(ctx, chargeId, '/v1/audio/transcriptions', { body: form }, body => {
     const usage = jsonOf(body).usage;
