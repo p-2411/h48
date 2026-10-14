@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict'
 import { alignLine } from '../src/main/ai/lines/align.ts'
 import { linesOutputSchema, systemPrompt } from '../src/main/ai/lines/prompt.ts'
+import { promptParts } from '../src/main/ai/providers/openai.ts'
 import { AUTO, isLevel, mixedLine, pairReading, written } from '../src/shared/levels.ts'
 
 // Japanese and Korean phrases come with their reading; Spanish ones don't need one.
@@ -54,5 +55,19 @@ assert.deepEqual(swappedIn(mixedLine(line, 2, () => 'ignored')).sort(), ['映画
 // Only real levels are kept (the strip sends one; anything else is ignored).
 assert.ok([0, 1, 2, 3, 4, 5].every(isLevel))
 assert.ok(![6, -1, 1.5, '2', null, undefined].some(isLevel))
+
+// OpenAI only looks for a cached prefix at the breakpoints of the request it is answering, so the
+// last few earlier lines carry one: the next request then has a breakpoint exactly where this one
+// wrote its cache (at what is, for it, the second-to-last earlier line), and reads from there.
+const breakpoints = (parts) => parts.flatMap((part, index) => (part.prompt_cache_breakpoint ? [index] : []))
+const history = (count) => Array.from({ length: count }, (_, index) => `Earlier line ${index}`)
+const parts = promptParts(history(40), 'New lines: 1. x')
+assert.deepEqual(parts.map((part) => part.text), [...history(40), 'New lines: 1. x'], 'earlier lines first, the new lines last')
+assert.deepEqual(breakpoints(parts), [37, 38, 39], 'the last three earlier lines are breakpoints; the new lines are not')
+assert.ok(parts.every((part) => !part.prompt_cache_breakpoint || part.prompt_cache_breakpoint.mode === 'explicit'))
+// The next line's request checks where this one wrote: its earlier lines end one later.
+assert.ok(breakpoints(promptParts(history(41), 'New lines: 1. y')).includes(39), 'the next request checks the end of line 39')
+assert.deepEqual(breakpoints(promptParts(history(2), 'x')), [0, 1], 'a short history: every line')
+assert.deepEqual(breakpoints(promptParts([], 'x')), [], 'no history, no breakpoint')
 
 console.log('Line task and reading tests passed.')
