@@ -363,7 +363,8 @@ try {
   assert.equal(paused.at(-1), '/duet/watch/w-replaced/beat')
   assert.equal(pausedServer.watchId, 'w-replaced')
 
-  // --- Live voice minutes. ---
+  // --- Live voice minutes: sent only while the voice window says its call is alive. ---
+  let clock = 0
   const minutes = []
   const stops = []
   let minuteReply = { stop: false }
@@ -375,22 +376,36 @@ try {
       )
     },
     (sentence) => stops.push(sentence),
-    5
+    () => clock
   )
   meter.started('live_1')
-  await new Promise((done) => setTimeout(done, 12))
-  assert.ok(
-    minutes.filter((path) => path === '/duet/live/live_1/minute').length >= 1,
-    'a minute call while the call is open'
-  )
+  const minuteCalls = (id) => minutes.filter((path) => path === `/duet/live/${id}/minute`).length
+  clock = 20_000
+  meter.alive()
+  await settle()
+  assert.equal(minuteCalls('live_1'), 0, 'no minute call before 40 s')
+  clock = 40_000
+  meter.alive()
+  await settle()
+  assert.equal(minuteCalls('live_1'), 1, 'a minute call when the window says the call is alive')
+  clock = 60_000
+  meter.alive()
+  await settle()
+  assert.equal(minuteCalls('live_1'), 1, 'not again before 40 s more')
+  // The window goes quiet (closed, crashed, the call lost): no more minute calls, whatever the time,
+  // so the server hangs the call up within 90 s.
+  clock = 400_000
+  await settle()
+  assert.equal(minuteCalls('live_1'), 1, 'nothing is sent without the window')
   meter.ended()
   await settle()
   assert.equal(minutes.at(-1), '/duet/live/live_1/end', 'ending tells the server')
   const after = minutes.length
-  await new Promise((done) => setTimeout(done, 12))
-  assert.equal(minutes.length, after, 'no minute calls after the end')
+  clock = 500_000
+  meter.alive()
   meter.ended()
-  assert.equal(minutes.length, after, 'ending twice tells the server once')
+  await settle()
+  assert.equal(minutes.length, after, 'after the end: no minute calls, and no second end')
   // A late call dropped while another goes on: only the late one is ended.
   meter.started('live_now')
   meter.dropped('live_late')
@@ -400,19 +415,23 @@ try {
   meter.ended()
   await settle()
 
+  // At the cap the server ends the call and says stop.
   minuteReply = { stop: true, cap: 'credits', resets_at: '2026-11-01T00:00:00.000Z' }
   meter.started('live_2')
-  await new Promise((done) => setTimeout(done, 12))
-  assert.equal(stops.length, 1, 'at the cap the call is stopped, once')
+  clock += 40_000
+  meter.alive()
+  await settle()
+  assert.equal(stops.length, 1, 'at the cap the call is stopped')
   assert.match(stops[0], /credits/)
+  meter.alive()
   meter.ended()
   await settle()
-  assert.ok(
-    !minutes.includes('/duet/live/live_2/end'),
-    'a call the server ended is not ended again'
-  )
+  assert.equal(stops.length, 1, 'once')
+  assert.ok(!minutes.includes('/duet/live/live_2/end'), 'a call the server ended is not ended again')
+
   // A minute call for a call the server already ended (404): ended here too.
   const gone = []
+  let goneClock = 0
   const goneMeter = new LiveMeter(
     {
       request: async () => {
@@ -420,14 +439,18 @@ try {
       }
     },
     (sentence) => gone.push(sentence),
-    5
+    () => goneClock
   )
   goneMeter.started('live_3')
-  await new Promise((done) => setTimeout(done, 12))
-  assert.deepEqual(gone, ['Voice ended.'], 'a call the server ended stops, once')
-  // A minute call that failed (offline for a moment) is asked again before the next minute, as
-  // the server hangs up a call it has not heard about for 90 s.
+  goneClock = 40_000
+  goneMeter.alive()
+  await settle()
+  assert.deepEqual(gone, ['Voice ended.'], 'a call the server ended stops')
+
+  // A minute call that failed (offline for a moment) is tried at the next sign of life, well
+  // inside the server's 90 s.
   const tries = []
+  let blipClock = 0
   const blipMeter = new LiveMeter(
     {
       request: async (path) => {
@@ -437,11 +460,16 @@ try {
       }
     },
     () => undefined,
-    200
+    () => blipClock
   )
   blipMeter.started('live_4')
-  await new Promise((done) => setTimeout(done, 300))
-  assert.equal(tries.length, 2, 'asked again after a quarter of the wait')
+  blipClock = 40_000
+  blipMeter.alive()
+  await settle()
+  blipClock = 60_000
+  blipMeter.alive()
+  await settle()
+  assert.equal(tries.length, 2, 'asked again at the next sign of life')
   blipMeter.ended()
 
   // --- The WorkOS wrapper: the SDK's handlers are kept in main; no window can call them. ---
@@ -592,7 +620,8 @@ try {
     {
       started: (id) => meterCalls.push(['started', id]),
       ended: () => meterCalls.push(['ended']),
-      dropped: (id) => meterCalls.push(['dropped', id])
+      dropped: (id) => meterCalls.push(['dropped', id]),
+      alive: () => meterCalls.push(['alive'])
     }
   )
   const voiceWindow = {
@@ -616,6 +645,11 @@ try {
     'tutor:voice-stop',
     'You’ve used this month’s Duet credits. More come on 1 November.'
   ])
+  electron.listeners.get('tutor:voice-alive')({ sender: 'panel-page' })
+  assert.deepEqual(meterCalls.at(-1), ['alive'], 'the window’s sign of life reaches the meter')
+  electron.listeners.get('tutor:voice-alive')({ sender: 'strip-page' })
+  assert.deepEqual(meterCalls.at(-1), ['alive'], 'only from the window whose conversation it is')
+  assert.equal(meterCalls.filter(([kind]) => kind === 'alive').length, 1)
   electron.listeners.get('tutor:voice-ended')({ sender: 'panel-page' })
   assert.deepEqual(meterCalls.at(-1), ['ended'], 'and ends with it')
 

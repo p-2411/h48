@@ -338,3 +338,8 @@ Each step starts with a failing test, then the code, then the full `npm test` (s
   Stripe subscription events are read from Stripe as they are now; a minute call for an ended call
   is 404, never the cap; a refused watch start backs off from 10 s to 5 minutes; the server refusing
   the sign-in shows the learner as signed out in the home base.
+- **Live voice minutes follow the voice window's signs of life (review round 8).** The voice window
+  says "alive" every 20 s while its call is connected; main sends a minute call at most every 40 s,
+  and only after a sign of life. A window that closes, crashes, moves on or loses its call stops
+  the signs, so the minute calls stop and the server hangs up within 90 s. Rounds 5-8 kept finding
+  one more way a call could end without telling main; this removes the need to tell it.

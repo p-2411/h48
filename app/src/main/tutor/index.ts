@@ -18,6 +18,8 @@
 //
 // IPC (all "tutor:*", from the window that owns the conversation; window.duet.tutor in src/preload/tutor.ts):
 //   tutor:start-session / tutor:voice-ended   voice starts (holding the video) and ends
+//   tutor:voice-alive  the window's call is still connected (every 20 s): Duet's server keeps it
+//                      going only while these come (src/main/account/live.ts)
 //   tutor:voice-stop   ← Duet's server ended the call (a cap): the window ends voice and says why
 //   tutor:translate, tutor:romanise, tutor:execute-tool, tutor:confirm-action,
 //   tutor:undo, tutor:learner-turn, tutor:heard
@@ -117,6 +119,8 @@ export type LiveMinutes = {
   started(sessionId: string): void
   ended(): void
   dropped(sessionId: string): void
+  /** The window's call is still connected: the minutes go on only while these come. */
+  alive(): void
 }
 
 export class Tutor {
@@ -156,6 +160,9 @@ export class Tutor {
       if (run === this.voiceRun) this.minutes?.started(answer.sessionId)
       else this.minutes?.dropped(answer.sessionId)
       return answer
+    })
+    ipcMain.on('tutor:voice-alive', (event) => {
+      if (this.isTutor(event.sender)) this.minutes?.alive()
     })
     ipcMain.on('tutor:voice-ended', (event) => {
       if (!this.isTutor(event.sender)) return
