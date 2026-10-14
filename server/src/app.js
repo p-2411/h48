@@ -103,8 +103,14 @@ export function createApp(deps) {
     const ctx = { db: deps.db, deps, now, userHash: hashOf(userId) };
     await sweepLive(ctx);
     // Read after the sweeps and the device rule, so the plan and block are current.
-    ctx.user = await findOrCreateUser(deps.db, userId, now);
-    return handler(ctx, request, ...match.slice(1).map(decodeURIComponent));
+    [ctx.user] = await deps.db.query(`select * from users where id = $1`, [userId]);
+    let captures;
+    try {
+      captures = match.slice(1).map(decodeURIComponent);
+    } catch {
+      throw new HttpError(404, 'not_found', 'No such route.');
+    }
+    return handler(ctx, request, ...captures);
   }
 
   return async function handle(request) {

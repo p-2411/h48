@@ -273,6 +273,26 @@ test('a live call whose app stops reporting is hung up and charged to its last m
   assert.deepEqual(await credits(db), { used: 110_000, held: 0 });
 });
 
+test('a live reply OpenAI sends that cannot be read frees the hold', async () => {
+  const { send, db } = await setup({ openai: () => new Response('not json', { status: 200 }) });
+  const response = await send('/v1/live/sessions', { body: liveBody });
+  assert.equal(response.status, 502);
+  assert.deepEqual(await credits(db), { used: 0, held: 0 });
+});
+
+test('a minute call for a call already ended is 404, never the cap', async () => {
+  const { send } = await setup({ openai: liveOpenAI });
+  await send('/v1/live/sessions', { body: liveBody });
+  await send('/v1/duet/live/live_1/end', { body: {} });
+  const minute = await send('/v1/duet/live/live_1/minute', { body: {} });
+  assert.equal(minute.status, 404);
+});
+
+test('a malformed escape in a route is 404, not a server error', async () => {
+  const { send } = await setup();
+  assert.equal((await send('/v1/duet/live/%E0/minute', { body: {} })).status, 404);
+});
+
 test('a second live call ends the first', async () => {
   let n = 0;
   const { send, db } = await setup({
@@ -438,6 +458,36 @@ test('a paid subscription makes the user Paid with its billing period; a cancell
   await webhook(app, stripeLib, { id: 'evt_2', type: 'customer.subscription.deleted', data: { object: subscription('sub_1', 'canceled') } });
   [user] = await db.query(`select * from users where id = 'user_1'`);
   assert.equal(user.plan, 'free');
+});
+
+test('a late "created, incomplete" event does not undo a payment already applied', async () => {
+  const stripe = fakeStripe();
+  const { app, send, stripeLib, db } = await setup({ stripe });
+  await send('/v1/duet/me', { method: 'GET' });
+  await webhook(app, stripeLib, {
+    id: 'evt_1',
+    type: 'checkout.session.completed',
+    data: { object: { client_reference_id: 'user_1', customer: 'cus_1', subscription: 'sub_1' } }
+  });
+  // The event's own copy says incomplete; Stripe's current copy (fakeStripe) says active.
+  await webhook(app, stripeLib, { id: 'evt_0', type: 'customer.subscription.created', data: { object: subscription('sub_1', 'incomplete') } });
+  const [user] = await db.query(`select plan from users where id = 'user_1'`);
+  assert.equal(user.plan, 'paid');
+});
+
+test('the end of an old subscription does not undo a newer one', async () => {
+  const stripe = fakeStripe();
+  const { app, send, stripeLib, db } = await setup({ stripe });
+  await send('/v1/duet/me', { method: 'GET' });
+  await webhook(app, stripeLib, {
+    id: 'evt_1',
+    type: 'checkout.session.completed',
+    data: { object: { client_reference_id: 'user_1', customer: 'cus_1', subscription: 'sub_2' } }
+  });
+  await webhook(app, stripeLib, { id: 'evt_2', type: 'customer.subscription.deleted', data: { object: subscription('sub_old', 'canceled') } });
+  const [user] = await db.query(`select plan, stripe_subscription from users where id = 'user_1'`);
+  assert.equal(user.plan, 'paid');
+  assert.equal(user.stripe_subscription, 'sub_2');
 });
 
 test('a webhook with a wrong signature is refused', async () => {

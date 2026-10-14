@@ -94,12 +94,13 @@ export async function release(db, chargeId, now) {
 
 /** Charges, at their estimate, holds older than LOST_AFTER_MS: one user's, or everyone's when
  * `userId` is null (the cron). Live voice holds stay open for the length of a call and are settled
- * by the live voice code instead. */
+ * by the live voice code instead, unless no session was ever recorded for them. */
 export async function sweepLost(db, userId, now) {
   await db.query(
     `with c as (
        update charges set status = 'charged', cost = held, settled_at = $2
-       where ($1::text is null or user_id = $1) and status = 'held' and route <> 'live' and created_at < $3
+       where ($1::text is null or user_id = $1) and status = 'held' and created_at < $3
+         and (route <> 'live' or not exists (select 1 from live_sessions s where s.charge_id = charges.id))
        returning user_id, kind, period, held
      ), s as (
        select user_id, kind, period, sum(held) as total from c group by user_id, kind, period

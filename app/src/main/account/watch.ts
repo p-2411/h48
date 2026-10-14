@@ -6,8 +6,10 @@
 import type { DuetServer } from './server'
 
 const BEAT_EVERY_MS = 30_000
-// After a failed start (offline), wait this long before trying again.
+// After a failed start (offline, or the hours cap), wait this long before trying again, doubling
+// with each failure up to MAX_RETRY_MS, so a cap reached does not ask the server every 10 s.
 const RETRY_MS = 10_000
+const MAX_RETRY_MS = 5 * 60_000
 
 type Server = Pick<DuetServer, 'watchId' | 'openWatch' | 'request' | 'forgetWatch'>
 
@@ -15,6 +17,7 @@ export class ServerWatch {
   private lastBeat = 0
   private busy = false
   private retryAt = 0
+  private failures = 0
   // The watch session this class opened; the server may also open one for a call (server.ts).
   private mine?: string
 
@@ -27,7 +30,8 @@ export class ServerWatch {
       void this.run(async () => {
         this.mine = await this.server.openWatch()
         this.lastBeat = now
-        if (!this.mine) this.retryAt = now + RETRY_MS
+        if (this.mine) this.failures = 0
+        else this.retryAt = now + Math.min(RETRY_MS * 2 ** this.failures++, MAX_RETRY_MS)
       })
     } else if (watching && this.mine && now - this.lastBeat >= BEAT_EVERY_MS) {
       const id = this.mine

@@ -112,7 +112,7 @@ Success for piece A:
 
 | Route | Used by | Rules |
 |---|---|---|
-| `POST /v1/responses` | lines, Explain, tutor text, quiz, scenes, translate, romanise | model `gpt-6-luna`; `max_output_tokens` at most 2,000 (set to 2,000 when missing); `stream` false; `store` false; only `function` tools; no `background` |
+| `POST /v1/responses` | lines, Explain, tutor text, quiz, scenes, translate, romanise | model `gpt-6-luna`; `max_output_tokens` at most 8,000 (set to 8,000 when missing); `stream` false; `store` false; only `function` tools; no `background` |
 | `POST /v1/chat/completions` | listen, pronunciation coach | model `gpt-audio-1.5`; `max_completion_tokens` at most 1,000; `n` = 1; `stream` false |
 | `POST /v1/audio/transcriptions` | hearing | model `gpt-4o-mini-transcribe`; file at most 4 MB (Vercel's body limit is 4.5 MB; Duet's pieces are 8 s or less) |
 | `POST /v1/audio/speech` | daily and checkpoint rounds | model `gpt-4o-mini-tts`; input at most 1,000 characters |
@@ -330,3 +330,11 @@ Each step starts with a failing test, then the code, then the full `npm test` (s
   Duet's own `account:*` channels, and only the home page may.
 - **Each OpenAI call names its feature** (`x-duet-feature`): lines, explain, hearing, talk, listen,
   speech, coach, challenge, tutor.
+- **The Responses output limit is 8,000 tokens, not 2,000.** Lines and Explain set no limit of their
+  own, and 2,000 could cut a long batch of lines or an explanation short. 8,000 tokens of
+  `gpt-6-luna` output is $0.004 at most.
+- **After the code review (2026-10-14):** a live hold whose call was never recorded is freed (or
+  swept); the live session body has a field allowlist and is never stored; speech is MP3 only;
+  Stripe subscription events are read from Stripe as they are now; a minute call for an ended call
+  is 404, never the cap; a refused watch start backs off from 10 s to 5 minutes; the server refusing
+  the sign-in shows the learner as signed out in the home base.

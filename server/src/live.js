@@ -48,13 +48,13 @@ async function endLive(db, now, where, values, end = '$1') {
 
 /** Hangs sessions up at OpenAI. Best effort: a session the app already closed is gone there too. */
 async function hangUp(ctx, ids) {
-  for (const id of ids) {
-    try {
-      await callOpenAI(ctx, `/v1/live/sessions/${encodeURIComponent(id)}/hangup`, {});
-    } catch {
-      // Already closed, or OpenAI out of reach: the session ends by itself on OpenAI's side.
-    }
-  }
+  await Promise.all(
+    ids.map(id =>
+      callOpenAI(ctx, `/v1/live/sessions/${encodeURIComponent(id)}/hangup`, {}).catch(() => {
+        // Already closed, or OpenAI out of reach: the session ends by itself on OpenAI's side.
+      })
+    )
+  );
 }
 
 export async function startLive(ctx, request) {
@@ -78,15 +78,28 @@ export async function startLive(ctx, request) {
     if (upstream.status === 401 || upstream.status === 403) throw new HttpError(502, 'upstream', 'OpenAI refused the server.');
     return new Response(text, { status: upstream.status, headers: { 'content-type': 'application/json' } });
   }
-  const id = JSON.parse(text)?.session?.id;
+  // Live holds are settled only through their session row (sweepLost skips them), so a hold with no
+  // row must be freed here, or it would stay held for good.
+  let id;
+  try {
+    id = JSON.parse(text)?.session?.id;
+  } catch {
+    id = undefined;
+  }
   if (typeof id !== 'string' || !id) {
     await release(ctx.db, chargeId, ctx.now);
     throw new HttpError(502, 'upstream', 'OpenAI gave no session id.');
   }
-  await ctx.db.query(
-    `insert into live_sessions (id, user_id, charge_id, started_at, last_minute_at) values ($1, $2, $3, $4, $4)`,
-    [id, ctx.user.id, chargeId, ctx.now]
-  );
+  try {
+    await ctx.db.query(
+      `insert into live_sessions (id, user_id, charge_id, started_at, last_minute_at) values ($1, $2, $3, $4, $4)`,
+      [id, ctx.user.id, chargeId, ctx.now]
+    );
+  } catch (error) {
+    await release(ctx.db, chargeId, ctx.now);
+    await hangUp(ctx, [id]);
+    throw error;
+  }
   return new Response(text, { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 }
 
@@ -107,7 +120,10 @@ export async function liveMinute(ctx, id) {
   const elapsed = ctx.now.getTime() - new Date(session.started_at).getTime();
   const extra = liveCost(elapsed + AHEAD_MS) - Number(session.held);
   if (extra > 0 && !(await grow(ctx.db, session.charge_id, extra, limits(ctx.user).credits))) {
-    await hangUp(ctx, await endLive(ctx.db, ctx.now, 'id = $3 and user_id = $4', [id, ctx.user.id]));
+    const ended = await endLive(ctx.db, ctx.now, 'id = $3 and user_id = $4', [id, ctx.user.id]);
+    // grow also fails when the call was ended meanwhile (a new call, an end, a sweep): not the cap.
+    if (!ended.length) throw new HttpError(404, 'live', 'No such call.');
+    await hangUp(ctx, ended);
     return json({ stop: true, cap: 'credits', resets_at: creditPeriod(ctx.user, ctx.now).resetsAt.toISOString() });
   }
   await ctx.db.query(`update live_sessions set last_minute_at = $2 where id = $1`, [id, ctx.now]);

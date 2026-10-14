@@ -303,6 +303,25 @@ try {
   await settle()
   assert.equal(fakeServer.watchId, undefined, 'a refused beat drops the session')
 
+  // Starts refused (the hours cap): asked again after 10 s, then 20 s, 40 s… not every 10 s.
+  const starts = []
+  const capServer = {
+    watchId: undefined,
+    openWatch: async () => (starts.push('start'), undefined),
+    request: async () => ({ ok: true }),
+    forgetWatch: () => undefined
+  }
+  const cappedWatch = new ServerWatch(capServer)
+  for (const at of [0, 5_000, 10_000, 20_000, 30_000, 40_000, 70_000, 71_000]) {
+    cappedWatch.tick(true, at)
+    await settle()
+  }
+  assert.deepEqual(
+    starts.length,
+    4,
+    `asked at 0, 10 s, 30 s and 70 s (asked ${starts.length} times)`
+  )
+
   // --- Live voice minutes. ---
   const minutes = []
   const stops = []
@@ -637,6 +656,14 @@ try {
     homeSent.filter(([channel]) => channel === 'account:changed').at(-1)[1].usage.plan,
     'paid'
   )
+  // The server refusing the sign-in (a session revoked at WorkOS): the home base shows signed out,
+  // without asking the server again.
+  const requestsBefore = routes.length
+  serverEvents.emit('signed-out')
+  await settle()
+  const refused = homeSent.filter(([channel]) => channel === 'account:changed').at(-1)[1]
+  assert.deepEqual(refused, { configured: true, user: null, usage: null, capped: undefined })
+  assert.equal(routes.length, requestsBefore, 'no request on a sign-out the server reported')
   link.stop()
 
   // Without sign-in set up (a development key, or a build with no WorkOS client id).

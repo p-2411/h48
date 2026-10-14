@@ -99,6 +99,15 @@ export function connectAccount({
   })
 
   account?.on('change', () => void refresh())
+  // The server refused the sign-in (a session ended at WorkOS): signed out here too. No request is
+  // made, so this can not loop; the next refresh or sign-in reads the account again.
+  server?.on('signed-out', () => {
+    if (!user) return
+    user = null
+    usage = null
+    capped = undefined
+    tell()
+  })
   server?.on('cap', (reached: CapReached) => {
     if (isCapReached(reached))
       capped = {

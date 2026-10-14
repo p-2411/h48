@@ -46,10 +46,14 @@ async function applySubscription(db, subscription, userId) {
   const end = seconds(subscription.current_period_end ?? item?.current_period_end);
   const customer = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
   const user = userId ?? subscription.metadata?.duet_user;
+  const paying = PAYING.has(subscription.status);
+  // A subscription that is not paying only changes the user while it is their current one, so the
+  // end of an old subscription never undoes a newer one.
   await db.query(
     `update users set plan = $2, stripe_customer = $3, stripe_subscription = $4, period_start = $5, period_end = $6
-     where id = $1::text or ($1::text is null and stripe_customer = $3)`,
-    [user ?? null, PAYING.has(subscription.status) ? 'paid' : 'free', customer, subscription.id, start, end]
+     where (id = $1::text or ($1::text is null and stripe_customer = $3))
+       and ($7::boolean or stripe_subscription is null or stripe_subscription = $4)`,
+    [user ?? null, paying ? 'paid' : 'free', customer, subscription.id, start, end, paying]
   );
 }
 
@@ -66,8 +70,12 @@ export async function webhook(deps, db, request) {
   if (event.type === 'checkout.session.completed' && object.subscription) {
     const id = typeof object.subscription === 'string' ? object.subscription : object.subscription.id;
     await applySubscription(db, await deps.stripe.subscriptions.retrieve(id), object.client_reference_id ?? null);
-  } else if (event.type?.startsWith('customer.subscription.')) {
+  } else if (event.type === 'customer.subscription.deleted') {
     await applySubscription(db, object, null);
+  } else if (event.type?.startsWith('customer.subscription.') && object.id) {
+    // Stripe may deliver events out of order: read the subscription as it is now, not as the event
+    // saw it (an older "created … incomplete" must not undo a payment already applied).
+    await applySubscription(db, await deps.stripe.subscriptions.retrieve(object.id), null);
   }
   return json({ received: true });
 }

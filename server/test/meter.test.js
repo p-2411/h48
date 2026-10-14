@@ -71,11 +71,22 @@ test('a hold left by a call that never finished is charged at its estimate after
   assert.deepEqual(await meter(db, 'u1', 'credits', P), { used: 300, held: 0 });
 });
 
-test('a live voice hold is never swept as lost', async () => {
+test('a live voice hold with its call is never swept as lost', async () => {
+  const db = await withUser();
+  const id = await hold(db, call(300, { route: 'live' }));
+  await db.query(
+    `insert into live_sessions (id, user_id, charge_id, started_at, last_minute_at) values ('live_1', 'u1', $1, $2, $2)`,
+    [id, NOW]
+  );
+  await sweepLost(db, 'u1', at('2026-10-13T11:00:00Z'));
+  assert.deepEqual(await meter(db, 'u1', 'credits', P), { used: 0, held: 300 });
+});
+
+test('a live voice hold whose call was never recorded is swept as lost', async () => {
   const db = await withUser();
   await hold(db, call(300, { route: 'live' }));
   await sweepLost(db, 'u1', at('2026-10-13T11:00:00Z'));
-  assert.deepEqual(await meter(db, 'u1', 'credits', P), { used: 0, held: 300 });
+  assert.deepEqual(await meter(db, 'u1', 'credits', P), { used: 300, held: 0 });
 });
 
 test('a hold can grow while the cap allows', async () => {

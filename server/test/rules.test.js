@@ -84,3 +84,36 @@ test('Live: only gpt-live-1 over WebRTC, with a bounded SDP offer and backend mo
     'model'
   );
 });
+
+test('Live: only known session and backend fields and function tools, and nothing stored', () => {
+  const body = () => ({
+    session: {
+      model: 'gpt-live-1',
+      store: true,
+      instructions: 'x',
+      delegation: { type: 'responses', responses: { model: 'gpt-6-luna', tools: [{ type: 'function', name: 'f' }] } }
+    },
+    transport: { type: 'webrtc', sdp: 'v=0' }
+  });
+  assert.equal(checkLive(body()).body.session.store, false);
+  const withField = body();
+  withField.session.tools = [{ type: 'mcp' }];
+  refused(() => checkLive(withField), 'tools');
+  const pricier = body();
+  pricier.session.delegation.responses.service_tier = 'priority';
+  refused(() => checkLive(pricier), 'field');
+  const unknown = body();
+  unknown.session.recording = true;
+  refused(() => checkLive(unknown), 'field');
+  refused(() => checkLive({ ...body(), extra: 1 }), 'field');
+});
+
+test('a tools field that is not a list is refused, not a crash', () => {
+  refused(() => checkResponses({ model: 'gpt-6-luna', input: 'x', tools: 'web' }, 'u'), 'tools');
+});
+
+test('Speech: only MP3, as the cost is estimated from its size', () => {
+  const body = { model: 'gpt-4o-mini-tts', voice: 'marin', input: 'hola' };
+  assert.doesNotThrow(() => checkSpeech({ ...body, response_format: 'mp3' }));
+  refused(() => checkSpeech({ ...body, response_format: 'wav' }), 'response_format');
+});
