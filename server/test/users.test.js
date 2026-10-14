@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { errors } from 'jose';
 import { verifier } from '../src/auth.js';
 import { findOrCreateUser, linkDevice } from '../src/users.js';
 import { at, freshDb, keys } from './helpers.js';
@@ -81,4 +82,9 @@ test('WorkOS\'s keys out of reach is a 503, not a sign-in refused', async () => 
     throw new TypeError('fetch failed');
   });
   await assert.rejects(verify(`Bearer ${await sign('u')}`), error => error.status === 503 && error.code === 'auth_unavailable');
+  // WorkOS answered with JSON that is not a key set: also the server's trouble.
+  const malformed = verifier(async () => {
+    throw new errors.JWKSInvalid('JSON Web Key Set malformed');
+  });
+  await assert.rejects(malformed(`Bearer ${await sign('u')}`), error => error.status === 503);
 });

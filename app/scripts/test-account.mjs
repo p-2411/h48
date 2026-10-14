@@ -338,6 +338,30 @@ try {
   adopted.tick(true, 31_000)
   await settle()
   assert.deepEqual(beats, ['/duet/watch/w-call/beat'])
+  // A session a call opened while not watching is not taken over (the time since would count).
+  const paused = []
+  const pausedServer = {
+    watchId: undefined,
+    openWatch: async () => (paused.push('start'), (pausedServer.watchId = 'w-new')),
+    request: async (path) => (paused.push(path), { ok: true }),
+    forgetWatch: () => (pausedServer.watchId = undefined)
+  }
+  const pausedWatch = new ServerWatch(pausedServer)
+  pausedWatch.tick(false, 0)
+  pausedServer.watchId = 'w-paused'
+  pausedWatch.tick(false, 1_000)
+  pausedWatch.tick(true, 600_000)
+  await settle()
+  pausedWatch.tick(true, 631_000)
+  await settle()
+  assert.deepEqual(paused, ['start', '/duet/watch/w-new/beat'], 'watching opens its own session')
+  // A call replaced the session (the server ended this one): the new one is beaten, not forgotten.
+  pausedServer.watchId = 'w-replaced'
+  pausedWatch.tick(true, 640_000)
+  pausedWatch.tick(true, 671_000)
+  await settle()
+  assert.equal(paused.at(-1), '/duet/watch/w-replaced/beat')
+  assert.equal(pausedServer.watchId, 'w-replaced')
 
   // --- Live voice minutes. ---
   const minutes = []
@@ -393,6 +417,24 @@ try {
   goneMeter.started('live_3')
   await new Promise((done) => setTimeout(done, 12))
   assert.deepEqual(gone, ['Voice ended.'], 'a call the server ended stops, once')
+  // A minute call that failed (offline for a moment) is asked again before the next minute, as
+  // the server hangs up a call it has not heard about for 90 s.
+  const tries = []
+  const blipMeter = new LiveMeter(
+    {
+      request: async (path) => {
+        tries.push(path)
+        if (tries.length === 1) throw new TypeError('fetch failed')
+        return { stop: false }
+      }
+    },
+    () => undefined,
+    200
+  )
+  blipMeter.started('live_4')
+  await new Promise((done) => setTimeout(done, 300))
+  assert.equal(tries.length, 2, 'asked again after a quarter of the wait')
+  blipMeter.ended()
 
   // --- The WorkOS wrapper: the SDK's handlers are kept in main; no window can call them. ---
   let config

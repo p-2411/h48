@@ -80,6 +80,18 @@ test('a new user\'s email is looked up once at WorkOS when the server can', asyn
   assert.deepEqual(asked, ['user_1']);
 });
 
+test('a signed-in request on a known device costs few database round trips', async () => {
+  const { send, db } = await setup();
+  await send('/v1/duet/me', { method: 'GET' });
+  const query = db.query;
+  let count = 0;
+  db.query = (...args) => (count++, query(...args));
+  await send('/v1/duet/me', { method: 'GET' });
+  db.query = query;
+  // The user, the device, the two sweeps, then /me's two meters.
+  assert.ok(count <= 6, `${count} queries`);
+});
+
 test('a call without a device id is refused', async () => {
   const { send } = await setup();
   const response = await send('/v1/responses', { body: lunaBody(), device: null });
@@ -224,7 +236,10 @@ test('an unknown route is 404', async () => {
 
 // Live voice
 
-const liveBody = { session: { model: 'gpt-live-1' }, transport: { type: 'webrtc', sdp: 'v=0 offer' } };
+const liveBody = {
+  session: { model: 'gpt-live-1', client: { data_channel: { allowed_client_events: ['response.create'] } } },
+  transport: { type: 'webrtc', sdp: 'v=0 offer' }
+};
 const liveOpenAI = (url) =>
   url.endsWith('/hangup')
     ? new Response(null, { status: 204 })

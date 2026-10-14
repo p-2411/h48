@@ -21,20 +21,25 @@ export class ServerWatch {
   // The watch session this class beats: one it opened, or one the server client opened for a call
   // (server.ts) while watching.
   private mine?: string
+  // A session a call opened while not watching: never taken over, as the server would count the
+  // time since it opened (up to 45 s) at its first beat. Watching opens a new one instead.
+  private idle?: string
 
   constructor(private readonly server: Server) {}
 
   tick(watching: boolean, now = Date.now()): void {
     if (this.busy) return
+    const current = this.server.watchId
     if (!watching) {
       // A new stretch of watching starts with a fresh wait.
       this.failures = 0
       this.retryAt = 0
+      if (!this.mine) this.idle = current
     }
-    if (watching && !this.mine && this.server.watchId) {
-      // A call opened a session while this one waited to try again: beat that one, or its time
-      // would go uncounted.
-      this.mine = this.server.watchId
+    if (watching && current && current !== this.mine && current !== this.idle) {
+      // A call opened a session (while this one waited to try again, or in place of this one's,
+      // which the server then ended): beat that one, or its time would go uncounted.
+      this.mine = current
       this.lastBeat = now
       this.failures = 0
     } else if (watching && !this.mine) {
@@ -54,12 +59,12 @@ export class ServerWatch {
         } catch {
           // The hours cap (server.ts announces it), or a session the server ended: let it go; the
           // next watching tick opens a new one if the server allows.
-          this.drop()
+          this.drop(id)
         }
       })
     } else if (!watching && this.mine) {
       const id = this.mine
-      this.drop()
+      this.drop(id)
       void this.run(async () => {
         await this.server
           .request(`/duet/watch/${encodeURIComponent(id)}/end`, {})
@@ -68,9 +73,10 @@ export class ServerWatch {
     }
   }
 
-  private drop(): void {
-    this.mine = undefined
-    this.server.forgetWatch()
+  /** Lets session `id` go; the server client forgets it too, unless a call has opened another. */
+  private drop(id: string): void {
+    if (this.mine === id) this.mine = undefined
+    if (this.server.watchId === id) this.server.forgetWatch()
   }
 
   private async run(work: () => Promise<void>): Promise<void> {

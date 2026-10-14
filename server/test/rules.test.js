@@ -73,14 +73,18 @@ test('Speech: only the mini voice model and up to 1,000 characters', () => {
 
 test('Live: only gpt-live-1 over WebRTC, with a bounded SDP offer and backend model', () => {
   const body = {
-    session: { model: 'gpt-live-1', delegation: { type: 'responses', responses: { model: 'gpt-6-luna', max_output_tokens: 1200 } } },
+    session: {
+      model: 'gpt-live-1',
+      client: { data_channel: { allowed_client_events: ['response.create'] } },
+      delegation: { type: 'responses', responses: { model: 'gpt-6-luna', max_output_tokens: 1200 } }
+    },
     transport: { type: 'webrtc', sdp: 'v=0' }
   };
   assert.doesNotThrow(() => checkLive(body));
   refused(() => checkLive({ ...body, session: { ...body.session, model: 'gpt-live-2' } }), 'model');
   refused(() => checkLive({ ...body, transport: { type: 'webrtc', sdp: 'x'.repeat(100_001) } }), 'size');
   refused(
-    () => checkLive({ ...body, session: { model: 'gpt-live-1', delegation: { type: 'responses', responses: { model: 'gpt-6-sol' } } } }),
+    () => checkLive({ ...body, session: { ...body.session, delegation: { type: 'responses', responses: { model: 'gpt-6-sol' } } } }),
     'model'
   );
 });
@@ -91,6 +95,7 @@ test('Live: only known session and backend fields and function tools, and nothin
       model: 'gpt-live-1',
       store: true,
       instructions: 'x',
+      client: { data_channel: { allowed_client_events: ['response.create'] } },
       delegation: { type: 'responses', responses: { model: 'gpt-6-luna', tools: [{ type: 'function', name: 'f' }] } }
     },
     transport: { type: 'webrtc', sdp: 'v=0' }
@@ -119,6 +124,11 @@ test('Live: the data channel allows only the client events Duet sends', () => {
   assert.doesNotThrow(() => checkLive(body(['response.create', 'session.close'])));
   refused(() => checkLive(body(['response.create', 'session.update'])), 'client');
   refused(() => checkLive(body('all')), 'client');
+  // Left out, OpenAI allows every client event: refused too.
+  const bare = { session: { model: 'gpt-live-1' }, transport: { type: 'webrtc', sdp: 'v=0' } };
+  refused(() => checkLive(bare), 'client');
+  refused(() => checkLive({ ...bare, session: { model: 'gpt-live-1', client: {} } }), 'client');
+  refused(() => checkLive({ ...bare, session: { model: 'gpt-live-1', client: { data_channel: {} } } }), 'client');
 });
 
 test('a tools field that is not a list is refused, not a crash', () => {

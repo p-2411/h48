@@ -102,14 +102,14 @@ export function createApp(deps) {
     }
 
     const userId = await verify(request.headers.get('authorization'));
-    const user = await findOrCreateUser(deps.db, userId, now);
+    let user = await findOrCreateUser(deps.db, userId, now);
     if (!user.email && deps.fetchEmail) await lookUpEmail(deps, userId);
-    await linkDevice(deps.db, userId, request.headers.get('x-duet-device'), now);
+    // The device rule can block a new account's free tier: then read the user again.
+    if (await linkDevice(deps.db, userId, request.headers.get('x-duet-device'), now))
+      [user] = await deps.db.query(`select * from users where id = $1`, [userId]);
     await sweepLost(deps.db, userId, now);
-    const ctx = { db: deps.db, deps, now, userHash: hashOf(userId) };
+    const ctx = { db: deps.db, deps, now, userHash: hashOf(userId), user };
     await sweepLive(ctx);
-    // Read after the sweeps and the device rule, so the plan and block are current.
-    [ctx.user] = await deps.db.query(`select * from users where id = $1`, [userId]);
     return handler(ctx, request, ...captures);
   }
 

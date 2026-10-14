@@ -45,6 +45,8 @@ const LIVE_CLIENT_EVENTS = new Set([
   'response.create',
   'session.close'
 ]);
+const LIVE_CLIENT_FIELDS = new Set(['data_channel']);
+const LIVE_CHANNEL_FIELDS = new Set(['allowed_client_events', 'allowed_server_events']);
 const SDP_MAX_CHARS = 100_000;
 
 function onlyKnownFields(body, allowed) {
@@ -120,16 +122,16 @@ export function checkSpeech(body) {
   return { body, model: body.model, inputChars: input.length };
 }
 
-/** The data channel's settings: only the client events Duet sends. */
+/** The data channel's settings: only the client events Duet sends. They must be named: left out,
+ * OpenAI allows every client event (session.update among them). */
 function checkLiveClient(client) {
-  if (client === undefined) return;
-  onlyKnownFields(client, new Set(['data_channel']));
+  const refused = () => refuse('client', 'Only the client events Duet sends are allowed.');
+  if (client?.data_channel === undefined) throw refused();
+  onlyKnownFields(client, LIVE_CLIENT_FIELDS);
   const channel = client.data_channel;
-  if (channel === undefined) return;
-  onlyKnownFields(channel, new Set(['allowed_client_events', 'allowed_server_events']));
+  onlyKnownFields(channel, LIVE_CHANNEL_FIELDS);
   const events = channel.allowed_client_events;
-  if (!Array.isArray(events) || events.some(event => !LIVE_CLIENT_EVENTS.has(event)))
-    throw refuse('client', 'Only the client events Duet sends are allowed.');
+  if (!Array.isArray(events) || events.some(event => !LIVE_CLIENT_EVENTS.has(event))) throw refused();
 }
 
 export function checkLive(body) {

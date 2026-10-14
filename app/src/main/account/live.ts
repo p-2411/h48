@@ -9,6 +9,7 @@ const MINUTE_MS = 60_000
 export class LiveMeter {
   private session?: string
   private timer?: ReturnType<typeof setInterval>
+  private retry?: ReturnType<typeof setTimeout>
 
   constructor(
     private readonly server: Pick<DuetServer, 'request'>,
@@ -37,6 +38,15 @@ export class LiveMeter {
   private stopTimer(): void {
     if (this.timer) clearInterval(this.timer)
     this.timer = undefined
+    if (this.retry) clearTimeout(this.retry)
+    this.retry = undefined
+  }
+
+  /** The server already ended and hung up the call: ended here, with nothing more to tell it. */
+  private stop(sentence: string): void {
+    this.session = undefined
+    this.stopTimer()
+    this.onStop(sentence)
   }
 
   private async minute(sessionId: string): Promise<void> {
@@ -46,19 +56,18 @@ export class LiveMeter {
         {}
       )
       if (!reply.stop || this.session !== sessionId) return
-      // The server already ended and hung up the call: nothing more to tell it.
-      this.session = undefined
-      this.stopTimer()
-      this.onStop(isCapReached(reply) ? capSentence(reply) : 'Voice ended.')
+      this.stop(isCapReached(reply) ? capSentence(reply) : 'Voice ended.')
     } catch (error) {
+      if (this.session !== sessionId) return
       // 404: the server already ended the call (it stopped hearing about it for 90 s, while the
-      // computer slept or was offline), so it is ended here too. Anything else: offline for a
-      // moment; the server ends a call it stops hearing about.
-      if (!(error instanceof DuetServerError) || error.status !== 404 || this.session !== sessionId)
-        return
-      this.session = undefined
-      this.stopTimer()
-      this.onStop('Voice ended.')
+      // computer slept or was offline), so it is ended here too.
+      if (error instanceof DuetServerError && error.status === 404) return this.stop('Voice ended.')
+      // Offline for a moment: asked again soon, as the server hangs up a call it has not heard
+      // about for 90 s, and the next minute call would come too late.
+      this.retry ??= setTimeout(() => {
+        this.retry = undefined
+        void this.minute(sessionId)
+      }, this.everyMs / 4)
     }
   }
 }
