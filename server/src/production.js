@@ -31,7 +31,9 @@ export function productionDeps(env = process.env) {
     fetchEmail: workosKey
       ? async userId => {
           const response = await fetch(`https://api.workos.com/user_management/users/${encodeURIComponent(userId)}`, {
-            headers: { authorization: `Bearer ${workosKey}` }
+            headers: { authorization: `Bearer ${workosKey}` },
+            // WorkOS slow or out of reach must not hold the learner's request.
+            signal: AbortSignal.timeout(3000)
           });
           return response.ok ? (await response.json()).email : undefined;
         }

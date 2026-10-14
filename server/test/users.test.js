@@ -88,3 +88,10 @@ test('WorkOS\'s keys out of reach is a 503, not a sign-in refused', async () => 
   });
   await assert.rejects(malformed(`Bearer ${await sign('u')}`), error => error.status === 503);
 });
+
+test('a user made by another request at the same moment is read again, not lost', async () => {
+  // The combined statement saw no row (its snapshot predates the other insert); the second read does.
+  const answers = [[], [{ id: 'u1', plan: 'free' }]];
+  const db = { query: async () => answers.shift() };
+  assert.deepEqual(await findOrCreateUser(db, 'u1', NOW), { id: 'u1', plan: 'free' });
+});

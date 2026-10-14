@@ -18,7 +18,11 @@ export async function findOrCreateUser(db, id, now) {
      select * from users where id = $1 and not exists (select 1 from made)`,
     [id, now]
   );
-  return user;
+  if (user) return user;
+  // Two first requests at once: the one whose insert waited sees no row, as its statement's
+  // snapshot predates the other's commit. The row is there now.
+  const [made] = await db.query(`select * from users where id = $1`, [id]);
+  return made;
 }
 
 /** Records the device for the user; true when that just blocked the account's free tier. A device

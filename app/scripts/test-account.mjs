@@ -602,6 +602,25 @@ try {
   ])
   electron.listeners.get('tutor:voice-ended')({ sender: 'panel-page' })
   assert.deepEqual(meterCalls.at(-1), ['ended'], 'and ends with it')
+
+  // Voice ended while its call was still being made: the call's minutes start and end at once.
+  let answerLive
+  answer = () => new Promise((done) => (answerLive = done))
+  const starting = electron.handlers.get('tutor:start-session')(
+    { sender: 'panel-page' },
+    { sdp: 'v=0 offer' }
+  )
+  await new Promise((done) => setTimeout(done, 20))
+  electron.listeners.get('tutor:voice-ended')({ sender: 'panel-page' })
+  answerLive(
+    json({ session: { id: 'live_late' }, transport: { type: 'webrtc', sdp: 'v=0 answer' } })
+  )
+  await starting
+  assert.deepEqual(
+    meterCalls.slice(-2),
+    [['started', 'live_late'], ['ended']],
+    'a call that came back after voice ended is ended'
+  )
   electron.handlers.clear()
 
   setDuetServer(undefined)

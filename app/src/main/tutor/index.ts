@@ -124,6 +124,9 @@ export class Tutor {
   // When the learner last spoke or wrote. 0: not yet.
   private lastLearnerTurnAt = 0
   private readonly practice: PracticeWords
+  // Counts voice starts and ends: a start whose call comes back after voice ended (End pressed while
+  // connecting, or the window closed) must not leave the call's minutes running on Duet's server.
+  private voiceRun = 0
 
   constructor(
     private readonly player: Player,
@@ -138,13 +141,17 @@ export class Tutor {
       if (!this.context) throw new Error('Open Explain on a line before starting voice.')
       if (typeof offer?.sdp !== 'string') throw new Error('INVALID_SDP_OFFER')
       this.player.hold('tutor')
+      const run = ++this.voiceRun
       // Voice reads whether the saved cards are open (savedCardsOpenToDuet) from its context when it starts.
       const answer = await createLiveSession(offer.sdp, { ...this.context, exploreEnabled: this.exploreEnabled })
       this.minutes?.started(answer.sessionId)
+      // Voice ended while the call was being made: the window drops it, so the server ends it too.
+      if (run !== this.voiceRun) this.minutes?.ended()
       return answer
     })
     ipcMain.on('tutor:voice-ended', (event) => {
       if (!this.isTutor(event.sender)) return
+      this.voiceRun++
       this.player.release('tutor')
       this.minutes?.ended()
     })
@@ -250,6 +257,7 @@ export class Tutor {
 
   private reset(): void {
     // A conversation over (its window closed) ends its call's minutes too.
+    this.voiceRun++
     this.minutes?.ended()
     this.context = undefined
     this.window = undefined

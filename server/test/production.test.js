@@ -38,3 +38,16 @@ test('the plan script sets a plan by user id or email', async () => {
   assert.equal(await setPlan(db, 'nobody', 'paid'), undefined);
   await assert.rejects(setPlan(db, 'user_1', 'gold'), /free or paid/);
 });
+
+test('the email lookup gives up after a few seconds, so WorkOS being slow never holds a request', async () => {
+  const seen = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = async (url, init) => (seen.push(init.signal), Response.json({ email: 'a@example.com' }));
+  try {
+    const { fetchEmail } = productionDeps({ ...env, WORKOS_API_KEY: 'sk_workos' });
+    assert.equal(await fetchEmail('user_1'), 'a@example.com');
+    assert.ok(seen[0] instanceof AbortSignal, 'the lookup has a time limit');
+  } finally {
+    globalThis.fetch = real;
+  }
+});
