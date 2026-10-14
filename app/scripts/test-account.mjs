@@ -427,7 +427,10 @@ try {
   meter.ended()
   await settle()
   assert.equal(stops.length, 1, 'once')
-  assert.ok(!minutes.includes('/duet/live/live_2/end'), 'a call the server ended is not ended again')
+  assert.ok(
+    !minutes.includes('/duet/live/live_2/end'),
+    'a call the server ended is not ended again'
+  )
 
   // A minute call for a call the server already ended (404): ended here too.
   const gone = []
@@ -470,7 +473,42 @@ try {
   blipMeter.alive()
   await settle()
   assert.equal(tries.length, 2, 'asked again at the next sign of life')
+  // The next one comes 40 s after the last good one was sent (not answered), at a sign of life.
+  blipClock = 100_000
+  blipMeter.alive()
+  await settle()
+  assert.equal(tries.length, 3, 'every 40 s from when the last good one was sent')
   blipMeter.ended()
+
+  // A minute call that stalls (no reply, no error) holds back the next one only for a while: the
+  // server would hang up a call it has not heard about for 90 s.
+  const stalled = []
+  let stallClock = 0
+  const stallMeter = new LiveMeter(
+    {
+      request: (path) => {
+        stalled.push(path)
+        return stalled.length === 1
+          ? new Promise(() => undefined)
+          : Promise.resolve({ stop: false })
+      }
+    },
+    () => undefined,
+    () => stallClock
+  )
+  stallMeter.started('live_5')
+  stallClock = 40_000
+  stallMeter.alive()
+  await settle()
+  stallClock = 50_000
+  stallMeter.alive()
+  await settle()
+  assert.equal(stalled.length, 1, 'one minute call at a time')
+  stallClock = 60_000
+  stallMeter.alive()
+  await settle()
+  assert.equal(stalled.length, 2, 'a stalled minute call no longer holds back the next')
+  stallMeter.ended()
 
   // --- The WorkOS wrapper: the SDK's handlers are kept in main; no window can call them. ---
   let config

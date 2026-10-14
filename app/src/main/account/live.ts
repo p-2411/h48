@@ -7,14 +7,18 @@
 import { capSentence, isCapReached } from '../../shared/usage'
 import { DuetServerError, type DuetServer } from './server'
 
-// A minute call at most this often: with signs of life every 20 s, the server hears within 60 s
-// even after one failed call, inside its 90 s.
+// A minute call at most this often, counted from when the last good one was sent: with signs of
+// life every 20 s, the server hears within 60 s even after one failed call, inside its 90 s.
 const MINUTE_EVERY_MS = 40_000
+// A minute call still unanswered after this long (a connection that stalled, with no reply or error
+// for minutes) no longer holds back the next one, or the server would hang up meanwhile.
+const STALLED_MS = 15_000
 
 export class LiveMeter {
   private session?: string
   private lastMinute = 0
-  private busy = false
+  /** The minute call in flight: its call, and when it was sent. */
+  private sending?: { session: string; at: number }
 
   constructor(
     private readonly server: Pick<DuetServer, 'request'>,
@@ -32,7 +36,10 @@ export class LiveMeter {
   /** The voice window says its call is still connected. */
   alive(): void {
     const session = this.session
-    if (!session || this.busy || this.now() - this.lastMinute < MINUTE_EVERY_MS) return
+    const now = this.now()
+    if (!session || now - this.lastMinute < MINUTE_EVERY_MS) return
+    const sending = this.sending
+    if (sending && sending.session === session && now - sending.at < STALLED_MS) return
     void this.minute(session)
   }
 
@@ -63,14 +70,15 @@ export class LiveMeter {
   }
 
   private async minute(sessionId: string): Promise<void> {
-    this.busy = true
+    const sending = { session: sessionId, at: this.now() }
+    this.sending = sending
     try {
       const reply = await this.server.request<{ stop: boolean }>(
         `/duet/live/${encodeURIComponent(sessionId)}/minute`,
         {}
       )
       if (this.session !== sessionId) return
-      this.lastMinute = this.now()
+      this.lastMinute = Math.max(this.lastMinute, sending.at)
       if (reply.stop) this.stop(isCapReached(reply) ? capSentence(reply) : 'Voice ended.')
     } catch (error) {
       // 404: the server already ended the call (it heard nothing for 90 s: the computer slept or
@@ -78,7 +86,7 @@ export class LiveMeter {
       if (this.session === sessionId && error instanceof DuetServerError && error.status === 404)
         this.stop('Voice ended.')
     } finally {
-      this.busy = false
+      if (this.sending === sending) this.sending = undefined
     }
   }
 }

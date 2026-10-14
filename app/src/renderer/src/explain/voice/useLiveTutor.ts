@@ -527,11 +527,14 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
 
   // While the call is connected, tell main so every 20 s: Duet's server keeps the call (and its
   // charge) going only while these come, so a page that closes or crashes can't leave it running.
+  // Keyed on being connected, not the status: listening, speaking and working change every turn,
+  // and restarting the timer each time would never let 20 s pass in a lively conversation.
+  const connected = isConnected(status)
   useEffect(() => {
-    if (!isConnected(status)) return
+    if (!connected) return
     const timer = window.setInterval(() => window.duet.tutor.voiceAlive(), ALIVE_EVERY_MS)
     return () => window.clearInterval(timer)
-  }, [status])
+  }, [connected])
 
   // Duet's server ended the call (a cap reached): end it here too, and say why.
   useEffect(
