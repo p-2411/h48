@@ -7,6 +7,6 @@
   <key>CFBundleName</key>
   <string>Duet audio</string>
   <key>NSAudioCaptureUsageDescription</key>
-  <string>Duet listens to the video you are watching so it can explain how a line is said.</string>
+  <string>Duet listens to the sound of the video you are watching to get its lines, and never keeps it.</string>
 </dict>
 </plist>

@@ -29,7 +29,7 @@ export default defineConfig(
     }
   },
   {
-    // Plain JavaScript scripts (tests, build helpers) can't annotate return types.
+    // Plain JavaScript scripts (tests, build helpers, dev tools) can't annotate return types.
     files: ['scripts/**/*.mjs', 'dev/**/*.mjs'],
     rules: { '@typescript-eslint/explicit-function-return-type': 'off' }
   },
