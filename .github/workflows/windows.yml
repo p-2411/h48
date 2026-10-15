@@ -1,0 +1,51 @@
+# The Duet app on Windows: builds the Windows readers (native/windows, with the C# compiler that
+# comes with Windows), runs their self-tests and the app's checks there, and keeps the readers and
+# an unsigned installer as downloads, to commit (resources/bin) and to try on a Windows PC.
+name: Windows
+
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - '.github/workflows/windows.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '.github/workflows/windows.yml'
+  workflow_dispatch:
+
+jobs:
+  app:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - name: Build the Windows readers
+        run: npm run build:native
+      - name: Readers' self-tests
+        run: npm run test:native-reader
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: Readers
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-readers
+          path: |
+            app/resources/bin/caption-reader-windows.exe
+            app/resources/bin/audio-reader-windows.exe
+      - name: Installer (unsigned)
+        run: npx electron-vite build && npx electron-builder --win --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: app/dist/*-setup.exe
