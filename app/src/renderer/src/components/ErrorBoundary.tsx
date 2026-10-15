@@ -2,7 +2,8 @@
 // shows a short message and a way to try again in its place. `frame` places that message where the
 // part was, when the page needs it placed (the strip's window is see-through and lets clicks through
 // except over data-solid, so its message must sit where the strip was, marked solid).
-import { Component, type ReactNode } from 'react'
+import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { reportViewCrash } from './reports'
 
 type Props = {
   children: ReactNode
@@ -19,8 +20,9 @@ export class ErrorBoundary extends Component<Props, { failed: boolean }> {
     return { failed: true }
   }
 
-  componentDidCatch(error: unknown): void {
+  componentDidCatch(error: unknown, info: ErrorInfo): void {
     console.error('[duet] a view crashed', error)
+    reportViewCrash(error, info.componentStack)
   }
 
   render(): ReactNode {

@@ -21,8 +21,11 @@
 //   audio.ts, listen.ts, hearing.ts, spoken.ts   the video's sound: hearing lines, how they were said
 //   detect.ts       which language a caption line is in; replay.ts going back to a line
 //   settings.ts, shortcut.ts, welcome.ts, demo.ts   settings, the show/hide keys, first run, demos
+//   reports/        crash and error reports (Sentry) and a few usage events (PostHog), never content
 // First: where the data lives, before any other module can read it.
 import './pin-data-folder'
+import { followConsent, startReports } from './reports'
+import { stopUsage, track, trackOnce } from './reports/usage'
 import { app, globalShortcut, Menu, nativeTheme, Notification, type Tray } from 'electron'
 import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
@@ -90,6 +93,9 @@ let tray: Tray | undefined
 // One Duet at a time: a second copy would read the same captions and write the same database.
 const primary = app.requestSingleInstanceLock()
 if (!primary) app.quit()
+// Crash and error reports start before the app is ready, so they see everything after; only in the
+// Duet that holds the lock, so a second copy on its way out never opens the database.
+else startReports()
 
 app.whenReady().then(() => {
   // Duet is dark only: the side panel's macOS material stays dark when the Mac is in light mode.
@@ -120,6 +126,9 @@ app.whenReady().then(() => {
   }
 
   const settings = new Settings()
+  // Reports and usage events follow "Share crash reports and usage" in Settings from here on.
+  followConsent(settings)
+  track('app_opened')
   const captions = new CaptionSource()
   const audio = new AudioSource()
   const player = new Player((command) => captions.command(command))
@@ -188,6 +197,14 @@ app.whenReady().then(() => {
     shown: () => !overlay.isDestroyed() && overlay.isVisible()
   })
   app.on('before-quit', () => logLink.finish())
+  // The first line ever shown on the strip: the moment Duet first works for someone.
+  watcher.on('current', (id: number | null) => {
+    if (id !== null && !overlay.isDestroyed() && overlay.isVisible())
+      trackOnce('first_line_shown', {
+        site: watcher.currentVideo?.site,
+        language: settings.current.language
+      })
+  })
   // The home base: opened from the Dock, the menu bar, the strip's ⚙ and when Duet starts.
   const home = new Home({ log: watchLog, cards, settings, openWelcome: () => welcome.open(true) })
   connectProgress(progress, { owns: (sender) => home.owns(sender), send: (channel) => home.send(channel, null) })
@@ -310,7 +327,10 @@ app.whenReady().then(() => {
   // 'activate' instead): the copy that runs opens, as the second one quits.
   app.on('second-instance', open)
   settings.on('change', (_, changed) => {
-    if (changed.onboarded) home.open()
+    if (changed.onboarded) {
+      home.open()
+      track('onboarding_done')
+    }
   })
   // Duet's own updates (never from source): the menu bar and Settings show them; an answer to "Check
   // for updates" in the menu bar is a notification, kept like the reminder's.
@@ -369,6 +389,7 @@ app.whenReady().then(() => {
     audio.stop()
     updates.stop()
     tray?.destroy()
+    void stopUsage()
   })
 })
 

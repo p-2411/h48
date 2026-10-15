@@ -8,6 +8,7 @@
 import OpenAI from 'openai'
 import { zodTextFormat } from 'openai/helpers/zod'
 import { ModelError } from '../errors'
+import { reportModelFailure } from '../report'
 import type { StructuredModel, StructuredRequest } from '../structured'
 
 /** How many of the last context parts carry a cache breakpoint. OpenAI writes the latest three. */
@@ -70,6 +71,7 @@ export class OpenAIStructuredModel implements StructuredModel {
       }
       return response.output_parsed as T
     } catch (error) {
+      reportModelFailure({ provider: 'openai', model: this.model, task: request.name }, error)
       if (error instanceof ModelError) throw error
       if (error instanceof OpenAI.AuthenticationError || error instanceof OpenAI.PermissionDeniedError)
         throw new ModelError('The OpenAI API key was rejected.', 'auth')

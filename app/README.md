@@ -274,6 +274,41 @@ the delivery, not only the words.
 - Pronunciation checks are explicit, narrow and qualitative. They do not provide an accent score or
   claim that every sound is correct.
 
+## Crash reports and usage
+
+Duet sends crash and error reports to Sentry and a few usage events to PostHog (`src/main/reports`),
+so we can see what breaks and where people stop. For the privacy policy, this is everything it sends:
+
+- **Errors and crashes:** the error's type, its message only when it has a shape code makes (see
+  below), and its stack trace; which part of Duet it came from (main process, strip, side panel, home
+  base, welcome); a Duet process going away (its type and reason: crashed, killed, out of memory); the
+  caption or audio reader stopping (its exit code only); a failed model request (provider, model,
+  task, kind of failure, HTTP status); whether each run ended cleanly (Sentry's release health). With each:
+  Duet's version, the OS and its version, the CPU and memory, the screen size, locale and time zone,
+  and a random install id. Breadcrumbs are kept only for Duet's own events, page loads, and network
+  requests as method, status and host.
+- **Usage events:** Duet opened, the welcome finished, the first line shown, a daily session done, a
+  checkpoint taken. Each has the install id, Duet's version and the OS; the first line also has the
+  language learnt and the site (YouTube, Netflix…). No person profiles, no GeoIP.
+- **Never sent:** captions, lines, translations, words, transcripts, audio, chats with Duet, cards,
+  video titles or addresses, console output, clicks, screenshots, local variables, native crash dumps
+  (a process's memory can hold a line), names, emails or IP-based location. Every report passes
+  `src/shared/report-scrub.ts` first. Messages are kept by allowlist: the JavaScript engine's own
+  (with code names only), process exits and Duet's own reports; every other message becomes
+  "[message removed]", since a message can carry a line in any language. Addresses keep their host,
+  paths lose the home folder (`npm run test:reports`).
+- **Opt-out:** Settings › Privacy › "Share crash reports and usage" (on by default) stops both at once.
+  Reports waiting for the network are kept in memory only, never on disk, and are dropped when it is
+  turned off.
+  Nothing is sent when Duet runs from source; `DUET_REPORTS=on` turns it on there for testing.
+- **Settings to keep in the Sentry project:** Security & Privacy › "Prevent Storing of IP Addresses"
+  on. In PostHog: "Discard client IP data" on.
+
+Keys come from the build environment only, never from the repo: `MAIN_VITE_SENTRY_DSN`,
+`MAIN_VITE_POSTHOG_KEY` (and `MAIN_VITE_POSTHOG_HOST` for PostHog's EU cloud). Without them a build
+sends nothing. With `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` set, `npm run build`
+uploads source maps to Sentry and deletes them, so they never ship in the app.
+
 ## Conventions
 
 - Comments say _why_, in plain words, at the top of each file and above anything non-obvious.

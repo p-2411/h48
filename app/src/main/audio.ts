@@ -11,6 +11,7 @@ import { join } from 'path'
 import { app } from 'electron'
 import type { AudioPermission } from '../shared/types'
 import type { AudioClip } from './ai/voice'
+import { reportHelperExit } from './reports'
 
 export type { AudioPermission }
 
@@ -34,7 +35,8 @@ export class AudioSource {
     const path = name && join(app.getAppPath(), 'resources', 'bin', name).replace('app.asar', 'app.asar.unpacked')
     if (!path || !existsSync(path)) return
     this.permission = 'unknown'
-    this.child = spawn(path, [], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
+    const child = spawn(path, [], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
+    this.child = child
     this.child.stdout?.setEncoding('utf8')
     this.child.stdout?.on('data', (chunk: string) => {
       this.buffer += chunk
@@ -46,16 +48,26 @@ export class AudioSource {
       }
     })
     this.child.stderr?.on('data', (chunk) => console.error('[audio reader]', String(chunk).trim()))
-    this.child.on('exit', () => {
+    this.child.on('exit', (code, signal) => {
+      // Stopped by stop() when Duet quits; any other stop is reported (code and signal only).
+      if (this.child === child) reportHelperExit('audio-reader', { code, signal })
       this.child = undefined
       this.permission = 'unavailable'
       for (const done of this.waiting.values()) done(undefined)
       this.waiting.clear()
     })
+    // It could not start at all (not allowed to run): Duet carries on without hearing videos.
+    this.child.on('error', (error: NodeJS.ErrnoException) => {
+      reportHelperExit('audio-reader', { error: error.code ?? error.name })
+      this.child = undefined
+      this.permission = 'unavailable'
+    })
   }
 
   stop(): void {
-    this.child?.kill()
+    const child = this.child
+    this.child = undefined
+    child?.kill()
   }
 
   /** Listens to this browser (its macOS app id, or its Windows process id), or stops listening when undefined. */

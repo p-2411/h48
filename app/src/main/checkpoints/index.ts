@@ -31,6 +31,7 @@ import type { Holder } from '../player'
 import { videoKey, type VideoLines, type WatchedVideo, type WordEvent } from '../watchlog'
 import { SceneTracker, type SceneJudge } from './scenes'
 import { CheckpointTriggers } from './triggers'
+import { track } from '../reports/usage'
 
 // A checkpoint uses the lines met in this last stretch of the video.
 const RECENT_MS = 5 * 60_000
@@ -109,6 +110,7 @@ export class Checkpoints {
     handle('done', () => {
       if (!this.round) throw new Error('No checkpoint is open.')
       log.markCheckpointDone()
+      track('checkpoint_taken')
       this.close()
     })
     handle('close', () => this.close())
