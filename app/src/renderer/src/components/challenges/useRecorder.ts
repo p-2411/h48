@@ -59,7 +59,8 @@ export function useRecorder(onRecorded: (wav: Uint8Array) => void): {
       running.current = { stream, context, processor, chunks, timer: window.setTimeout(() => finish(true), MAX_SECONDS * 1000) }
       setRecording(true)
     } catch (cause) {
-      setError(say(cause, 'Duet could not use the microphone. Check it is allowed in System Settings › Privacy.'))
+      const where = window.duet.platform === 'win32' ? 'Settings › Privacy & security › Microphone' : 'System Settings › Privacy'
+      setError(say(cause, `Duet could not use the microphone. Check it is allowed in ${where}.`))
     }
   }, [finish])
 

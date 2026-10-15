@@ -4,8 +4,11 @@
 import { join } from 'node:path'
 
 const FOLDER = 'app'
+// Windows had no Duet before its release, so its data can have Duet's own name from the start
+// (%APPDATA%\Duet), not a folder named "app" that another app could also use.
+const WINDOWS_FOLDER = 'Duet'
 
 /** The data folder, inside the system's app data folder (`app.getPath('appData')`). */
-export function dataFolder(appData: string): string {
-  return join(appData, FOLDER)
+export function dataFolder(appData: string, platform: NodeJS.Platform = process.platform): string {
+  return join(appData, platform === 'win32' ? WINDOWS_FOLDER : FOLDER)
 }

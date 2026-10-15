@@ -13,6 +13,15 @@ asarUnpack:
   - resources/**
 win:
   executableName: Duet
+  # The Mac's readers aren't needed on Windows (resources/bin has every OS's).
+  files:
+    - '!resources/bin/*-macos'
+  # Signing (so SmartScreen and Defender trust the installer) reads its secrets from the environment
+  # only, never from this file. With a certificate file (OV), set CSC_LINK (its path or base64) and
+  # CSC_KEY_PASSWORD; electron-builder then signs the app, the readers in resources/bin and the
+  # installer. Without them the build is unsigned. Azure Artifact Signing would instead need a
+  # win.azureSignOptions block here (account and profile names) and AZURE_TENANT_ID, AZURE_CLIENT_ID
+  # and AZURE_CLIENT_SECRET in the environment: not set up until one is chosen.
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
