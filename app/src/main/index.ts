@@ -16,6 +16,7 @@
 //   challenges/     the challenges the daily session and checkpoints share
 //   sources/        each video site (YouTube, Netflix, Disney+, Crunchyroll); store/ the local database
 //   ipc/overlay.ts  the overlay's IPC; windows/ the windows; tray.ts the menu bar icon
+//   updates/        Duet's own updates: found and downloaded quietly, installed on quit
 //   ai/             the models (lines, explain, voice), one file per provider
 //   audio.ts, listen.ts, hearing.ts, spoken.ts   the video's sound: hearing lines, how they were said
 //   detect.ts       which language a caption line is in; replay.ts going back to a line
@@ -45,6 +46,8 @@ import { replay } from './replay'
 import { Settings } from './settings'
 import { createTray } from './tray'
 import { Tutor } from './tutor'
+import { Updates } from './updates'
+import { connectUpdates } from './updates/ipc'
 import { Welcome } from './welcome'
 import { Shortcut } from './shortcut'
 import { WaitForTranslation } from './wait'
@@ -293,13 +296,25 @@ app.whenReady().then(() => {
   settings.on('change', (_, changed) => {
     if (changed.onboarded) home.open()
   })
+  // Duet's own updates (never from source): the menu bar and Settings show them; an answer to "Check
+  // for updates" in the menu bar is a notification, kept like the reminder's.
+  let shownUpdate: Notification | undefined
+  const updates = new Updates({
+    notify: (text) => {
+      shownUpdate = new Notification({ title: 'Duet', body: text })
+      shownUpdate.show()
+    }
+  })
+  connectUpdates(updates, { owns: (sender) => home.owns(sender), send: (channel, value) => home.send(channel, value) })
+  updates.start()
   tray = createTray({
     openHome: () => home.open(),
     toggleOverlay: () => toggleOverlay(overlay),
     showScript,
     explainLine: () => explainLine(),
     openCards: () => home.open('cards'),
-    openWelcome: () => welcome.open(true)
+    openWelcome: () => welcome.open(true),
+    updates
   })
   // In demo mode Explain opens at once on the demo line, so the flow shows without a video.
   if (demo) setTimeout(() => explainLine(), 300)
@@ -336,6 +351,7 @@ app.whenReady().then(() => {
     globalShortcut.unregisterAll()
     captions.stop()
     audio.stop()
+    updates.stop()
     tray?.destroy()
   })
 })

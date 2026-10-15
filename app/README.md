@@ -36,6 +36,49 @@ plays a YouTube video's part (Sintel, from 1:45). `DUET_FRAME="x,y,width,height"
 video is on screen, and `DUET_SAY=<file>` passes on each JSON line written to the file as if the
 reader said it (a new frame, a new video). Development only.
 
+## Releasing
+
+Installed copies look for a newer version soon after launch and every 4 hours (`src/main/updates/`),
+download it quietly, and install it when Duet quits. "Restart to update" in the menu bar or Settings
+installs it at once. Copies run from source (`npm run dev`) never check. Releases are published to
+the public repo [p-2411/duet-releases](https://github.com/p-2411/duet-releases), which holds only the
+release files; the app reads its `latest-mac.yml` without a token.
+
+macOS installs updates only on an app signed with a Developer ID, and opens a downloaded one only
+when it is notarised. Both happen in the release script, from credentials in your keychain.
+
+Once per Mac:
+
+1. The **Developer ID Application** certificate in your login keychain
+   (`security find-identity -v -p codesigning` lists it).
+2. A notarytool profile named `duet-notary` (or set `DUET_NOTARY_PROFILE` to the name of yours), with
+   an app-specific password from [account.apple.com](https://account.apple.com):
+
+   ```bash
+   xcrun notarytool store-credentials duet-notary --apple-id <your Apple ID> --team-id QD9JD9FAS8
+   ```
+
+   It asks for the password and keeps it in the keychain. Nothing goes in the repo or in env vars.
+
+3. The GitHub CLI logged in to an account that can publish to `p-2411/duet-releases` (`gh auth login`).
+
+Each release:
+
+```bash
+npm version patch --no-git-tag-version   # or minor; then commit package.json and package-lock.json
+npm run release:mac
+```
+
+The script stops unless the tree is clean and the version is new. It then runs the checks, builds,
+signs (the helpers in `resources/bin` too), notarises and staples, and publishes the `.dmg`, `.zip`
+and `latest-mac.yml`. It checks the app with Gatekeeper, then tags the commit `v<version>` and pushes
+the tag. A release is live as soon as it is published, so a broken one reaches everyone: to take it
+back, publish a newer version (copies never go back to an older one).
+
+The first version with the updater (1.0.1 or later) must be installed by hand by anyone on an older
+copy. Builds are for Apple silicon only, like the native helpers. Windows (`--win`) publishes the
+same way once its build is ready. A Linux AppImage updates itself; a `.deb` or snap does not.
+
 ## How a line gets on screen
 
 ```
@@ -100,6 +143,8 @@ browser ──(accessibility)──▶ caption reader ──JSON lines──▶ 
 | `src/main/ai/`                         | Text models: `structured.ts` is what every provider does (`providers/`); tasks (`lines/`, `explain/`) are written once on top of it. |
 | `src/main/ai/voice/`                   | Voice models (speech↔text), same pattern.                                                                                            |
 | `src/main/windows/`, `ipc/`, `tray.ts` | Windows, each window's IPC, the menu bar icon.                                                                                       |
+| `src/main/updates/`                    | Duet's own updates (electron-updater): checked, downloaded quietly, installed on quit; shown in the menu bar and Settings.          |
+| `scripts/release-mac.sh`               | Builds, signs, notarises and publishes a macOS release (see Releasing).                                                              |
 | `src/preload/`                         | `window.duet`: one file per window or feature (`overlay`, `panel`, `explain`, `cards`, `tutor`, `welcome`, `home`, `daily`, `checkpoint`, `knowledge`). |
 | `src/renderer/`                        | One HTML page per window; `src/overlay/`, `src/panel/`, `src/explain/` (with `voice/`), `src/cards/`, `src/home/`, `src/welcome/`, `components/` (with `challenges/`). |
 | `src/shared/`                          | Types used by both sides: lines, settings, levels, `moment.ts`, `explain.ts`, `cards.ts`, `home.ts`, `daily.ts`, `checkpoints.ts`, `knowledge.ts`. |

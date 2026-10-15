@@ -24,7 +24,10 @@ mac:
   # system audio is asked for by the audio reader, with its own wording (native/macos/AudioReader).
   extendInfo:
     NSMicrophoneUsageDescription: Duet listens when you talk to it or say a line back, and only then.
-  notarize: false
+  # Signed with the Developer ID certificate in the keychain (the helpers in resources/bin too) and
+  # notarised with the notarytool keychain profile scripts/release-mac.sh names. Without that profile
+  # (any other build) notarising is skipped with a warning. macOS installs updates only on a signed app.
+  notarize: true
 dmg:
   artifactName: ${name}-${version}.${ext}
 linux:
@@ -37,6 +40,10 @@ linux:
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
+# Releases, and the feed installed copies check for updates (src/main/updates): a public repo that
+# holds only the release files, so the app needs no token. The code stays private.
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: p-2411
+  repo: duet-releases
+  releaseType: release

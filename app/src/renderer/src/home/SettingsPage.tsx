@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { languageName } from '../../../shared/languages'
 import type { OverlaySettings } from '../../../shared/types'
+import { updateLine, type UpdateStatus } from '../../../shared/updates'
 import { say } from '../components/errors'
 import {
   LanguagePicker,
@@ -43,6 +44,41 @@ function ReminderSetting({ time }: { time?: string }): React.JSX.Element {
         </small>
       )}
     </>
+  )
+}
+
+/** Duet's version, and its updates: found and downloaded on their own, installed on quit or at once. */
+function UpdatesSetting(): React.JSX.Element | null {
+  const [status, setStatus] = useState<UpdateStatus>()
+  useEffect(() => {
+    // Without an answer the version is unknown, and the section isn't shown.
+    window.duet.updates.get().then(setStatus, () => {})
+    return window.duet.updates.onChanged(setStatus)
+  }, [])
+  if (!status) return null
+  const { state } = status
+  return (
+    <section className="settings-group" aria-labelledby="settings-updates">
+      <h2 className="label" id="settings-updates">
+        Updates
+      </h2>
+      <div className="glass">
+        <p className="muted" role="status">
+          Duet {status.version}. {updateLine(state)}
+        </p>
+        {state.kind === 'ready' ? (
+          <button type="button" className="btn" onClick={() => window.duet.updates.restart()}>
+            Restart to update
+          </button>
+        ) : (
+          (state.kind === 'idle' || state.kind === 'failed') && (
+            <button type="button" className="btn" onClick={() => window.duet.updates.check()}>
+              Check for updates
+            </button>
+          )
+        )}
+      </div>
+    </section>
   )
 }
 
@@ -117,6 +153,7 @@ export function SettingsPage(): React.JSX.Element {
               </button>
             </div>
           </section>
+          <UpdatesSetting />
         </>
       )}
     </main>
