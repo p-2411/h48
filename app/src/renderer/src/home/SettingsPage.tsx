@@ -117,6 +117,19 @@ export function SettingsPage(): React.JSX.Element {
               </button>
             </div>
           </section>
+          <section className="settings-group" aria-labelledby="settings-privacy">
+            <h2 className="label" id="settings-privacy">
+              Privacy
+            </h2>
+            <div className="glass">
+              <Toggle
+                on={settings.shareDiagnostics}
+                label="Share crash reports and usage"
+                hint="What broke, and a few anonymous counts. Never what you watch, hear or say"
+                onChange={window.duet.setShareDiagnostics}
+              />
+            </div>
+          </section>
         </>
       )}
     </main>

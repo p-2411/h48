@@ -10,6 +10,7 @@ import { join } from 'path'
 import { app } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import type { PlayerTime } from './clock'
+import { reportHelperExit } from './reports'
 
 export type CaptionStatus = {
   /** The reader is running and has the OS permission it needs. */
@@ -68,7 +69,8 @@ export class CaptionSource extends EventEmitter {
       } satisfies CaptionStatus)
       return
     }
-    this.child = spawn(path, [], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
+    const child = spawn(path, [], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
+    this.child = child
     this.child.stdout?.setEncoding('utf8')
     this.child.stdout?.on('data', (chunk: string) => {
       this.buffer += chunk
@@ -82,10 +84,20 @@ export class CaptionSource extends EventEmitter {
     this.child.stderr?.on('data', (chunk) =>
       console.error('[caption reader]', String(chunk).trim())
     )
-    this.child.on('exit', (code) => {
+    this.child.on('exit', (code, signal) => {
+      // Stopped by stop() when Duet quits; any other stop is reported (code and signal only).
+      if (this.child === child) reportHelperExit('caption-reader', { code, signal })
       this.emit('status', {
         trusted: false,
         error: `Caption reader stopped (code ${code}).`
+      } satisfies CaptionStatus)
+    })
+    // It could not start at all (missing, not allowed to run).
+    this.child.on('error', (error: NodeJS.ErrnoException) => {
+      reportHelperExit('caption-reader', { error: error.code ?? error.name })
+      this.emit('status', {
+        trusted: false,
+        error: 'Caption reader could not start.'
       } satisfies CaptionStatus)
     })
   }

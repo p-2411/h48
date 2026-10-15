@@ -225,6 +225,37 @@ the delivery, not only the words.
 - Pronunciation checks are explicit, narrow and qualitative. They do not provide an accent score or
   claim that every sound is correct.
 
+## Crash reports and usage
+
+Duet sends crash and error reports to Sentry and a few usage events to PostHog (`src/main/reports`),
+so we can see what breaks and where people stop. For the privacy policy, this is everything it sends:
+
+- **Errors and crashes:** the error's type, a scrubbed message and its stack trace; which part of Duet
+  it came from (main process, strip, side panel, home base, welcome); native crash dumps of Duet's own
+  processes, turned into stack traces by Sentry; the caption or audio reader stopping (its exit code
+  only); a failed model request (provider, model, task, kind of failure, HTTP status). With each:
+  Duet's version, the OS and its version, the CPU and memory, the screen size, locale and time zone,
+  and a random install id. Breadcrumbs are kept only for Duet's own events, page loads, and network
+  requests as method, status and host.
+- **Usage events:** Duet opened, the welcome finished, the first line shown, a daily session done, a
+  checkpoint taken. Each has the install id, Duet's version and the OS; the first line also has the
+  language learnt and the site (YouTube, Netflix…). No person profiles, no GeoIP.
+- **Never sent:** captions, lines, translations, words, transcripts, audio, chats with Duet, cards,
+  video titles or addresses, console output, clicks, screenshots, local variables, names, emails or
+  IP-based location. Every report passes `src/shared/report-scrub.ts` first: quoted text, Japanese,
+  Korean and accented words, addresses (all but the host), emails and the home folder are taken out of
+  messages (`npm run test:reports`).
+- **Opt-out:** Settings › Privacy › "Share crash reports and usage" (on by default) stops both at once.
+  Nothing is sent when Duet runs from source; `DUET_REPORTS=on` turns it on there for testing.
+- **Settings to keep in the Sentry project:** Security & Privacy › "Prevent Storing of IP Addresses"
+  on, and "Store Native Crash Reports" off (the dumps are processed into stack traces, then dropped).
+  In PostHog: "Discard client IP data" on.
+
+Keys come from the build environment only, never from the repo: `MAIN_VITE_SENTRY_DSN`,
+`MAIN_VITE_POSTHOG_KEY` (and `MAIN_VITE_POSTHOG_HOST` for PostHog's EU cloud). Without them a build
+sends nothing. With `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` set, `npm run build`
+uploads source maps to Sentry and deletes them, so they never ship in the app.
+
 ## Conventions
 
 - Comments say _why_, in plain words, at the top of each file and above anything non-obvious.

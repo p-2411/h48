@@ -7,6 +7,7 @@ import type { FunctionTool } from 'openai/resources/live/live'
 import { RATINGS } from '../../shared/cards'
 import type { TutorSessionAnswer } from '../../shared/tutor'
 import { languageModule, languageName, type Language } from '../../shared/languages'
+import { reportModelFailure } from '../ai/report'
 import { backendInstructions, contextLanguage, contextText, liveInstructions, type TutorContext } from './prompts'
 
 const readingCache = new Map<string, string>()
@@ -170,6 +171,7 @@ export const tools: FunctionTool[] = [
 
 /** An error the learner can read. `context` says what failed, such as "Could not translate". */
 export function safeLiveError(error: unknown, context: string): Error {
+  reportModelFailure({ provider: 'openai', task: context }, error)
   if (error instanceof OpenAI.AuthenticationError || error instanceof OpenAI.PermissionDeniedError)
     return new Error('The OpenAI project key was rejected or does not have GPT-Live access.')
   if (error instanceof OpenAI.RateLimitError)

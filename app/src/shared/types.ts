@@ -151,6 +151,8 @@ export type OverlaySettings = {
   checkpoints?: boolean
   /** The daily reminder's time ("19:30", local); none means no reminder. */
   reminder?: string
+  /** Send crash reports and a few anonymous usage events (src/main/reports). On unless turned off. */
+  shareDiagnostics: boolean
   /** Which defaults saved settings have been brought up to (see SETTINGS_VERSION in main/settings.ts). */
   version?: number
 }
@@ -167,6 +169,7 @@ export const DEFAULT_SETTINGS: OverlaySettings = {
   talkShortcut: 'Alt+Shift+T',
   wordScript: 'native',
   showFullLine: true,
+  shareDiagnostics: true,
   version: 2
 }
 

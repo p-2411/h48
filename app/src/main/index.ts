@@ -20,8 +20,11 @@
 //   audio.ts, listen.ts, hearing.ts, spoken.ts   the video's sound: hearing lines, how they were said
 //   detect.ts       which language a caption line is in; replay.ts going back to a line
 //   settings.ts, shortcut.ts, welcome.ts, demo.ts   settings, the show/hide keys, first run, demos
+//   reports/        crash and error reports (Sentry) and a few usage events (PostHog), never content
 // First: where the data lives, before any other module can read it.
 import './pin-data-folder'
+import { followConsent, startReports } from './reports'
+import { stopUsage, track, trackOnce } from './reports/usage'
 import { app, globalShortcut, nativeTheme, Notification, type Tray } from 'electron'
 import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
@@ -74,6 +77,9 @@ if (is.dev) {
   }
 }
 
+// Crash and error reports start before the app is ready, so they see everything after.
+startReports()
+
 // How often the line on screen follows the video, and how often hearing looks at the audio.
 const TICK_MS = 100
 const HEARING_TICK_MS = 500
@@ -110,6 +116,9 @@ app.whenReady().then(() => {
   }
 
   const settings = new Settings()
+  // Reports and usage events follow "Share crash reports and usage" in Settings from here on.
+  followConsent(settings)
+  track('app_opened')
   const captions = new CaptionSource()
   const audio = new AudioSource()
   const player = new Player((command) => captions.command(command))
@@ -175,6 +184,14 @@ app.whenReady().then(() => {
     shown: () => !overlay.isDestroyed() && overlay.isVisible()
   })
   app.on('before-quit', () => logLink.finish())
+  // The first line ever shown on the strip: the moment Duet first works for someone.
+  watcher.on('current', (id: number | null) => {
+    if (id !== null && !overlay.isDestroyed() && overlay.isVisible())
+      trackOnce('first_line_shown', {
+        site: watcher.currentVideo?.site,
+        language: settings.current.language
+      })
+  })
   // The home base: opened from the Dock, the menu bar, the strip's ⚙ and when Duet starts.
   const home = new Home({ log: watchLog, cards, settings, openWelcome: () => welcome.open(true) })
   // Talk in the home base: a free conversation with Duet, in the language being learnt.
@@ -291,7 +308,10 @@ app.whenReady().then(() => {
   open()
   app.on('activate', open)
   settings.on('change', (_, changed) => {
-    if (changed.onboarded) home.open()
+    if (changed.onboarded) {
+      home.open()
+      track('onboarding_done')
+    }
   })
   tray = createTray({
     openHome: () => home.open(),
@@ -337,6 +357,7 @@ app.whenReady().then(() => {
     captions.stop()
     audio.stop()
     tray?.destroy()
+    void stopUsage()
   })
 })
 
