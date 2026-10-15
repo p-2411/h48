@@ -3,7 +3,7 @@
 //
 // The reader only listens while a video is being watched. On macOS (native/macos/AudioReader) it
 // needs the System Audio Recording permission; on Windows (native/windows/AudioReader.cs) it needs
-// none, and hears the browser alone on Windows 10 2004 and later, else everything the speakers play.
+// none, and hears the browser alone (Windows 10 2004 and later; older Windows has no hearing).
 // Nothing is recorded to disk; a clip leaves the reader only when asked for here.
 import { spawn, type ChildProcess } from 'child_process'
 import { existsSync } from 'fs'

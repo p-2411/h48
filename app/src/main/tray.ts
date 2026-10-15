@@ -24,8 +24,8 @@ export function createTray({
   openCards,
   openWelcome
 }: Actions): Tray {
-  const mac = process.platform === 'darwin'
-  const tray = new Tray(nativeImage.createFromPath(mac ? trayTemplate : trayIcon))
+  const windows = process.platform === 'win32'
+  const tray = new Tray(nativeImage.createFromPath(windows ? trayIcon : trayTemplate))
   tray.setToolTip('Duet')
   tray.setContextMenu(
     Menu.buildFromTemplate([
@@ -37,12 +37,12 @@ export function createTray({
       { label: 'Your words', click: openCards },
       { type: 'separator' },
       // Windows asks for no permissions.
-      { label: mac ? 'Welcome and permissions…' : 'Welcome…', click: openWelcome },
+      { label: windows ? 'Welcome…' : 'Welcome and permissions…', click: openWelcome },
       { type: 'separator' },
       { label: 'Quit Duet', role: 'quit' }
     ])
   )
   // On Windows a left click opens Duet (the menu is on the right click), as tray icons there do.
-  if (!mac) tray.on('click', openHome)
+  if (windows) tray.on('click', openHome)
   return tray
 }

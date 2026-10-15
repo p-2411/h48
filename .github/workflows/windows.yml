@@ -1,6 +1,7 @@
-# The Duet app on Windows: builds the Windows readers (native/windows, with the C# compiler that
-# comes with Windows), runs their self-tests and the app's checks there, and keeps the readers and
-# an unsigned installer as downloads, to commit (resources/bin) and to try on a Windows PC.
+# The Duet app on Windows: checks and tests the committed Windows readers, builds them afresh
+# (native/windows, with the C# compiler that comes with Windows), runs their self-tests and the
+# app's checks there, and keeps the readers and an unsigned installer as downloads, to commit
+# (resources/bin) and to try on a Windows PC.
 name: Windows
 
 on:
@@ -29,9 +30,19 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
+      # The readers committed in resources/bin are what Duet ships: check they were built from the
+      # source as it is now, and test them, before building fresh ones. A stale one fails the job at
+      # the end, after the fresh ones are uploaded to commit.
+      - name: Committed readers match their source
+        id: committed
+        continue-on-error: true
+        run: node scripts/check-native-readers.mjs
+      - name: Committed readers' self-tests
+        if: steps.committed.outcome == 'success'
+        run: npm run test:native-reader
       - name: Build the Windows readers
         run: npm run build:native
-      - name: Readers' self-tests
+      - name: Fresh readers' self-tests
         run: npm run test:native-reader
       - run: npm run typecheck
       - run: npm run lint
@@ -49,3 +60,8 @@ jobs:
         with:
           name: windows-installer
           path: app/dist/*-setup.exe
+      - name: Committed readers are up to date
+        if: steps.committed.outcome != 'success'
+        run: |
+          echo "::error::The readers in app/resources/bin are older than their source. Commit the ones in this run's windows-readers download."
+          exit 1

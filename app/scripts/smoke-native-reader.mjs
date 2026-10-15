@@ -57,17 +57,32 @@ if (process.platform === 'darwin') {
   await exitsWhenAppGoes('caption-reader-windows.exe')
   console.log('Windows caption reader protocol smoke test passed, and it exits when the app goes.')
 
-  // The audio reader's self-test records two half seconds of a tone, one second apart, and clips
-  // all of it: two seconds at 16 kHz, with the gap kept as silence.
+  // The audio reader's self-test records two half seconds of a tone, one second apart, in each
+  // format Windows may hand over (16 kHz mono, else 44.1 kHz stereo), and clips all of it: two
+  // seconds at 16 kHz, with the gap kept as silence.
   const audio = spawnSync(bin('audio-reader-windows.exe'), ['--self-test'], { encoding: 'utf8' })
   if (audio.error) throw audio.error
   if (audio.status !== 0) throw new Error(audio.stderr || `Audio reader exited ${audio.status}.`)
   const test = JSON.parse(audio.stdout.trim().split(/\r?\n/u).at(-1))
-  if (test.type !== 'self-test' || Math.abs(test.samples - 32000) > 160)
-    throw new Error(`Windows audio reader kept ${test.samples} samples, not 32000: ${audio.stdout}`)
-  if (!(test.level > 0.2) || test.gapLevel !== 0 || test.wavBytes !== 44 + test.samples * 2)
+  if (test.type !== 'self-test' || test.formats?.length !== 2)
     throw new Error(`Windows audio reader self-test failed: ${audio.stdout}`)
-  // Started for real, it reports its status at once (no device needed for that) and needs no permission.
+  for (const format of test.formats) {
+    // Resampling from 44.1 kHz may land a sample either side.
+    if (Math.abs(format.samples - 32000) > (format.rate === 16000 ? 0 : 160))
+      throw new Error(
+        `Windows audio reader kept ${format.samples} samples at ${format.rate} Hz, not 32000.`
+      )
+    if (
+      !(format.level > 0.2) ||
+      format.gapLevel !== 0 ||
+      format.wavBytes !== 44 + format.samples * 2
+    )
+      throw new Error(
+        `Windows audio reader self-test failed at ${format.rate} Hz: ${JSON.stringify(format)}`
+      )
+  }
+  // Started for real, it reports its status at once (no device needed for that) and needs no
+  // permission (Windows Server, as on CI, has process loopback too).
   const reader = spawn(bin('audio-reader-windows.exe'), [], { stdio: ['pipe', 'pipe', 'inherit'] })
   const first = await new Promise((done, fail) => {
     reader.stdout.once('data', (chunk) => done(JSON.parse(String(chunk).split('\n')[0])))

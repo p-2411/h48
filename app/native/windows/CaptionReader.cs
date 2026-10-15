@@ -7,7 +7,8 @@
 // AudioReader.cs, listens to), and a frame is in physical pixels, not points.
 //
 // Build with scripts/build-native.mjs on Windows. Run with --self-test to verify the executable and
-// JSON protocol without requiring a browser.
+// JSON protocol without requiring a browser, and with --source-hash for the hash of the source it was
+// built from (scripts/check-native-readers.mjs).
 
 using System;
 using System.Collections.Concurrent;
@@ -596,6 +597,68 @@ internal static class CaptionReader
         });
     }
 
+    // One look at the browser: what it shows, the captions, the time and where the video is.
+    private static void Poll()
+    {
+        Target target = FindTarget();
+        _current = target;
+        if (target == null)
+        {
+            EmitStatus(new Dictionary<string, object>
+            {
+                { "type", "status" }, { "trusted", true }, { "captions", false }
+            });
+            if (_lastCaption != null && _lastCaption != "")
+            {
+                _lastCaption = "";
+                Emit(new Dictionary<string, object>
+                {
+                    { "type", "caption" }, { "text", "" }, { "at", NowMilliseconds() }
+                });
+            }
+        }
+        else
+        {
+            EmitStatus(new Dictionary<string, object>
+            {
+                { "type", "status" }, { "trusted", true }, { "browser", target.Browser },
+                // On Windows the browser's process id, which the audio reader listens to.
+                { "bundle", target.Process.Id.ToString(CultureInfo.InvariantCulture) },
+                { "url", target.Url }, { "title", target.Title },
+                { "captions", !String.IsNullOrWhiteSpace(target.Caption) }, { "available", true }
+            });
+
+            if (target.Caption != _lastCaption)
+            {
+                _lastCaption = target.Caption;
+                Emit(new Dictionary<string, object>
+                {
+                    { "type", "caption" }, { "text", target.Caption }, { "url", target.Url },
+                    { "browser", target.Browser }, { "at", NowMilliseconds() }
+                });
+            }
+
+            if (target.Position.HasValue)
+            {
+                Dictionary<string, object> time = new Dictionary<string, object>
+                {
+                    { "type", "time" }, { "t", target.Position.Value },
+                    { "playing", target.Playing }, { "ad", false }, { "url", target.Url }
+                };
+                string serialized = Json.Serialize(time);
+                if (serialized != _lastTime)
+                {
+                    _lastTime = serialized;
+                    time.Add("at", NowMilliseconds());
+                    Emit(time);
+                }
+            }
+        }
+
+        ReportFrame(target);
+        HandleCommands(_current);
+    }
+
     [STAThread]
     private static int Main(string[] args)
     {
@@ -610,6 +673,11 @@ internal static class CaptionReader
         {
             SetProcessDPIAware();
         }
+        if (args.Contains("--source-hash"))
+        {
+            Console.Out.Write(BuildInfo.SourceHash + "\n");
+            return 0;
+        }
         if (args.Contains("--self-test"))
         {
             SelfTest();
@@ -622,63 +690,17 @@ internal static class CaptionReader
 
         while (true)
         {
-            Target target = FindTarget();
-            _current = target;
-            if (target == null)
+            // A tab closing or moving on mid-look makes UI Automation throw; the reader must outlive that
+            // (the app doesn't restart it), so the next look starts afresh.
+            try
             {
-                EmitStatus(new Dictionary<string, object>
-                {
-                    { "type", "status" }, { "trusted", true }, { "captions", false }
-                });
-                if (_lastCaption != null && _lastCaption != "")
-                {
-                    _lastCaption = "";
-                    Emit(new Dictionary<string, object>
-                    {
-                        { "type", "caption" }, { "text", "" }, { "at", NowMilliseconds() }
-                    });
-                }
+                Poll();
             }
-            else
+            catch (Exception error)
             {
-                EmitStatus(new Dictionary<string, object>
-                {
-                    { "type", "status" }, { "trusted", true }, { "browser", target.Browser },
-                    // On Windows the browser's process id, which the audio reader listens to.
-                    { "bundle", target.Process.Id.ToString(CultureInfo.InvariantCulture) },
-                    { "url", target.Url }, { "title", target.Title },
-                    { "captions", !String.IsNullOrWhiteSpace(target.Caption) }, { "available", true }
-                });
-
-                if (target.Caption != _lastCaption)
-                {
-                    _lastCaption = target.Caption;
-                    Emit(new Dictionary<string, object>
-                    {
-                        { "type", "caption" }, { "text", target.Caption }, { "url", target.Url },
-                        { "browser", target.Browser }, { "at", NowMilliseconds() }
-                    });
-                }
-
-                if (target.Position.HasValue)
-                {
-                    Dictionary<string, object> time = new Dictionary<string, object>
-                    {
-                        { "type", "time" }, { "t", target.Position.Value },
-                        { "playing", target.Playing }, { "ad", false }, { "url", target.Url }
-                    };
-                    string serialized = Json.Serialize(time);
-                    if (serialized != _lastTime)
-                    {
-                        _lastTime = serialized;
-                        time.Add("at", NowMilliseconds());
-                        Emit(time);
-                    }
-                }
+                _current = null;
+                Console.Error.WriteLine("Look at the browser failed: " + error.Message);
             }
-
-            ReportFrame(target);
-            HandleCommands(_current);
             Thread.Sleep(250);
         }
     }
