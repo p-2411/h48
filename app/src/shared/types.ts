@@ -89,7 +89,7 @@ export type OverlayStatus = {
   /** The caption reader is running with the permission it needs. */
   trusted: boolean
   browser?: string
-  /** The browser's app id (macOS bundle id), for listening to its sound. */
+  /** The browser's app id (macOS bundle id; on Windows its process id), for listening to its sound. */
   bundle?: string
   url?: string
   captions?: boolean

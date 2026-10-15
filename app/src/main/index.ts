@@ -22,7 +22,7 @@
 //   settings.ts, shortcut.ts, welcome.ts, demo.ts   settings, the show/hide keys, first run, demos
 // First: where the data lives, before any other module can read it.
 import './pin-data-folder'
-import { app, globalShortcut, nativeTheme, Notification, type Tray } from 'electron'
+import { app, globalShortcut, Menu, nativeTheme, Notification, type Tray } from 'electron'
 import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import type { Moment } from '../shared/moment'
@@ -93,6 +93,9 @@ app.whenReady().then(() => {
   // in its bundle, build/icon.icns).
   if (is.dev && process.platform === 'darwin') app.dock?.setIcon(appIcon)
   app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
+  // Windows would give each window Electron's own menu bar (with Reload and the developer tools);
+  // Duet's menu is the tray's.
+  if (process.platform === 'win32') Menu.setApplicationMenu(null)
 
   let models: Models | undefined
   let modelError: string | undefined
@@ -290,6 +293,9 @@ app.whenReady().then(() => {
   const open = (): void => openDuet({ onboarded: settings.current.onboarded, home, welcome })
   open()
   app.on('activate', open)
+  // Started again while it runs (Windows' Start menu or desktop shortcut; the Dock on macOS gives
+  // 'activate' instead): the copy that runs opens, as the second one quits.
+  app.on('second-instance', open)
   settings.on('change', (_, changed) => {
     if (changed.onboarded) home.open()
   })

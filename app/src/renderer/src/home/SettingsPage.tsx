@@ -104,19 +104,22 @@ export function SettingsPage(): React.JSX.Element {
               <ShortcutRecorder keys={settings.talkShortcut} kind="talk" />
             </div>
           </section>
-          <section className="settings-group" aria-labelledby="settings-permissions">
-            <h2 className="label" id="settings-permissions">
-              Permissions
-            </h2>
-            <div className="glass">
-              <p className="muted">
-                Duet needs Accessibility to read captions, and System Audio Recording to hear videos.
-              </p>
-              <button type="button" className="btn" onClick={() => window.duet.home.openWelcome()}>
-                Welcome and permissions…
-              </button>
-            </div>
-          </section>
+          {/* Only macOS asks for permissions; Windows needs none. */}
+          {window.duet.welcome.asksPermissions && (
+            <section className="settings-group" aria-labelledby="settings-permissions">
+              <h2 className="label" id="settings-permissions">
+                Permissions
+              </h2>
+              <div className="glass">
+                <p className="muted">
+                  Duet needs Accessibility to read captions, and System Audio Recording to hear videos.
+                </p>
+                <button type="button" className="btn" onClick={() => window.duet.home.openWelcome()}>
+                  Welcome and permissions…
+                </button>
+              </div>
+            </section>
+          )}
         </>
       )}
     </main>

@@ -168,6 +168,7 @@ check(levelAt(-40) === 0 && levelAt(400) === 5, 'dragged past either end: the en
 // The app is called Duet, but its data stays in the folder it has always had ("app"): renaming it
 // must not leave the learner's cards and words behind.
 check(JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).productName === 'Duet', 'the app is called Duet')
-check(dataFolder('/Users/x/Library/Application Support') === join('/Users/x/Library/Application Support', 'app'), 'its data stays in the app folder')
+check(dataFolder('/Users/x/Library/Application Support', 'darwin') === join('/Users/x/Library/Application Support', 'app'), 'its data stays in the app folder')
+check(dataFolder('C:\\Users\\x\\AppData\\Roaming', 'win32') === join('C:\\Users\\x\\AppData\\Roaming', 'Duet'), 'on Windows its data is in a Duet folder')
 
 console.log('Overlay line choice, status dot, settings, level and data folder tests passed.')

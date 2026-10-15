@@ -72,6 +72,10 @@ export class Placement {
       clearTimeout(this.lost)
       this.lost = undefined
       this.frame = frame
+      // Windows can drop the strip from the top when a video goes full screen (a new frame): put it
+      // back on top, without a toggle.
+      if (process.platform === 'win32' && !this.overlay.isDestroyed())
+        this.overlay.setAlwaysOnTop(true, 'screen-saver')
       this.place()
     } else if (this.frame && !this.lost) {
       this.lost = setTimeout(() => {

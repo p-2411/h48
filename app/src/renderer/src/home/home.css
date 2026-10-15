@@ -20,6 +20,9 @@
   -webkit-app-region: drag;
 }
 .home-bar button { -webkit-app-region: no-drag; }
+/* Windows draws its own title bar above the page: no room to leave for the window buttons. */
+[data-platform='win32'] .home-bar { padding-left: 16px; }
+[data-platform='win32'] .home-back { left: 16px; }
 .home-mark { display: grid; place-items: center; color: #fff; }
 .home-brand { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
 /* The language learnt: its name opens a short menu of the languages. */
