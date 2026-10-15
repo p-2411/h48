@@ -3,7 +3,8 @@ import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  main: {},
+  // WorkOS's sign-in package is ES modules only, so it is bundled into main rather than required.
+  main: { build: { externalizeDeps: { exclude: ['@workos/authkit-electron'] } } },
   preload: {},
   renderer: {
     // One page per window: the overlay (index.html), the side panel, the home base and the
