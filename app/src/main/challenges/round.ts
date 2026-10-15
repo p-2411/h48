@@ -18,7 +18,7 @@ import type { Quiz } from './quiz'
 // A recording longer than this (about 3 minutes of WAV) is not a line said back.
 const MAX_RECORDING_BYTES = 12 * 1024 * 1024
 const MAX_ANSWER = 1_000
-const NO_KEY = 'Add OPENAI_API_KEY to app/.env.local for the speaking and quiz steps.'
+const NO_KEY = 'Sign in to Duet for the speaking and quiz steps.'
 
 /** The video a round's lines come from. */
 type RoundVideo = Pick<VideoLines, 'key' | 'site' | 'videoId' | 'title' | 'language'>

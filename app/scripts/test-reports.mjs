@@ -146,6 +146,17 @@ assert.equal(failureKind(Object.assign(new Error('aborted'), { name: 'AbortError
 class APIUserAbortError extends Error {}
 assert.equal(failureKind(new APIUserAbortError('Request was aborted.')), undefined)
 assert.equal(failureKind(new TypeError('boom')), 'error')
+// Duet's server refusing (a cap reached, signed out) is no failure; its other errors are.
+const duetError = (status, code) =>
+  Object.assign(new Error('x'), { status, error: { type: 'duet', code } })
+assert.equal(failureKind(duetError(401)), undefined)
+const capReached = Object.assign(new Error('x'), {
+  status: 402,
+  error: { type: 'duet', code: 'usage_cap', cap: 'credits', resets_at: '2026-11-01T00:00:00Z' }
+})
+assert.equal(failureKind(capReached), undefined)
+assert.equal(failureKind(new ModelError('This month’s credits are used up.', 'quota')), undefined)
+assert.equal(failureKind(duetError(500)), 'http_500')
 
 const heard = []
 onModelFailure((failure) => heard.push(failure))

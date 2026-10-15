@@ -2,7 +2,7 @@
 // one when a request fails; the reports decide what to send. Only what failed and how leaves here
 // (provider, model, task, kind of failure, HTTP status), never the request or the error's message,
 // which can quote what was sent. Free of Electron and Sentry, so the AI files stay testable alone.
-import { ModelError } from './errors'
+import { duetModelError, ModelError } from './errors'
 
 export type ModelFailure = {
   provider: string
@@ -25,9 +25,11 @@ export function onModelFailure(next: (failure: ModelFailure) => void): void {
   listener = next
 }
 
-/** What kind of failure an error is, or undefined when it isn't one (the request was cancelled). */
+/** What kind of failure an error is, or undefined when it isn't one: the request was cancelled, or
+ * Duet's server refused it (a cap reached, signed out), which is the plan working, not a failure. */
 export function failureKind(error: unknown): string | undefined {
-  if (error instanceof ModelError) return error.kind
+  if (error instanceof ModelError) return error.kind === 'quota' ? undefined : error.kind
+  if (duetModelError(error)) return undefined
   if ((error instanceof Error && error.name === 'AbortError') || /UserAbort/.test(className(error)))
     return undefined
   // Grouped like ModelError's kinds, so one outage is one issue whichever file it came through.

@@ -25,7 +25,11 @@ const sentry = (): ReturnType<typeof sentryVitePlugin>[] =>
     : []
 
 export default defineConfig({
-  main: { build: { sourcemap }, plugins: [sentry()] },
+  // WorkOS's sign-in package is ES modules only, so it is bundled into main rather than required.
+  main: {
+    build: { sourcemap, externalizeDeps: { exclude: ['@workos/authkit-electron'] } },
+    plugins: [sentry()]
+  },
   preload: { build: { sourcemap }, plugins: [sentry()] },
   renderer: {
     // One page per window: the overlay (index.html), the side panel, the home base and the

@@ -7,7 +7,8 @@
 // it (measured). prompt_cache_key keeps one task's requests on the same cache.
 import OpenAI from 'openai'
 import { zodTextFormat } from 'openai/helpers/zod'
-import { ModelError } from '../errors'
+import { openAIClient, type OpenAIAccess } from '../access'
+import { duetModelError, ModelError } from '../errors'
 import { reportModelFailure } from '../report'
 import type { StructuredModel, StructuredRequest } from '../structured'
 
@@ -38,13 +39,12 @@ export class OpenAIStructuredModel implements StructuredModel {
 
   constructor(
     private readonly model: string,
-    apiKey: string | undefined,
+    access: OpenAIAccess,
     /** Reasoning effort per pace. Lower is faster; a subtitle line needs little. */
     private readonly effort: Record<StructuredRequest<unknown>['pace'], OpenAI.ReasoningEffort>
   ) {
     this.name = `openai/${model}`
-    // Without a key the SDK falls back to OPENAI_API_KEY.
-    this.client = new OpenAI(apiKey ? { apiKey } : {})
+    this.client = openAIClient(access)
   }
 
   async complete<T>(request: StructuredRequest<T>, signal?: AbortSignal): Promise<T> {
@@ -59,7 +59,8 @@ export class OpenAIStructuredModel implements StructuredModel {
           reasoning: { effort: this.effort[request.pace] },
           prompt_cache_key: `duet-${request.name}`
         },
-        { signal }
+        // Duet's server meters each feature ("lines_es" is lines): lines run only while watching.
+        { signal, headers: { 'x-duet-feature': request.name.split('_')[0] } }
       )
       if (!response.output_parsed) {
         const refused = response.output.some(
@@ -73,6 +74,8 @@ export class OpenAIStructuredModel implements StructuredModel {
     } catch (error) {
       reportModelFailure({ provider: 'openai', model: this.model, task: request.name }, error)
       if (error instanceof ModelError) throw error
+      const duet = duetModelError(error)
+      if (duet) throw duet
       if (error instanceof OpenAI.AuthenticationError || error instanceof OpenAI.PermissionDeniedError)
         throw new ModelError('The OpenAI API key was rejected.', 'auth')
       if (error instanceof OpenAI.RateLimitError) throw new ModelError('Rate limited by OpenAI.', 'rate_limit')
