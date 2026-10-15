@@ -12,9 +12,10 @@ import { panelApi } from './panel'
 import { progressApi } from './progress'
 import { talkApi } from './talk'
 import { tutorApi } from './tutor'
+import { updatesApi } from './updates'
 import { welcomeApi } from './welcome'
 
-const duet = { platform: process.platform, ...overlayApi, tutor: tutorApi, panel: panelApi, explain: explainApi, cards: cardsApi, checkpoint: checkpointApi, home: homeApi, daily: dailyApi, knowledge: knowledgeApi, progress: progressApi, talk: talkApi, welcome: welcomeApi }
+const duet = { platform: process.platform, ...overlayApi, tutor: tutorApi, panel: panelApi, explain: explainApi, cards: cardsApi, checkpoint: checkpointApi, home: homeApi, daily: dailyApi, knowledge: knowledgeApi, progress: progressApi, talk: talkApi, updates: updatesApi, welcome: welcomeApi }
 
 export type DuetApi = typeof duet
 
