@@ -53,6 +53,8 @@ import { WatchLog } from './watchlog'
 import { connectWatchLog } from './watchlog/connect'
 import { Knowledge } from './knowledge'
 import { connectKnowledge } from './knowledge/ipc'
+import { Progress } from './progress'
+import { connectProgress } from './progress/ipc'
 import { Home, openDuet } from './home'
 import { Talk } from './talk'
 import { StripTalk } from './talk/strip'
@@ -166,17 +168,21 @@ app.whenReady().then(() => {
   // The watch log: videos, lines met, words and study days, for the daily session, checkpoints and
   // the streak (src/main/watchlog). Watching counts only while the strip is shown.
   const watchLog = new WatchLog()
+  // Progress: how much of each video the learner understands, then and now, and its reading level.
+  const progress = new Progress({ log: watchLog, knowledge })
   const logLink = connectWatchLog(watchLog, {
     watcher,
     player,
     settings,
     cards,
     knowledge,
+    progress,
     shown: () => !overlay.isDestroyed() && overlay.isVisible()
   })
   app.on('before-quit', () => logLink.finish())
   // The home base: opened from the Dock, the menu bar, the strip's ⚙ and when Duet starts.
   const home = new Home({ log: watchLog, cards, settings, openWelcome: () => welcome.open(true) })
+  connectProgress(progress, { owns: (sender) => home.owns(sender) })
   // Talk in the home base: a free conversation with Duet, in the language being learnt.
   const talk = new Talk({ tutor, settings, window: home })
   // The text model's quiz (what did they mean?), for the daily session and checkpoints.

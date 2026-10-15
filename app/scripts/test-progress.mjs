@@ -245,7 +245,15 @@ try {
     .prepare(
       'INSERT INTO lines (video_id, language, start, original, translation, processed, met_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
     )
-    .run(key, 'es', 31, 'raro', 'odd', JSON.stringify({ source: [{ pair: 1, base: 5 }] }), at(2026, 10, 14))
+    .run(
+      key,
+      'es',
+      31,
+      'raro',
+      'odd',
+      JSON.stringify({ source: [{ pair: 1, base: 5 }] }),
+      at(2026, 10, 14)
+    )
   assert.equal(log.tallyKeptLines(), 3, 'three good lines; the damaged ones skipped')
   assert.deepEqual(log.videoWords(key, 'es'), before, 'the same tally as when the lines were met')
   assert.equal(log.tallyKeptLines(), 0, 'only once')
@@ -265,8 +273,112 @@ try {
     { day: '2026-10-16', score: 0.6 }
   ])
   assert.deepEqual(log.firstScores('es').get(key), { day: '2026-10-14', score: 0.5 })
-  assert.deepEqual(log.firstScores('ja').get(key), { day: '2026-10-13', score: 0.1 }, 'per language')
+  assert.deepEqual(
+    log.firstScores('ja').get(key),
+    { day: '2026-10-13', score: 0.1 },
+    'per language'
+  )
   console.log('progress: tallies and day scores ok')
+
+  // --- Progress: then and now, and the reading level ---------------------------------------
+  const { Progress } = await jiti.import(resolve('src/main/progress/index.ts'))
+  const { connectProgress } = await jiti.import(resolve('src/main/progress/ipc.ts'))
+  const { connectWatchLog } = await jiti.import(resolve('src/main/watchlog/connect.ts'))
+  const { EventEmitter } = await import('node:events')
+  const { handlers } = await jiti.import(fakeElectron)
+  // The ladder, faked: every word on the rung `rungOf` gives it.
+  let rungOf = () => 'known'
+  const knowledge = {
+    statesFor: (language, keys) =>
+      Object.fromEntries(
+        keys.filter((k) => k.startsWith(`${language}:`)).map((k) => [k, rungOf(k)])
+      )
+  }
+  // Every word ranks 100, so 40 or more of them make reading level 1.
+  const progress = new Progress({ log, knowledge, rankOf: () => () => 100 })
+  const p1 = 'youtube:p1'
+  log.noteVideo(
+    { site: 'youtube', id: 'p1', url: 'https://www.youtube.com/watch?v=p1' },
+    'es',
+    0,
+    at(2026, 10, 20)
+  )
+  const nouns = (from, to) =>
+    Array.from({ length: to - from }, (_, index) => token(`n${from + index}`, 'n', index + 1))
+  log.noteLine(p1, 'es', met('uno', 1, nouns(0, 20)))
+  progress.snapshot(p1, 'es', at(2026, 10, 20, 12))
+  assert.deepEqual(
+    progress.summary('es', at(2026, 10, 20, 13)).videos[p1],
+    { now: 60 },
+    'first day: a %, no then yet, too few words for a level'
+  )
+  log.noteLine(p1, 'es', met('dos', 10, nouns(20, 40)))
+  progress.snapshot(p1, 'es', at(2026, 10, 20, 14))
+  // The next day half the words can be used.
+  rungOf = (key) => (Number(key.slice(4)) % 2 ? 'usable' : 'known')
+  const next = progress.summary('es', at(2026, 10, 21))
+  assert.deepEqual(next.videos[p1], { level: 1, now: 80, then: 60 }, 'then kept, now from today')
+  assert.deepEqual(next.levels, [{ level: 1, videos: 1, now: 80, then: 60 }])
+  assert.deepEqual(next.videos[key], { then: 50 }, 'too few words for a % now: only its then')
+  assert.deepEqual(progress.summary('ko', at(2026, 10, 21)), { videos: {}, levels: [] })
+
+  // Only the home base asks, for a language Duet teaches.
+  connectProgress(progress, { owns: (sender) => sender === 'home' })
+  const ask = handlers.get('progress:summary')
+  assert.deepEqual(ask({ sender: 'home' }, 'es'), progress.summary('es'))
+  assert.throws(() => ask({ sender: 'strip' }, 'es'), /Not allowed/)
+  assert.throws(() => ask({ sender: 'home' }, 'fr'), /language/)
+
+  // While a video plays with Duet on, its % is noted about once a minute, and when Duet quits.
+  const snapshots = []
+  const watcher = Object.assign(new EventEmitter(), {
+    currentVideo: { site: 'youtube', id: 'p1', url: 'https://www.youtube.com/watch?v=p1' },
+    currentLine: undefined,
+    moment: () => undefined
+  })
+  const player = { playing: true, now: () => 5 }
+  const link = connectWatchLog(log, {
+    watcher,
+    player,
+    settings: { current: { language: 'es' } },
+    cards: new EventEmitter(),
+    progress: { snapshot: (video, language, now) => snapshots.push([video, language, now]) },
+    shown: () => true
+  })
+  const t = at(2026, 10, 22)
+  link.tick(t)
+  link.tick(t + 30_000)
+  link.tick(t + 61_000)
+  player.playing = false
+  link.tick(t + 130_000)
+  assert.deepEqual(
+    snapshots.map(([, , now]) => now - t),
+    [0, 61_000],
+    'once a minute while playing, not while paused'
+  )
+  link.finish(t + 140_000)
+  assert.deepEqual(snapshots.at(-1), [p1, 'es', t + 140_000], 'and when Duet quits')
+  // A failing snapshot goes no further than a report.
+  const failing = connectWatchLog(log, {
+    watcher,
+    player: { playing: true, now: () => 5 },
+    settings: { current: { language: 'es' } },
+    cards: new EventEmitter(),
+    progress: {
+      snapshot: () => {
+        throw new Error('locked')
+      }
+    },
+    shown: () => true
+  })
+  const quiet = console.error
+  console.error = () => undefined
+  try {
+    assert.doesNotThrow(() => failing.tick(t + 200_000))
+  } finally {
+    console.error = quiet
+  }
+  console.log('progress: then and now ok')
 } finally {
   rmSync(folder, { recursive: true, force: true })
 }

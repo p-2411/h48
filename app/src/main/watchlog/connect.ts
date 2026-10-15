@@ -1,8 +1,8 @@
 // Feeds the watch log: the video on screen and where it is, time spent watching with Duet (only
 // while the video plays and Duet is shown), lines as they come on screen translated, cards saved,
 // lines explained and words hovered on the strip; each new line's words are also seen once more on
-// the knowledge ladder. index.ts calls tick() from its main loop and
-// finish() when Duet quits.
+// the knowledge ladder, and the video's % is noted about once a minute while it plays (progress).
+// index.ts calls tick() from its main loop and finish() when Duet quits.
 //
 // The log is a record, not a feature: every write here runs inside another feature's event or
 // loop, so a failing write (disk full, a locked database) is reported and dropped, never thrown
@@ -13,12 +13,15 @@ import { pairText } from '../../shared/levels'
 import type { Moment } from '../../shared/moment'
 import type { Language, OverlayLine } from '../../shared/types'
 import type { Knowledge } from '../knowledge'
+import type { Progress } from '../progress'
 import { videoKey, type WatchedVideo, type WatchLog } from '.'
 
 // A gap between ticks longer than this (the Mac slept, the loop stalled) counts as this much.
 export const MAX_TICK_MS = 1_000
 // How often the video's record (title, where it is) is brought up to date.
 const VIDEO_EVERY_MS = 15_000
+// How often the video's % is noted while it plays.
+const SCORE_EVERY_MS = 60_000
 
 export type WatchSource = EventEmitter & {
   currentVideo?: WatchedVideo
@@ -59,6 +62,7 @@ export function connectWatchLog(
     settings,
     cards,
     knowledge,
+    progress,
     shown
   }: {
     watcher: WatchSource
@@ -67,6 +71,8 @@ export function connectWatchLog(
     cards: EventEmitter
     /** The knowledge ladder: each word of a line met is seen once more (src/main/knowledge). */
     knowledge?: Pick<Knowledge, 'noteSeen'>
+    /** Progress: the video's % today, noted while it plays (src/main/progress). */
+    progress?: Pick<Progress, 'snapshot'>
     /** Duet is on screen (the strip is shown): only then is watching "with Duet", and a line met. */
     shown: () => boolean
   }
@@ -79,6 +85,14 @@ export function connectWatchLog(
   let notedKey: string | undefined
   // The video last noted while it played: on record, so its lines can be met.
   let watchedKey: string | undefined
+  // The video whose % was noted last, and when.
+  let scoredKey: string | undefined
+  let scoredAt: number | undefined
+  const score = (key: string, now: number): void => {
+    scoredKey = key
+    scoredAt = now
+    record(() => progress?.snapshot(key, language(), now))
+  }
 
   const noteVideo = (now: number): void => {
     const video = watcher.currentVideo
@@ -131,12 +145,15 @@ export function connectWatchLog(
         if (due) noteVideo(now)
         if (player.playing) log.addWatchTime(since, key, now)
       })
+      if (player.playing && (key !== scoredKey || scoredAt === undefined || now - scoredAt >= SCORE_EVERY_MS)) score(key, now)
     },
     finish(now = Date.now()) {
       record(() => {
         if (onScreen() && shown()) noteVideo(now)
         log.flush(now)
       })
+      const key = onScreen()
+      if (key && shown()) score(key, now)
     },
     explained(moment) {
       record(() =>
