@@ -219,7 +219,7 @@ the delivery, not only the words.
   `DUET_COACH_MODEL` (default `gpt-audio-1.5`) to hear the learner.
 - Duet uses the same `duet.db`, card collection and FSRS scheduler as My cards. Saves and reviews are
   previewed first and committed only by the learner: a click, or a reply after the preview.
-- `DUET_DEMO_FIXTURES=1` (demos only, `main/demo.ts`) seeds two labelled Japanese cards into an empty
+- `DUET_DEMO_FIXTURES=1` (demos only, never in a packaged build, `main/demo.ts`) seeds two labelled Japanese cards into an empty
   `duet.db`, opens Explain at launch, and uses a Japanese demo line when no line is on screen.
   Raw audio and full voice transcripts are not stored locally.
 - Pronunciation checks are explicit, narrow and qualitative. They do not provide an accent score or
