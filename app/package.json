@@ -2,10 +2,10 @@
   "name": "app",
   "productName": "Duet",
   "version": "1.0.0",
-  "description": "An Electron application with React and TypeScript",
+  "description": "Mixed-language subtitles over YouTube and Netflix that teach you Spanish, Japanese or Korean",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "Duet <hello@useduet.io>",
+  "homepage": "https://useduet.io",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
@@ -40,8 +40,7 @@
     "build:native": "node scripts/build-native.mjs",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
-    "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux"
+    "build:mac": "electron-vite build && electron-builder --mac"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.128.0",
