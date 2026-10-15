@@ -23,11 +23,12 @@ nsis:
 mac:
   category: public.app-category.education
   entitlementsInherit: build/entitlements.mac.plist
-  # The microphone is Duet's only prompt here: Accessibility (reading the captions) has none, and
-  # system audio is asked for by the audio reader, with its own wording (native/macos/AudioReader).
+  # Two prompts: the microphone (talking to Duet) and system audio (hearing the lines on sites with no
+  # captions to read). Accessibility, for reading captions, has none. The audio reader embeds the same
+  # system-audio wording in its own Info.plist (native/macos/AudioReader): keep the two the same.
   extendInfo:
     NSMicrophoneUsageDescription: Duet listens when you talk to it or say a line back, and only then.
-    NSAudioCaptureUsageDescription: Duet listens to the video you are watching so it can explain how a line is said.
+    NSAudioCaptureUsageDescription: Duet listens to the sound of the video you are watching to get its lines, and never keeps it.
   notarize: false
 dmg:
   artifactName: ${name}-${version}.${ext}
