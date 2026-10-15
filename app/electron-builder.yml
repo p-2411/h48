@@ -1,10 +1,12 @@
 appId: io.useduet.app
 productName: Duet
+copyright: Copyright © 2026 Duet
 directories:
   buildResources: build
 files:
   - '!**/.vscode/*'
   - '!src/*'
+  - '!{dev,native,scripts}/**'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
@@ -19,22 +21,15 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  category: public.app-category.education
   entitlementsInherit: build/entitlements.mac.plist
   # The microphone is Duet's only prompt here: Accessibility (reading the captions) has none, and
   # system audio is asked for by the audio reader, with its own wording (native/macos/AudioReader).
   extendInfo:
     NSMicrophoneUsageDescription: Duet listens when you talk to it or say a line back, and only then.
+    NSAudioCaptureUsageDescription: Duet listens to the video you are watching so it can explain how a line is said.
   notarize: false
 dmg:
-  artifactName: ${name}-${version}.${ext}
-linux:
-  target:
-    - AppImage
-    - snap
-    - deb
-  maintainer: electronjs.org
-  category: Utility
-appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:

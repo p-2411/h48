@@ -1,11 +1,15 @@
 // Demo fixtures, for showing the voice tutor on a machine with no caption reader. With
 // DUET_DEMO_FIXTURES=1, Duet seeds two labelled Japanese cards into an empty collection, uses a
 // labelled Japanese line when no line is on screen, and opens the tutor at launch.
+import { app } from 'electron'
 import type { Moment } from '../shared/moment'
 
-/** Read when asked, not on import: app/.env.local is loaded after the modules are. */
+/**
+ * Read when asked, not on import: app/.env.local is loaded after the modules are. A packaged
+ * build never shows the fixtures, whatever its environment says.
+ */
 export function demoEnabled(): boolean {
-  return process.env.DUET_DEMO_FIXTURES === '1'
+  return !app.isPackaged && process.env.DUET_DEMO_FIXTURES === '1'
 }
 
 export function demoMoment(): Moment {
