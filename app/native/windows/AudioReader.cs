@@ -417,7 +417,7 @@ internal sealed class Listener
 
     void Capture(string wanted)
     {
-        SoundFormat format;
+        SoundFormat format = null;
         string heard = "browser";
         string device = null;
         int process;
