@@ -117,6 +117,9 @@ export function SettingsPage(): React.JSX.Element {
               </button>
             </div>
           </section>
+          <p className="faint settings-credit">
+            Reading levels use word frequencies from wordfreq by Robyn Speer, under CC BY-SA 4.0.
+          </p>
         </>
       )}
     </main>

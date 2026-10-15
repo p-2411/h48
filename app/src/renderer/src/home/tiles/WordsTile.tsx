@@ -1,8 +1,9 @@
 // Your words: how many words are on each rung of the ladder that counts (known, can say, can use),
-// with a bar of the three, the words met most recently (each glowing in its rung's colour), and the
+// with a bar of the three, how many were met and are known, the words met most recently (each glowing in its rung's colour), and the
 // cards due now with Review. It opens Your words.
 import type { HomeToday } from '../../../../shared/home'
 import { STATE_LABELS, type WordState } from '../../../../shared/knowledge'
+import { metAndKnownLine } from '../progress'
 import { useLoaded } from '../useLoaded'
 import { Tile } from './Tile'
 import { useWordsSummary } from './useWordsSummary'
@@ -61,6 +62,7 @@ export function WordsTile({
               ))}
             </div>
           )}
+          {counted > 0 && <p className="faint">{metAndKnownLine(summary.counts)}</p>}
           {counted === 0 && <p className="faint">{met} met so far. Review them and they climb.</p>}
           <p className="tile-recent" aria-label="Met most recently">
             {summary.words

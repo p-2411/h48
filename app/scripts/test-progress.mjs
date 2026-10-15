@@ -379,6 +379,43 @@ try {
     console.error = quiet
   }
   console.log('progress: then and now ok')
+
+  // --- As the home base says it --------------------------------------------------------------
+  const { understood, videoLine, levelLine, metAndKnownLine } = await jiti.import(
+    resolve('src/renderer/src/home/progress.ts')
+  )
+  assert.equal(
+    videoLine({ level: 3, now: 72, then: 58 }),
+    'Reading level 3 · 72% understood · up from 58%'
+  )
+  assert.equal(
+    videoLine({ level: 3, now: 58, then: 58 }),
+    'Reading level 3 · 58% understood',
+    'no "up" when the same'
+  )
+  assert.equal(videoLine({ now: 50, then: 60 }), '50% understood', 'nor when it went down')
+  assert.equal(videoLine({ level: 2 }), 'Reading level 2')
+  assert.equal(videoLine({ then: 40 }), undefined, 'nothing known now: nothing said')
+  assert.equal(videoLine(undefined), undefined)
+  assert.equal(understood({ now: 72, then: 58 }), '72% understood · up from 58%')
+  assert.equal(
+    levelLine({ level: 3, videos: 2, now: 65, then: 55 }),
+    '65% understood · 2 videos · up from 55%'
+  )
+  assert.equal(levelLine({ level: 1, videos: 1, now: 90, then: 90 }), '90% understood · 1 video')
+  assert.equal(
+    metAndKnownLine({
+      unknown: 0,
+      encountered: 1163,
+      known: 35,
+      speakable: 10,
+      usable: 4,
+      ignored: 80
+    }),
+    '1,212 met · 49 you know',
+    'met leaves out ignored words; known counts known and up'
+  )
+  console.log('progress: home base text ok')
 } finally {
   rmSync(folder, { recursive: true, force: true })
 }
