@@ -179,6 +179,94 @@ try {
     'averages rounded down, easiest first; videos with no % or level left out'
   )
   console.log('progress: scores and reading levels ok')
+
+  // --- The watch log: each video's words, and its % by study day ---------------------------
+  const { WatchLog } = await jiti.import(resolve('src/main/watchlog/index.ts'))
+  const { database } = await jiti.import(resolve('src/main/store/db.ts'))
+  const at = (y, m, d, h = 12) => new Date(y, m - 1, d, h).getTime()
+  const log = new WatchLog()
+  const key = 'youtube:abc'
+  log.noteVideo(
+    { site: 'youtube', id: 'abc', url: 'https://www.youtube.com/watch?v=abc', title: 'Coco' },
+    'es',
+    0,
+    at(2026, 10, 14)
+  )
+  const token = (text, job, pair, base) => ({ text, job, pair, space: true, base })
+  const met = (original, start, source) => ({
+    id: 1,
+    original,
+    at: 0,
+    start,
+    state: 'ready',
+    processed: { translation: 'x', source, english: [] }
+  })
+  // "Fue al perro, fue.": ir twice (two pairs), a glue word, punctuation with no pair.
+  const first = [
+    token('Fue', 'v', 1, 'ir'),
+    token('al', 'g', 2, 'a'),
+    token('perro', 'n', 3),
+    token(',', 'g', null),
+    token('fue', 'v', 4, 'ir')
+  ]
+  assert.equal(log.noteLine(key, 'es', met('Fue al perro, fue.', 1, first)), true)
+  assert.equal(
+    log.noteLine(key, 'es', met('Fue al perro, fue.', 1.5, first)),
+    false,
+    'the same line again'
+  )
+  log.noteLine(key, 'es', met('Perros.', 9, [token('Perros', 'n', 1, 'perro')]))
+  const byKey = (words) => Object.fromEntries(words.map((word) => [word.key, word]))
+  const tally = byKey(log.videoWords(key, 'es'))
+  assert.deepEqual(Object.keys(tally).sort(), ['es:a', 'es:ir', 'es:perro'])
+  assert.equal(tally['es:ir'].count, 2, 'the same word twice in a line counts twice')
+  assert.equal(tally['es:perro'].count, 2, 'and in another line once more; the same line again not')
+  assert.equal(tally['es:perro'].text, 'Perros', 'the form last seen')
+  assert.equal(tally['es:a'].job, 'g')
+  // Another language on the same video keeps its own words.
+  log.noteLine(key, 'ja', met('行く', 20, [token('行く', 'v', 1)]))
+  assert.equal(log.videoWords(key, 'es').length, 3)
+  assert.deepEqual(
+    log.videoWords(key, 'ja').map((word) => word.key),
+    ['ja:行く']
+  )
+  assert.deepEqual([...log.allVideoWords('ja').keys()], [key])
+  assert.equal(log.allVideoWords('ko').size, 0)
+
+  // The lines kept before tallies existed are tallied once; a damaged line is skipped.
+  const before = log.videoWords(key, 'es')
+  database().exec('DELETE FROM video_words')
+  database()
+    .prepare(
+      'INSERT INTO lines (video_id, language, start, original, translation, processed, met_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    )
+    .run(key, 'es', 30, 'roto', 'broken', '{not json', at(2026, 10, 14))
+  database()
+    .prepare(
+      'INSERT INTO lines (video_id, language, start, original, translation, processed, met_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    )
+    .run(key, 'es', 31, 'raro', 'odd', JSON.stringify({ source: [{ pair: 1, base: 5 }] }), at(2026, 10, 14))
+  assert.equal(log.tallyKeptLines(), 3, 'three good lines; the damaged ones skipped')
+  assert.deepEqual(log.videoWords(key, 'es'), before, 'the same tally as when the lines were met')
+  assert.equal(log.tallyKeptLines(), 0, 'only once')
+
+  // A video's % by study day: replaced within a day, the earliest day is its "then".
+  log.noteScore(key, 'es', 0.4, at(2026, 10, 14, 12))
+  log.noteScore(key, 'es', 0.45, at(2026, 10, 14, 20))
+  log.noteScore(key, 'es', 0.5, at(2026, 10, 15, 3)) // 03:00: still the 14th's study day
+  log.noteScore(key, 'es', 0.6, at(2026, 10, 16))
+  log.noteScore(key, 'ja', 0.1, at(2026, 10, 13))
+  const rows = database()
+    .prepare("SELECT day, score FROM video_scores WHERE language = 'es' ORDER BY day")
+    .all()
+    .map((row) => ({ ...row }))
+  assert.deepEqual(rows, [
+    { day: '2026-10-14', score: 0.5 },
+    { day: '2026-10-16', score: 0.6 }
+  ])
+  assert.deepEqual(log.firstScores('es').get(key), { day: '2026-10-14', score: 0.5 })
+  assert.deepEqual(log.firstScores('ja').get(key), { day: '2026-10-13', score: 0.1 }, 'per language')
+  console.log('progress: tallies and day scores ok')
 } finally {
   rmSync(folder, { recursive: true, force: true })
 }

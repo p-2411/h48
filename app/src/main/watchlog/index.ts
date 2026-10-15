@@ -1,9 +1,12 @@
 // The watch log: what the learner watched with Duet, kept on this Mac. Videos (for Watching), the
 // lines met in each (for checkpoints and the daily "say the line"), what the learner did with
 // words (hovered, saved, explained, missed in a checkpoint) and each study day's activity (for the
-// streak). This class is the only code that touches those tables; connect.ts feeds it.
+// streak). For progress (src/main/progress), each video's words as met in its lines, and its % on
+// each study day. This class is the only code that touches those tables; connect.ts feeds it.
 import type { WatchedVideoSummary } from '../../shared/home'
-import type { Language, OverlayLine, ProcessedLine, Site } from '../../shared/types'
+import { pairKeys } from '../../shared/knowledge'
+import type { TalliedWord } from '../../shared/progress'
+import type { Language, OverlayLine, ProcessedLine, Site, WordJob } from '../../shared/types'
 import { database, transaction } from '../store/db'
 import { studyDay } from '../study-day'
 import { streak, week, type DayRecord, type Streak, type WeekDay } from './streak'
@@ -228,8 +231,88 @@ export class WatchLog {
           'INSERT INTO lines (video_id, language, start, original, translation, processed, met_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
         )
         .run(key, language, start, original, processed.translation, JSON.stringify(processed), now)
+      this.tally(key, language, processed)
       return true
     })
+  }
+
+  /** Each word of a line met counted once more in its video's words (a word twice in the line, as
+   * two pairs, twice). */
+  private tally(key: string, language: Language, processed: ProcessedLine): void {
+    const upsert = database().prepare(
+      `INSERT INTO video_words (video_id, language, key, text, job, count) VALUES (?, ?, ?, ?, ?, 1)
+       ON CONFLICT (video_id, language, key) DO UPDATE SET count = count + 1, text = excluded.text, job = excluded.job`
+    )
+    for (const word of pairKeys(language, processed)) upsert.run(key, language, word.key, word.text.slice(0, MAX_TEXT), word.job)
+  }
+
+  /** The lines kept from before videos' words were tallied, tallied once: only while no video has
+   * any (so never twice). A damaged line is skipped. Returns how many lines were tallied. */
+  tallyKeptLines(): number {
+    return transaction(() => {
+      if (database().prepare('SELECT 1 FROM video_words LIMIT 1').get()) return 0
+      const rows = database().prepare('SELECT video_id, language, processed FROM lines ORDER BY id').all() as {
+        video_id: string
+        language: Language
+        processed: string | null
+      }[]
+      let tallied = 0
+      for (const row of rows) {
+        const processed = parseProcessed(row.processed)
+        if (!processed) continue
+        try {
+          this.tally(row.video_id, row.language, processed)
+          tallied++
+        } catch {
+          // A line damaged inside (a word that isn't text): it counts for nothing.
+        }
+      }
+      return tallied
+    })
+  }
+
+  /** A video's words in `language`, as met in its lines. */
+  videoWords(key: string, language: Language): TalliedWord[] {
+    return (
+      database()
+        .prepare('SELECT key, text, job, count FROM video_words WHERE video_id = ? AND language = ? ORDER BY key')
+        .all(key, language) as { key: string; text: string; job: WordJob; count: number }[]
+    ).map((row) => ({ key: row.key, text: row.text, job: row.job, count: row.count }))
+  }
+
+  /** Every video's words in `language`, by its key. */
+  allVideoWords(language: Language): Map<string, TalliedWord[]> {
+    const rows = database()
+      .prepare('SELECT video_id, key, text, job, count FROM video_words WHERE language = ? ORDER BY video_id, key')
+      .all(language) as { video_id: string; key: string; text: string; job: WordJob; count: number }[]
+    const videos = new Map<string, TalliedWord[]>()
+    for (const row of rows) {
+      const words = videos.get(row.video_id) ?? []
+      words.push({ key: row.key, text: row.text, job: row.job, count: row.count })
+      videos.set(row.video_id, words)
+    }
+    return videos
+  }
+
+  /** A video's % (0 to 1) in `language` on today's study day, replacing an earlier one that day. */
+  noteScore(key: string, language: Language, score: number, now = Date.now()): void {
+    database()
+      .prepare(
+        `INSERT INTO video_scores (video_id, language, day, score, at) VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT (video_id, language, day) DO UPDATE SET score = excluded.score, at = excluded.at`
+      )
+      .run(key, language, studyDay(now), score, now)
+  }
+
+  /** Each video's % on the first study day it was watched in `language` (its "then"), by its key. */
+  firstScores(language: Language): Map<string, { day: string; score: number }> {
+    const rows = database()
+      .prepare(
+        `SELECT video_id, day, score FROM video_scores s WHERE language = ?
+           AND day = (SELECT MIN(day) FROM video_scores WHERE video_id = s.video_id AND language = s.language)`
+      )
+      .all(language) as { video_id: string; day: string; score: number }[]
+    return new Map(rows.map((row) => [row.video_id, { day: row.day, score: row.score }]))
   }
 
   /** Something the learner did with a word. The same event again within a minute is skipped. */

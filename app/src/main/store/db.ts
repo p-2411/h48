@@ -143,6 +143,27 @@ const MIGRATIONS: string[] = [
   // 5: the Words place lists a language's words, the last seen first.
   `
   CREATE INDEX words_recent ON words (language, last_seen);
+  `,
+  // 6: progress (src/main/progress): each video's words, from the lines met, never pruned (so a video
+  // keeps its % and reading level after its lines go), and its % on each study day it was watched.
+  `
+  CREATE TABLE video_words (
+    video_id TEXT NOT NULL REFERENCES videos (id) ON DELETE CASCADE,
+    language TEXT NOT NULL,
+    key      TEXT NOT NULL,     -- shared/knowledge.ts wordKey
+    text     TEXT NOT NULL,     -- as it was last on screen
+    job      TEXT NOT NULL,
+    count    INTEGER NOT NULL,  -- times met in the video's lines
+    PRIMARY KEY (video_id, language, key)
+  );
+  CREATE TABLE video_scores (
+    video_id TEXT NOT NULL REFERENCES videos (id) ON DELETE CASCADE,
+    language TEXT NOT NULL,
+    day      TEXT NOT NULL,     -- the study day (rolls over at 04:00); the first is the video's "then"
+    score    REAL NOT NULL,     -- 0 to 1
+    at       INTEGER NOT NULL,
+    PRIMARY KEY (video_id, language, day)
+  );
   `
 ]
 
