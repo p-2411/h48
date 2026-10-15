@@ -40,7 +40,8 @@ reader said it (a new frame, a new video). Development only.
 
 Installed copies look for a newer version soon after launch and every 4 hours (`src/main/updates/`),
 download it quietly, and install it when Duet quits. "Restart to update" in the menu bar or Settings
-installs it at once. Copies run from source (`npm run dev`) never check. Releases are published to
+installs it at once. Only packaged macOS builds check (a dmg or zip build: `--dir` has no feed);
+copies run from source (`npm run dev`) never do. Releases are published to
 the public repo [p-2411/duet-releases](https://github.com/p-2411/duet-releases), which holds only the
 release files; the app reads its `latest-mac.yml` without a token.
 
@@ -69,15 +70,18 @@ npm version patch --no-git-tag-version   # or minor; then commit package.json an
 npm run release:mac
 ```
 
-The script stops unless the tree is clean and the version is new. It then runs the checks, builds,
-signs (the helpers in `resources/bin` too), notarises and staples, and publishes the `.dmg`, `.zip`
-and `latest-mac.yml`. It checks the app with Gatekeeper, then tags the commit `v<version>` and pushes
-the tag. A release is live as soon as it is published, so a broken one reaches everyone: to take it
-back, publish a newer version (copies never go back to an older one).
+The script stops unless `app/` is clean and the version is new. It then runs the checks, builds,
+signs (the helpers in `resources/bin` too), notarises and staples, and uploads the `.dmg`, `.zip` and
+`latest-mac.yml` as a draft release, which installed copies can't see. Only when the app passes
+Gatekeeper and carries its notarisation ticket is the draft published; then the commit is tagged
+`v<version>` and the tag pushed. If a check fails, the draft stays: delete it on the releases page.
+A published release reaches everyone, so to take a broken one back, publish a newer version (copies
+never go back to an older one).
 
 The first version with the updater (1.0.1 or later) must be installed by hand by anyone on an older
-copy. Builds are for Apple silicon only, like the native helpers. Windows (`--win`) publishes the
-same way once its build is ready. A Linux AppImage updates itself; a `.deb` or snap does not.
+copy. Builds are for Apple silicon only (`electron-builder.yml` pins arm64), like the native helpers.
+Windows and Linux copies don't update themselves until their releases are published too
+(`updatable()` in `src/main/updates/index.ts`).
 
 ## How a line gets on screen
 

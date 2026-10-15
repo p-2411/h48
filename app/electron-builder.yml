@@ -19,6 +19,12 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  # Apple silicon only, like the native helpers in resources/bin, whatever Node the build runs under.
+  target:
+    - target: dmg
+      arch: arm64
+    - target: zip
+      arch: arm64
   entitlementsInherit: build/entitlements.mac.plist
   # The microphone is Duet's only prompt here: Accessibility (reading the captions) has none, and
   # system audio is asked for by the audio reader, with its own wording (native/macos/AudioReader).
@@ -46,4 +52,6 @@ publish:
   provider: github
   owner: p-2411
   repo: duet-releases
-  releaseType: release
+  # Uploaded as a draft, which installed copies can't see; scripts/release-mac.sh publishes it once
+  # the app passes Gatekeeper.
+  releaseType: draft

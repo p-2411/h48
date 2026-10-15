@@ -26,8 +26,11 @@ class FakeUpdater extends EventEmitter {
   autoInstallOnAppQuit = false
   checks = 0
   installs = 0
+  // What a check answers: its download, when one was found (a rejection here is a failed download).
+  result = null
   async checkForUpdates() {
     this.checks++
+    return this.result
   }
   quitAndInstall() {
     this.installs++
@@ -90,7 +93,9 @@ try {
     updater.emit('download-progress', { percent: 12.2 })
     updater.emit('download-progress', { percent: 12.9 })
     assert.equal(changes.length, before + 1)
-    assert.equal(updateLine(updates.status.state), 'Downloading Duet 1.0.1… 12%')
+    assert.equal(Math.floor(updates.status.state.percent), 12)
+    // The sentence leaves the percent out, so it isn't read aloud at each one (Settings shows it).
+    assert.equal(updateLine(updates.status.state), 'Downloading Duet 1.0.1…')
 
     updater.emit('update-downloaded', { version: '1.0.1' })
     assert.deepEqual(updates.status.state, { kind: 'ready', version: '1.0.1' })
@@ -149,6 +154,32 @@ try {
       updates.status.state.message,
       'Couldn’t download the update. Duet will try again later.'
     )
+  }
+
+  // --- A failed download is caught (no unhandled rejection), and said through 'error'. ---
+  {
+    const { updates, updater } = make()
+    let rejected = false
+    process.once('unhandledRejection', () => (rejected = true))
+    updater.result = { downloadPromise: Promise.reject(new Error('download failed')) }
+    updates.check()
+    await new Promise((done) => setTimeout(done, 10))
+    assert.equal(rejected, false, 'a failed download went unhandled')
+  }
+
+  // --- A ready update that can't be installed (run from the disk image): its own message, and
+  // checks start again. ---
+  {
+    const { updates, updater } = make()
+    updates.start()
+    updates.check()
+    updater.emit('update-available', { version: '1.0.1' })
+    updater.emit('update-downloaded', { version: '1.0.1' })
+    updater.emit('error', new Error('Cannot update while running on a read-only volume'))
+    assert.match(updates.status.state.message, /Move Duet to your Applications folder/)
+    updates.check()
+    assert.equal(updater.checks, 2)
+    updates.stop()
   }
 
   // --- What Settings says when updates are off. ---

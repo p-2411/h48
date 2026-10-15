@@ -19,7 +19,7 @@ fail() {
 }
 
 [[ "$(uname)" == Darwin ]] || fail "macOS releases are built on a Mac."
-[[ -z "$(git status --porcelain)" ]] || fail "commit or set aside your changes first: a release is built from a clean tree."
+[[ -z "$(git status --porcelain -- .)" ]] || fail "commit or set aside your changes in app/ first: a release is built from a clean tree."
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && fail "$TAG is already released. Bump the version first (npm version patch --no-git-tag-version), and commit it."
 security find-identity -v -p codesigning | grep -q "Developer ID Application" ||
   fail "no Developer ID Application certificate in the keychain."
@@ -34,13 +34,20 @@ npm run typecheck
 npm run lint
 npm test
 npx electron-vite build
+# A fresh dist/, so the checks below look at this build. Uploaded as a draft (electron-builder.yml ›
+# releaseType), which installed copies can't see yet.
+rm -rf dist
 APPLE_KEYCHAIN_PROFILE="$PROFILE" GH_TOKEN="$GH_TOKEN" npx electron-builder --mac --publish always
 
-# The app in the release must pass Gatekeeper as a notarised Developer ID app, or updates won't install.
-APP="$(find dist -maxdepth 2 -name 'Duet.app' -type d | head -n 1)"
-[[ -n "$APP" ]] || fail "no Duet.app in dist."
-spctl --assess --type execute --verbose=2 "$APP"
-xcrun stapler validate "$APP"
+# The app must pass Gatekeeper as a notarised Developer ID app, or it won't open or update. Only then
+# is the draft published, and installed copies find it.
+APP="dist/mac-arm64/Duet.app"
+[[ -d "$APP" ]] || fail "no $APP: the build made something else."
+spctl --assess --type execute --verbose=2 "$APP" ||
+  fail "Gatekeeper refused $APP. The release stays a draft: delete it at https://github.com/p-2411/duet-releases/releases"
+xcrun stapler validate "$APP" ||
+  fail "$APP has no notarisation ticket. The release stays a draft: delete it at https://github.com/p-2411/duet-releases/releases"
+GH_TOKEN="$GH_TOKEN" gh release edit "$TAG" --repo p-2411/duet-releases --draft=false --latest
 
 git tag "$TAG"
 git push origin "$TAG"

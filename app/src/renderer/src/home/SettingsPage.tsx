@@ -63,8 +63,12 @@ function UpdatesSetting(): React.JSX.Element | null {
         Updates
       </h2>
       <div className="glass">
-        <p className="muted" role="status">
-          Duet {status.version}. {updateLine(state)}
+        <p className="muted">
+          {/* Only a change of state is read aloud, not each percent of a download. */}
+          <span role="status">
+            Duet {status.version}. {updateLine(state)}
+          </span>
+          {state.kind === 'downloading' && ` ${Math.floor(state.percent)}%`}
         </p>
         {state.kind === 'ready' ? (
           <button type="button" className="btn" onClick={() => window.duet.updates.restart()}>

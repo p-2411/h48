@@ -16,7 +16,8 @@ export type UpdateState =
 /** This copy's version, and where its updates stand. */
 export type UpdateStatus = { version: string; state: UpdateState }
 
-/** The state in one sentence, for Settings. */
+/** The state in one sentence, for Settings. A download's progress is left out: it would be read
+ * aloud at every percent (Settings shows it beside the sentence). */
 export function updateLine(state: UpdateState): string {
   switch (state.kind) {
     case 'off':
@@ -28,7 +29,7 @@ export function updateLine(state: UpdateState): string {
     case 'checking':
       return 'Looking for updates…'
     case 'downloading':
-      return `Downloading Duet ${state.version}… ${Math.floor(state.percent)}%`
+      return `Downloading Duet ${state.version}…`
     case 'ready':
       return `Duet ${state.version} is ready. It installs when you quit Duet.`
     case 'failed':

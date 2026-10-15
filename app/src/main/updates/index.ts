@@ -3,6 +3,8 @@
 // on GitHub (electron-builder.yml › publish); app/README.md says how to make one. Never while run
 // from source.
 import { EventEmitter } from 'events'
+import { existsSync } from 'fs'
+import { join } from 'path'
 import { app } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { autoUpdater, type AppUpdater } from 'electron-updater'
@@ -19,11 +21,17 @@ export type Updater = Pick<
   'on' | 'autoDownload' | 'autoInstallOnAppQuit' | 'checkForUpdates' | 'quitAndInstall'
 >
 
-/** Whether this copy can update itself: macOS and Windows can, Linux only as an AppImage (a .deb or
- * snap is updated by its package manager). */
+/** Whether this copy has a feed to update from: only macOS releases are published, and only a
+ * dmg or zip build carries the feed's address (app-update.yml; a --dir build has none). Windows and
+ * Linux join once their releases are published. */
 function updatable(): boolean {
-  return process.platform !== 'linux' || !!process.env.APPIMAGE
+  return process.platform === 'darwin' && existsSync(join(process.resourcesPath, 'app-update.yml'))
 }
+
+// When the downloaded update can't be put in place: macOS replaces the app where it is, which it
+// can't do in the disk image or a copy run from Downloads (App Translocation).
+const CANNOT_INSTALL =
+  'Couldn’t install the update. Move Duet to your Applications folder, then open it again.'
 
 export class Updates extends EventEmitter<{ change: [UpdateStatus] }> {
   private state: UpdateState
@@ -37,7 +45,7 @@ export class Updates extends EventEmitter<{ change: [UpdateStatus] }> {
     private readonly deps: {
       notify: (text: string) => void
       version?: string
-      /** Defaults to: a packaged app, on a platform that can update itself. */
+      /** Defaults to: a packaged app with a feed to update from. */
       enabled?: boolean
       updater?: () => Updater
     }
@@ -66,8 +74,8 @@ export class Updates extends EventEmitter<{ change: [UpdateStatus] }> {
       this.answer('Duet is up to date.')
     })
     updater.on('update-downloaded', (release) => {
-      // Nothing more to look for until it is installed.
-      clearInterval(this.timer)
+      // Nothing more to look for until it is installed (or fails to be: see 'error').
+      this.stopChecking()
       this.set({ kind: 'ready', version: release.version })
       this.answer(
         `Duet ${release.version} is ready. Restart to update from the menu bar, or it installs when you quit.`
@@ -75,10 +83,15 @@ export class Updates extends EventEmitter<{ change: [UpdateStatus] }> {
     })
     updater.on('error', (error) => {
       console.warn('Updates:', error.message)
+      const kind = this.state.kind
       const message =
-        this.state.kind === 'downloading'
-          ? 'Couldn’t download the update. Duet will try again later.'
-          : 'Couldn’t look for updates. Duet will try again later.'
+        kind === 'ready'
+          ? CANNOT_INSTALL
+          : kind === 'downloading'
+            ? 'Couldn’t download the update. Duet will try again later.'
+            : 'Couldn’t look for updates. Duet will try again later.'
+      // A ready update that couldn't be installed: look again, as before it was found.
+      if (kind === 'ready') this.startChecking(CHECK_EVERY_MS)
       this.set({ kind: 'failed', message })
       this.answer(message)
     })
@@ -90,9 +103,7 @@ export class Updates extends EventEmitter<{ change: [UpdateStatus] }> {
 
   /** Looks soon, then every few hours. */
   start(): void {
-    if (!this.updater) return
-    this.first = setTimeout(() => this.check(), FIRST_CHECK_MS)
-    this.timer = setInterval(() => this.check(), CHECK_EVERY_MS)
+    this.startChecking(FIRST_CHECK_MS)
   }
 
   /** Looks for a newer version now (and downloads it); `tell` answers with a notification. Nothing
@@ -101,8 +112,11 @@ export class Updates extends EventEmitter<{ change: [UpdateStatus] }> {
     const kind = this.state.kind
     if (!this.updater || kind === 'checking' || kind === 'downloading' || kind === 'ready') return
     this.tell = tell
-    // A failure also arrives as 'error', which says so.
-    this.updater.checkForUpdates().catch(() => {})
+    // A failure, of the check or of the download it starts, also arrives as 'error', which says so.
+    this.updater
+      .checkForUpdates()
+      .then((result) => result?.downloadPromise?.catch(() => {}))
+      .catch(() => {})
   }
 
   /** Installs the downloaded update and opens Duet again. */
@@ -111,6 +125,18 @@ export class Updates extends EventEmitter<{ change: [UpdateStatus] }> {
   }
 
   stop(): void {
+    this.stopChecking()
+  }
+
+  /** Looks after `firstMs`, then every few hours. */
+  private startChecking(firstMs: number): void {
+    if (!this.updater) return
+    this.stopChecking()
+    this.first = setTimeout(() => this.check(), firstMs)
+    this.timer = setInterval(() => this.check(), CHECK_EVERY_MS)
+  }
+
+  private stopChecking(): void {
     clearTimeout(this.first)
     clearInterval(this.timer)
   }
