@@ -1,10 +1,12 @@
 appId: io.useduet.app
 productName: Duet
+copyright: Copyright © 2026 Duet
 directories:
   buildResources: build
 files:
   - '!**/.vscode/*'
   - '!src/*'
+  - '!{dev,native,scripts}/**'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
@@ -19,6 +21,7 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  category: public.app-category.education
   # Apple silicon only, like the native helpers in resources/bin, whatever Node the build runs under.
   target:
     - target: dmg
@@ -26,24 +29,17 @@ mac:
     - target: zip
       arch: arm64
   entitlementsInherit: build/entitlements.mac.plist
-  # The microphone is Duet's only prompt here: Accessibility (reading the captions) has none, and
-  # system audio is asked for by the audio reader, with its own wording (native/macos/AudioReader).
+  # Two prompts: the microphone (talking to Duet) and system audio (hearing the lines on sites with no
+  # captions to read). Accessibility, for reading captions, has none. The audio reader embeds the same
+  # system-audio wording in its own Info.plist (native/macos/AudioReader): keep the two the same.
   extendInfo:
     NSMicrophoneUsageDescription: Duet listens when you talk to it or say a line back, and only then.
+    NSAudioCaptureUsageDescription: Duet listens to the sound of the video you are watching to get its lines, and never keeps it.
   # Signed with the Developer ID certificate in the keychain (the helpers in resources/bin too) and
   # notarised with the notarytool keychain profile scripts/release-mac.sh names. Without that profile
   # (any other build) notarising is skipped with a warning. macOS installs updates only on a signed app.
   notarize: true
 dmg:
-  artifactName: ${name}-${version}.${ext}
-linux:
-  target:
-    - AppImage
-    - snap
-    - deb
-  maintainer: electronjs.org
-  category: Utility
-appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 # Releases, and the feed installed copies check for updates (src/main/updates): a public repo that
