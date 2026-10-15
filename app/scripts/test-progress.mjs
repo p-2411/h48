@@ -8,6 +8,8 @@ import { join, resolve } from 'node:path'
 import { createJiti } from 'jiti'
 
 const folder = mkdtempSync(join(tmpdir(), 'duet-progress-test-'))
+// Closes the database once it is open: Windows won't delete an open file.
+let closeDatabase
 const fakeElectron = join(folder, 'fake-electron.cjs')
 writeFileSync(
   fakeElectron,
@@ -258,6 +260,7 @@ try {
   // --- The watch log: each video's words, and how well each was known when first met ------
   const { WatchLog } = await jiti.import(resolve('src/main/watchlog/index.ts'))
   const { database } = await jiti.import(resolve('src/main/store/db.ts'))
+  closeDatabase = () => database().close()
   const at = (y, m, d, h = 12) => new Date(y, m - 1, d, h).getTime()
   const log = new WatchLog()
   const key = 'youtube:abc'
@@ -539,5 +542,6 @@ try {
   )
   console.log('progress: home base text ok')
 } finally {
+  closeDatabase?.()
   rmSync(folder, { recursive: true, force: true })
 }
