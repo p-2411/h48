@@ -1,25 +1,30 @@
 // Crash and error reports, sent to Sentry. Covers the main process (uncaught errors, unhandled
 // rejections), every page (their errors come here over IPC and leave from here), Electron's own
-// processes crashing (native crash dumps, a page or the GPU process gone), the caption and audio
-// readers stopping, and failed model requests (grouped: one outage is one issue, not thousands).
+// processes going away (a page or the GPU process crashed, killed or out of memory), the caption and
+// audio readers stopping, and failed model requests (grouped: one outage is one issue, not
+// thousands). A native crash of the main process shows as a crashed session in release health.
 //
 // Privacy: nothing the learner watched, heard or said is sent. Every event passes scrubEvent
-// (shared/report-scrub.ts) and every breadcrumb scrubBreadcrumb; local variables, console output,
-// clicks and screenshots are never collected. Nothing at all is sent while "Share crash reports and
-// usage" is off in Settings, or when Duet runs from source (DUET_REPORTS=on to try it there).
+// (shared/report-scrub.ts), which keeps only messages of known shapes, and every breadcrumb
+// scrubBreadcrumb. Local variables, console output, clicks, screenshots and native crash dumps (a
+// page's memory can hold a line) are never collected. Reports wait in memory only, never on disk,
+// and nothing at all is sent while "Share crash reports and usage" is off in Settings, or when Duet
+// runs from source (DUET_REPORTS=on to try it there).
 //
 // The project's address comes from MAIN_VITE_SENTRY_DSN at build time; without it, nothing is sent.
 // What is collected is listed in app/README.md (Crash reports and usage).
 import * as Sentry from '@sentry/electron/main'
-import { app, type WebContents } from 'electron'
+import { app, ipcMain, type WebContents } from 'electron'
+import type { OverlaySettings } from '../../shared/types'
 import { scrubBreadcrumb, scrubEvent } from '../../shared/report-scrub'
 import { onModelFailure, type ModelFailure } from '../ai/report'
-import { installId, reportsBuild, shareAllowed } from './consent'
-
-export { followConsent } from './consent'
+import type { Settings } from '../settings'
+import { followConsent as followSettings, installId, reportsBuild, shareAllowed } from './consent'
 
 // A failure of the same kind is sent at most this often; Sentry counts it as one issue anyway.
 const SAME_FAILURE_EVERY_MS = 10 * 60_000
+// Reports waiting for the network, at most; the oldest wait first.
+const QUEUE_SIZE = 30
 
 // Each page by its window: index.html is the strip.
 const PAGES: Record<string, string> = {
@@ -36,32 +41,62 @@ function pageName(contents: WebContents): string | undefined {
 
 let started = false
 
-/** Starts reporting. Call once, before the app is ready (index.ts does, first thing). */
+// Reports that could not be sent yet (offline). In memory only: Sentry's own queue keeps them on disk,
+// where they would go out later even after sharing was turned off.
+let queue: unknown[] = []
+
+function memoryStore<E>(): {
+  push(envelope: E): Promise<void>
+  unshift(envelope: E): Promise<void>
+  shift(): Promise<E | undefined>
+} {
+  return {
+    push: async (envelope) => {
+      if (queue.length < QUEUE_SIZE) queue.push(envelope)
+    },
+    unshift: async (envelope) => {
+      queue.unshift(envelope)
+    },
+    shift: async () => queue.shift() as E | undefined
+  }
+}
+
+/** Starts reporting, in the one Duet that holds the single-instance lock. Call once, before the app
+ * is ready (index.ts does). Pages ask whether it started (duet:reports), and report only if so. */
 export function startReports(): void {
+  ipcMain.on('duet:reports', (event) => {
+    event.returnValue = started
+  })
   const dsn = import.meta.env.MAIN_VITE_SENTRY_DSN
   if (started || !dsn || !reportsBuild()) return
   started = true
-  const offline = Sentry.makeElectronOfflineTransport()
   Sentry.init({
     dsn,
     release: `duet@${app.getVersion()}`,
     environment: app.isPackaged ? 'production' : 'development',
     sendDefaultPii: false,
-    // Nothing leaves while sharing is off: not errors, not crash dumps, not session counts.
-    transport: (options) => {
-      const transport = offline(options)
-      return {
-        send: (envelope) => (shareAllowed() ? transport.send(envelope) : Promise.resolve({})),
-        flush: (timeout) => transport.flush(timeout)
-      }
+    // Nothing leaves while sharing is off, and nothing waits for later: not errors, not session
+    // counts, not reports that were waiting for the network.
+    transportOptions: {
+      createStore: () => memoryStore(),
+      flushAtStartup: false,
+      shouldSend: () => shareAllowed(),
+      shouldStore: () => shareAllowed()
     },
-    integrations: (defaults) =>
-      defaults.filter(
+    integrations: (defaults) => [
+      ...defaults.filter(
         (integration) =>
           // Console output can hold a line; local variables can hold anything; screenshots show the
-          // strip.
-          !['Console', 'LocalVariables', 'Screenshots'].includes(integration.name)
+          // strip; a native crash dump holds a process's memory, lines included.
+          !['Console', 'LocalVariables', 'Screenshots', 'SentryMinidump', 'ChildProcess'].includes(
+            integration.name
+          )
       ),
+      // Without crash dumps, a process going away is reported here instead: its type and reason only.
+      Sentry.childProcessIntegration({
+        events: ['crashed', 'oom', 'abnormal-exit', 'launch-failed', 'integrity-failure']
+      })
+    ],
     initialScope: { user: { id: installId() } },
     getRendererName: pageName,
     beforeSend: (event) => scrubEvent(event),
@@ -70,9 +105,12 @@ export function startReports(): void {
   onModelFailure(reportModelFailure)
 }
 
-/** Reports an error caught and handled somewhere Duet carries on from. */
-export function reportError(error: unknown, tags: Record<string, string> = {}): void {
-  if (started) Sentry.captureException(error, { tags })
+/** From here on, sharing follows Settings; turning it off also drops reports still waiting. */
+export function followConsent(settings: Settings): void {
+  followSettings(settings)
+  settings.on('change', (current: OverlaySettings) => {
+    if (!current.shareDiagnostics) queue = []
+  })
 }
 
 /** A caption or audio reader stopped while Duet still needed it, or could not start. */

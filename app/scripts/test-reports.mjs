@@ -3,48 +3,70 @@
 // grouped (main/ai/report.ts): one outage is one kind, whichever file it came through.
 // Run: npx jiti scripts/test-reports.mjs
 import assert from 'node:assert/strict'
-import { scrubBreadcrumb, scrubEvent, scrubText } from '../src/shared/report-scrub.ts'
+import {
+  REMOVED,
+  safeMessage,
+  scrubBreadcrumb,
+  scrubEvent,
+  scrubPlace
+} from '../src/shared/report-scrub.ts'
 import { failureKind, onModelFailure, reportModelFailure } from '../src/main/ai/report.ts'
 import { ModelError } from '../src/main/ai/errors.ts'
 
-// Quoted text goes; code names stay.
+// Messages are kept only in shapes code makes; anything else is removed, in any language.
+const removed = [
+  'Could not answer: Hola amigo, como estas',
+  'Not a key in es: perro',
+  'Could not explain: sonna tsumori ja nakatta',
+  'Could not answer: I never meant it like that',
+  `No card for 'perro'`,
+  'Could not split そんなつもりじゃなかった into words',
+  'Bad line 안녕하세요 친구',
+  'Missing word mañana in ¿Qué pasa?',
+  'x'.repeat(400)
+]
+for (const message of removed) assert.equal(safeMessage(message), REMOVED, message)
+// The engine's own messages stay, with code names.
+for (const kept of [
+  `Cannot read properties of undefined (reading 'map')`,
+  `Cannot set properties of null (setting 'lineId')`,
+  'line.words.map is not a function',
+  'Maximum call stack size exceeded',
+  'Failed to fetch',
+  'EMPTY_ANSWER',
+  `'GPU' process exited with 'oom'`,
+  `'strip' process exited with 'crashed'`,
+  'The caption-reader stopped (SIGKILL)',
+  'The audio-reader stopped (code 1)'
+])
+  assert.equal(safeMessage(kept), kept, kept)
+// Some are cut to the part code made.
+assert.equal(safeMessage(`Unexpected token 'H', "Hola amigo" is not valid JSON`), 'Invalid JSON')
 assert.equal(
-  scrubText(`Unexpected token 'H', "Hola amigo" is not valid JSON`),
-  'Unexpected token [text], [text] is not valid JSON'
+  safeMessage(`ENOENT: no such file or directory, open '/Users/sam/Duet/x.db'`),
+  'ENOENT'
 )
 assert.equal(
-  scrubText(`Cannot read properties of undefined (reading 'map')`),
-  `Cannot read properties of undefined (reading 'map')`
+  safeMessage('Non-Error promise rejection captured with value: Hola amigo'),
+  'Non-Error promise rejection captured'
 )
-assert.equal(
-  scrubText(`Cannot read properties of undefined (reading 'lineId')`),
-  `Cannot read properties of undefined (reading 'lineId')`
+// A process's type and reason stay apart, so each crash kind is its own issue.
+assert.notEqual(
+  safeMessage(`'GPU' process exited with 'oom'`),
+  safeMessage(`'strip' process exited with 'crashed'`)
 )
-assert.equal(scrubText(`No card for 'perro'`), 'No card for [text]')
+
+// Places keep where they point only: a host, a file's name, no home folder, no email.
 assert.equal(
-  scrubText(`Can't explain this line`),
-  `Can't explain this line`,
-  'an apostrophe is no quote'
-)
-// Japanese, Korean and Spanish text goes, quoted or not.
-assert.equal(
-  scrubText('Could not split そんなつもりじゃなかった into words'),
-  'Could not split [text] into words'
-)
-assert.equal(scrubText('Bad line 안녕하세요 친구'), 'Bad line [text] [text]')
-assert.equal(scrubText('Missing word mañana in ¿Qué pasa?'), 'Missing word [text] in [text] pasa?')
-assert.equal(scrubText('「こんにちは」'), '[text]')
-// Addresses keep their host only; the home folder and emails go.
-assert.equal(
-  scrubText('fetch https://www.youtube.com/watch?v=abc123&t=4 failed'),
+  scrubPlace('fetch https://www.youtube.com/watch?v=abc123&t=4 failed'),
   'fetch https://www.youtube.com/… failed'
 )
 assert.equal(
-  scrubText('ENOENT /Users/sam/Library/Application Support/Duet/x.db'),
-  'ENOENT ~/Library/Application Support/Duet/x.db'
+  scrubPlace('/Users/sam/Library/Application Support/Duet/x.db'),
+  '~/Library/Application Support/Duet/x.db'
 )
-assert.equal(scrubText('from sam@example.com'), 'from [email]')
-assert.equal(scrubText('x'.repeat(400)).length, 301, 'long messages are cut')
+assert.equal(scrubPlace('C:\\Users\\sam\\AppData\\Local\\Duet'), '~\\AppData\\Local\\Duet')
+assert.equal(scrubPlace('from sam@example.com'), 'from [email]')
 
 // Breadcrumbs: console and clicks go; requests keep method, status and host.
 assert.equal(scrubBreadcrumb({ category: 'console', message: 'line: Hola' }), null)
@@ -64,7 +86,8 @@ assert.deepEqual(
 )
 assert.equal(scrubBreadcrumb({ category: 'electron', message: 'app.ready' })?.message, 'app.ready')
 
-// Events: messages scrubbed, local variables and extra data gone, the user only by id.
+// Events: messages by allowlist, paths scrubbed (React's component stack too), local variables and
+// extra data gone, the user only by id.
 const event = scrubEvent({
   message: 'Line "Te quiero" failed',
   logentry: { message: 'Line %s failed', params: ['Te quiero'] },
@@ -76,8 +99,16 @@ const event = scrubEvent({
         stacktrace: {
           frames: [{ filename: '/Users/sam/app/out/main/index.js', vars: { text: 'Te quiero' } }]
         }
-      }
+      },
+      { type: 'ModelFailure', value: 'openai lines_es failed: http_503' }
     ]
+  },
+  contexts: {
+    react: {
+      componentStack:
+        '\n    at Overlay (file:///C:/Users/sam/AppData/Local/Programs/duet/resources/app.asar/out/renderer/assets/index-abc.js:12:34)'
+    },
+    os: { name: 'macOS', version: '15.0' }
   },
   breadcrumbs: [
     { category: 'console', message: 'Te quiero' },
@@ -93,7 +124,11 @@ const event = scrubEvent({
 const sent = JSON.stringify(event)
 assert.ok(!sent.includes('quiero'), `no line text in the event: ${sent}`)
 assert.ok(!sent.includes('sam'), `no user name in the event: ${sent}`)
-assert.equal(event.exception.values[0].value, 'Could not translate [text]')
+assert.equal(event.exception.values[0].value, REMOVED)
+assert.equal(event.exception.values[1].value, 'openai lines_es failed: http_503', 'Duet’s own stay')
+assert.equal(event.message, REMOVED)
+assert.equal(event.contexts.react.componentStack, '\n    at Overlay (file://…/index-abc.js:12:34)')
+assert.equal(event.contexts.os.name, 'macOS')
 assert.equal(event.exception.values[0].stacktrace.frames[0].vars, undefined)
 assert.equal(event.breadcrumbs.length, 1)
 assert.deepEqual(event.user, { id: 'install-1' })

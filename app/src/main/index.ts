@@ -77,9 +77,6 @@ if (is.dev) {
   }
 }
 
-// Crash and error reports start before the app is ready, so they see everything after.
-startReports()
-
 // How often the line on screen follows the video, and how often hearing looks at the audio.
 const TICK_MS = 100
 const HEARING_TICK_MS = 500
@@ -89,6 +86,9 @@ let tray: Tray | undefined
 // One Duet at a time: a second copy would read the same captions and write the same database.
 const primary = app.requestSingleInstanceLock()
 if (!primary) app.quit()
+// Crash and error reports start before the app is ready, so they see everything after; only in the
+// Duet that holds the lock, so a second copy on its way out never opens the database.
+else startReports()
 
 app.whenReady().then(() => {
   // Duet is dark only: the side panel's macOS material stays dark when the Mac is in light mode.
