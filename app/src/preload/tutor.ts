@@ -20,6 +20,9 @@ export const tutorApi = {
   startSession: (offer: TutorSessionOffer): Promise<TutorSessionAnswer> =>
     invoke<TutorSessionAnswer>('tutor:start-session', offer),
   voiceEnded: () => ipcRenderer.send('tutor:voice-ended'),
+  /** The call is still connected (every 20 s while it is): Duet's server keeps it going only while
+   * these come. */
+  voiceAlive: () => ipcRenderer.send('tutor:voice-alive'),
   /** The English meaning of one of Duet's turns in the language learnt; the voice never speaks it. */
   translate: (text: string): Promise<string> =>
     invoke<string>('tutor:translate', text),
@@ -42,5 +45,7 @@ export const tutorApi = {
   onPendingAction: (listener: (action: PendingTutorAction) => void) =>
     subscribe('tutor:pending-action', listener),
   onActionResult: (listener: (result: TutorActionResult) => void) =>
-    subscribe('tutor:action-result', listener)
+    subscribe('tutor:action-result', listener),
+  /** Duet's server ended the call (a cap reached), with the sentence to show. */
+  onVoiceStop: (listener: (sentence: string) => void) => subscribe('tutor:voice-stop', listener)
 }

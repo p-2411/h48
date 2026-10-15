@@ -64,6 +64,14 @@ export function useStripTalk(language: Language, onError: (text: string) => void
   useEffect(() => {
     if (about && status === 'ended') void window.duet.talkHere.end()
   }, [about, status])
+  // Voice that stopped with an error: the bubble stays to show it, but the call is over, so its
+  // minutes on Duet's server stop (and the video may play) until Try again starts a new one.
+  useEffect(() => {
+    if (about && status === 'error') window.duet.tutor.voiceEnded()
+  }, [about, status])
+  // Duet's server ended the call (a cap reached): the bubble closes as voice ends, so the reason
+  // shows in a toast.
+  useEffect(() => window.duet.tutor.onVoiceStop(onError), [onError])
 
   // The talk keys start talking, or end it.
   const latest = useRef({ talking, begin, end })
