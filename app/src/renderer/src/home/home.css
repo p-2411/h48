@@ -224,3 +224,19 @@
 .home-talk-head .head-slot { grid-column: 2; display: flex; justify-content: center; }
 .home-talk-head .btn { grid-column: 3; justify-self: end; }
 /* No line above the message box here: the page has room enough to set it apart. */
+
+/* A line above the hub when Duet can't help right now: signed out, or a cap reached
+   (AccountBanner.tsx). The hub moves down to make room. */
+.home-banner-wrap { position: absolute; inset: 52px 20px auto 20px; }
+.home-banner { flex-direction: row; align-items: center; gap: 12px; padding: 10px 14px; font-size: 13px; }
+.home-banner > span { flex: 1; }
+.home-banner-wrap:not(:empty) + .hub { inset: 112px 0 0 0; }
+.stage-open .home-banner-wrap { visibility: hidden; }
+
+/* Settings › Your plan: the plan, a bar for each meter, and what to do (AccountSection.tsx). */
+.plan-meter { display: flex; flex-direction: column; gap: 6px; }
+.plan-meter-text { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.plan-meter-track { height: 6px; border-radius: 3px; background: var(--fill); overflow: hidden; }
+.plan-meter-fill { height: 100%; border-radius: 3px; background: #fff; }
+.plan-meter-fill.full { background: var(--k-known); }
+.plan-actions { display: flex; flex-wrap: wrap; gap: 8px; }

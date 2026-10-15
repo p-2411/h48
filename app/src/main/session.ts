@@ -257,7 +257,8 @@ export class LineSession extends EventEmitter {
             error instanceof ModelError ? error.message : 'Could not translate this line.'
           if (!(error instanceof ModelError)) console.error('[duet] lines failed', error)
           for (const line of chunk) this.update(line, { state: 'failed', error: message })
-          if (error instanceof ModelError && error.kind === 'auth')
+          // Signed out, or a cap on Duet's server reached: the strip says why (not retried).
+          if (error instanceof ModelError && (error.kind === 'auth' || error.kind === 'quota'))
             this.emit('model-error', message)
         }
       }

@@ -13,6 +13,7 @@ import {
   Toggle
 } from '../components/SettingControls'
 import { LoadState } from '../components/LoadState'
+import { AccountSection } from './AccountSection'
 
 // The reminder's time when it is first turned on.
 const DEFAULT_REMINDER = '19:00'
@@ -109,6 +110,7 @@ export function SettingsPage(): React.JSX.Element {
         <LoadState loaded={false} error={error} reload={load} />
       ) : (
         <>
+          <AccountSection />
           <section className="settings-group" aria-labelledby="settings-learning">
             <h2 className="label" id="settings-learning">
               Learning
