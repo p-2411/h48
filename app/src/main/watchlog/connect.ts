@@ -88,6 +88,8 @@ export function connectWatchLog(
   // The video whose % was noted last, and when.
   let scoredKey: string | undefined
   let scoredAt: number | undefined
+  // Whether the video played at the last tick (a pause is noted once).
+  let wasPlaying = false
   const score = (key: string, now: number): void => {
     scoredKey = key
     scoredAt = now
@@ -145,7 +147,13 @@ export function connectWatchLog(
         if (due) noteVideo(now)
         if (player.playing) log.addWatchTime(since, key, now)
       })
-      if (player.playing && (key !== scoredKey || scoredAt === undefined || now - scoredAt >= SCORE_EVERY_MS)) score(key, now)
+      // The % is noted every SCORE_EVERY_MS while the video plays, and when it pauses; on a change
+      // of video, the one left is noted first (its last minute counts on the day it was watched).
+      if (player.playing) {
+        if (scoredKey !== undefined && scoredKey !== key) score(scoredKey, now)
+        if (key !== scoredKey || scoredAt === undefined || now - scoredAt >= SCORE_EVERY_MS) score(key, now)
+      } else if (wasPlaying && scoredKey === key) score(key, now)
+      wasPlaying = player.playing
     },
     finish(now = Date.now()) {
       record(() => {

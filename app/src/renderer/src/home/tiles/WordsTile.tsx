@@ -3,7 +3,7 @@
 // cards due now with Review. It opens Your words.
 import type { HomeToday } from '../../../../shared/home'
 import { STATE_LABELS, type WordState } from '../../../../shared/knowledge'
-import { metAndKnownLine } from '../progress'
+import { metAndKnown, metAndKnownLine } from '../progress'
 import { useLoaded } from '../useLoaded'
 import { Tile } from './Tile'
 import { useWordsSummary } from './useWordsSummary'
@@ -25,7 +25,8 @@ export function WordsTile({
   const { value: today } = useLoaded(loadToday, 'Could not load the cards due.')
   const due = today?.due ?? 0
   const counted = summary ? RUNGS.reduce((sum, rung) => sum + summary.counts[rung], 0) : 0
-  const met = summary ? Object.values(summary.counts).reduce((sum, count) => sum + count, 0) : 0
+  // Met: every rung but ignored, as "… met · … you know" counts them.
+  const met = summary ? metAndKnown(summary.counts).met : 0
   return (
     <Tile
       id="words"

@@ -111,6 +111,16 @@ try {
     'Korean: a 하다 verb by its noun'
   )
   assert.equal(unitRank('es', word('먹다', 'v', 1), ko), undefined, 'stems are only for Korean')
+  assert.equal(
+    unitRank('ko', word('바다', 'n', 1, '바다', 'ko'), list(['바', '바다'])),
+    2,
+    'a Korean noun keeps its 다 (바다 is not 바)'
+  )
+  assert.equal(
+    unitRank('ko', word('예쁘다', 'a', 1, '예뻐요', 'ko'), list(['예쁘'])),
+    1,
+    'a describing word by its stem'
+  )
   const ja = list(['の', '行く', '映画'])
   assert.equal(
     unitRank('ja', word('行く', 'v', 1, '行った', 'ja'), ja),
@@ -232,10 +242,25 @@ try {
   )
   assert.deepEqual([...log.allVideoWords('ja').keys()], [key])
   assert.equal(log.allVideoWords('ko').size, 0)
+  // A word met in two jobs is counted in each, so the job seen last doesn't reweigh the rest.
+  const changes = log.talliesChanged
+  log.noteLine(key, 'es', met('Que que.', 40, [token('Que', 'g', 1, 'que'), token('que', 'p', 2)]))
+  log.noteLine(key, 'es', met('Que.', 45, [token('Que', 'g', 1, 'que')]))
+  assert.deepEqual(
+    log
+      .videoWords(key, 'es')
+      .filter((word) => word.key === 'es:que')
+      .map((word) => [word.job, word.count]),
+    [
+      ['g', 2],
+      ['p', 1]
+    ]
+  )
+  assert.equal(log.talliesChanged, changes + 2, 'each tally is told')
 
-  // The lines kept before tallies existed are tallied once; a damaged line is skipped.
+  // The lines kept are tallied again once, from scratch (a run that failed left words met since,
+  // which must not count twice); a damaged line is skipped.
   const before = log.videoWords(key, 'es')
-  database().exec('DELETE FROM video_words')
   database()
     .prepare(
       'INSERT INTO lines (video_id, language, start, original, translation, processed, met_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
@@ -254,7 +279,7 @@ try {
       JSON.stringify({ source: [{ pair: 1, base: 5 }] }),
       at(2026, 10, 14)
     )
-  assert.equal(log.tallyKeptLines(), 3, 'three good lines; the damaged ones skipped')
+  assert.equal(log.tallyKeptLines(), 5, 'five good lines; the damaged ones skipped')
   assert.deepEqual(log.videoWords(key, 'es'), before, 'the same tally as when the lines were met')
   assert.equal(log.tallyKeptLines(), 0, 'only once')
 
@@ -350,14 +375,41 @@ try {
   link.tick(t + 30_000)
   link.tick(t + 61_000)
   player.playing = false
+  link.tick(t + 90_000)
   link.tick(t + 130_000)
   assert.deepEqual(
     snapshots.map(([, , now]) => now - t),
-    [0, 61_000],
-    'once a minute while playing, not while paused'
+    [0, 61_000, 90_000],
+    'once a minute while playing, once when it pauses, and not again while paused'
+  )
+  // Another video: the one left is noted, then the new one.
+  player.playing = true
+  watcher.currentVideo = { site: 'youtube', id: 'p2', url: 'https://www.youtube.com/watch?v=p2' }
+  snapshots.length = 0
+  link.tick(t + 135_000)
+  assert.deepEqual(
+    snapshots.map(([video]) => video),
+    [p1, 'youtube:p2'],
+    'the video left, then the new one'
   )
   link.finish(t + 140_000)
-  assert.deepEqual(snapshots.at(-1), [p1, 'es', t + 140_000], 'and when Duet quits')
+  assert.deepEqual(snapshots.at(-1), ['youtube:p2', 'es', t + 140_000], 'and when Duet quits')
+
+  // A summary asked again with no new words reads videos' words once.
+  let reads = 0
+  const counted = Object.create(log, {
+    allVideoWords: { value: (language) => (reads++, log.allVideoWords(language)) }
+  })
+  const cached = new Progress({ log: counted, knowledge, rankOf: () => () => 100 })
+  cached.summary('es', at(2026, 10, 21))
+  const again = cached.summary('es', at(2026, 10, 21))
+  assert.equal(reads, 1, 'kept while nothing changed')
+  assert.deepEqual(again, progress.summary('es', at(2026, 10, 21)))
+  log.noteLine(p1, 'es', met('tres', 30, nouns(40, 41)))
+  cached.summary('es', at(2026, 10, 21))
+  assert.equal(reads, 2, 'read again once a line is tallied')
+  cached.summary('ja', at(2026, 10, 21))
+  assert.equal(reads, 3, 'and for another language')
   // A failing snapshot goes no further than a report.
   const failing = connectWatchLog(log, {
     watcher,

@@ -68,11 +68,12 @@ const MIN_MATCHED_SHARE = 0.7
 
 const normal = (form: string): string => form.normalize('NFC').trim().toLocaleLowerCase()
 
-/** The forms a word may be listed under: its dictionary form and the form seen, and in Korean, whose
- * list keeps stems (먹, not 먹다), each without its final 하다 or 다. */
+/** The forms a word may be listed under: its dictionary form and the form seen, and for a Korean
+ * verb or describing word, whose list keeps stems (먹, not 먹다), each without its final 하다 or 다
+ * (only those: a noun such as 바다 is not 바). */
 function formsOf(language: Language, word: TalliedWord): string[] {
   const forms = [keyWord(language, word.key) ?? '', normal(word.text)]
-  if (language === 'ko')
+  if (language === 'ko' && (word.job === 'v' || word.job === 'a'))
     for (const form of [...forms]) {
       if (form.endsWith('하다')) forms.push(form.slice(0, -2))
       if (form.endsWith('다')) forms.push(form.slice(0, -1))

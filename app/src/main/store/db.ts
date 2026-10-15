@@ -152,9 +152,9 @@ const MIGRATIONS: string[] = [
     language TEXT NOT NULL,
     key      TEXT NOT NULL,     -- shared/knowledge.ts wordKey
     text     TEXT NOT NULL,     -- as it was last on screen
-    job      TEXT NOT NULL,
-    count    INTEGER NOT NULL,  -- times met in the video's lines
-    PRIMARY KEY (video_id, language, key)
+    job      TEXT NOT NULL,     -- its job there: a word met in two jobs is counted in each
+    count    INTEGER NOT NULL,  -- times met in the video's lines in this job
+    PRIMARY KEY (video_id, language, key, job)
   );
   CREATE TABLE video_scores (
     video_id TEXT NOT NULL REFERENCES videos (id) ON DELETE CASCADE,

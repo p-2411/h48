@@ -61,7 +61,7 @@ A video's reading level is the number of the language's most common words that a
 
 - its dictionary form, as Duet keeps it;
 - the form last seen on screen;
-- Korean only: the dictionary form without a final 하다 or 다 (wordfreq's Korean keeps stems: 먹다 → 먹, 공부하다 → 공부);
+- Korean verbs and describing words only: the dictionary form without a final 하다 or 다 (wordfreq's Korean keeps stems: 먹다 → 먹, 공부하다 → 공부). A noun keeps its 다 (바다 is not 바);
 - a phrase with spaces: the rank of its rarest word.
 
 A unit that matches no form is left out of the grade. It still counts in the %.
@@ -93,9 +93,9 @@ CREATE TABLE video_words (
   language TEXT NOT NULL,
   key      TEXT NOT NULL,     -- shared/knowledge.ts wordKey
   text     TEXT NOT NULL,     -- as it was last on screen
-  job      TEXT NOT NULL,
+  job      TEXT NOT NULL,     -- a word met in two jobs is counted in each
   count    INTEGER NOT NULL,
-  PRIMARY KEY (video_id, language, key)
+  PRIMARY KEY (video_id, language, key, job)
 );
 -- Each video's % on each study day it was watched: the first is its "then".
 CREATE TABLE video_scores (
@@ -109,14 +109,14 @@ CREATE TABLE video_scores (
 ```
 
 - **Tallies** are written by `WatchLog.noteLine`, in the same transaction as the line.
-- **Backfill.** At startup, a one-time pass tallies the lines already kept. A setting records that it has run.
-- **Day scores** are written about once a minute while a video plays with Duet on, and again when Duet quits. A write that fails is reported and dropped, the same as all watch-log writes.
+- **Backfill.** At startup, a one-time pass rebuilds the tallies from the lines already kept, all or nothing. A setting records that it has run, so a failed run is tried again next time and no line counts twice.
+- **Day scores** are written about once a minute while a video plays with Duet on, when it pauses, for the video left when another starts, and when Duet quits. A write that fails is reported and dropped, the same as all watch-log writes.
 - **"Then"** is the earliest day's score. **"Now"** is worked out from today's rungs each time a page asks.
 
 ## 4. Code
 
 - `src/shared/progress.ts` (pure): weights, credits, `videoScore`, unit ranks, `readingLevel`, the level texts, and the summary types.
-- `src/main/progress/`: the `Progress` class. It reads the tallies and the day scores, gets rungs from `Knowledge.statesFor`, and loads the frequency lists. It writes the day scores (`snapshot`) and gives `summary(language)`.
+- `src/main/progress/`: the `Progress` class. It reads the tallies and the day scores, gets rungs from `Knowledge.statesFor`, and loads the frequency lists. It writes the day scores (`snapshot`) and gives `summary(language)`. It keeps the tallies and each video's reading level until the watch log tallies a line, so a summary only works out the rungs again.
 - `progress:summary` IPC (language → `ProgressSummary`), with a bridge `window.duet.progress.summary`. Pages ask again on `knowledge:changed`. Duet's home base asks; the strip never does.
 
 ```ts
@@ -140,7 +140,7 @@ Words met and words known come from the existing Words summary (`knowledge:summa
 | Settings | The attribution for the word lists. |
 
 - A video with no grade shows no level. A video with too few words shows no %.
-- If progress cannot load, the videos still show, without the numbers.
+- If progress cannot load, the videos still show, without the numbers. One language's numbers never show while another is learnt.
 - The strip, the side panel and the daily session show none of these.
 
 ## 6. Tests

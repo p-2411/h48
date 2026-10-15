@@ -7,7 +7,7 @@ import type { WatchedVideoSummary } from '../../shared/home'
 import { pairKeys } from '../../shared/knowledge'
 import type { TalliedWord } from '../../shared/progress'
 import type { Language, OverlayLine, ProcessedLine, Site, WordJob } from '../../shared/types'
-import { database, transaction } from '../store/db'
+import { database, readSetting, transaction, writeSetting } from '../store/db'
 import { studyDay } from '../study-day'
 import { streak, week, type DayRecord, type Streak, type WeekDay } from './streak'
 
@@ -21,6 +21,8 @@ const SAME_EVENT_WITHIN_MS = 60_000
 export const FLUSH_EVERY_MS = 15_000
 // Words and lines longer than this are not words or lines (a bad message); they are cut.
 const MAX_TEXT = 500
+// The setting that records the lines kept have been tallied into videos' words (tallyKeptLines).
+const TALLIED_SETTING = 'progress.tallied'
 
 export type WatchedVideo = { site: Site; id: string; url: string; title?: string }
 export type WordEventKind = 'hovered' | 'saved' | 'explained' | 'missed'
@@ -99,6 +101,8 @@ export class WatchLog {
   // Watch time not yet written, by video and study day, and when it was last written.
   private pending = new Map<string, { video: string; day: string; ms: number }>()
   private flushedAt?: number
+  /** Goes up each time videos' words change, so a reader can keep what it worked out from them. */
+  talliesChanged = 0
 
   /** The video on screen. While the learner watches it, it is added or brought up to date and
    * counts as watched now. Otherwise (open but paused) only a video already on record is brought up
@@ -236,21 +240,26 @@ export class WatchLog {
     })
   }
 
-  /** Each word of a line met counted once more in its video's words (a word twice in the line, as
-   * two pairs, twice). */
+  /** Each word of a line met counted once more in its video's words, in its job there (a word twice
+   * in the line, as two pairs, twice). */
   private tally(key: string, language: Language, processed: ProcessedLine): void {
     const upsert = database().prepare(
       `INSERT INTO video_words (video_id, language, key, text, job, count) VALUES (?, ?, ?, ?, ?, 1)
-       ON CONFLICT (video_id, language, key) DO UPDATE SET count = count + 1, text = excluded.text, job = excluded.job`
+       ON CONFLICT (video_id, language, key, job) DO UPDATE SET count = count + 1, text = excluded.text`
     )
     for (const word of pairKeys(language, processed)) upsert.run(key, language, word.key, word.text.slice(0, MAX_TEXT), word.job)
+    this.talliesChanged++
   }
 
-  /** The lines kept from before videos' words were tallied, tallied once: only while no video has
-   * any (so never twice). A damaged line is skipped. Returns how many lines were tallied. */
+  /** Videos' words worked out again from the lines kept, once (a setting records it): for lines met
+   * before videos' words were tallied. All or nothing, so a failure is tried again next time; a line
+   * damaged inside (a word that isn't text) counts for nothing. Returns how many lines were tallied
+   * (0 once it has run). */
   tallyKeptLines(): number {
+    if (readSetting<boolean>(TALLIED_SETTING)) return 0
     return transaction(() => {
-      if (database().prepare('SELECT 1 FROM video_words LIMIT 1').get()) return 0
+      // Lines met since a run that failed are in the lines too: start again, so none counts twice.
+      database().exec('DELETE FROM video_words')
       const rows = database().prepare('SELECT video_id, language, processed FROM lines ORDER BY id').all() as {
         video_id: string
         language: Language
@@ -261,21 +270,24 @@ export class WatchLog {
         const processed = parseProcessed(row.processed)
         if (!processed) continue
         try {
-          this.tally(row.video_id, row.language, processed)
-          tallied++
+          pairKeys(row.language, processed)
         } catch {
-          // A line damaged inside (a word that isn't text): it counts for nothing.
+          continue
         }
+        this.tally(row.video_id, row.language, processed)
+        tallied++
       }
+      writeSetting(TALLIED_SETTING, true)
+      this.talliesChanged++
       return tallied
     })
   }
 
-  /** A video's words in `language`, as met in its lines. */
+  /** A video's words in `language`, as met in its lines (a word met in two jobs, once in each). */
   videoWords(key: string, language: Language): TalliedWord[] {
     return (
       database()
-        .prepare('SELECT key, text, job, count FROM video_words WHERE video_id = ? AND language = ? ORDER BY key')
+        .prepare('SELECT key, text, job, count FROM video_words WHERE video_id = ? AND language = ? ORDER BY key, job')
         .all(key, language) as { key: string; text: string; job: WordJob; count: number }[]
     ).map((row) => ({ key: row.key, text: row.text, job: row.job, count: row.count }))
   }
@@ -283,7 +295,7 @@ export class WatchLog {
   /** Every video's words in `language`, by its key. */
   allVideoWords(language: Language): Map<string, TalliedWord[]> {
     const rows = database()
-      .prepare('SELECT video_id, key, text, job, count FROM video_words WHERE language = ? ORDER BY video_id, key')
+      .prepare('SELECT video_id, key, text, job, count FROM video_words WHERE language = ? ORDER BY video_id, key, job')
       .all(language) as { video_id: string; key: string; text: string; job: WordJob; count: number }[]
     const videos = new Map<string, TalliedWord[]>()
     for (const row of rows) {
