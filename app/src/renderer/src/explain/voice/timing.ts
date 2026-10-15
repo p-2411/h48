@@ -24,3 +24,9 @@ export function silentTooLong(lastSpeech: number, now: number): boolean {
 
 /** How often an open session checks whether it has gone silent for too long. */
 export const SILENCE_CHECK_MS = 5_000
+
+/**
+ * How often a connected call tells main it is still connected. Duet's server keeps a call going only
+ * while it hears about it (it hangs up after 90 s), so this is well inside that.
+ */
+export const ALIVE_EVERY_MS = 20_000

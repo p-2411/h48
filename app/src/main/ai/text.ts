@@ -2,7 +2,8 @@
 // answered in one go: the challenges' quiz (src/main/challenges/quiz.ts) and finding where scenes
 // end (src/main/checkpoints/scenes.ts).
 import type { ResponseFormatTextJSONSchemaConfig } from 'openai/resources/responses/responses'
-import { backendModel, openai, safeLiveError } from '../tutor/live'
+import { backendModel, safeLiveError } from '../tutor/live'
+import { openAIAccess, openAIClient } from './access'
 
 export type TextRequest = {
   instructions: string
@@ -18,21 +19,24 @@ export type TextRequest = {
 /** Asks the model; the answer's text, never empty. */
 export type TextModel = (request: TextRequest) => Promise<string>
 
-/** The text model, or undefined without an API key. */
+/** The text model, or undefined with no way to reach OpenAI (no development key, no Duet server). */
 export function textModel(env: NodeJS.ProcessEnv = process.env): TextModel | undefined {
-  const key = env.OPENAI_API_KEY
-  if (!key) return undefined
+  const access = openAIAccess(env)
+  if (!access) return undefined
   return async ({ instructions, input, format, maxTokens, context }) => {
     try {
-      const response = await openai(key).responses.create({
-        model: backendModel(env),
-        store: false,
-        instructions,
-        input,
-        ...(format && { text: { format } }),
-        max_output_tokens: maxTokens,
-        reasoning: { effort: 'low' }
-      })
+      const response = await openAIClient(access).responses.create(
+        {
+          model: backendModel(env),
+          store: false,
+          instructions,
+          input,
+          ...(format && { text: { format } }),
+          max_output_tokens: maxTokens,
+          reasoning: { effort: 'low' }
+        },
+        { headers: { 'x-duet-feature': 'challenge' } }
+      )
       const text = response.output_text.trim()
       if (!text) throw new Error('EMPTY_ANSWER')
       return text
