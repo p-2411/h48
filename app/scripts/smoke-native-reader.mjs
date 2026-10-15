@@ -56,6 +56,28 @@ if (process.platform === 'darwin') {
     throw new Error('Windows caption reader did not preserve UTF-8 caption text.')
   await exitsWhenAppGoes('caption-reader-windows.exe')
   console.log('Windows caption reader protocol smoke test passed, and it exits when the app goes.')
+
+  // The audio reader's self-test records two half seconds of a tone, one second apart, and clips
+  // all of it: two seconds at 16 kHz, with the gap kept as silence.
+  const audio = spawnSync(bin('audio-reader-windows.exe'), ['--self-test'], { encoding: 'utf8' })
+  if (audio.error) throw audio.error
+  if (audio.status !== 0) throw new Error(audio.stderr || `Audio reader exited ${audio.status}.`)
+  const test = JSON.parse(audio.stdout.trim().split(/\r?\n/u).at(-1))
+  if (test.type !== 'self-test' || Math.abs(test.samples - 32000) > 160)
+    throw new Error(`Windows audio reader kept ${test.samples} samples, not 32000: ${audio.stdout}`)
+  if (!(test.level > 0.2) || test.gapLevel !== 0 || test.wavBytes !== 44 + test.samples * 2)
+    throw new Error(`Windows audio reader self-test failed: ${audio.stdout}`)
+  // Started for real, it reports its status at once (no device needed for that) and needs no permission.
+  const reader = spawn(bin('audio-reader-windows.exe'), [], { stdio: ['pipe', 'pipe', 'inherit'] })
+  const first = await new Promise((done, fail) => {
+    reader.stdout.once('data', (chunk) => done(JSON.parse(String(chunk).split('\n')[0])))
+    setTimeout(() => fail(new Error('Windows audio reader sent no status.')), 3000)
+  })
+  reader.kill()
+  if (first.type !== 'status' || first.permission !== 'granted')
+    throw new Error(`Windows audio reader's first status: ${JSON.stringify(first)}`)
+  await exitsWhenAppGoes('audio-reader-windows.exe')
+  console.log('Windows audio reader self-test passed, and it exits when the app goes.')
 } else {
   console.log(`No native readers on ${process.platform}.`)
 }

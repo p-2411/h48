@@ -62,6 +62,14 @@ if (process.platform === 'darwin') {
     `/reference:${resolve(framework, 'System.Web.Extensions.dll')}`,
     'native\\windows\\CaptionReader.cs'
   ])
+  run(compiler, [
+    '/nologo',
+    '/optimize+',
+    '/target:exe',
+    '/out:resources\\bin\\audio-reader-windows.exe',
+    `/reference:${resolve(framework, 'System.Web.Extensions.dll')}`,
+    'native\\windows\\AudioReader.cs'
+  ])
 } else {
   console.log(`No native Duet readers are built for ${process.platform}.`)
 }

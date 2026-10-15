@@ -1,9 +1,10 @@
 // Audio: runs the audio reader for this OS, which keeps the last minute of the browser's sound in
 // memory, and asks it for the audio of one line when the learner wants help with that line.
 //
-// The reader (native/macos/AudioReader) only listens while a video is being watched, and needs the
-// System Audio Recording permission. Nothing is recorded to disk; a clip leaves the reader only
-// when asked for here.
+// The reader only listens while a video is being watched. On macOS (native/macos/AudioReader) it
+// needs the System Audio Recording permission; on Windows (native/windows/AudioReader.cs) it needs
+// none, and hears the browser alone on Windows 10 2004 and later, else everything the speakers play.
+// Nothing is recorded to disk; a clip leaves the reader only when asked for here.
 import { spawn, type ChildProcess } from 'child_process'
 import { existsSync } from 'fs'
 import { join } from 'path'
@@ -13,7 +14,10 @@ import type { AudioClip } from './ai/voice'
 
 export type { AudioPermission }
 
-const READERS: Partial<Record<NodeJS.Platform, string>> = { darwin: 'audio-reader-macos' }
+const READERS: Partial<Record<NodeJS.Platform, string>> = {
+  darwin: 'audio-reader-macos',
+  win32: 'audio-reader-windows.exe'
+}
 // How long a clip request may take before giving up.
 const CLIP_TIMEOUT_MS = 3000
 
@@ -30,7 +34,7 @@ export class AudioSource {
     const path = name && join(app.getAppPath(), 'resources', 'bin', name).replace('app.asar', 'app.asar.unpacked')
     if (!path || !existsSync(path)) return
     this.permission = 'unknown'
-    this.child = spawn(path, [], { stdio: ['pipe', 'pipe', 'pipe'] })
+    this.child = spawn(path, [], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
     this.child.stdout?.setEncoding('utf8')
     this.child.stdout?.on('data', (chunk: string) => {
       this.buffer += chunk
@@ -54,7 +58,7 @@ export class AudioSource {
     this.child?.kill()
   }
 
-  /** Listens to this browser (its macOS app id), or stops listening when undefined. */
+  /** Listens to this browser (its macOS app id, or its Windows process id), or stops listening when undefined. */
   listen(bundle: string | undefined): void {
     if (bundle === this.bundle) return
     this.bundle = bundle

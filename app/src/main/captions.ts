@@ -7,7 +7,7 @@ import { spawn, type ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
 import { existsSync } from 'fs'
 import { join } from 'path'
-import { app } from 'electron'
+import { app, screen } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import type { PlayerTime } from './clock'
 
@@ -16,7 +16,7 @@ export type CaptionStatus = {
   trusted: boolean
   /** Which browser and page the reader is looking at, when it has found one. */
   browser?: string
-  /** The browser's app id (macOS bundle id), for listening to its sound. */
+  /** The browser's app id (macOS bundle id; on Windows its process id), for listening to its sound. */
   bundle?: string
   url?: string
   /** The browser window's title (on YouTube, the video's title and the site's name). */
@@ -126,7 +126,9 @@ export class CaptionSource extends EventEmitter {
     if (message.type === 'frame') {
       const { x, y, width, height } = message as Partial<VideoFrame>
       const known = [x, y, width, height].every((side) => typeof side === 'number')
-      this.emit('frame', known ? ({ x, y, width, height } as VideoFrame) : undefined)
+      const frame = known ? ({ x, y, width, height } as VideoFrame) : undefined
+      // The Windows reader gives physical pixels; the app places windows in points (DIPs).
+      this.emit('frame', frame && process.platform === 'win32' ? screen.screenToDipRect(null, frame) : frame)
       return
     }
     if (message.type === 'time') {
