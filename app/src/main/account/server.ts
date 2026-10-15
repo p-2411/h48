@@ -23,7 +23,8 @@ type Options = {
   /** The server's /v1 address, e.g. https://api.useduet.io/v1. */
   baseURL: string
   token: () => Promise<string | null>
-  device: string
+  /** The device id (device.ts), read once, at the first request. */
+  device: () => Promise<string>
   fetch?: typeof fetch
 }
 
@@ -41,6 +42,9 @@ export class DuetServer extends EventEmitter {
   watchId?: string
   readonly baseURL: string
   private readonly fetchImpl: typeof fetch
+  // The watch session being opened, shared by every caller until it is open.
+  private opening?: Promise<string | undefined>
+  private deviceId?: Promise<string>
 
   constructor(private readonly options: Options) {
     super()
@@ -58,7 +62,8 @@ export class DuetServer extends EventEmitter {
     }
     const headers = new Headers(init.headers)
     headers.set('authorization', `Bearer ${token}`)
-    headers.set('x-duet-device', this.options.device)
+    this.deviceId ??= this.options.device()
+    headers.set('x-duet-device', await this.deviceId)
     if (this.watchId) headers.set('x-duet-watch', this.watchId)
     else headers.delete('x-duet-watch')
     const response = await this.fetchImpl(url, { ...init, headers })
@@ -70,21 +75,33 @@ export class DuetServer extends EventEmitter {
     return response
   }
 
-  /** The OpenAI SDK's fetch. A call refused for want of a watch session opens one and is sent once more. */
+  /** The OpenAI SDK's fetch. A call refused for want of a watch session is sent once more: with the
+   * session another call opened meanwhile, or else with one it opens. */
   readonly openAIFetch = async (
     input: string | URL | Request,
     init?: RequestInit
   ): Promise<Response> => {
     const url = String(input instanceof Request ? input.url : input)
+    const sentWith = this.watchId
     const response = await this.send(url, init)
     if (response.status !== 409 || (await errorOf(response.clone()))?.code !== 'watch_required')
       return response
-    if (!(await this.openWatch())) return response
+    // Opening another would end the one just opened, and with it the calls sent with it.
+    const opened = this.watchId && this.watchId !== sentWith
+    if (!opened && !(await this.openWatch())) return response
     return this.send(url, init)
   }
 
-  /** Opens a watch session (ending the server's earlier one). Gives its id, or undefined when refused. */
-  async openWatch(): Promise<string | undefined> {
+  /** Opens a watch session (ending the server's earlier one). Gives its id, or undefined when refused.
+   * Calls at the same moment share one: each new one would end the one before. */
+  openWatch(): Promise<string | undefined> {
+    this.opening ??= this.startWatch().finally(() => {
+      this.opening = undefined
+    })
+    return this.opening
+  }
+
+  private async startWatch(): Promise<string | undefined> {
     try {
       const { id } = await this.request<{ id: string }>('/duet/watch/start', {})
       this.watchId = id

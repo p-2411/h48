@@ -38,11 +38,12 @@ export function estimateTranscription(model, fileBytes) {
   return up(seconds * (p.perMinute / 60) * 4 * 1e6);
 }
 
-export function estimateSpeech(model, inputChars) {
+/** The instructions are billed as text in, like the input, but are not spoken. */
+export function estimateSpeech(model, inputChars, instructionChars = 0) {
   const p = price(model);
   // Slow, clear speech is about 5 characters a second; allow for 2.
   const seconds = inputChars / 2 + 5;
-  return up((inputChars / 2) * p.input + ((seconds * TTS_TOKENS_PER_MINUTE) / 60) * p.audioOutput);
+  return up(((inputChars + instructionChars) / 2) * p.input + ((seconds * TTS_TOKENS_PER_MINUTE) / 60) * p.audioOutput);
 }
 
 /** The speech reply's length in seconds, from its MP3 size. */

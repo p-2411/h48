@@ -16,6 +16,9 @@ import { verifier } from './auth.js';
 import { findOrCreateUser, linkDevice } from './users.js';
 import { requireWatch, watchBeat, watchEnd, watchStart } from './watch.js';
 
+// How often one instance sweeps every user's stale live calls on a request.
+const SWEEP_ALL_EVERY_MS = 60_000;
+
 /** The user's id as OpenAI sees it (safety_identifier): a hash, never the WorkOS id or email. */
 const hashOf = id => createHash('sha256').update(`duet:${id}`).digest('hex').slice(0, 32);
 
@@ -40,13 +43,19 @@ async function me(ctx) {
 }
 
 /** The token carries no email; with WORKOS_API_KEY set, the server asks WorkOS once (for the plan
- * script and Stripe Checkout). A failure leaves it for the next call. */
-async function lookUpEmail(deps, userId) {
+ * script and Stripe Checkout). Only /me (read at sign-in) and checkout ask, so a slow WorkOS never
+ * holds up the learner's lines. A failure leaves it for the next time. Gives ctx with the email. */
+async function withEmail(ctx) {
+  const { deps, user } = ctx;
+  if (user.email || !deps.fetchEmail) return ctx;
   try {
-    const email = await deps.fetchEmail(userId);
-    if (email) await deps.db.query(`update users set email = $2 where id = $1 and email is null`, [userId, email]);
+    const email = await deps.fetchEmail(user.id);
+    if (!email) return ctx;
+    await deps.db.query(`update users set email = $2 where id = $1 and email is null`, [user.id, email]);
+    return { ...ctx, user: { ...user, email } };
   } catch {
     // WorkOS out of reach: try on a later call.
+    return ctx;
   }
 }
 
@@ -62,8 +71,8 @@ const ROUTES = [
   ['POST', /^\/v1\/duet\/watch\/start$/, ctx => watchStart(ctx)],
   ['POST', /^\/v1\/duet\/watch\/([^/]+)\/beat$/, (ctx, _request, id) => watchBeat(ctx, id)],
   ['POST', /^\/v1\/duet\/watch\/([^/]+)\/end$/, (ctx, _request, id) => watchEnd(ctx, id)],
-  ['GET', /^\/v1\/duet\/me$/, me],
-  ['POST', /^\/v1\/duet\/billing\/checkout$/, checkout],
+  ['GET', /^\/v1\/duet\/me$/, async ctx => me(await withEmail(ctx))],
+  ['POST', /^\/v1\/duet\/billing\/checkout$/, async ctx => checkout(await withEmail(ctx))],
   ['POST', /^\/v1\/duet\/billing\/portal$/, portal]
 ];
 
@@ -73,6 +82,8 @@ const ROUTES = [
  */
 export function createApp(deps) {
   const verify = verifier(deps.keySet);
+  // When this instance last swept everyone's live calls (see route).
+  let sweptAllAt = 0;
 
   async function route(request) {
     const { pathname } = new URL(request.url);
@@ -84,7 +95,7 @@ export function createApp(deps) {
       if (!deps.cronSecret || request.headers.get('authorization') !== `Bearer ${deps.cronSecret}`)
         throw new HttpError(401, 'auth', 'Not the cron.');
       await sweepLost(deps.db, null, now);
-      await sweepLive({ db: deps.db, deps, now });
+      await sweepLive({ db: deps.db, deps, now }, null);
       return json({ ok: true });
     }
 
@@ -103,13 +114,16 @@ export function createApp(deps) {
 
     const userId = await verify(request.headers.get('authorization'));
     let user = await findOrCreateUser(deps.db, userId, now);
-    if (!user.email && deps.fetchEmail) await lookUpEmail(deps, userId);
     // The device rule can block a new account's free tier: then read the user again.
     if (await linkDevice(deps.db, userId, request.headers.get('x-duet-device'), now))
       [user] = await deps.db.query(`select * from users where id = $1`, [userId]);
     await sweepLost(deps.db, userId, now);
     const ctx = { db: deps.db, deps, now, userHash: hashOf(userId), user };
-    await sweepLive(ctx);
+    // The user's own stale calls on every request; everyone's (a changed app that stopped reporting
+    // and never calls again) at most once a minute here, as the cron may run only daily.
+    const sweepAll = now.getTime() - sweptAllAt >= SWEEP_ALL_EVERY_MS;
+    if (sweepAll) sweptAllAt = now.getTime();
+    await sweepLive(ctx, sweepAll ? null : userId);
     return handler(ctx, request, ...captures);
   }
 

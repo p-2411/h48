@@ -35,13 +35,18 @@ function week(now) {
   return { key: `w${day(start)}`, resetsAt: new Date(start.getTime() + 7 * 24 * HOUR_MS) };
 }
 
-/** A paid user's billing period from Stripe, while now is inside it. */
+/** A paid user's billing period from Stripe. Past its end, before Stripe's renewal reaches the
+ * webhook, the next period of the same length: it starts where the last one ended, as Stripe's
+ * does, so its key is the one the renewal brings and nothing is counted twice or lost. */
 function billingPeriod(user, now) {
   if (user.plan !== 'paid' || !user.period_start || !user.period_end) return undefined;
   const start = new Date(user.period_start);
   const end = new Date(user.period_end);
-  if (now < start || now >= end) return undefined;
-  return { key: `p${start.toISOString()}`, resetsAt: end };
+  const length = end.getTime() - start.getTime();
+  if (!(length > 0)) return undefined;
+  const ahead = Math.max(0, Math.floor((now.getTime() - start.getTime()) / length));
+  const from = new Date(start.getTime() + ahead * length);
+  return { key: `p${from.toISOString()}`, resetsAt: new Date(from.getTime() + length) };
 }
 
 /** The period the credits meter counts in: the billing period for Paid, else the calendar month (UTC). */

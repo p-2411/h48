@@ -45,6 +45,9 @@ export const SCHEMA = [
     settled_at timestamptz
   )`,
   `create index if not exists charges_held on charges (user_id) where status = 'held'`,
+  // The Stripe Checkout session last opened for the user: Upgrade opens it again while it is open,
+  // so two tabs (or two clicks) cannot pay for two subscriptions.
+  `alter table users add column if not exists checkout_session text`,
   `create table if not exists live_sessions (
     id text primary key,
     user_id text not null references users (id),

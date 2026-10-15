@@ -44,8 +44,20 @@ test('paid periods follow the billing period while it lasts', () => {
   const expected = { key: 'p2026-10-05T12:00:00.000Z', resetsAt: at('2026-11-05T12:00:00Z') };
   assert.deepEqual(creditPeriod(user, at('2026-10-20T00:00:00Z')), expected);
   assert.deepEqual(hourPeriod(user, at('2026-10-20T00:00:00Z')), expected);
-  // Past the end (a renewal not yet heard of), the calendar month is used.
-  assert.equal(creditPeriod(user, at('2026-11-06T00:00:00Z')).key, 'm2026-11');
+});
+
+test('past a paid period\'s end, before the renewal is heard of, the next period of the same length is used', () => {
+  const user = {
+    plan: 'paid',
+    period_start: at('2026-10-05T12:00:00Z'),
+    period_end: at('2026-11-05T12:00:00Z')
+  };
+  // Stripe's renewal starts where the last period ended, so this key is the one it will bring: the
+  // learner is neither given a fresh calendar-month meter nor counted twice.
+  const next = creditPeriod(user, at('2026-11-06T00:00:00Z'));
+  assert.equal(next.key, 'p2026-11-05T12:00:00.000Z');
+  assert.equal(next.resetsAt.toISOString(), '2026-12-06T12:00:00.000Z');
+  assert.equal(hourPeriod(user, at('2026-11-06T00:00:00Z')).key, next.key);
 });
 
 test('a paid user without a billing period uses the calendar month for both', () => {

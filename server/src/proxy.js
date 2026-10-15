@@ -51,6 +51,15 @@ export async function callOpenAI(ctx, path, init) {
   }
 }
 
+/** The reply's body. A reply cut off while it is read is a 502, as nothing came back. */
+export async function bodyOf(upstream) {
+  try {
+    return await upstream.arrayBuffer();
+  } catch {
+    throw new HttpError(502, 'upstream', 'The reply from OpenAI was cut off.');
+  }
+}
+
 /** Passes OpenAI's reply on. Its refusal of the owner's key is the server's fault, not the user's
  * sign-in, so 401 and 403 become 502. */
 function passOn(upstream, body) {
@@ -65,13 +74,14 @@ function passOn(upstream, body) {
 /** Forwards a call already held: charges `cost(reply)` on success, frees the hold on failure. */
 async function forward(ctx, chargeId, path, init, cost) {
   let upstream;
+  let body;
   try {
     upstream = await callOpenAI(ctx, path, init);
+    body = await bodyOf(upstream);
   } catch (error) {
     await release(ctx.db, chargeId, ctx.now);
     throw error;
   }
-  const body = await upstream.arrayBuffer();
   if (!upstream.ok) {
     await release(ctx.db, chargeId, ctx.now);
     const passed = passOn(upstream, body);
@@ -157,15 +167,24 @@ export async function transcription(ctx, request) {
 export async function speech(ctx, request) {
   const raw = await readJson(request);
   const checked = checkSpeech(raw);
-  const chargeId = await holdFor(ctx, { amount: estimateSpeech(checked.model, checked.inputChars), route: 'speech', model: checked.model });
+  const chargeId = await holdFor(ctx, {
+    amount: estimateSpeech(checked.model, checked.inputChars, checked.instructionChars),
+    route: 'speech',
+    model: checked.model
+  });
   return forward(
     ctx,
     chargeId,
     '/v1/audio/speech',
     { headers: { 'content-type': 'application/json' }, body: JSON.stringify(checked.body) },
     body => ({
-      micro: speechCost(checked.model, checked.inputChars, body.byteLength),
-      usage: { estimated: true, input_chars: checked.inputChars, audio_bytes: body.byteLength }
+      micro: speechCost(checked.model, checked.inputChars + checked.instructionChars, body.byteLength),
+      usage: {
+        estimated: true,
+        input_chars: checked.inputChars,
+        instruction_chars: checked.instructionChars,
+        audio_bytes: body.byteLength
+      }
     })
   );
 }

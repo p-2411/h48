@@ -320,7 +320,8 @@ Each step starts with a failing test, then the code, then the full `npm test` (s
   app shows "Free Duet is limited to two accounts on one computer" and not "used up".
 - **A reply whose usage cannot be read is charged at its hold**, not at 0.
 - **Live voice holds 2 minutes ahead** of the server's clock. Each minute call tops the hold up. A
-  call with no minute call for 90 s is hung up by the next request from anyone, or by the cron.
+  call with no minute call for 90 s is hung up by the user's next request, by anyone's request at
+  most once a minute (per server instance), or by the cron.
 - **The cron runs once a day** in `vercel.json` (the Hobby plan's most). On Pro, set it to every
   minute.
 - **Lines need a watch session; the app opens one by itself** on the server's 409 and sends the call
@@ -343,3 +344,12 @@ Each step starts with a failing test, then the code, then the full `npm test` (s
   and only after a sign of life. A window that closes, crashes, moves on or loses its call stops
   the signs, so the minute calls stop and the server hangs up within 90 s. Rounds 5-8 kept finding
   one more way a call could end without telling main; this removes the need to tell it.
+- **After review round 13 (2026-10-16):** a reply cut off while it is read frees its hold (a 502)
+  instead of being charged 15 minutes later; speech instructions are charged as text in; the email
+  is looked up from `/me` and checkout only, never on a proxied call; a paid user past
+  `period_end`, before Stripe's renewal arrives, is counted in the next period of the same length,
+  not a fresh calendar month; Upgrade reopens the user's open Checkout session (and two clicks at
+  once keep one), so a learner cannot pay for two subscriptions; in the app, calls refused together
+  share one new watch session, the device id is read without blocking main, and account refreshes
+  run one at a time. Not changed: transcription input is charged at $1.25 per million tokens, the
+  one input price OpenAI's pricing page gives `gpt-4o-mini-transcribe` (checked 2026-10-16).

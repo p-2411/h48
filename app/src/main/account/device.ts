@@ -3,31 +3,39 @@
 // hardware id itself never leaves the computer. A changed app can send another id; the rule only
 // stops casual abuse (spec 2026-10-13-usage-caps-design.md, section 3).
 import { createHash } from 'node:crypto'
-import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { execFile } from 'node:child_process'
+import { readFile as readFileAsync } from 'node:fs/promises'
+import { promisify } from 'node:util'
 
-type Run = (command: string, args: string[]) => string
-type Read = (path: string) => string
+type Run = (command: string, args: string[]) => Promise<string>
+type Read = (path: string) => Promise<string>
 
-const run: Run = (command, args) => execFileSync(command, args, { encoding: 'utf8', timeout: 5000 })
-const read: Read = (path) => readFileSync(path, 'utf8')
+// Asynchronous, so reading the id never holds up Electron's main process.
+const run: Run = async (command, args) =>
+  (await promisify(execFile)(command, args, { encoding: 'utf8', timeout: 5000 })).stdout
+const read: Read = (path) => readFileAsync(path, 'utf8')
 
 /** The computer's hardware id: macOS IOPlatformUUID, Windows MachineGuid, Linux machine-id. */
-export function hardwareId(
+export async function hardwareId(
   platform: NodeJS.Platform = process.platform,
   runCommand: Run = run,
   readFile: Read = read
-): string | undefined {
+): Promise<string | undefined> {
   try {
     if (platform === 'darwin')
       return /"IOPlatformUUID"\s*=\s*"([^"]+)"/.exec(
-        runCommand('ioreg', ['-rd1', '-c', 'IOPlatformExpertDevice'])
+        await runCommand('ioreg', ['-rd1', '-c', 'IOPlatformExpertDevice'])
       )?.[1]
     if (platform === 'win32')
       return /MachineGuid\s+REG_SZ\s+(\S+)/.exec(
-        runCommand('reg', ['query', 'HKLM\\SOFTWARE\\Microsoft\\Cryptography', '/v', 'MachineGuid'])
+        await runCommand('reg', [
+          'query',
+          'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
+          '/v',
+          'MachineGuid'
+        ])
       )?.[1]
-    return readFile('/etc/machine-id').trim() || undefined
+    return (await readFile('/etc/machine-id')).trim() || undefined
   } catch {
     return undefined
   }

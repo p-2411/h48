@@ -84,37 +84,37 @@ try {
   setDuetServer(undefined)
 
   // --- The device id: a hash of the hardware id, never the id itself. ---
-  const mac = hardwareId(
+  const mac = await hardwareId(
     'darwin',
-    () => '  "IOPlatformUUID" = "1234-ABCD"\n',
-    () => ''
+    async () => '  "IOPlatformUUID" = "1234-ABCD"\n',
+    async () => ''
   )
   assert.equal(mac, '1234-ABCD', 'the Mac’s platform UUID')
   assert.equal(
-    hardwareId(
+    await hardwareId(
       'linux',
-      () => '',
-      () => 'abc123\n'
+      async () => '',
+      async () => 'abc123\n'
     ),
     'abc123',
     'Linux’s machine id'
   )
   assert.equal(
-    hardwareId(
+    await hardwareId(
       'win32',
-      () => '    MachineGuid    REG_SZ    9f-88\r\n',
-      () => ''
+      async () => '    MachineGuid    REG_SZ    9f-88\r\n',
+      async () => ''
     ),
     '9f-88',
     'Windows’ machine GUID'
   )
   assert.equal(
-    hardwareId(
+    await hardwareId(
       'darwin',
-      () => {
+      async () => {
         throw new Error('no ioreg')
       },
-      () => ''
+      async () => ''
     ),
     undefined,
     'none found: undefined'
@@ -165,12 +165,13 @@ try {
 
   // --- The server: each request carries the sign-in, the device and the watch session. ---
   const sent = []
+  let devicesRead = 0
   let token = 'tok-1'
   let reply = () => json({ ok: true })
   const server = new DuetServer({
     baseURL: 'https://api.useduet.io/v1',
     token: async () => token,
-    device: 'd'.repeat(64),
+    device: async () => (devicesRead++, 'd'.repeat(64)),
     fetch: async (url, init) => {
       sent.push({ url: String(url), headers: new Headers(init?.headers), body: init?.body })
       return reply(String(url), init)
@@ -249,6 +250,54 @@ try {
     'watch session opened, then the call again with it'
   )
   assert.equal(server.watchId, 'w1')
+  assert.equal(devicesRead, 1, 'the device id is read once')
+
+  // Two calls refused at once share one new watch session: a second would end the first's.
+  server.forgetWatch()
+  order.length = 0
+  let started = 0
+  reply = (url, init) => {
+    if (url.endsWith('/duet/watch/start')) return json({ id: `w-${++started}`, beatEveryMs: 30000 })
+    const watch = new Headers(init.headers).get('x-duet-watch')
+    order.push(watch ?? 'none')
+    return watch
+      ? json({ id: 'resp' })
+      : json({ error: { type: 'duet', code: 'watch_required' } }, 409)
+  }
+  const both = await Promise.all([
+    server.openAIFetch('https://api.useduet.io/v1/responses', { method: 'POST', body: '{}' }),
+    server.openAIFetch('https://api.useduet.io/v1/audio/transcriptions', {
+      method: 'POST',
+      body: '{}'
+    })
+  ])
+  assert.deepEqual(
+    both.map((response) => response.status),
+    [200, 200]
+  )
+  assert.equal(started, 1, 'one watch session opened for both')
+  assert.deepEqual(order, ['none', 'none', 'w-1', 'w-1'])
+  // A call sent before a session was opened elsewhere is sent again with that one, opening none.
+  let opened = false
+  reply = (url, init) => {
+    if (url.endsWith('/duet/watch/start'))
+      return (started++, json({ id: 'w-x', beatEveryMs: 30000 }))
+    const watch = new Headers(init.headers).get('x-duet-watch')
+    if (!watch && !opened) {
+      opened = true
+      server.watchId = 'w-2'
+      return json({ error: { type: 'duet', code: 'watch_required' } }, 409)
+    }
+    return json({ id: 'resp', watch })
+  }
+  server.forgetWatch()
+  const startedBefore = started
+  const late = await server.openAIFetch('https://api.useduet.io/v1/responses', {
+    method: 'POST',
+    body: '{}'
+  })
+  assert.equal((await late.json()).watch, 'w-2', 'sent again with the session opened meanwhile')
+  assert.equal(started, startedBefore, 'no new session opened')
 
   // Duet's own routes: JSON in and out; errors carry the server's code.
   reply = () => json({ plan: 'free' })
@@ -855,6 +904,30 @@ try {
   assert.deepEqual(refused, { configured: true, user: null, usage: null, capped: undefined })
   assert.equal(routes.length, requestsBefore, 'no request on a sign-out the server reported')
   link.stop()
+
+  // Refreshes meAsked for together read one at a time, so the state shown is the newest read.
+  electron.handlers.clear()
+  const pending = []
+  let meAsked = 0
+  const slowDuet = Object.assign(new (await import('node:events')).EventEmitter(), {
+    request: () => {
+      const n = ++meAsked
+      return new Promise((done) =>
+        pending.push(() => done({ ...usage, credits: { ...usage.credits, used: n } }))
+      )
+    }
+  })
+  const slowLink = connectAccount({ account: fakeAccount, server: slowDuet, home })
+  const together = Promise.all([slowLink.refresh(), slowLink.refresh()])
+  // Answer the latest request first, as a slow connection might.
+  while (pending.length || meAsked < 2) {
+    await settle()
+    pending.pop()?.()
+  }
+  await together
+  const newest = homeSent.filter(([channel]) => channel === 'account:changed').at(-1)[1]
+  assert.equal(newest.usage.credits.used, meAsked, 'the last read is the one shown')
+  slowLink.stop()
 
   // Without sign-in set up (a development key, or a build with no WorkOS client id).
   electron.handlers.clear()

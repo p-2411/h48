@@ -46,7 +46,7 @@ export function setupAccount(
   const server = new DuetServer({
     baseURL: env.DUET_API_URL || API_URL,
     token: () => account.token(),
-    device: deviceId(hardwareId() ?? fallbackId())
+    device: async () => deviceId((await hardwareId()) ?? fallbackId())
   })
   setDuetServer({ apiKey: 'duet', baseURL: server.baseURL, fetch: server.openAIFetch })
   return { account, server }

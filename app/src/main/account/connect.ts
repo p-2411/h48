@@ -59,7 +59,27 @@ export function connectAccount({
   })
   const tell = (): void => home.send('account:changed', state())
 
-  async function refresh(): Promise<void> {
+  // One read at a time: a refresh asked for during one runs again after it, so an older reply never
+  // lands after a newer one.
+  let reading: Promise<void> | undefined
+  let again = false
+  function refresh(): Promise<void> {
+    if (reading) {
+      again = true
+      return reading
+    }
+    reading = (async () => {
+      do {
+        again = false
+        await read()
+      } while (again)
+    })().finally(() => {
+      reading = undefined
+    })
+    return reading
+  }
+
+  async function read(): Promise<void> {
     if (!account || !server) return
     user = await account.user()
     usage = user

@@ -121,7 +121,8 @@ export function checkSpeech(body) {
     throw refuse('response_format', 'Only MP3 is allowed.');
   if (typeof body.instructions === 'string' && body.instructions.length > SPEECH_MAX_CHARS)
     throw refuse('size', 'The instructions must be 1,000 characters or less.');
-  return { body, model: body.model, inputChars: input.length };
+  const instructionChars = typeof body.instructions === 'string' ? body.instructions.length : 0;
+  return { body, model: body.model, inputChars: input.length, instructionChars };
 }
 
 /** The data channel's settings: only the client events Duet sends. They must be named: left out,

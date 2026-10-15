@@ -521,3 +521,130 @@ test('the portal is for users with a Stripe customer', async () => {
   const reply = await (await send('/v1/duet/billing/portal', { body: {} })).json();
   assert.equal(reply.url, 'https://billing.stripe.com/p/1');
 });
+
+// Review fixes
+
+const brokenReply = () =>
+  new Response(new ReadableStream({ start: controller => controller.error(new Error('reset')) }), { status: 200 });
+
+test('a reply cut off while it is read frees the hold and is a 502', async () => {
+  const { send, db } = await setup({ openai: brokenReply });
+  const response = await send('/v1/responses', { body: lunaBody(), headers: { 'x-duet-feature': 'explain' } });
+  assert.equal(response.status, 502);
+  assert.deepEqual(await credits(db), { used: 0, held: 0 });
+});
+
+test('a live reply cut off while it is read frees the hold', async () => {
+  const { send, db } = await setup({ openai: brokenReply });
+  const response = await send('/v1/live/sessions', { body: liveBody });
+  assert.equal(response.status, 502);
+  assert.deepEqual(await credits(db), { used: 0, held: 0 });
+});
+
+test('speech instructions are charged as text in', async () => {
+  const { send, db } = await setup({
+    openai: () => new Response(new Uint8Array(60_000), { headers: { 'content-type': 'audio/mpeg' } })
+  });
+  await send('/v1/audio/speech', {
+    body: { model: 'gpt-4o-mini-tts', voice: 'marin', input: 'x'.repeat(100), instructions: 'y'.repeat(200) }
+  });
+  // 300 characters of text: at most 150 tokens × 0.60 = 90, then the audio as before.
+  assert.deepEqual(await credits(db), { used: 90 + 209 * 12, held: 0 });
+});
+
+test('the email is looked up from /me, never on a proxied call', async () => {
+  const asked = [];
+  const { send, db } = await setup({ fetchEmail: async id => (asked.push(id), 'learner@example.com') });
+  await send('/v1/responses', { body: lunaBody(), headers: { 'x-duet-feature': 'explain' } });
+  assert.deepEqual(asked, [], 'a line never waits on WorkOS');
+  await send('/v1/duet/me', { method: 'GET' });
+  assert.deepEqual(asked, ['user_1']);
+  const [user] = await db.query(`select email from users where id = 'user_1'`);
+  assert.equal(user.email, 'learner@example.com');
+});
+
+test('checkout looks the email up first, so Stripe gets it', async () => {
+  const stripe = fakeStripe();
+  stripe.checkout.sessions.retrieve = async () => ({ status: 'expired' });
+  const { send } = await setup({ stripe, fetchEmail: async () => 'learner@example.com' });
+  await send('/v1/duet/billing/checkout', { body: {} });
+  assert.equal(stripe.made[0][1].customer_email, 'learner@example.com');
+});
+
+/** A Stripe whose Checkout sessions have ids and a status the test can set. */
+function checkoutStripe() {
+  const sessions = new Map();
+  const stripe = fakeStripe();
+  stripe.checkout.sessions = {
+    sessions,
+    create: async () => {
+      const session = { id: `cs_${sessions.size + 1}`, status: 'open', url: `https://checkout.stripe.com/c/${sessions.size + 1}` };
+      sessions.set(session.id, session);
+      return session;
+    },
+    retrieve: async id => sessions.get(id),
+    expire: async id => (sessions.get(id).status = 'expired')
+  };
+  return stripe;
+}
+
+test('Upgrade opens the same Checkout session while it is open: one subscription to pay', async () => {
+  const stripe = checkoutStripe();
+  const { send } = await setup({ stripe });
+  const first = await (await send('/v1/duet/billing/checkout', { body: {} })).json();
+  const second = await (await send('/v1/duet/billing/checkout', { body: {} })).json();
+  assert.equal(second.url, first.url);
+  assert.equal(stripe.checkout.sessions.sessions.size, 1);
+  // Paid in the browser, its webhook not here yet: no second session.
+  stripe.checkout.sessions.sessions.get('cs_1').status = 'complete';
+  const third = await send('/v1/duet/billing/checkout', { body: {} });
+  assert.equal(third.status, 409);
+  assert.equal((await third.json()).error.code, 'already_paid');
+});
+
+test('two Upgrade clicks at once give one Checkout session', async () => {
+  const stripe = checkoutStripe();
+  const { send } = await setup({ stripe });
+  await send('/v1/duet/me', { method: 'GET' });
+  const replies = await Promise.all([
+    send('/v1/duet/billing/checkout', { body: {} }),
+    send('/v1/duet/billing/checkout', { body: {} })
+  ]);
+  const urls = await Promise.all(replies.map(async reply => (await reply.json()).url));
+  assert.equal(urls[0], urls[1]);
+  const open = [...stripe.checkout.sessions.sessions.values()].filter(session => session.status === 'open');
+  assert.equal(open.length, 1);
+});
+
+test('after a subscription ends, Upgrade makes a new Checkout session', async () => {
+  const stripe = checkoutStripe();
+  const { app, send, stripeLib, db } = await setup({ stripe });
+  await send('/v1/duet/billing/checkout', { body: {} });
+  stripe.checkout.sessions.sessions.get('cs_1').status = 'complete';
+  await webhook(app, stripeLib, {
+    id: 'evt_1',
+    type: 'checkout.session.completed',
+    data: { object: { client_reference_id: 'user_1', customer: 'cus_1', subscription: 'sub_1' } }
+  });
+  await webhook(app, stripeLib, { id: 'evt_2', type: 'customer.subscription.deleted', data: { object: subscription('sub_1', 'canceled') } });
+  const [user] = await db.query(`select plan, checkout_session from users where id = 'user_1'`);
+  assert.deepEqual(user, { plan: 'free', checkout_session: null });
+  const again = await (await send('/v1/duet/billing/checkout', { body: {} })).json();
+  assert.equal(again.url, 'https://checkout.stripe.com/c/2');
+});
+
+test('a request sweeps its own stale live calls, and everyone\'s at most once a minute', async () => {
+  const { send, move, calls, sign } = await setup({ openai: liveOpenAI });
+  const other = await sign('user_2');
+  const hungUp = () => calls.some(c => c.url.endsWith('/live/sessions/live_1/hangup'));
+  await send('/v1/live/sessions', { body: liveBody });
+  move(70_000);
+  await send('/v1/duet/me', { method: 'GET', auth: other });
+  // 100 s with no minute call: stale, but the last sweep of everyone was 30 s ago.
+  move(30_000);
+  await send('/v1/duet/me', { method: 'GET', auth: other });
+  assert.equal(hungUp(), false, 'another user\'s request leaves it until the next sweep of everyone');
+  move(31_000);
+  await send('/v1/duet/me', { method: 'GET', auth: other });
+  assert.equal(hungUp(), true);
+});

@@ -32,11 +32,11 @@ export function transcriptionCost(model, usage, estimatedSeconds) {
   return up(seconds * (p.perMinute / 60) * 1e6);
 }
 
-/** Speech replies are audio with no usage: the text in counts at most a token per two characters,
- * and the audio out is estimated from the MP3's size. */
-export function speechCost(model, inputChars, audioBytes) {
+/** Speech replies are audio with no usage: the text in (the input and the instructions) counts at
+ * most a token per two characters, and the audio out is estimated from the MP3's size. */
+export function speechCost(model, textChars, audioBytes) {
   const p = price(model);
-  const textTokens = Math.ceil(count(inputChars) / 2);
+  const textTokens = Math.ceil(count(textChars) / 2);
   const seconds = count(audioBytes) / MP3_BYTES_PER_SECOND;
   const audioTokens = Math.ceil((seconds * TTS_TOKENS_PER_MINUTE) / 60);
   return up(textTokens * p.input + audioTokens * p.audioOutput);

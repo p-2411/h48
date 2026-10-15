@@ -6,7 +6,7 @@ import { HttpError } from './errors.js';
 import { growTo, release } from './meter.js';
 import { creditPeriod, limits } from './plans.js';
 import { price } from './prices.js';
-import { callOpenAI, holdFor } from './proxy.js';
+import { bodyOf, callOpenAI, holdFor } from './proxy.js';
 import { json, readJson } from './respond.js';
 import { checkLive } from './rules.js';
 
@@ -63,16 +63,17 @@ export async function startLive(ctx, request) {
   await hangUp(ctx, await endLive(ctx.db, ctx.now, 'user_id = $3', [ctx.user.id]));
   const chargeId = await holdFor(ctx, { amount: liveCost(AHEAD_MS), route: 'live', model });
   let upstream;
+  let text;
   try {
     upstream = await callOpenAI(ctx, '/v1/live/sessions', {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body)
     });
+    text = new TextDecoder().decode(await bodyOf(upstream));
   } catch (error) {
     await release(ctx.db, chargeId, ctx.now);
     throw error;
   }
-  const text = await upstream.text();
   if (!upstream.ok) {
     await release(ctx.db, chargeId, ctx.now);
     if (upstream.status === 401 || upstream.status === 403) throw new HttpError(502, 'upstream', 'OpenAI refused the server.');
@@ -137,9 +138,16 @@ export async function liveEnd(ctx, id) {
   return json({ ok: true });
 }
 
-/** Ends calls whose app stopped reporting: hung up, and charged to the last minute call plus one. */
-export async function sweepLive(ctx) {
+/** Ends calls whose app stopped reporting: hung up, and charged to the last minute call plus one.
+ * One user's calls, or everyone's when `userId` is null. */
+export async function sweepLive(ctx, userId) {
   const cutoff = new Date(ctx.now.getTime() - LIVE_STALE_MS);
-  const ended = await endLive(ctx.db, ctx.now, 'last_minute_at < $3', [cutoff], `least(last_minute_at + interval '60 seconds', $1)`);
+  const ended = await endLive(
+    ctx.db,
+    ctx.now,
+    'last_minute_at < $3 and ($4::text is null or user_id = $4)',
+    [cutoff, userId],
+    `least(last_minute_at + interval '60 seconds', $1)`
+  );
   await hangUp(ctx, ended);
 }
