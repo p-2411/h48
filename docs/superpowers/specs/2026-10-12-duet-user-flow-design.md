@@ -117,8 +117,7 @@ All data stays on the learner's Mac, in the existing local database. Duet never 
 | lines | each line met: start time, original, translation, words. Kept for the last ~30 videos | watcher | checkpoints; the daily "say the line" |
 | word events | hovered (after ~300 ms), saved, explained, missed in a checkpoint | strip, cards, Explain, checkpoints | choosing words for checkpoints |
 | days | per day: minutes watched, session done, checkpoints done | all of the above | the streak (two freezes a week) |
-| video words | each video's words, as met in its lines. Never pruned | watcher | each video's % and reading level |
-| video scores | each video's % on each day it was watched (the first is "then") | watcher, about once a minute | Watching |
+| video words | each video's words, as met in its lines, each with how well it was known when first met there ("then"). Never pruned | watcher | each video's % and reading level |
 
 In "Say the line", in a checkpoint and in the daily session, Duet speaks the line.
 

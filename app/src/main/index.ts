@@ -79,6 +79,8 @@ if (is.dev) {
 // How often the line on screen follows the video, and how often hearing looks at the audio.
 const TICK_MS = 100
 const HEARING_TICK_MS = 500
+// Progress catches up with the lines kept from before it this long after launch (once).
+const CATCH_UP_AFTER_MS = 3_000
 
 let tray: Tray | undefined
 
@@ -182,7 +184,9 @@ app.whenReady().then(() => {
   app.on('before-quit', () => logLink.finish())
   // The home base: opened from the Dock, the menu bar, the strip's ⚙ and when Duet starts.
   const home = new Home({ log: watchLog, cards, settings, openWelcome: () => welcome.open(true) })
-  connectProgress(progress, { owns: (sender) => home.owns(sender) })
+  connectProgress(progress, { owns: (sender) => home.owns(sender), send: (channel) => home.send(channel, null) })
+  // Lines kept from before progress are tallied once the windows are up, not before them.
+  setTimeout(() => progress.catchUp(), CATCH_UP_AFTER_MS)
   // Talk in the home base: a free conversation with Duet, in the language being learnt.
   const talk = new Talk({ tutor, settings, window: home })
   // The text model's quiz (what did they mean?), for the daily session and checkpoints.

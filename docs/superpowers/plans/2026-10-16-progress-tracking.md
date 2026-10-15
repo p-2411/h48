@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-16-progress-tracking-design.md`
 
+> **Changed after review (2026-10-16):** "then" is now each word's credit when first met (no day scores or snapshots), unlisted words count as the rarest, and Japanese and Korean forms are split into listed parts. The spec is the source of truth for these; the tasks below record how the first version was built.
+
 ## Global Constraints
 
 - Never run `prettier --write` on existing files. Edit by hand; format only new files.

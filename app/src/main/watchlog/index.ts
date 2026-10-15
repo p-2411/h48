@@ -1,8 +1,8 @@
 // The watch log: what the learner watched with Duet, kept on this Mac. Videos (for Watching), the
 // lines met in each (for checkpoints and the daily "say the line"), what the learner did with
 // words (hovered, saved, explained, missed in a checkpoint) and each study day's activity (for the
-// streak). For progress (src/main/progress), each video's words as met in its lines, and its % on
-// each study day. This class is the only code that touches those tables; connect.ts feeds it.
+// streak). For progress (src/main/progress), each video's words as met in its lines, with how well
+// each was known when first met there. This class is the only code that touches those tables; connect.ts feeds it.
 import type { WatchedVideoSummary } from '../../shared/home'
 import { pairKeys } from '../../shared/knowledge'
 import type { TalliedWord } from '../../shared/progress'
@@ -72,6 +72,14 @@ function summary(row: VideoRow): WatchedVideoSummary {
 
 type VideoLinesRow = { id: string; site: Site; title: string | null; language: Language }
 
+type VideoWordRow = { key: string; text: string; job: WordJob; count: number; first_credit: number | null }
+
+function talliedWord(row: VideoWordRow): TalliedWord {
+  const word: TalliedWord = { key: row.key, text: row.text, job: row.job, count: row.count }
+  if (row.first_credit !== null) word.firstCredit = row.first_credit
+  return word
+}
+
 /** A video's lines and words: the last video's for the daily session (lastVideo), the one on screen's
  * for a checkpoint (videoLines). */
 export type VideoLines = {
@@ -101,8 +109,10 @@ export class WatchLog {
   // Watch time not yet written, by video and study day, and when it was last written.
   private pending = new Map<string, { video: string; day: string; ms: number }>()
   private flushedAt?: number
-  /** Goes up each time videos' words change, so a reader can keep what it worked out from them. */
-  talliesChanged = 0
+  // How many times each video's words have changed since Duet started, and how many times all of
+  // them have (tallyKeptLines): a reader keeps what it worked out from a video until its count moves.
+  private videoChanges = new Map<string, number>()
+  private allChanges = 0
 
   /** The video on screen. While the learner watches it, it is added or brought up to date and
    * counts as watched now. Otherwise (open but paused) only a video already on record is brought up
@@ -235,20 +245,30 @@ export class WatchLog {
           'INSERT INTO lines (video_id, language, start, original, translation, processed, met_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
         )
         .run(key, language, start, original, processed.translation, JSON.stringify(processed), now)
-      this.tally(key, language, processed)
+      this.tally(key, language, pairKeys(language, processed))
       return true
     })
   }
 
-  /** Each word of a line met counted once more in its video's words, in its job there (a word twice
-   * in the line, as two pairs, twice). */
-  private tally(key: string, language: Language, processed: ProcessedLine): void {
+  /** Each word of a line met (its pairs, shared/knowledge.ts pairKeys) counted once more in its
+   * video's words, in its job there (a word twice in the line, as two pairs, twice). */
+  private tally(key: string, language: Language, pairs: ReturnType<typeof pairKeys>): void {
     const upsert = database().prepare(
       `INSERT INTO video_words (video_id, language, key, text, job, count) VALUES (?, ?, ?, ?, ?, 1)
        ON CONFLICT (video_id, language, key, job) DO UPDATE SET count = count + 1, text = excluded.text`
     )
-    for (const word of pairKeys(language, processed)) upsert.run(key, language, word.key, word.text.slice(0, MAX_TEXT), word.job)
-    this.talliesChanged++
+    for (const word of pairs) upsert.run(key, language, word.key, word.text.slice(0, MAX_TEXT), word.job)
+    this.changed(key)
+  }
+
+  private changed(key: string): void {
+    this.videoChanges.set(key, (this.videoChanges.get(key) ?? 0) + 1)
+  }
+
+  /** How often videos' words have changed since Duet started: `all` moves when every video's may
+   * have (tallyKeptLines), `videos` when one's has, by its key. */
+  tallyChanges(): { all: number; videos: ReadonlyMap<string, number> } {
+    return { all: this.allChanges, videos: this.videoChanges }
   }
 
   /** Videos' words worked out again from the lines kept, once (a setting records it): for lines met
@@ -257,7 +277,7 @@ export class WatchLog {
    * (0 once it has run). */
   tallyKeptLines(): number {
     if (readSetting<boolean>(TALLIED_SETTING)) return 0
-    return transaction(() => {
+    const tallied = transaction(() => {
       // Lines met since a run that failed are in the lines too: start again, so none counts twice.
       database().exec('DELETE FROM video_words')
       const rows = database().prepare('SELECT video_id, language, processed FROM lines ORDER BY id').all() as {
@@ -265,66 +285,78 @@ export class WatchLog {
         language: Language
         processed: string | null
       }[]
-      let tallied = 0
+      let count = 0
       for (const row of rows) {
         const processed = parseProcessed(row.processed)
         if (!processed) continue
+        let pairs: ReturnType<typeof pairKeys>
         try {
-          pairKeys(row.language, processed)
+          pairs = pairKeys(row.language, processed)
         } catch {
           continue
         }
-        this.tally(row.video_id, row.language, processed)
-        tallied++
+        this.tally(row.video_id, row.language, pairs)
+        count++
       }
       writeSetting(TALLIED_SETTING, true)
-      this.talliesChanged++
-      return tallied
+      return count
     })
+    this.allChanges++
+    return tallied
   }
 
   /** A video's words in `language`, as met in its lines (a word met in two jobs, once in each). */
   videoWords(key: string, language: Language): TalliedWord[] {
-    return (
-      database()
-        .prepare('SELECT key, text, job, count FROM video_words WHERE video_id = ? AND language = ? ORDER BY key, job')
-        .all(key, language) as { key: string; text: string; job: WordJob; count: number }[]
-    ).map((row) => ({ key: row.key, text: row.text, job: row.job, count: row.count }))
+    const rows = database()
+      .prepare(
+        'SELECT key, text, job, count, first_credit FROM video_words WHERE video_id = ? AND language = ? ORDER BY key, job'
+      )
+      .all(key, language) as VideoWordRow[]
+    return rows.map(talliedWord)
   }
 
   /** Every video's words in `language`, by its key. */
   allVideoWords(language: Language): Map<string, TalliedWord[]> {
     const rows = database()
-      .prepare('SELECT video_id, key, text, job, count FROM video_words WHERE language = ? ORDER BY video_id, key, job')
-      .all(language) as { video_id: string; key: string; text: string; job: WordJob; count: number }[]
+      .prepare(
+        'SELECT video_id, key, text, job, count, first_credit FROM video_words WHERE language = ? ORDER BY video_id, key, job'
+      )
+      .all(language) as (VideoWordRow & { video_id: string })[]
     const videos = new Map<string, TalliedWord[]>()
     for (const row of rows) {
       const words = videos.get(row.video_id) ?? []
-      words.push({ key: row.key, text: row.text, job: row.job, count: row.count })
+      words.push(talliedWord(row))
       videos.set(row.video_id, words)
     }
     return videos
   }
 
-  /** A video's % (0 to 1) in `language` on today's study day, replacing an earlier one that day. */
-  noteScore(key: string, language: Language, score: number, now = Date.now()): void {
-    database()
-      .prepare(
-        `INSERT INTO video_scores (video_id, language, day, score, at) VALUES (?, ?, ?, ?, ?)
-         ON CONFLICT (video_id, language, day) DO UPDATE SET score = excluded.score, at = excluded.at`
-      )
-      .run(key, language, studyDay(now), score, now)
+  /** The words of a video in `language` with no credit from when they were first met yet. */
+  uncredited(key: string, language: Language): string[] {
+    const rows = database()
+      .prepare('SELECT DISTINCT key FROM video_words WHERE video_id = ? AND language = ? AND first_credit IS NULL')
+      .all(key, language) as { key: string }[]
+    return rows.map((row) => row.key)
   }
 
-  /** Each video's % on the first study day it was watched in `language` (its "then"), by its key. */
-  firstScores(language: Language): Map<string, { day: string; score: number }> {
+  /** Every video, and language, with words that have no credit from when first met yet. */
+  uncreditedVideos(): { key: string; language: Language }[] {
     const rows = database()
-      .prepare(
-        `SELECT video_id, day, score FROM video_scores s WHERE language = ?
-           AND day = (SELECT MIN(day) FROM video_scores WHERE video_id = s.video_id AND language = s.language)`
-      )
-      .all(language) as { video_id: string; day: string; score: number }[]
-    return new Map(rows.map((row) => [row.video_id, { day: row.day, score: row.score }]))
+      .prepare('SELECT DISTINCT video_id, language FROM video_words WHERE first_credit IS NULL')
+      .all() as { video_id: string; language: Language }[]
+    return rows.map((row) => ({ key: row.video_id, language: row.language }))
+  }
+
+  /** How well words were known when first met in a video (their rung's credit), by key. A word
+   * credited already keeps its first credit. */
+  creditFirst(key: string, language: Language, credits: Record<string, number>): void {
+    const update = database().prepare(
+      'UPDATE video_words SET first_credit = ? WHERE video_id = ? AND language = ? AND key = ? AND first_credit IS NULL'
+    )
+    transaction(() => {
+      for (const [word, credit] of Object.entries(credits)) update.run(credit, key, language, word)
+    })
+    this.changed(key)
   }
 
   /** Something the learner did with a word. The same event again within a minute is skipped. */

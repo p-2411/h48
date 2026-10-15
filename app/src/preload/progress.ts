@@ -3,8 +3,11 @@
 import type { ProgressSummary } from '../shared/progress'
 import type { Language } from '../shared/types'
 import { invoke } from './invoke'
+import { subscribe } from './subscribe'
 
 export const progressApi = {
   /** Each video's reading level and % now and then, and each level's averages, in `language`. */
-  summary: (language: Language) => invoke<ProgressSummary>('progress:summary', language)
+  summary: (language: Language) => invoke<ProgressSummary>('progress:summary', language),
+  /** Videos' words changed (lines met while watching): ask again. */
+  onChanged: (listener: () => void) => subscribe('progress:changed', listener)
 }

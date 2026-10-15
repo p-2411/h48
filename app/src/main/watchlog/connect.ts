@@ -1,7 +1,7 @@
 // Feeds the watch log: the video on screen and where it is, time spent watching with Duet (only
 // while the video plays and Duet is shown), lines as they come on screen translated, cards saved,
 // lines explained and words hovered on the strip; each new line's words are also seen once more on
-// the knowledge ladder, and the video's % is noted about once a minute while it plays (progress).
+// the knowledge ladder, and its words new to the video are credited as known right then (progress).
 // index.ts calls tick() from its main loop and finish() when Duet quits.
 //
 // The log is a record, not a feature: every write here runs inside another feature's event or
@@ -20,8 +20,6 @@ import { videoKey, type WatchedVideo, type WatchLog } from '.'
 export const MAX_TICK_MS = 1_000
 // How often the video's record (title, where it is) is brought up to date.
 const VIDEO_EVERY_MS = 15_000
-// How often the video's % is noted while it plays.
-const SCORE_EVERY_MS = 60_000
 
 export type WatchSource = EventEmitter & {
   currentVideo?: WatchedVideo
@@ -71,8 +69,8 @@ export function connectWatchLog(
     cards: EventEmitter
     /** The knowledge ladder: each word of a line met is seen once more (src/main/knowledge). */
     knowledge?: Pick<Knowledge, 'noteSeen'>
-    /** Progress: the video's % today, noted while it plays (src/main/progress). */
-    progress?: Pick<Progress, 'snapshot'>
+    /** Progress: each line's words new to its video credited as known when met (src/main/progress). */
+    progress?: Pick<Progress, 'noteMet'>
     /** Duet is on screen (the strip is shown): only then is watching "with Duet", and a line met. */
     shown: () => boolean
   }
@@ -85,16 +83,6 @@ export function connectWatchLog(
   let notedKey: string | undefined
   // The video last noted while it played: on record, so its lines can be met.
   let watchedKey: string | undefined
-  // The video whose % was noted last, and when.
-  let scoredKey: string | undefined
-  let scoredAt: number | undefined
-  // Whether the video played at the last tick (a pause is noted once).
-  let wasPlaying = false
-  const score = (key: string, now: number): void => {
-    scoredKey = key
-    scoredAt = now
-    record(() => progress?.snapshot(key, language(), now))
-  }
 
   const noteVideo = (now: number): void => {
     const video = watcher.currentVideo
@@ -111,7 +99,10 @@ export function connectWatchLog(
     const key = onScreen()
     if (!key || !line || line.id !== watcher.currentLine?.id || !shown()) return
     if (watchedKey !== key) noteVideo(Date.now())
-    if (log.noteLine(key, language(), line) && line.processed) knowledge?.noteSeen(language(), line.processed)
+    if (log.noteLine(key, language(), line) && line.processed) {
+      knowledge?.noteSeen(language(), line.processed)
+      progress?.noteMet(key, language())
+    }
   }
   watcher.on('current', () => record(() => meet(watcher.currentLine)))
   watcher.on('line', (line: OverlayLine) => record(() => meet(line)))
@@ -147,21 +138,12 @@ export function connectWatchLog(
         if (due) noteVideo(now)
         if (player.playing) log.addWatchTime(since, key, now)
       })
-      // The % is noted every SCORE_EVERY_MS while the video plays, and when it pauses; on a change
-      // of video, the one left is noted first (its last minute counts on the day it was watched).
-      if (player.playing) {
-        if (scoredKey !== undefined && scoredKey !== key) score(scoredKey, now)
-        if (key !== scoredKey || scoredAt === undefined || now - scoredAt >= SCORE_EVERY_MS) score(key, now)
-      } else if (wasPlaying && scoredKey === key) score(key, now)
-      wasPlaying = player.playing
     },
     finish(now = Date.now()) {
       record(() => {
         if (onScreen() && shown()) noteVideo(now)
         log.flush(now)
       })
-      const key = onScreen()
-      if (key && shown()) score(key, now)
     },
     explained(moment) {
       record(() =>
