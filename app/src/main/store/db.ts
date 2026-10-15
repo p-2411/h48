@@ -143,6 +143,21 @@ const MIGRATIONS: string[] = [
   // 5: the Words place lists a language's words, the last seen first.
   `
   CREATE INDEX words_recent ON words (language, last_seen);
+  `,
+  // 6: progress (src/main/progress): each video's words, from the lines met, never pruned (so a video
+  // keeps its % and reading level after its lines go), with how well each was known when first met
+  // there (the video's "then").
+  `
+  CREATE TABLE video_words (
+    video_id     TEXT NOT NULL REFERENCES videos (id) ON DELETE CASCADE,
+    language     TEXT NOT NULL,
+    key          TEXT NOT NULL,     -- shared/knowledge.ts wordKey
+    text         TEXT NOT NULL,     -- as it was last on screen
+    job          TEXT NOT NULL,     -- its job there: a word met in two jobs is counted in each
+    count        INTEGER NOT NULL,  -- times met in the video's lines in this job
+    first_credit REAL,              -- its rung's credit (shared/progress.ts) when first met here
+    PRIMARY KEY (video_id, language, key, job)
+  );
   `
 ]
 

@@ -10,6 +10,7 @@ import { say } from '../../components/errors'
 import { LoadState } from '../../components/LoadState'
 import { useSettingsState } from '../../components/useSettings'
 import { Review } from '../../review/Review'
+import { metAndKnownLine } from '../progress'
 import { useLoaded } from '../useLoaded'
 import { filterWords, joinWords, type WordFilter } from './join'
 import { WordDetail } from './WordDetail'
@@ -138,6 +139,7 @@ export function YourWords({
     <main className="home-page your-words">
       <header className="yw-head">
         <h1>Your words</h1>
+        {counts && !empty && <span className="muted yw-met">{metAndKnownLine(counts)}</span>}
         {counts && !empty && (
           <ul className="yw-counts" aria-label="On the ladder">
             {COUNTED.map((state) => (
