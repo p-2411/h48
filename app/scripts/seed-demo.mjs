@@ -226,7 +226,7 @@ try {
     return line
   }
 
-  // --- Streak days: watch time, daily sessions and checkpoints ----------------------------------------
+  // --- Streak days: watch time and checkpoints, and the daily session done (what keeps a day) ---------
   const videoOn = (day) =>
     day >= ago(6) ? `youtube:${MORE_VIDEOS[0].id}` : `youtube:${MORE_VIDEOS[1].id}`
   streakDays.forEach((day, index) => {
@@ -239,9 +239,10 @@ try {
       log.markCheckpointDone(evening + 10 * 60_000)
       log.markCheckpointDone(evening + 20 * 60_000)
     } else log.addWatchTime(18 * 60_000, videoOn(day), evening)
+    if (index % 3 !== 0) log.markSessionDone(evening + 40 * 60_000)
     log.flush(evening + 60 * 60_000)
   })
-  // Some watching today already, not yet enough to keep the day.
+  // Some watching today already; the day isn't kept until the session is done.
   log.addWatchTime(3 * 60_000, MAIN_KEY, lastWatched)
   log.flush(lastWatched)
 

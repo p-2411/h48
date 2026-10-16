@@ -7,11 +7,11 @@ export default defineConfig({
   preload: {},
   renderer: {
     // One page per window: the overlay (index.html), the side panel, the home base and the
-    // first-run welcome.
+    // first-run welcome; and the real strip, framed on the welcome's video (welcome-strip.html).
     build: {
       rollupOptions: {
         input: Object.fromEntries(
-          ['index', 'panel', 'home', 'welcome'].map((page) => [page, resolve(`src/renderer/${page}.html`)])
+          ['index', 'panel', 'home', 'welcome', 'welcome-strip'].map((page) => [page, resolve(`src/renderer/${page}.html`)])
         )
       }
     },

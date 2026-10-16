@@ -17,6 +17,40 @@
         "waitlist/scripts/dashboard.js"
       ],
       "port": 4400
+    },
+    {
+      "name": "home-design",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "app/node_modules/vite/bin/vite.js",
+        "--config",
+        "app/design-preview/vite.config.mjs"
+      ],
+      "port": 5199
+    },
+    {
+      "name": "onboarding-design",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "app/node_modules/vite/bin/vite.js",
+        "docs/design",
+        "--port",
+        "5300",
+        "--strictPort"
+      ],
+      "port": 5300
+    },
+    {
+      "name": "duet-mascot",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "app/node_modules/vite/bin/vite.js",
+        "--config",
+        "app/design-preview/vite.config.mjs",
+        "--port",
+        "5198"
+      ],
+      "port": 5198
     }
   ]
 }

@@ -156,10 +156,11 @@ same context. `watcher.moment(lineId?)` takes one.
   Watching (videos watched with Duet, reopened where the learner left off), My cards (with Review)
   and Settings. The welcome window comes first until the learner has been through it.
 - The **knowledge ladder** (`src/main/knowledge/`, rules in `src/shared/knowledge.ts`): each word (by
-  its dictionary form) is new, seen before, known, sayable or usable, or ignored, worked out each
+  its dictionary form) is new, heard, known, sayable or usable, or ignored, worked out each
   time from what the learner did (recalls, lines said, sentences of their own) and its card's FSRS
-  memory, so forgetting moves it back down. Its rung is its colour: new white, seen before yellow,
-  known orange, sayable blue, usable green, ignored grey. The Auto level (A, the default) swaps in
+  memory, so forgetting moves it back down. Its rung is its colour, never white or black: new lilac
+  (Duet's colour, as Duet explains new words), heard yellow, known orange, sayable blue, usable
+  green, ignored stone (docs/brand/word-colours.md). The Auto level (A, the default) swaps in
   level 1's words and every word known.
 - The **watch log** (`src/main/watchlog/`) keeps, on this computer only, the videos watched, the lines
   met in the last 30 videos, the words the learner hovered, saved, explained or missed, and each study

@@ -49,16 +49,11 @@ try {
   assert.equal(addDays('2026-03-29', -1), '2026-03-28', 'date steps ignore clock changes')
 
   assert.equal(
-    kept(day('2026-10-12', { watchedMs: 9 * 60_000 })),
+    kept(day('2026-10-12', { watchedMs: 60 * 60_000 })),
     false,
-    '9 minutes watched does not keep a day'
+    'watching alone does not keep a day'
   )
-  assert.equal(
-    kept(day('2026-10-12', { watchedMs: 10 * 60_000 })),
-    true,
-    '10 minutes watched keeps a day'
-  )
-  assert.equal(kept(day('2026-10-12', { checkpoints: 1 })), true, 'a checkpoint keeps a day')
+  assert.equal(kept(day('2026-10-12', { checkpoints: 1 })), false, 'nor does a checkpoint')
   assert.equal(kept(done('2026-10-12')), true, 'the daily session keeps a day')
 
   assert.deepEqual(
@@ -265,8 +260,8 @@ try {
   )
   assert.deepEqual(
     days.streak(start + FLUSH_EVERY_MS),
-    { days: 1, keptToday: true, freezesLeft: 2 },
-    '10 minutes keeps the day'
+    { days: 0, keptToday: false, freezesLeft: 2 },
+    'watching alone does not keep the day'
   )
 
   days.addWatchTime(60_000, key, at(2026, 10, 21, 3, 30))
@@ -290,11 +285,11 @@ try {
   days.markSessionDone(at(2026, 10, 23, 9, 0))
   assert.equal(dayRow('2026-10-22').checkpoints_done, 1)
   assert.equal(dayRow('2026-10-23').session_done, 1)
-  // 20th kept (watched), 21st missed (a freeze), 22nd checkpoint, 23rd session.
+  // Only the 23rd's session keeps a day: watching (20th) and a checkpoint (22nd) don't.
   assert.deepEqual(days.streak(at(2026, 10, 23, 10, 0)), {
-    days: 3,
+    days: 1,
     keptToday: true,
-    freezesLeft: 1
+    freezesLeft: 2
   })
 
   // --- Feeding the log -------------------------------------------------------------------------

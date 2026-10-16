@@ -167,7 +167,7 @@ try {
   const before = log.streak(now).keptToday
   assert.equal(before, false)
   await call('checkpoint:done', overlayPage)
-  assert.equal(log.streak().keptToday, true, 'finishing a checkpoint keeps the day')
+  assert.equal(log.streak().keptToday, false, 'a checkpoint alone does not keep the day')
   assert.deepEqual(holds.at(-1), ['release', 'checkpoint'], 'and lets the video go')
 
   // Off in Settings: no offers.
