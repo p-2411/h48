@@ -3,11 +3,8 @@
 import { useState } from 'react'
 import type { WatchingVideo } from '../../../../shared/home'
 import { say } from '../../components/errors'
-import { clock } from '../../components/time'
-import { understood } from '../progress'
 import { Thumbnail } from '../Thumbnail'
 import { useLoaded } from '../useLoaded'
-import { useProgress } from '../useProgress'
 import { Tile } from './Tile'
 
 const loadWatching = (): Promise<WatchingVideo[]> => window.duet.home.getWatching()
@@ -22,7 +19,6 @@ export function WatchingTile({
     error,
     reload
   } = useLoaded(loadWatching, 'Could not load the videos you watched.')
-  const progress = useProgress()
   const [openError, setOpenError] = useState<string>()
   const open = (key: string): void => {
     setOpenError(undefined)
@@ -49,8 +45,6 @@ export function WatchingTile({
         <ul className="tile-videos">
           {videos.slice(0, 2).map((video) => {
             const title = video.title ?? `${video.siteName} video`
-            // Just the % now: the tile has no room for more.
-            const shown = understood({ now: progress?.videos[video.key]?.now })
             return (
               <li key={video.key}>
                 <button
@@ -63,13 +57,6 @@ export function WatchingTile({
                     <Thumbnail video={video} />
                   </span>
                   <span className="tile-video-title">{title}</span>
-                  {video.position !== undefined && (
-                    <span className="faint">
-                      Left off at {clock(video.position)}
-                      {video.words?.length ? ` · ${video.words.length} words met` : ''}
-                    </span>
-                  )}
-                  {shown && <span className="faint">{shown}</span>}
                 </button>
               </li>
             )

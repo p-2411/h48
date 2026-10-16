@@ -481,18 +481,10 @@
 .workspace .today-word .word-large {
   margin: 6px 0;
 }
-/* The streak, in plain sight under the steps: the days, this week, and what keeps it going. */
-.hub-streak {
-  margin-top: 18px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 14px;
-}
-.hub-streak-days {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink);
+/* This week's circles at the end of Today's title row. */
+.workspace .hub-week {
+  flex-wrap: nowrap;
+  gap: 4px;
 }
 .today-start {
   flex-direction: row-reverse;

@@ -1,13 +1,12 @@
 // Watching: the videos watched with Duet, the last first, each reopened in the browser where the
-// learner left off, with its reading level and how much of it the learner understands (and, above
-// them, each reading level watched).
+// learner left off (just its picture and title), and above them each reading level watched.
 import { useState } from 'react'
 import type { WatchingVideo } from '../../../shared/home'
 import { levelText } from '../../../shared/progress'
 import { say } from '../components/errors'
-import { ago, clock } from '../components/time'
+import { clock } from '../components/time'
 import { LoadState } from '../components/LoadState'
-import { levelLine, videoLine } from './progress'
+import { levelLine } from './progress'
 import { Thumbnail } from './Thumbnail'
 import { useLoaded } from './useLoaded'
 import { useProgress } from './useProgress'
@@ -81,10 +80,7 @@ export function Watching(): React.JSX.Element {
         </p>
       )}
       <ul className="home-videos">
-        {shown?.map((video) => {
-          const understood = progress?.videos[video.key]
-          const line = videoLine(understood)
-          return (
+        {shown?.map((video) => (
           <li key={video.key}>
             <button
               className="home-video glass"
@@ -95,29 +91,9 @@ export function Watching(): React.JSX.Element {
                 <Thumbnail video={video} />
               </span>
               <span className="home-video-title">{video.title ?? `${video.siteName} video`}</span>
-              <span className="faint">
-                {video.siteName}
-                {video.position !== undefined && ` · left off at ${clock(video.position)}`} ·{' '}
-                {ago(video.lastWatched)}
-              </span>
-              {line && (
-                <span className="faint" title={understood?.level ? levelText(understood.level) : undefined}>
-                  {line}
-                </span>
-              )}
-              {!!video.words?.length && (
-                <span className="video-words">
-                  {video.words.slice(0, 6).map((word) => (
-                    <span className="w" data-k={word.state} key={word.key}>
-                      {word.word}
-                    </span>
-                  ))}
-                </span>
-              )}
             </button>
           </li>
-          )
-        })}
+        ))}
       </ul>
     </main>
   )
