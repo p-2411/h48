@@ -68,7 +68,10 @@ export class CaptionSource extends EventEmitter {
       } satisfies CaptionStatus)
       return
     }
-    this.child = spawn(path, [], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
+    // The reader reads only the browser window in front; Duet's own windows (its main process's)
+    // coming to the front, as when the strip is pressed, keep the video it was reading.
+    const args = standIn ? [] : ['--duet-pid', String(process.pid)]
+    this.child = spawn(path, args, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
     this.child.stdout?.setEncoding('utf8')
     this.child.stdout?.on('data', (chunk: string) => {
       this.buffer += chunk

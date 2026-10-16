@@ -164,25 +164,63 @@ func captionText(_ container: AXUIElement, site: Site) -> String {
 struct Target { let app: AXUIElement; let browser: String; let bundle: String; let page: AXUIElement; let url: String; let title: String; let site: Site }
 
 var enabledApps = Set<pid_t>()
+/** The browser's accessibility tree, built on first use (Chromium builds its web tree only when asked). */
+func browserElement(_ app: NSRunningApplication) -> AXUIElement {
+  let element = AXUIElementCreateApplication(app.processIdentifier)
+  if !enabledApps.contains(app.processIdentifier) {
+    AXUIElementSetAttributeValue(element, "AXEnhancedUserInterface" as CFString, kCFBooleanTrue)
+    AXUIElementSetAttributeValue(element, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+    enabledApps.insert(app.processIdentifier)
+  }
+  return element
+}
+/** A window's video page, when it shows one on a site the reader knows. */
+func videoPage(in window: AXUIElement, of app: NSRunningApplication, element: AXUIElement) -> Target? {
+  guard let page = find(window, budget: 600, where: { role($0) == "AXWebArea" }),
+        let address = url(page),
+        let site = sites.first(where: { address.contains($0.host) }) else { return nil }
+  return Target(app: element, browser: browsers[app.bundleIdentifier ?? ""] ?? "Browser", bundle: app.bundleIdentifier ?? "", page: page, url: address,
+                title: (value(window, kAXTitleAttribute) as? String) ?? "", site: site)
+}
+func uiElement(_ raw: AnyObject?) -> AXUIElement? {
+  guard let raw, CFGetTypeID(raw) == AXUIElementGetTypeID() else { return nil }
+  return (raw as! AXUIElement)
+}
+
+// Duet's own process (its windows are its main process's): pressing the strip brings Duet to the
+// front, and that mustn't count as leaving the video. Given by the app (--duet-pid).
+let duetPid: pid_t? = CommandLine.arguments.firstIndex(of: "--duet-pid").flatMap {
+  $0 + 1 < CommandLine.arguments.count ? pid_t(CommandLine.arguments[$0 + 1]) : nil
+}
+// The browser window last in front on a video page, kept while Duet's own window is in front.
+var watched: (app: NSRunningApplication, window: AXUIElement)?
+
+// Only the video the learner is watching: the frontmost browser's focused window, or the one that
+// was in front just before Duet's own strip or window was clicked. A video left playing in a window
+// behind another app, in a minimized or hidden one, or in another browser isn't read (a tab in the
+// background isn't either: a window's web area is its active tab).
 func target() -> Target? {
+  guard let front = NSWorkspace.shared.frontmostApplication else { return nil }
+  if let duetPid, front.processIdentifier == duetPid {
+    guard let last = watched, !last.app.isTerminated, !last.app.isHidden,
+          (value(last.window, kAXMinimizedAttribute) as? Bool) != true else { return nil }
+    return videoPage(in: last.window, of: last.app, element: browserElement(last.app))
+  }
+  guard browsers[front.bundleIdentifier ?? ""] != nil else { return nil }
+  let element = browserElement(front)
+  guard let window = uiElement(value(element, kAXFocusedWindowAttribute)) ?? uiElement(value(element, kAXMainWindowAttribute)),
+        let found = videoPage(in: window, of: front, element: element) else { return nil }
+  watched = (front, window)
+  return found
+}
+
+/** For --dump, run from a terminal (then in front): any browser window on a video page. */
+func anyVideoPage() -> Target? {
   let running = NSWorkspace.shared.runningApplications.filter { browsers[$0.bundleIdentifier ?? ""] != nil }
-  // Prefer the frontmost browser, then any other.
-  let ordered = running.sorted { a, _ in a.isActive }
-  for app in ordered {
-    let element = AXUIElementCreateApplication(app.processIdentifier)
-    if !enabledApps.contains(app.processIdentifier) {
-      // Chromium builds its web accessibility tree only when asked.
-      AXUIElementSetAttributeValue(element, "AXEnhancedUserInterface" as CFString, kCFBooleanTrue)
-      AXUIElementSetAttributeValue(element, "AXManualAccessibility" as CFString, kCFBooleanTrue)
-      enabledApps.insert(app.processIdentifier)
-    }
-    let windows = (value(element, kAXWindowsAttribute) as? [AXUIElement]) ?? []
-    for window in windows {
-      guard let page = find(window, budget: 600, where: { role($0) == "AXWebArea" }),
-            let address = url(page),
-            let site = sites.first(where: { address.contains($0.host) }) else { continue }
-      return Target(app: element, browser: browsers[app.bundleIdentifier ?? ""] ?? "Browser", bundle: app.bundleIdentifier ?? "", page: page, url: address,
-                    title: (value(window, kAXTitleAttribute) as? String) ?? "", site: site)
+  for app in running {
+    let element = browserElement(app)
+    for window in (value(element, kAXWindowsAttribute) as? [AXUIElement]) ?? [] {
+      if let found = videoPage(in: window, of: app, element: element) { return found }
     }
   }
   return nil
@@ -214,7 +252,7 @@ func dump(_ element: AXUIElement, depth: Int = 0) {
   for child in children(element) { dump(child, depth: depth + 1) }
 }
 if CommandLine.arguments.contains("--dump") {
-  guard AXIsProcessTrusted(), let current = target() else { print("No trusted target page found."); exit(1) }
+  guard AXIsProcessTrusted(), let current = anyVideoPage() else { print("No trusted target page found."); exit(1) }
   let arguments = CommandLine.arguments
   let wanted = arguments.firstIndex(of: "--dump").flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil } ?? current.site.container
   guard let area = find(current.page, budget: searchBudget, where: { classes($0).contains(wanted) }) else {
