@@ -14,7 +14,7 @@ This spec maps how a learner uses Duet, both while watching and over months, and
 - **Watching must not feel like studying.** The strip asks for nothing. Anything active happens only when the learner chooses, or at the two moments in "Checkpoints".
 - **Watch-first.** The strip and a local watch log are the centre. The daily session and the home base are built from what the learner watched.
 - **The main habit is a short daily session.** A full home base is there for learners who want more.
-- **Progress is the streak, and the Words place's count per rung** (added with the knowledge ladder). No comprehension scores yet.
+- **Progress is the streak, the Words place's count per rung** (added with the knowledge ladder), **and each video's % understood and reading level** (added 2026-10-16: see `2026-10-16-progress-tracking-design.md`). The strip never shows them.
 
 ## 1. While watching: the strip
 
@@ -95,10 +95,10 @@ A normal app window with a Dock icon. It opens from the Dock, from the menu bar,
 | Place | Content |
 |---|---|
 | Today | The daily session and the streak (the default view) |
-| Watching | Videos used with Duet: title, thumbnail, where the learner left off. A click reopens the video in the browser at that point |
+| Watching | Videos used with Duet: title, thumbnail, where the learner left off, its reading level and % understood (then and now), and the reading levels watched. A click reopens the video in the browser at that point |
 | Cards | Today's My cards window, moved here: browse, search, edit, review |
 | Talk | Duet without a video: voice or text practice with saved words and recent videos, on the same tutor |
-| Words | Every word met, by its rung on the knowledge ladder, with a count per rung (added later) |
+| Words | Every word met, by its rung on the knowledge ladder, with a count per rung and words met and known (added later) |
 | Settings | Language, level, checkpoints on/off, reminder time, shortcut, permissions. The strip's ⚙ keeps only quick toggles |
 
 ### Changes to existing screens
@@ -117,6 +117,7 @@ All data stays on the learner's Mac, in the existing local database. Duet never 
 | lines | each line met: start time, original, translation, words. Kept for the last ~30 videos | watcher | checkpoints; the daily "say the line" |
 | word events | hovered (after ~300 ms), saved, explained, missed in a checkpoint | strip, cards, Explain, checkpoints | choosing words for checkpoints |
 | days | per day: minutes watched, session done, checkpoints done | all of the above | the streak (two freezes a week) |
+| video words | each video's words, as met in its lines, each with how well it was known when first met there ("then"). Never pruned | watcher | each video's % and reading level |
 
 In "Say the line", in a checkpoint and in the daily session, Duet speaks the line.
 
@@ -144,7 +145,7 @@ The friend's onboarding and visual pass can build on the home base after piece 2
 ## Backlog (not in this design)
 
 - Recommending videos by level (scored by known words; YouTube first).
-- ~~Known and unknown words (the friend's design)~~ done as the knowledge ladder; still to come: comprehension scores ("you understood 82%").
+- ~~Known and unknown words (the friend's design)~~ done as the knowledge ladder; ~~comprehension scores~~ done as progress tracking (2026-10-16).
 - Mascot reactions to moments.
 - The end-of-video recap card.
 - "Talk about it" as a checkpoint kind.

@@ -23,6 +23,7 @@ import type { VideoLines, WordEvent } from '../watchlog'
 import type { Streak } from '../watchlog/streak'
 import { ladderOf } from '../challenges/ladder'
 import { planSession } from './plan'
+import { track } from '../reports/usage'
 
 type Deps = {
   log: { lastVideo(): VideoLines | undefined; markSessionDone(): void; streak(): Streak; noteWord(event: WordEvent): unknown }
@@ -59,7 +60,10 @@ export class DailySession {
     })
     handle('done', () => {
       const kept = !!this.round?.finished || cards.reviewsSince(this.plannedAt) > 0
-      if (kept) log.markSessionDone()
+      if (kept) {
+        log.markSessionDone()
+        track('daily_session_done')
+      }
       return { kept, streak: log.streak() }
     })
   }

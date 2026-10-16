@@ -9,6 +9,7 @@ import { duetModelError } from '../ai/errors'
 import { RATINGS } from '../../shared/cards'
 import type { TutorSessionAnswer } from '../../shared/tutor'
 import { languageModule, languageName, type Language } from '../../shared/languages'
+import { reportModelFailure } from '../ai/report'
 import { backendInstructions, contextLanguage, contextText, liveInstructions, type TutorContext } from './prompts'
 
 const readingCache = new Map<string, string>()
@@ -178,6 +179,7 @@ export function safeLiveError(error: unknown, context: string): Error {
   // Duet's server: a cap reached, or the learner signed out.
   const duet = duetModelError(error)
   if (duet) return new Error(duet.message)
+  reportModelFailure({ provider: 'openai', task: context }, error)
   if (error instanceof OpenAI.AuthenticationError || error instanceof OpenAI.PermissionDeniedError)
     return new Error('The OpenAI project key was rejected or does not have GPT-Live access.')
   if (error instanceof OpenAI.RateLimitError)

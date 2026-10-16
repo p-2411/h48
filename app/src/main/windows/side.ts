@@ -26,7 +26,8 @@ export function createSideWindow(page: Page, title: string, { width, height, bou
     minWidth: 360,
     minHeight: 480,
     title,
-    ...(glass
+    // Windows has no sidebar material, and a hidden title bar there would lose the window's buttons.
+    ...(glass && process.platform === 'darwin'
       ? { vibrancy: 'sidebar' as const, visualEffectState: 'active' as const, backgroundColor: '#00000000', titleBarStyle: 'hiddenInset' as const }
       : { backgroundColor: '#101013' }),
     alwaysOnTop: true,

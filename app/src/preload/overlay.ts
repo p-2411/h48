@@ -39,6 +39,7 @@ export const overlayApi = {
   setCheckpoints: (on: boolean) => ipcRenderer.send('duet:set-checkpoints', on),
   setPauseForHelp: (on: boolean) => ipcRenderer.send('duet:set', { pauseForHelp: on }),
   setShowFullLine: (on: boolean) => ipcRenderer.send('duet:set', { showFullLine: on }),
+  setShareDiagnostics: (on: boolean) => ipcRenderer.send('duet:set', { shareDiagnostics: on }),
   /** The strip was right-clicked: Duet's menu (Hide Duet, Settings…, Quit Duet). */
   showMenu: () => ipcRenderer.send('duet:menu'),
   setWordScript: (script: WordScript) => ipcRenderer.send('duet:set', { wordScript: script }),

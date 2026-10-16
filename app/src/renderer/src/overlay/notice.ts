@@ -14,6 +14,10 @@ export function actionable(status: OverlayStatus, language: Language): Notice | 
   const name = languageName(language)
   if (status.error) return { text: status.error }
   if (status.modelError) return { text: status.modelError }
+  // Windows asks for no permission: until its caption reader reports, Duet is only starting.
+  // (Outside a window, in the tests, as on macOS.)
+  const asksPermissions = typeof window === 'undefined' || window.duet.welcome.asksPermissions
+  if (!status.trusted && !asksPermissions) return { text: 'Duet is starting…' }
   if (!status.trusted)
     return {
       text: 'Duet needs Accessibility permission to see the video',

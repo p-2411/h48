@@ -20,6 +20,9 @@
   -webkit-app-region: drag;
 }
 .home-bar button { -webkit-app-region: no-drag; }
+/* Windows draws its own title bar above the page: no room to leave for the window buttons. */
+[data-platform='win32'] .home-bar { padding-left: 16px; }
+[data-platform='win32'] .home-back { left: 16px; }
 .home-mark { display: grid; place-items: center; color: #fff; }
 .home-brand { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
 /* The language learnt: its name opens a short menu of the languages. */
@@ -196,12 +199,19 @@
 .home-videos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
 .home-video { width: 100%; padding: 10px; gap: 6px; text-align: left; }
 .home-video-title { font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+/* Above the videos: each reading level watched, easiest first. */
+.home-levels { display: flex; flex-direction: column; gap: 6px; }
+.home-levels > .label { padding-left: 4px; }
+.home-levels ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.home-levels li { padding: 10px 12px; gap: 2px; }
+.home-level-name { font-weight: 500; }
 
 /* Settings: grouped lists, each group's name above it, like System Settings. */
 .home-settings { align-items: center; }
 .home-settings > * { width: 100%; max-width: 600px; }
 .settings-group { display: flex; flex-direction: column; gap: 6px; }
 .settings-group > .label { padding-left: 16px; }
+.settings-credit { padding-left: 16px; }
 .settings-group .glass { align-items: stretch; gap: 12px; }
 .settings-group .btn { align-self: flex-start; }
 

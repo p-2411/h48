@@ -16,15 +16,19 @@
 //   challenges/     the challenges the daily session and checkpoints share
 //   sources/        each video site (YouTube, Netflix, Disney+, Crunchyroll); store/ the local database
 //   ipc/overlay.ts  the overlay's IPC; windows/ the windows; tray.ts the menu bar icon
+//   updates/        Duet's own updates: found and downloaded quietly, installed on quit
 //   ai/             the models (lines, explain, voice), one file per provider
 //   audio.ts, listen.ts, hearing.ts, spoken.ts   the video's sound: hearing lines, how they were said
 //   detect.ts       which language a caption line is in; replay.ts going back to a line
 //   settings.ts, shortcut.ts, welcome.ts, demo.ts   settings, the show/hide keys, first run, demos
+//   reports/        crash and error reports (Sentry) and a few usage events (PostHog), never content
 //   account/        sign-in (WorkOS) and Duet's server, which holds the OpenAI key and meters each
 //                   learner: credits, watch hours, live voice minutes, the plan
 // First: where the data lives, before any other module can read it.
 import './pin-data-folder'
-import { app, globalShortcut, nativeTheme, Notification, type Tray } from 'electron'
+import { followConsent, startReports } from './reports'
+import { stopUsage, track, trackOnce } from './reports/usage'
+import { app, globalShortcut, Menu, nativeTheme, Notification, type Tray } from 'electron'
 import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import type { Moment } from '../shared/moment'
@@ -51,6 +55,8 @@ import { replay } from './replay'
 import { Settings } from './settings'
 import { createTray } from './tray'
 import { Tutor } from './tutor'
+import { Updates } from './updates'
+import { connectUpdates } from './updates/ipc'
 import { Welcome } from './welcome'
 import { Shortcut } from './shortcut'
 import { WaitForTranslation } from './wait'
@@ -59,6 +65,8 @@ import { WatchLog } from './watchlog'
 import { connectWatchLog } from './watchlog/connect'
 import { Knowledge } from './knowledge'
 import { connectKnowledge } from './knowledge/ipc'
+import { Progress } from './progress'
+import { connectProgress } from './progress/ipc'
 import { Home, openDuet } from './home'
 import { Talk } from './talk'
 import { StripTalk } from './talk/strip'
@@ -83,12 +91,17 @@ if (is.dev) {
 // How often the line on screen follows the video, and how often hearing looks at the audio.
 const TICK_MS = 100
 const HEARING_TICK_MS = 500
+// Progress catches up with the lines kept from before it this long after launch (once).
+const CATCH_UP_AFTER_MS = 3_000
 
 let tray: Tray | undefined
 
 // One Duet at a time: a second copy would read the same captions and write the same database.
 const primary = app.requestSingleInstanceLock()
 if (!primary) app.quit()
+// Crash and error reports start before the app is ready, so they see everything after; only in the
+// Duet that holds the lock, so a second copy on its way out never opens the database.
+else startReports()
 
 app.whenReady().then(() => {
   // Duet is dark only: the side panel's macOS material stays dark when the Mac is in light mode.
@@ -99,6 +112,9 @@ app.whenReady().then(() => {
   // in its bundle, build/icon.icns).
   if (is.dev && process.platform === 'darwin') app.dock?.setIcon(appIcon)
   app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
+  // Windows would give each window Electron's own menu bar (with Reload and the developer tools);
+  // Duet's menu is the tray's.
+  if (process.platform === 'win32') Menu.setApplicationMenu(null)
 
   // Sign-in and Duet's server come first: the models reach OpenAI through it (src/main/account).
   const { account, server } = setupAccount(() => home.open())
@@ -120,6 +136,9 @@ app.whenReady().then(() => {
   }
 
   const settings = new Settings()
+  // Reports and usage events follow "Share crash reports and usage" in Settings from here on.
+  followConsent(settings)
+  track('app_opened')
   const captions = new CaptionSource()
   const audio = new AudioSource()
   const player = new Player((command) => captions.command(command))
@@ -178,21 +197,35 @@ app.whenReady().then(() => {
   // The watch log: videos, lines met, words and study days, for the daily session, checkpoints and
   // the streak (src/main/watchlog). Watching counts only while the strip is shown.
   const watchLog = new WatchLog()
+  // Progress: how much of each video the learner understands, then and now, and its reading level.
+  const progress = new Progress({ log: watchLog, knowledge })
   const logLink = connectWatchLog(watchLog, {
     watcher,
     player,
     settings,
     cards,
     knowledge,
+    progress,
     shown: () => !overlay.isDestroyed() && overlay.isVisible()
   })
   app.on('before-quit', () => logLink.finish())
+  // The first line ever shown on the strip: the moment Duet first works for someone.
+  watcher.on('current', (id: number | null) => {
+    if (id !== null && !overlay.isDestroyed() && overlay.isVisible())
+      trackOnce('first_line_shown', {
+        site: watcher.currentVideo?.site,
+        language: settings.current.language
+      })
+  })
   // Watching, as the watch log counts it: Duet's server counts the same time on its own clock.
   const watching = (): boolean => !!watcher.currentVideo && !overlay.isDestroyed() && overlay.isVisible() && player.playing
   const serverWatch = server && new ServerWatch(server)
   // The home base: opened from the Dock, the menu bar, the strip's ⚙ and when Duet starts.
   // Closing it ends Talk's conversation: its previews, its hold on the video and its voice minutes.
   const home = new Home({ log: watchLog, cards, settings, openWelcome: () => welcome.open(true), closed: () => tutor.end(home) })
+  connectProgress(progress, { owns: (sender) => home.owns(sender), send: (channel) => home.send(channel, null) })
+  // Lines kept from before progress are tallied once the windows are up, not before them.
+  setTimeout(() => progress.catchUp(), CATCH_UP_AFTER_MS)
   // Talk in the home base: a free conversation with Duet, in the language being learnt.
   const talk = new Talk({ tutor, settings, window: home })
   // The plan and its meters in the home base; read again when a video starts and when Duet comes
@@ -320,17 +353,35 @@ app.whenReady().then(() => {
   const open = (): void => openDuet({ onboarded: settings.current.onboarded, home, welcome })
   open()
   app.on('activate', open)
+  // Started again while it runs (Windows' Start menu or desktop shortcut; the Dock on macOS gives
+  // 'activate' instead): the copy that runs opens, as the second one quits.
+  app.on('second-instance', open)
   app.on('activate', () => void accountLink.refresh())
   settings.on('change', (_, changed) => {
-    if (changed.onboarded) home.open()
+    if (changed.onboarded) {
+      home.open()
+      track('onboarding_done')
+    }
   })
+  // Duet's own updates (never from source): the menu bar and Settings show them; an answer to "Check
+  // for updates" in the menu bar is a notification, kept like the reminder's.
+  let shownUpdate: Notification | undefined
+  const updates = new Updates({
+    notify: (text) => {
+      shownUpdate = new Notification({ title: 'Duet', body: text })
+      shownUpdate.show()
+    }
+  })
+  connectUpdates(updates, { owns: (sender) => home.owns(sender), send: (channel, value) => home.send(channel, value) })
+  updates.start()
   tray = createTray({
     openHome: () => home.open(),
     toggleOverlay: () => toggleOverlay(overlay),
     showScript,
     explainLine: () => explainLine(),
     openCards: () => home.open('cards'),
-    openWelcome: () => welcome.open(true)
+    openWelcome: () => welcome.open(true),
+    updates
   })
   // In demo mode Explain opens at once on the demo line, so the flow shows without a video.
   if (demo) setTimeout(() => explainLine(), 300)
@@ -368,7 +419,9 @@ app.whenReady().then(() => {
     globalShortcut.unregisterAll()
     captions.stop()
     audio.stop()
+    updates.stop()
     tray?.destroy()
+    void stopUsage()
     account?.cleanup()
   })
 })
