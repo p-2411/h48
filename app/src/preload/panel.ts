@@ -18,5 +18,9 @@ export const panelApi = {
   getLook: () => invoke<{ dark: boolean }>('panel:get-look'),
   onLook: (listener: (look: { dark: boolean }) => void) => subscribe('panel:look', listener),
   /** Goes back to a line in the video. */
-  seek: (lineId: number) => ipcRenderer.send('panel:seek', lineId)
+  seek: (lineId: number) => ipcRenderer.send('panel:seek', lineId),
+  /** A sideways swipe: the window slides this far toward the screen's edge (points). */
+  swipe: (offset: number) => ipcRenderer.send('panel:swipe', offset),
+  /** The swipe ended: off and closed, or back where it was. */
+  swipeEnd: (close: boolean) => ipcRenderer.send('panel:swipe-end', close)
 }
