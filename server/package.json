@@ -6,6 +6,7 @@
     "test": "node --test --test-concurrency=1 \"test/*.test.js\"",
     "dev": "node --env-file-if-exists=.env.local dev.js",
     "migrate": "node --env-file-if-exists=.env.local scripts/migrate.js",
+    "vercel-build": "node scripts/migrate.js",
     "plan": "node --env-file-if-exists=.env.local scripts/plan.js"
   },
   "engines": {

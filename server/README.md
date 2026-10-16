@@ -21,7 +21,7 @@ Design: `docs/superpowers/specs/2026-10-13-usage-caps-design.md`.
 ## Commands
 
 - `npm test`: every test, with PGlite (Postgres in memory) and fakes for OpenAI and Stripe. No network.
-- `npm run migrate`: makes the tables in `DATABASE_URL`. Run it once, and again after a schema change.
+- `npm run migrate`: makes the tables in `DATABASE_URL`. Safe to run again. Every Vercel deploy runs it first (`vercel-build`), so a schema change reaches the database before the code that needs it; run it by hand only for a database Vercel doesn't deploy to.
 - `npm run plan -- <email or user id> <free|paid>`: sets a plan by hand.
 - `npm run dev`: the server on http://localhost:8787. It reads `server/.env.local`, which is never committed.
 
