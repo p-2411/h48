@@ -1,7 +1,7 @@
 // The overlay: a strip the size of a subtitle at the bottom of the window, showing only the mixed
 // line. Everything else appears when reached for: hovering the strip shows the actions above it;
-// clicking it opens it up to the original and the English (and clicking again closes it; not while a
-// checkpoint is offered or open: then a double-click opens the checkpoint); hovering a word shows its
+// clicking it opens it up to the original and the English (it folds again when the pointer leaves;
+// while a checkpoint is offered a click opens the checkpoint instead); hovering a word shows its
 // popup; ⚙ opens the settings; two fingers swiped sideways on the strip change the level. Words
 // show on the strip itself only when the learner can act on them (see notice.ts). The strip sits on
 // the video, no wider than it (the main process moves the window; see placement.ts), and can be
@@ -98,7 +98,7 @@ export function Overlay(): React.JSX.Element {
   }, [])
   // Stars given in this run, by line and word ("12:3", or "12:line"), so they show as saved.
   const [stars, setStars] = useState<Record<string, string>>({})
-  // A checkpoint offered (the strip glows; a double-click on it opens it) and the one open.
+  // A checkpoint offered (the strip glows; a click on it opens it) and the one open.
   const [offer, setOffer] = useState<Offer | null>(null)
   const [checkpoint, setCheckpoint] = useState<CheckpointView>()
   // The checkpoint's card is still folding back into the strip (the strip's top corners stay square
@@ -125,14 +125,11 @@ export function Overlay(): React.JSX.Element {
     return !moved && !(event.target as Element).closest(NOT_FOR_DRAGGING)
   }
   // A click on the strip opens it up to the whole line and its English (and the actions row), and
-  // closes it again; pointing at it shows nothing more. While a checkpoint is offered the strip is
-  // for that instead: a double-click opens the question, so a stray click on a glowing strip doesn't.
+  // closes it again. While a checkpoint is offered (the strip glows) the click opens the checkpoint.
   const clickStrip = (event: React.MouseEvent<HTMLElement>): void => {
-    if (offer || checkpoint || !onBackground(event)) return
-    setOpen((now) => !now)
-  }
-  const doubleClickStrip = (event: React.MouseEvent<HTMLElement>): void => {
-    if (onBackground(event)) askCheckpoint()
+    if (checkpoint || !onBackground(event)) return
+    if (offer) askCheckpoint()
+    else setOpen((now) => !now)
   }
 
   useEffect(() => {
@@ -379,13 +376,12 @@ export function Overlay(): React.JSX.Element {
             borderBottomRightRadius: 18
           }}
           className={`strip${offer || checkpoint ? ' glow' : ''}`}
-          title={offer && !checkpoint ? 'A quick checkpoint: double-click the strip' : undefined}
+          title={offer && !checkpoint ? 'A quick checkpoint: click the strip' : undefined}
           onPointerDown={(event) => {
             pressedAt.current = { x: event.clientX, y: event.clientY }
             startDrag(event)
           }}
           onClick={clickStrip}
-          onDoubleClick={doubleClickStrip}
           onWheel={(event) => level.step(stripSwipes.step(event.deltaY, event.deltaX, event.timeStamp))}
         >
           {/* Light from below, inside the glass, while a checkpoint is offered, and on while it's
