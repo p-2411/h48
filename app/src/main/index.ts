@@ -151,7 +151,8 @@ app.whenReady().then(() => {
     () => watcher.followingTranscript
   )
   const replayMoment = (moment: Moment): void => replay(moment, { watcher, player })
-  const panel = new Panel({ watcher, settings, replay: replayMoment })
+  // Explain and the Script open over the video, where the strip is placed (placement, below).
+  const panel = new Panel({ watcher, settings, replay: replayMoment, videoFrame: () => placement.videoFrame })
   // How a line was said, from the audio; Explain and the spoken-language check both ask.
   const hear = (moment: Moment, signal: AbortSignal): ReturnType<typeof hearLine> =>
     hearLine(moment, { audio, player, listener: voice?.listener }, signal)

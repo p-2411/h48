@@ -17,7 +17,8 @@ import type { PanelTab } from '../../shared/types'
 import type { Settings } from '../settings'
 import type { Watcher } from '../watcher'
 import { isFrom } from '../windows/from'
-import { createPanelWindow } from '../windows/panel'
+import { boundsOnVideo, createPanelWindow } from '../windows/panel'
+import type { VideoFrame } from '../captions'
 
 export class Panel extends EventEmitter {
   private window?: BrowserWindow
@@ -25,7 +26,13 @@ export class Panel extends EventEmitter {
   private dark = false
 
   constructor(
-    private readonly options: { watcher: Watcher; settings: Settings; replay: (moment: Moment) => void }
+    private readonly options: {
+      watcher: Watcher
+      settings: Settings
+      replay: (moment: Moment) => void
+      /** Where the video is on screen, if one is in view: the panel opens on it. */
+      videoFrame?: () => VideoFrame | undefined
+    }
   ) {
     super()
     const { watcher, replay } = options
@@ -45,7 +52,10 @@ export class Panel extends EventEmitter {
   show(tab: PanelTab): void {
     this.tab = tab
     if (!this.window || this.window.isDestroyed()) {
-      const window = (this.window = createPanelWindow(this.options.settings.current.panelBounds))
+      const frame = this.options.videoFrame?.()
+      const window = (this.window = createPanelWindow(
+        frame ? boundsOnVideo(frame) : this.options.settings.current.panelBounds
+      ))
       window.setBackgroundColor(ground(this.dark))
       // Saved once the learner stops moving or resizing it.
       let saving: NodeJS.Timeout | undefined

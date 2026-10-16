@@ -56,6 +56,11 @@ export class Placement {
     overlay.webContents.on('render-process-gone', stop)
   }
 
+  /** Where the video is on screen now (undefined: none in view). */
+  get videoFrame(): VideoFrame | undefined {
+    return this.frame
+  }
+
   /** How wide the strip may be to stay inside the video (undefined: no video in view). */
   maxWidth(): number | undefined {
     return this.frame && Math.max(320, this.frame.width - SIDE_ROOM * 2)
