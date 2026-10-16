@@ -1,7 +1,7 @@
 // The overlay: a strip the size of a subtitle at the bottom of the window, showing only the mixed
 // line. Everything else appears when reached for: hovering the strip shows the actions above it;
-// clicking it opens it up to the original and the English (and clicking again closes it; not while a
-// checkpoint is offered or open: then a double-click opens the checkpoint); hovering a word shows its
+// clicking it opens it up to the original and the English (it folds again when the pointer leaves;
+// while a checkpoint is offered a click opens the checkpoint instead); hovering a word shows its
 // popup; ⚙ opens the settings; two fingers swiped sideways on the strip change the level. Words
 // show on the strip itself only when the learner can act on them (see notice.ts). The strip sits on
 // the video, no wider than it (the main process moves the window; see placement.ts), and can be
@@ -30,6 +30,8 @@ import { useSolid } from './useSolid'
 import { useRoomAbove } from './useRoomAbove'
 import { useStripTalk } from './useStripTalk'
 
+// An opened strip folds this long after the pointer leaves it.
+const FOLD_AFTER_LEAVE_MS = 400
 const TOAST_MS = 5000
 const TALK_LOOK_KEY = 'duet.talkLook'
 // The checkpoint card's content fades this quickly (seconds), before it folds and after it opens.
@@ -73,6 +75,8 @@ export function Overlay(): React.JSX.Element {
   // Clicked open: the strip shows more of the line, and its actions stay up (in React, so its size
   // change glides). Another click, or Escape, closes it.
   const [open, setOpen] = useState(false)
+  const foldTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => () => clearTimeout(foldTimer.current), [])
   const [toast, setToast] = useState<Toast>()
   const talk = useStripTalk(settings.language, useCallback((text: string) => setToast({ text }), []))
   // Duet and its subtitles while talking: dark, or light over a bright picture (the learner's pick,
@@ -94,7 +98,7 @@ export function Overlay(): React.JSX.Element {
   }, [])
   // Stars given in this run, by line and word ("12:3", or "12:line"), so they show as saved.
   const [stars, setStars] = useState<Record<string, string>>({})
-  // A checkpoint offered (the strip glows; a double-click on it opens it) and the one open.
+  // A checkpoint offered (the strip glows; a click on it opens it) and the one open.
   const [offer, setOffer] = useState<Offer | null>(null)
   const [checkpoint, setCheckpoint] = useState<CheckpointView>()
   // The checkpoint's card is still folding back into the strip (the strip's top corners stay square
@@ -121,14 +125,11 @@ export function Overlay(): React.JSX.Element {
     return !moved && !(event.target as Element).closest(NOT_FOR_DRAGGING)
   }
   // A click on the strip opens it up to the whole line and its English (and the actions row), and
-  // closes it again; pointing at it shows nothing more. While a checkpoint is offered the strip is
-  // for that instead: a double-click opens the question, so a stray click on a glowing strip doesn't.
+  // closes it again. While a checkpoint is offered (the strip glows) the click opens the checkpoint.
   const clickStrip = (event: React.MouseEvent<HTMLElement>): void => {
-    if (offer || checkpoint || !onBackground(event)) return
-    setOpen((now) => !now)
-  }
-  const doubleClickStrip = (event: React.MouseEvent<HTMLElement>): void => {
-    if (onBackground(event)) askCheckpoint()
+    if (checkpoint || !onBackground(event)) return
+    if (offer) askCheckpoint()
+    else setOpen((now) => !now)
   }
 
   useEffect(() => {
@@ -231,6 +232,13 @@ export function Overlay(): React.JSX.Element {
           if (event.key !== 'Escape') return
           if (settingsOpen) setSettingsOpen(false)
           else setOpen(false)
+        }}
+        // Opened with a click, it folds again a moment after the pointer leaves the strip and its
+        // actions (coming back in time keeps it open).
+        onPointerEnter={() => clearTimeout(foldTimer.current)}
+        onPointerLeave={() => {
+          clearTimeout(foldTimer.current)
+          foldTimer.current = setTimeout(() => setOpen(false), FOLD_AFTER_LEAVE_MS)
         }}
       >
         <AnimatePresence>{settingsOpen && <SettingsPopover key="settings" settings={settings} />}</AnimatePresence>
@@ -368,13 +376,12 @@ export function Overlay(): React.JSX.Element {
             borderBottomRightRadius: 18
           }}
           className={`strip${offer || checkpoint ? ' glow' : ''}`}
-          title={offer && !checkpoint ? 'A quick checkpoint: double-click the strip' : undefined}
+          title={offer && !checkpoint ? 'A quick checkpoint: click the strip' : undefined}
           onPointerDown={(event) => {
             pressedAt.current = { x: event.clientX, y: event.clientY }
             startDrag(event)
           }}
           onClick={clickStrip}
-          onDoubleClick={doubleClickStrip}
           onWheel={(event) => level.step(stripSwipes.step(event.deltaY, event.deltaX, event.timeStamp))}
         >
           {/* Light from below, inside the glass, while a checkpoint is offered, and on while it's

@@ -37,7 +37,7 @@ export const LINES = {
   noProblem: 'No problem.',
   didntCatch: 'I didn’t catch that. Try again?',
   sceneEnds: 'When a scene ends, the line glows.',
-  pointGlow: 'Double-click it for a quick question.',
+  pointGlow: 'Click it for a quick question.',
   ownWords: 'Answer in your own words.',
   countsToday: 'Nice! That counts for today.',
   thirdVideo: 'These start after your third video.',

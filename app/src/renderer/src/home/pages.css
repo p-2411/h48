@@ -53,7 +53,10 @@
   color: var(--on-ink);
   box-shadow: none;
 }
+/* Its "today" class also matches the daily session's .today (a flex column), which lifted the letter. */
 .workspace .week-day.today {
+  display: grid;
+  flex: none;
   outline: 1px solid var(--ink);
   outline-offset: 2px;
   color: var(--ink);
@@ -478,46 +481,10 @@
 .workspace .today-word .word-large {
   margin: 6px 0;
 }
-.hub-steps {
-  padding: 0;
-  margin: 20px 0 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.hub-steps li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  border-top: 1px solid var(--line);
-  font-size: 13px;
-}
-.hub-steps b {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--soft);
-  color: var(--sub);
-  font-size: 11px;
-  font-weight: 500;
-  display: grid;
-  place-items: center;
-}
-.hub-steps li:first-child b {
-  background: var(--ink);
-  color: var(--on-ink);
-}
-.hub-streak-details {
-  font-size: 11px;
-  color: var(--sub);
-}
-.hub-streak-details summary {
-  cursor: pointer;
-}
-.hub-streak-details .today-streak {
-  border: 0;
+/* This week's circles at the end of Today's title row. */
+.workspace .hub-week {
+  flex-wrap: nowrap;
+  gap: 4px;
 }
 .today-start {
   flex-direction: row-reverse;
@@ -535,8 +502,12 @@
   color: var(--ink);
   margin-right: 5px;
 }
+/* The rung counts in the same serif as the "ready to review" number. */
 .workspace .tile-words .rung dd {
-  font-size: 25px;
+  font:
+    400 30px/1.1 'Source Serif 4',
+    Georgia,
+    serif;
 }
 .workspace .tile-words .ladder-bar {
   display: none;
@@ -806,4 +777,22 @@
 }
 .workspace .settings-panel .btn {
   font-size: 13px;
+}
+
+/* Settings › Feedback: the prompt above a full-width box. */
+.workspace .settings-panel .settings-group .glass > .field.feedback-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  /* The group's first row: no line above it, as in the other groups. */
+  border-top: 0;
+  padding-top: 0;
+}
+.workspace .settings-panel .settings-group .glass > .field.feedback-field > span {
+  max-width: none;
+}
+.workspace .feedback-field textarea {
+  width: 100%;
+  box-sizing: border-box;
 }

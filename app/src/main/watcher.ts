@@ -24,6 +24,7 @@ import { LineSession } from './session'
 import type { Settings } from './settings'
 import { detectLanguage } from './detect'
 import { sourceFor, type Source } from './sources'
+import { withoutBrowser } from './sources/title'
 
 // Videos and languages whose lines are kept after switching away.
 const SESSIONS_KEPT = 12
@@ -61,18 +62,20 @@ export class Watcher extends EventEmitter {
       this.setStatus({ ...change, error: change.error, site: source?.site, siteName: source?.name, controls: source?.controls })
       const id = change.url ? source?.videoId(change.url) : undefined
       if (source && id && change.url) {
-        const title = change.title ? source.videoTitle(change.title) : undefined
+        const title = change.title ? source.videoTitle(withoutBrowser(change.title)) : undefined
         if (this.video?.id === id && this.video.source === source && title) this.video.title = title
         if (id !== this.video?.id || source !== this.video.source) {
           this.video = { source, id, url: change.url, title }
           player.reset()
           this.open()
+          this.emit('video', this.currentVideo)
         }
       } else if (this.video) {
         // Left the video (another page, or no video page found): nothing is being watched.
         this.video = undefined
         player.reset()
         this.open()
+        this.emit('video', undefined)
       }
     })
     // Captions in another language than the one being learnt (English captions on a Spanish video)

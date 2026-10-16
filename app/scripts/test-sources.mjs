@@ -22,6 +22,7 @@ const { LineSession } = await jiti.import('../src/main/session.ts')
 const { ModelError } = await jiti.import('../src/main/ai/errors.ts')
 const { Watcher } = await jiti.import('../src/main/watcher.ts')
 const { sourceFor } = await jiti.import('../src/main/sources/index.ts')
+const { withoutBrowser, shownTitle, heardOn } = await jiti.import('../src/main/sources/title.ts')
 
 // No real requests: YouTube's transcript fetch fails as if offline.
 globalThis.fetch = async () => {
@@ -158,6 +159,15 @@ try {
     'One Piece - Romance Dawn',
     'the title without the site’s words around it'
   )
+  // Browsers' own names (and a profile after them) never reach a video's name.
+  assert.equal(withoutBrowser('Netflix - Google Chrome – Parham'), 'Netflix')
+  assert.equal(withoutBrowser('Sintel - YouTube - Google Chrome'), 'Sintel - YouTube')
+  assert.equal(withoutBrowser('Sintel — Mozilla Firefox'), 'Sintel')
+  assert.equal(withoutBrowser('Netflix - Microsoft\u200b Edge'), 'Netflix')
+  assert.equal(withoutBrowser('Arcane - Episode 1'), 'Arcane - Episode 1', 'a title of its own is kept')
+  assert.equal(shownTitle('netflix', 'Netflix - Google Chrome – Parham'), undefined, 'a saved bare site title is no title')
+  assert.equal(heardOn('netflix', 'Netflix - Google Chrome – Parham'), 'Netflix', 'then the site’s name is shown')
+  assert.equal(shownTitle('youtube', '(2) Sintel - YouTube - Google Chrome - Work'), 'Sintel')
   assert.equal(
     sourceFor('https://evil.com/?https://www.crunchyroll.com/watch/X'),
     undefined,

@@ -105,6 +105,11 @@ export function startReports(): void {
   onModelFailure(reportModelFailure)
 }
 
+/** Whether crash reports started in this copy (a built app with Sentry's key). */
+export function reportsStarted(): boolean {
+  return started
+}
+
 /** From here on, sharing follows Settings; turning it off also drops reports still waiting. */
 export function followConsent(settings: Settings): void {
   followSettings(settings)

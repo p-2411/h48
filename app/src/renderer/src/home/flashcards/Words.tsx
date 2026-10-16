@@ -16,9 +16,8 @@ import { CardEditor } from '../../cards/CardEditor'
 import { say } from '../../components/errors'
 import { filterWords, joinWords } from '../words/join'
 import type { WordsData } from '../words/useWordsData'
-import { metAndKnownLine } from '../progress'
 import { icons } from './bits'
-import { ByDuet, Entry } from './Entry'
+import { ByDuet, Entry, StepBars } from './Entry'
 import type { WordApi } from './sample'
 
 type Notice = { text: string; error?: boolean; undo?: () => void }
@@ -88,7 +87,6 @@ function Detail({
   if (error) return <p className="fc-pick">{error}</p>
   if (!word || word.key !== wordKey) return <div className="fc-detail" />
   const card = word.cards[0]
-  const stepIndex = STEPS.indexOf(word.step)
   if (editing)
     return (
       <div className="fc-detail">
@@ -120,15 +118,7 @@ function Detail({
   return (
     <div className="fc-detail" data-tour="word">
       <div className="fc-step-row" data-step={word.step}>
-        <span className="fc-step-chip">
-          <span className="dot" />
-          {word.ignored ? 'Ignored' : STEP_LABELS[word.step]}
-        </span>
-        <span className="fc-ladder-mini" aria-hidden="true">
-          {STEPS.map((step, index) => (
-            <span key={step} className={index <= stepIndex ? 'on' : ''} />
-          ))}
-        </span>
+        <StepBars step={word.step} ignored={word.ignored} />
         {word.nextReview !== undefined && (
           <span className="fc-next-due">
             {word.paused
@@ -251,8 +241,22 @@ function Detail({
             </button>
           </>
         ) : (
-          <button type="button" className="primary" onClick={() => onMake(word.word)}>
-            Make a card
+          // A word met but not yet reviewed: one click makes its card from what Duet heard (Make a card
+          // only when its meaning isn't known), so it comes up in reviews.
+          <button
+            type="button"
+            className="primary"
+            title="Makes a flashcard from where you heard it, so it comes up in your reviews"
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                const kept = await api.keep(language, word.key)
+                if (kept) setWord(kept)
+                else onMake(word.word)
+              }, 'That word couldn’t be added to your reviews.')
+            }
+          >
+            Add to review
           </button>
         )}
         {!sample && (
@@ -453,7 +457,6 @@ export function Words({
                 : 'Words you meet while watching land here.'}
             </p>
           )}
-          {total > 0 && <p className="fc-list-more">{metAndKnownLine(data.summary.counts)}</p>}
           {total > data.summary.words.length && (
             <p className="fc-list-more">
               Showing the {data.summary.words.length} words you met most recently.

@@ -13,12 +13,15 @@ import { Script } from './Script'
 import { useExplain } from './useExplain'
 import { useLook } from './useLook'
 import { usePanel } from './usePanel'
+import { useSwipeAway } from './useSwipeAway'
 
 export function Panel(): React.JSX.Element {
   const { tab, setTab, script, current, loaded, loadError, reload } = usePanel()
   const explain = useExplain()
   const [chatOpen, setChatOpen] = useState(false)
   const dark = useLook()
+  // A swipe toward the screen's edge closes it.
+  useSwipeAway()
   // Another line explained: its entry first, the chat closed.
   const takenAt = explain?.moment?.takenAt
   const [chatFor, setChatFor] = useState(takenAt)

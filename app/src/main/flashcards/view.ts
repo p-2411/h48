@@ -28,6 +28,7 @@ import { pairReading, pairText } from '../../shared/levels'
 import type { Moment } from '../../shared/moment'
 import type { Language, ProcessedLine, Site, WordJob } from '../../shared/types'
 import type { Dictionary } from '../dictionary'
+import { heardOn } from '../sources/title'
 import { database } from '../store/db'
 
 // Lines looked through for where a word was heard, most recent first.
@@ -133,7 +134,7 @@ export function encounters(language: Language, key: string, forms: string[]): En
     found.push({
       line: row.original,
       translation: row.translation ?? processed?.translation ?? undefined,
-      video: row.title?.trim() || 'a video',
+      video: heardOn(row.site as Site, row.title),
       at: row.start ?? undefined,
       replayable: true,
       videoId: id,
@@ -155,7 +156,7 @@ function ownMoment(card: Card): Encounter | undefined {
     ...inLine(card.language, line.processed, cardKey(card)),
     line: line.original,
     translation: line.processed?.translation,
-    video: video.title?.trim() || 'a video',
+    video: heardOn(video.site, video.title),
     at: line.start ?? video.position,
     replayable: !!video.id,
     videoId: video.id ?? '',

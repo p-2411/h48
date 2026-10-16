@@ -50,7 +50,8 @@ export interface DeliveryListener {
 /** Says text aloud, as Duet's voice: the line the learner is to say back (the daily session, checkpoints). */
 export interface TextToSpeech {
   readonly name: string
-  speak(text: string, language: Language, signal?: AbortSignal): Promise<AudioClip>
+  /** `as` 'word': one word said on its own (a word's sound); otherwise a line. */
+  speak(text: string, language: Language, signal?: AbortSignal, as?: 'word' | 'line'): Promise<AudioClip>
 }
 
 export type { LineAttempt } from '../../../shared/daily'

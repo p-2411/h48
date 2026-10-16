@@ -37,6 +37,20 @@ const HEARING: Partial<Record<HearingNote, string>> = {
 // Duet at the head of the chat, the size it is at the head of Talk (420 x 190 at full size).
 const TALK_MASCOT_SCALE = 64 / 420
 
+/** Says the explained word in Duet's own voice; without it (no voice set up, or offline), the
+ * system's voice for the language. */
+async function sayWord(text: string, language: Language): Promise<void> {
+  try {
+    const clip = await window.duet.explain.sayWord()
+    const url = URL.createObjectURL(new Blob([new Uint8Array(clip.data)], { type: clip.mimeType }))
+    const audio = new Audio(url)
+    audio.addEventListener('ended', () => URL.revokeObjectURL(url), { once: true })
+    await audio.play()
+  } catch {
+    pronounce(text, language)
+  }
+}
+
 /** Says `text` in the language being learnt, with the system's voice for it (when there is one). */
 function pronounce(text: string, language: Language): void {
   if (!('speechSynthesis' in window)) return
@@ -107,7 +121,7 @@ function Headword({ entry, language, quote }: { entry: DictionaryEntry; language
           className="entry-play"
           aria-label={`Hear “${entry.headword}”`}
           title="Hear it"
-          onClick={() => pronounce(entry.headword, language)}
+          onClick={() => void sayWord(entry.headword, language)}
         >
           <Icon name="volume" size={13} />
         </button>

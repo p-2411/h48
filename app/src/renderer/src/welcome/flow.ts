@@ -406,7 +406,7 @@ const TRY_IT: Task[] = [
   { id: 'say', text: 'Say the line back' }
 ]
 const CHECKS: Task[] = [
-  { id: 'glow', text: 'Double-click the glowing line' },
+  { id: 'glow', text: 'Click the glowing line' },
   { id: 'answer', text: 'Answer in your own words' }
 ]
 let TASKS = TRY_IT

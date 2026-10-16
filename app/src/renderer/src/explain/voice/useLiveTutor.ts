@@ -26,7 +26,7 @@ export function isVoiceOn(status: TutorLiveStatus): status is VoiceOnStatus {
   return status !== 'idle' && status !== 'ended' && status !== 'error'
 }
 
-/** The session is up, so its controls (mute, check pronunciation) work. */
+/** The session is up, so its controls (mute) work. */
 export function isConnected(status: TutorLiveStatus): boolean {
   return status === 'listening' || status === 'speaking' || status === 'working'
 }
@@ -101,7 +101,6 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
   toggleMicrophone: () => void
   toggleTutorAudio: () => void
   retryTutorAudio: () => void
-  requestPronunciationCheck: () => void
   offerEnglishHelp: () => void
 } {
   // The language being learnt, by name, for the instructions sent during the session. A session
@@ -580,23 +579,6 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
     playSpeaker()
   }, [playSpeaker])
 
-  const requestPronunciationCheck = useCallback((): void => {
-    send({
-      type: 'session.instructions.append',
-      event_id: `pronunciation-${crypto.randomUUID()}`,
-      delegation_id: null,
-      content:
-        `The learner requested a focused pronunciation check. Ask them to say the current ${nameRef.current} phrase. Listen to the live audio, then respond in English with one narrow, actionable observation about intelligibility, timing or clarity. If the audio is unsuitable, say so. Do not score their accent. Model the target naturally once and offer one retry.`
-    })
-    send({
-      type: 'session.commentary.append',
-      event_id: `pronunciation-prompt-${crypto.randomUUID()}`,
-      delegation_id: null,
-      content:
-        `Ask the learner to say the current ${nameRef.current} phrase once for the pronunciation check, then listen.`
-    })
-  }, [send])
-
   const offerEnglishHelp = useCallback((): void => {
     send({
       type: 'session.instructions.append',
@@ -624,7 +606,6 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
     toggleMicrophone,
     toggleTutorAudio,
     retryTutorAudio,
-    requestPronunciationCheck,
     offerEnglishHelp
   }
 }

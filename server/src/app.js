@@ -12,6 +12,7 @@ import { meter, sweepLost } from './meter.js';
 import { creditPeriod, hourPeriod, limits, MICRO_PER_CREDIT } from './plans.js';
 import { chat, responses, speech, transcription } from './proxy.js';
 import { fail, json } from './respond.js';
+import { forwardFeedback, sendFeedback } from './feedback.js';
 import { verifier } from './auth.js';
 import { findOrCreateUser, linkDevice } from './users.js';
 import { requireWatch, watchBeat, watchEnd, watchStart } from './watch.js';
@@ -73,12 +74,14 @@ const ROUTES = [
   ['POST', /^\/v1\/duet\/watch\/([^/]+)\/end$/, (ctx, _request, id) => watchEnd(ctx, id)],
   ['GET', /^\/v1\/duet\/me$/, async ctx => me(await withEmail(ctx))],
   ['POST', /^\/v1\/duet\/billing\/checkout$/, async ctx => checkout(await withEmail(ctx))],
-  ['POST', /^\/v1\/duet\/billing\/portal$/, portal]
+  ['POST', /^\/v1\/duet\/billing\/portal$/, portal],
+  ['POST', /^\/v1\/duet\/feedback$/, async (ctx, request) => sendFeedback(await withEmail(ctx), request)]
 ];
 
 /**
  * deps: db, keySet (WorkOS's keys), openaiKey, fetchOpenAI, now(), cronSecret, stripe (or null),
- * stripeLib, stripePrice, stripeWebhookSecret, fetchEmail(userId) (or null), random (ids, for tests).
+ * stripeLib, stripePrice, stripeWebhookSecret, fetchEmail(userId) (or null), random (ids, for tests),
+ * postDiscord(message) → whether Discord took it (or null: feedback waits until a webhook is set).
  */
 export function createApp(deps) {
   const verify = verifier(deps.keySet);
@@ -96,6 +99,8 @@ export function createApp(deps) {
         throw new HttpError(401, 'auth', 'Not the cron.');
       await sweepLost(deps.db, null, now);
       await sweepLive({ db: deps.db, deps, now }, null);
+      // Feedback Discord couldn't take yet.
+      await forwardFeedback(deps, now).catch(() => undefined);
       return json({ ok: true });
     }
 

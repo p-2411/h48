@@ -78,7 +78,8 @@ import { Reminder } from './daily/reminder'
 import { Checkpoints } from './checkpoints'
 import { openAISceneJudge } from './checkpoints/scenes'
 import { isFrom } from './windows/from'
-import { createOverlay, toggleOverlay } from './windows/overlay'
+import { createOverlay, stripFollowsVideo } from './windows/overlay'
+import { connectFeedback } from './feedback'
 import { installAppIcons } from './icons'
 
 // In development, settings such as OPENAI_API_KEY can live in app/.env.local (git-ignored).
@@ -130,7 +131,8 @@ app.whenReady().then(() => {
 
   let voice: VoiceModels | undefined
   try {
-    voice = createVoiceModels()
+    // Words and lines said are kept on disk and played again from there.
+    voice = createVoiceModels(process.env, join(app.getPath('userData'), 'speech'))
   } catch {
     // No voice provider: Explain works from the words alone, and videos without captions go unheard.
   }
@@ -150,7 +152,8 @@ app.whenReady().then(() => {
     () => watcher.followingTranscript
   )
   const replayMoment = (moment: Moment): void => replay(moment, { watcher, player })
-  const panel = new Panel({ watcher, settings, replay: replayMoment })
+  // Explain and the Script open over the video, where the strip is placed (placement, below).
+  const panel = new Panel({ watcher, settings, replay: replayMoment, videoFrame: () => placement.videoFrame })
   // How a line was said, from the audio; Explain and the spoken-language check both ask.
   const hear = (moment: Moment, signal: AbortSignal): ReturnType<typeof hearLine> =>
     hearLine(moment, { audio, player, listener: voice?.listener }, signal)
@@ -173,7 +176,8 @@ app.whenReady().then(() => {
     replay: replayMoment,
     panel,
     tutor,
-    hear
+    hear,
+    tts: voice?.tts
   })
   if (demo) cards.seedDemoFixtures(demoMoment())
   // Opens Explain on a line: the one on screen when no id is given (in demo mode, the demo line).
@@ -191,6 +195,8 @@ app.whenReady().then(() => {
   })
 
   const overlay = createOverlay(settings)
+  // The strip shows while a video is open (and hides when it closes); the show/hide key overrides it.
+  const stripShown = stripFollowsVideo(overlay, watcher)
   // The watch log: videos, lines met, words and study days, for the daily session, checkpoints and
   // the streak (src/main/watchlog). Watching counts only while the strip is shown.
   const watchLog = new WatchLog()
@@ -227,6 +233,8 @@ app.whenReady().then(() => {
     openWelcome: () => welcome.open(true),
     closed: () => tutor.end(home)
   })
+  // Feedback from the home base (Settings) or the side panel: to Duet's server (on to Discord) and Sentry.
+  connectFeedback({ server, account, settings, owns: (sender) => home.owns(sender) || panel.owns(sender) })
   // The side panel is drawn as the home base is, light or dark.
   panel.setDark(home.dark)
   home.onLook((dark) => panel.setDark(dark))
@@ -326,9 +334,9 @@ app.whenReady().then(() => {
   // Global keys, a setting each (Settings, in the home base): one shows or hides the overlay, the
   // other starts talking to Duet (showing the strip first, if it was hidden).
   const shortcuts = {
-    show: new Shortcut(settings.current.shortcut, () => toggleOverlay(overlay)),
+    show: new Shortcut(settings.current.shortcut, () => stripShown.toggle()),
     talk: new Shortcut(settings.current.talkShortcut, () => {
-      if (!overlay.isVisible()) overlay.showInactive()
+      if (!overlay.isVisible()) stripShown.show()
       strip.send('duet:talk-keys', null)
     })
   }
@@ -396,10 +404,15 @@ app.whenReady().then(() => {
   updates.start()
   tray = createTray({
     openHome: () => home.open(),
-    toggleOverlay: () => toggleOverlay(overlay),
+    toggleOverlay: () => stripShown.toggle(),
     showScript,
     explainLine: () => explainLine(),
     openCards: () => home.open('cards'),
+    sendFeedback: () => {
+      home.open('settings')
+      // Once the page is up (it may have only just opened), Settings goes to the feedback box.
+      setTimeout(() => home.send('home:feedback', null), 700)
+    },
     openWelcome: () => welcome.open(true),
     updates
   })

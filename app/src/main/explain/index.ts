@@ -19,7 +19,7 @@ import { ipcMain } from 'electron'
 import type { ExplainState, HearingNote } from '../../shared/explain'
 import type { Moment } from '../../shared/moment'
 import { ModelError, type Explainer } from '../ai'
-import type { Delivery } from '../ai/voice'
+import type { AudioClip, Delivery, TextToSpeech } from '../ai/voice'
 import type { Panel } from '../panel'
 import type { Tutor } from '../tutor'
 import type { LineContext } from '../tutor/prompts'
@@ -31,6 +31,8 @@ type Options = {
   panel: Panel
   tutor: Tutor
   hear: (moment: Moment, signal: AbortSignal) => Promise<{ delivery?: Delivery; note: HearingNote }>
+  /** Says the explained word aloud; without it the panel uses the system's voice. */
+  tts?: TextToSpeech
 }
 
 export class Explain {
@@ -39,6 +41,8 @@ export class Explain {
   private readonly thread: ChatThread
   // What the tutor knows of the line on show, to give it back if another window took the tutor over.
   private context?: LineContext
+  // Words already said, so replaying one doesn't ask again.
+  private said = new Map<string, AudioClip>()
 
   constructor(private readonly options: Options) {
     const { panel, tutor } = options
@@ -55,6 +59,23 @@ export class Explain {
     })
     ipcMain.handle('explain:claim', (event) => {
       if (panel.owns(event.sender) && this.state.moment) this.thread.claim()
+    })
+    // The explained word, said aloud (only that word: never text the page picks).
+    ipcMain.handle('explain:say-word', async (event) => {
+      if (!panel.owns(event.sender)) throw new Error('Not allowed: this is the panel’s.')
+      const word = this.state.explanation?.entry?.headword
+      const language = this.state.moment?.language
+      if (!word || !language) throw new Error('There’s no word to say.')
+      if (!options.tts) throw new Error('Duet can’t speak right now.')
+      const id = `${language}|${word}`
+      let clip = this.said.get(id)
+      if (!clip) {
+        const spoken = await options.tts.speak(word, language, undefined, 'word')
+        clip = { data: spoken.data, mimeType: spoken.mimeType }
+        if (this.said.size > 30) this.said.delete(this.said.keys().next().value!)
+        this.said.set(id, clip)
+      }
+      return clip
     })
     ipcMain.on('explain:voice-turns', (event, turns: unknown) => {
       if (panel.owns(event.sender)) this.thread.addVoiceTurns(turns)

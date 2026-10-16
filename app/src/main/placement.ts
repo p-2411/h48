@@ -17,6 +17,8 @@ import { fullTop, overlayBounds } from './windows/overlay-size'
 const LIFT = { share: 0.09, least: 30 }
 // The strip's room on each side, inside the video.
 const SIDE_ROOM = 24
+// A press that moves less than this (screen points) is a click, not a drag.
+const DRAG_FROM = 4
 // The page sometimes loses the video for a moment (a re-layout); wait this long before leaving it.
 const LOST_MS = 1500
 
@@ -37,6 +39,8 @@ export class Placement {
   private video?: string
   /** The learner moved the strip on this video, so it stays put. */
   private dragged = false
+  /** The press going on has moved the strip (more than a click's wobble). */
+  private moving = false
   private lost?: NodeJS.Timeout
   private follow?: NodeJS.Timeout
 
@@ -50,6 +54,11 @@ export class Placement {
     const stop = (): void => this.stopFollowing()
     overlay.webContents.on('did-start-loading', stop)
     overlay.webContents.on('render-process-gone', stop)
+  }
+
+  /** Where the video is on screen now (undefined: none in view). */
+  get videoFrame(): VideoFrame | undefined {
+    return this.frame
   }
 
   /** How wide the strip may be to stay inside the video (undefined: no video in view). */
@@ -86,12 +95,14 @@ export class Placement {
     }
   }
 
-  /** Dragging: until it ends, the window follows the pointer, keeping the offset it was grabbed at. */
+  /** Dragging: until it ends, the window follows the pointer, keeping the offset it was grabbed at.
+   * Only a press that moves the strip counts as moving it: a click (opening the strip, a
+   * checkpoint) leaves it following the video. */
   drag(phase: 'start' | 'end'): void {
     if (this.overlay.isDestroyed()) return
     this.stopFollowing()
     if (phase === 'start') {
-      this.dragged = true
+      this.moving = false
       const grab = screen.getCursorScreenPoint()
       // Where the window's full-height top is (it may be cut near the top of the screen).
       const start = this.overlay.getBounds()
@@ -100,14 +111,18 @@ export class Placement {
       this.follow = setInterval(() => {
         if (this.overlay.isDestroyed()) return this.stopFollowing()
         const now = screen.getCursorScreenPoint()
-        // Only move when the pointer did.
+        // Only move when the pointer did, and only once it has gone further than a click's wobble.
         if (now.x === last.x && now.y === last.y) return
+        if (!this.moving && Math.hypot(now.x - grab.x, now.y - grab.y) < DRAG_FROM) return
+        this.moving = true
+        this.dragged = true
         last = now
         // Up to the top of the screen: the window is cut from its top so the strip can go there.
         const { workArea } = screen.getDisplayNearestPoint(now)
         this.overlay.setBounds(overlayBounds(now.x - (grab.x - start.x), now.y - (grab.y - y), workArea.y))
       }, 1000 / 60)
-    } else {
+    } else if (this.moving) {
+      this.moving = false
       const bounds = this.overlay.getBounds()
       this.settings.update({ overlayPosition: { x: bounds.x, y: fullTop(bounds) } })
     }

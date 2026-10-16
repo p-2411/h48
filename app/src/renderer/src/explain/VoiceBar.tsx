@@ -37,14 +37,6 @@ export function VoiceBar({
         {live.tutorMuted || live.speakerBlocked ? 'Hear Duet' : 'Mute Duet'}
       </button>
       <button
-        type="button"
-        className="btn quiet"
-        onClick={live.requestPronunciationCheck}
-        disabled={!connected}
-      >
-        Check my pronunciation
-      </button>
-      <button
         ref={endButton}
         type="button"
         className="btn primary"

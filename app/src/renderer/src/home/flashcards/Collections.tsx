@@ -1,6 +1,7 @@
 // Collections: each one a little pile of index cards with a real word on top (click the pile to
 // review it), and By video: each video's still with its line, its words in their highlighter, and
 // Review. The piles show only once there's more than one; bringing in an Anki deck comes later.
+import { Icon } from '../../components/Icon'
 import type { CollectionView, VideoGroup } from '../../../../shared/flashcards'
 import { icons } from './bits'
 
@@ -68,18 +69,28 @@ export function Collections({
   videos,
   onReviewPile,
   onReviewVideo,
-  onAnki
+  onAnki,
+  onMake
 }: {
   piles?: CollectionView[]
   videos?: VideoGroup[]
   onReviewPile: (id: string) => void
   onReviewVideo: (id: string) => void
   onAnki: () => void
+  /** Make a card by hand, for a word not met in a video. */
+  onMake: () => void
 }): React.JSX.Element {
   if (!piles || !videos) return <div className="fc-cols" />
   const shown = 4
   return (
     <div className="fc-cols" data-tour="collections">
+      {/* A plus that slides out to "Make a card" when pointed at. */}
+      <button type="button" className="fc-add-card" aria-label="Make a card" onClick={onMake}>
+        <Icon name="plus" size={16} />
+        <span className="fc-add-card-label" aria-hidden="true">
+          Make a card
+        </span>
+      </button>
       {piles.length > 1 && (
         <section>
           <div className="fc-cols-head">
