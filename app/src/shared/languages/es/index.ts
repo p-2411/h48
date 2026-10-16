@@ -1,7 +1,9 @@
 // Spanish.
-import { sampleEnglish, token as t, type LanguageModule } from './module'
+import { sampleEnglish, token as t, type LanguageModule } from '../module'
+import { mascot } from './mascot'
+import { welcome } from './welcome'
 
-export const es: LanguageModule = {
+const es: LanguageModule = {
   name: 'Spanish',
   recognise: {
     kind: 'words',
@@ -33,5 +35,13 @@ export const es: LanguageModule = {
       'Stress falls on the marked or expected syllable; moved, it can change the word (papa, papá) or the tense (hablo, habló).',
       'Warmth and politeness come through intonation; a flat or clipped delivery can make friendly words sound curt.'
     ]
-  }
+  },
+  voice: { tag: 'es-ES', name: 'Spanish (Spain)' },
+  rankByParts: false,
+  article: (gender) => (gender === 'feminine' ? 'la' : 'el'),
+  dictionary: { letters: /\p{Script=Latin}/u, exampleLength: 80 },
+  welcome,
+  mascot
 }
+
+export default es

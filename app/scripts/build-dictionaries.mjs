@@ -2,25 +2,22 @@
 // the word page read (src/main/dictionary/packs.ts), from the raw data on our side. One run per
 // language, a few times a year; never on a learner's machine. See docs/design/cards/dictionary-packs.md.
 //
-// Sources (each credited in Settings → Sources, src/shared/sources.ts):
-//   Spanish, Korean: English Wiktionary through kaikki.org's extracts (CC BY-SA 4.0 and GFDL).
-//   Japanese: JMdict (EDRDG, CC BY-SA 4.0) for words, readings and meanings; Wiktionary (kaikki.org)
-//     for IPA, examples and related words; UniDic 2.1.2 (BSD licence) for pitch accent.
-//   Which words: wordfreq 3.1.1's frequency lists (CC BY-SA 4.0), the most common first.
+// Each language in src/shared/languages gets the standard pack: its English Wiktionary through
+// kaikki.org's extracts (CC BY-SA 4.0 and GFDL), with the words wordfreq 3.1.1 ranks commonest
+// (CC BY-SA 4.0). A language that needs more has a dictionary.mjs in its folder, whose default export
+// builds the pack from the helpers here (Japanese: JMdict and UniDic; Korean: wordfreq's stems).
+// Each source is credited in Settings → Sources (src/shared/sources.ts, or the language's own).
 //
-// Get the raw data into one folder (none of it is committed):
-//   curl -LO https://kaikki.org/dictionary/Spanish/kaikki.org-dictionary-Spanish.jsonl.gz
-//   curl -LO https://kaikki.org/dictionary/Japanese/kaikki.org-dictionary-Japanese.jsonl.gz
-//   curl -LO https://kaikki.org/dictionary/Korean/kaikki.org-dictionary-Korean.jsonl.gz
-//   curl -LO http://ftp.edrdg.org/pub/Nihongo/JMdict_e.gz
+// Get the raw data into one folder (none of it is committed): wordfreq, and each language's
+// Wiktionary (its dictionary.mjs lists anything else it needs):
 //   python3 -m pip download wordfreq==3.1.1 --no-deps -d . && unzip wordfreq-3.1.1-py3-none-any.whl 'wordfreq/data/*'
-//   python3 -m pip download unidic-lite==1.0.8 --no-deps --no-binary :all: -d . && tar xzf unidic-lite-1.0.8.tar.gz
-// Then: npm run dictionaries -- <folder> [es] [ja] [ko]   (or npx jiti scripts/build-dictionaries.mjs …)
+//   curl -LO https://kaikki.org/dictionary/Spanish/kaikki.org-dictionary-Spanish.jsonl.gz   (and so on, by English name)
+// Then: npm run dictionaries -- <folder> [es] [ja] …   (every language when none is named)
 import { createReadStream, existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { createInterface } from 'node:readline'
 import { DatabaseSync } from 'node:sqlite'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createGunzip, gunzipSync } from 'node:zlib'
 import { createJiti } from 'jiti'
 
@@ -28,21 +25,23 @@ const here = dirname(fileURLToPath(import.meta.url))
 const jiti = createJiti(import.meta.url)
 const { entryFrom } = await jiti.import(resolve(here, '../src/main/dictionary/wiktionary.ts'))
 const { packKey } = await jiti.import(resolve(here, '../src/main/dictionary/packs.ts'))
+const { LANGUAGE_CODES, languageModule, languageName } = await jiti.import(
+  resolve(here, '../src/shared/languages/index.ts')
+)
+const languagesFolder = resolve(here, '../src/shared/languages')
 
 const OUT = resolve(here, '../resources/dictionaries')
 // Words each pack keeps, the most common first.
 const WORDS = 50_000
-// Spanish forms (madrugué → madrugar) are kept when they are among this many of the commonest words.
+// A word's forms (madrugué → madrugar) find it when they are among this many of the commonest words.
 const FORMS = 150_000
-// Glosses joined into one Japanese meaning ("to eat; to live on").
-const SENSES_PER_GLOSS = 3
 
 const [folder, ...asked] = process.argv.slice(2)
 if (!folder) {
-  console.error('Usage: npx jiti scripts/build-dictionaries.mjs <raw data folder> [es] [ja] [ko]')
+  console.error('Usage: npx jiti scripts/build-dictionaries.mjs <raw data folder> [language …]')
   process.exit(1)
 }
-const languages = asked.length ? asked : ['es', 'ja', 'ko']
+const languages = asked.length ? asked : LANGUAGE_CODES
 const file = (...parts) => {
   const path = join(folder, ...parts)
   if (!existsSync(path)) throw new Error(`Missing ${path} (see the top of this script)`)
@@ -203,16 +202,15 @@ function writePack(language, version, entries, keys) {
   console.log(`${language}: ${coverage(language, keys)}`)
 }
 
-/** How many of the language's 10,000 commonest words (the reading-level lists) the pack finds. As
- * wordfreq splits them, a Korean verb is its stem (먹), so 먹다 counts for it. */
+/** How many of the language's 10,000 commonest words (the reading-level lists) the pack finds,
+ * counting the other forms a list keeps a word as (a Korean verb's stem: 먹 for 먹다). */
 function coverage(language, keys) {
-  const list = JSON.parse(
-    readFileSync(resolve(here, `../src/main/progress/frequency/${language}.json`), 'utf8')
-  )
-  const finds = (word) => {
-    const key = packKey(word)
-    return keys.has(key) || (language === 'ko' && (keys.has(`${key}다`) || keys.has(`${key}하다`)))
-  }
+  const list = JSON.parse(readFileSync(resolve(languagesFolder, language, 'frequency.json'), 'utf8'))
+  const listForms = languageModule(language).listForms
+  const found = new Set(keys.keys())
+  if (listForms)
+    for (const key of keys.keys()) for (const form of listForms(key, 'v')) found.add(packKey(form))
+  const finds = (word) => found.has(packKey(word))
   const share = (count) =>
     `${Math.round((100 * list.slice(0, count).filter(finds).length) / Math.min(count, list.length))}%`
   return `finds ${share(1000)} of the 1,000 commonest words, ${share(10_000)} of the 10,000`
@@ -235,7 +233,7 @@ class Keys {
 const versionOf = (language, date) => `${language}-${date.slice(0, 7).replace('-', '.')}`
 const today = new Date().toISOString().slice(0, 10)
 
-// —— Spanish and Korean: Wiktionary ——
+// —— Wiktionary ——
 
 const SAYING = /\s/
 // Wiktionary objects that are about writing, not words: a Hangul syllable, a character.
@@ -319,212 +317,23 @@ async function wiktionaryPack(language, name, rankOf) {
   return { entries, keys: keys.map }
 }
 
-async function spanish() {
-  const rank = ranks('large_es')
-  const pack = await wiktionaryPack('es', 'Spanish', (key) => rank.get(key))
-  writePack('es', versionOf('es', today), pack.entries, pack.keys)
+// —— Each language: its folder's dictionary.mjs, or the standard Wiktionary pack ——
+
+/** The standard pack: the language's English Wiktionary (kaikki.org-dictionary-<Name>.jsonl.gz),
+ * ranked by its wordfreq list (the large one when wordfreq has it). */
+async function standard({ language, name }) {
+  const list = existsSync(join(folder, 'wordfreq', 'data', `large_${language}.msgpack.gz`))
+    ? `large_${language}`
+    : `small_${language}`
+  const rank = ranks(list)
+  const pack = await wiktionaryPack(language, name, (key) => rank.get(key))
+  writePack(language, versionOf(language, today), pack.entries, pack.keys)
 }
 
-async function korean() {
-  // wordfreq's Korean is split by MeCab: verbs and adjectives are stems (먹, not 먹다), and 하다
-  // words are their noun (공부, not 공부하다).
-  const rank = ranks('small_ko')
-  // A particle or ending (-에서) is as common as its own text.
-  const rankOf = (word) => {
-    const key = word.replace(/^-/, '')
-    return best(
-      rank.get(key),
-      key.endsWith('하다') ? rank.get(key.slice(0, -2)) : undefined,
-      key.endsWith('다') ? rank.get(key.slice(0, -1)) : undefined
-    )
-  }
-  // Words wordfreq doesn't list still count, after the listed ones: Korean's list is a small one.
-  const unlisted = 1_000_000
-  const pack = await wiktionaryPack('ko', 'Korean', (key) => rankOf(key) ?? unlisted + key.length)
-  writePack('ko', versionOf('ko', today), pack.entries, pack.keys)
-}
-
-// —— Japanese: JMdict, with Wiktionary and UniDic ——
-
-const KANA_SHIFT = 0x60
-const hiragana = (kana) =>
-  [...kana]
-    .map((ch) =>
-      ch >= 'ァ' && ch <= 'ヶ' ? String.fromCharCode(ch.charCodeAt(0) - KANA_SHIFT) : ch
-    )
-    .join('')
-
-/** UniDic's pitch accent (the mora the pitch falls after; 0 for flat), by "word|reading". */
-function pitches() {
-  const data = readFileSync(file('unidic-lite-1.0.8', 'unidic_lite', 'dicdir', 'sys.dic'))
-  const out = new Map()
-  let start = 0
-  // The entries' features are stored as NUL-ended comma-separated text: orthBase is the 11th,
-  // kanaBase the 19th and aType the 24th.
-  for (let at = 0; at < data.length; at++) {
-    if (data[at] !== 0) continue
-    if (at - start > 40) {
-      const fields = data.toString('utf8', start, at).split(',')
-      if (fields.length >= 26) {
-        const accent = /^\d+/.exec(fields[23])
-        const id = `${fields[10]}|${hiragana(fields[18])}`
-        if (accent && !out.has(id)) out.set(id, Number(accent[0]))
-      }
-    }
-    start = at + 1
-  }
-  return out
-}
-
-// JMdict's parts of speech (its entity names), in plain English. Unlisted ones are left out.
-const POS = [
-  [/^n(-|$)|^vs$/, 'noun'],
-  [/^v/, 'verb'],
-  [/^adj-i/, 'i-adjective'],
-  [/^adj-(na|no|t|f)/, 'na-adjective'],
-  [/^adj/, 'adjective'],
-  [/^adv/, 'adverb'],
-  [/^pn$/, 'pronoun'],
-  [/^prt$/, 'particle'],
-  [/^conj$/, 'conjunction'],
-  [/^int$/, 'interjection'],
-  [/^exp$/, 'phrase'],
-  [/^ctr$/, 'counter'],
-  [/^num$/, 'number'],
-  [/^pref$/, 'prefix'],
-  [/^suf$/, 'suffix'],
-  [/^aux/, 'auxiliary'],
-  [/^cop/, 'copula']
-]
-const posName = (code) => POS.find(([pattern]) => pattern.test(code))?.[1]
-
-const all = (xml, tag) =>
-  [...xml.matchAll(new RegExp(`<${tag}>([^<]*)</${tag}>`, 'g'))].map((m) => m[1])
-const entity = (value) => /^&([^;]+);$/.exec(value)?.[1] ?? value
-const unescape = (value) =>
-  value.replace(
-    /&(lt|gt|amp|quot|apos);/g,
-    (_, name) => ({ lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" })[name]
-  )
-// Spellings that are searched for but never shown: search-only, irregular, outdated.
-const HIDDEN = ['sK', 'sk', 'iK', 'ik', 'oK', 'ok', 'io', 'rK']
-// How common JMdict says a spelling is: ichi1, news1, spec1 or gai1 are the commonest ~20,000; nfXX
-// ranks the news ones in bundles of 500.
-function priority(tags) {
-  const nf = tags.map((tag) => /^nf(\d+)$/.exec(tag)).find(Boolean)
-  if (nf) return Number(nf[1]) * 500
-  if (tags.some((tag) => /1$/.test(tag))) return 12_000
-  if (tags.length) return 30_000
-  return undefined
-}
-
-async function japanese() {
-  const rank = ranks('large_ja')
-  const accent = pitches()
-
-  // Wiktionary's Japanese, for IPA, examples and related words: by "word|reading".
-  const wiktionary = new Map()
-  for await (const raw of jsonLines(file('kaikki.org-dictionary-Japanese.jsonl.gz'))) {
-    if (typeof raw.word !== 'string') continue
-    const readings = (raw.sounds ?? [])
-      .map((sound) => sound.other)
-      .filter((other) => typeof other === 'string')
-    for (const reading of readings.length ? readings : [raw.word]) {
-      const id = `${raw.word.normalize('NFC')}|${hiragana(reading)}`
-      const list = wiktionary.get(id) ?? []
-      list.push(raw)
-      wiktionary.set(id, list)
-    }
-  }
-
-  const xml = gunzipSync(readFileSync(file('JMdict_e.gz'))).toString('utf8')
-  const created = /JMdict created: (\d{4}-\d{2}-\d{2})/.exec(xml)?.[1] ?? today
-  const found = []
-  for (const match of xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)) {
-    const body = match[1]
-    const kanji = [...body.matchAll(/<k_ele>([\s\S]*?)<\/k_ele>/g)].map((m) => ({
-      text: unescape(all(m[1], 'keb')[0]).normalize('NFC'),
-      info: all(m[1], 'ke_inf').map(entity),
-      pri: all(m[1], 'ke_pri')
-    }))
-    const readings = [...body.matchAll(/<r_ele>([\s\S]*?)<\/r_ele>/g)].map((m) => ({
-      text: unescape(all(m[1], 'reb')[0]).normalize('NFC'),
-      info: all(m[1], 're_inf').map(entity),
-      pri: all(m[1], 're_pri'),
-      only: all(m[1], 're_restr').map((value) => unescape(value).normalize('NFC')),
-      noKanji: /<re_nokanji/.test(m[1])
-    }))
-    const senses = [...body.matchAll(/<sense>([\s\S]*?)<\/sense>/g)].map((m) => ({
-      pos: all(m[1], 'pos').map(entity),
-      misc: all(m[1], 'misc').map(entity),
-      glosses: all(m[1], 'gloss').map(unescape)
-    }))
-    if (!readings.length || !senses.length) continue
-    const shown = kanji.filter((k) => !k.info.some((tag) => HIDDEN.includes(tag)))
-    const reading = readings.find((r) => !r.info.some((tag) => HIDDEN.includes(tag))) ?? readings[0]
-    // Usually written in kana: the kana is the headword, the kanji only finds it.
-    const kana = !shown.length || senses[0].misc.includes('uk')
-    const headword = kana ? reading.text : shown[0].text
-    const rankNow = best(
-      ...shown.map((k) => rank.get(packKey(k.text))),
-      kana ? rank.get(packKey(reading.text)) : undefined,
-      ...shown.map((k) => priority(k.pri)),
-      ...readings.map((r) => priority(r.pri))
-    )
-    if (rankNow === undefined) continue
-    found.push({ kanji, shown, readings, senses, reading, kana, headword, rank: rankNow })
-  }
-  found.sort((a, b) => a.rank - b.rank)
-  const kept = found.slice(0, WORDS)
-
-  const entries = []
-  const keys = new Keys()
-  for (const item of kept) {
-    const { shown, readings, senses, reading, headword } = item
-    let pos
-    const meanings = []
-    for (const sense of senses) {
-      pos ??= sense.pos.map(posName).find(Boolean)
-      if (sense.misc.some((tag) => ['arch', 'obs', 'rare', 'dated'].includes(tag))) continue
-      const gloss = sense.glosses.slice(0, SENSES_PER_GLOSS).join('; ')
-      if (gloss && !meanings.includes(gloss)) meanings.push(gloss)
-    }
-    // A word that is only archaic or obsolete is left out (愛し would take はし from 橋).
-    if (!meanings.length) continue
-    const spelling = shown[0]?.text ?? headword
-    const kanaOf = hiragana(reading.text)
-    const wiki =
-      entryFrom('ja', spelling, wiktionary.get(`${spelling}|${kanaOf}`) ?? []) ??
-      entryFrom('ja', headword, wiktionary.get(`${headword}|${kanaOf}`) ?? [])
-    const pitch = [spelling, headword, ...shown.map((k) => k.text)]
-      .map((written) => accent.get(`${written}|${kanaOf}`))
-      .find((value) => value !== undefined)
-    const entry = {
-      word: headword,
-      reading: headword === reading.text ? undefined : reading.text,
-      pitch,
-      ipa: wiki?.ipa,
-      pos,
-      senses: meanings.slice(0, 4),
-      related: wiki?.related ?? [],
-      example: wiki?.example
-    }
-    if (headword === reading.text && pitch !== undefined) entry.reading = reading.text
-    const index = entries.length
-    entries.push(JSON.parse(JSON.stringify(entry)))
-    // The headword and other everyday spellings find it first; its kana after (はし: 橋 or 箸, the
-    // commoner wins).
-    keys.claim(headword, index, item.rank)
-    for (const k of shown) keys.claim(k.text, index, item.rank + 0.1)
-    for (const r of readings)
-      if (!r.info.some((tag) => HIDDEN.includes(tag))) keys.claim(r.text, index, WORDS + item.rank)
-    for (const k of item.kanji) keys.claim(k.text, index, 2 * WORDS + item.rank)
-  }
-  writePack('ja', versionOf('ja', created), entries, keys.map)
-}
-
-const BUILDERS = { es: spanish, ja: japanese, ko: korean }
+const kit = { file, jsonLines, ranks, best, Keys, packKey, entryFrom, wiktionaryPack, writePack, versionOf, today, WORDS }
 for (const language of languages) {
-  if (!BUILDERS[language]) throw new Error(`No pack for ${language}`)
-  await BUILDERS[language]()
+  if (!LANGUAGE_CODES.includes(language)) throw new Error(`${language} isn't a language in src/shared/languages`)
+  const own = resolve(languagesFolder, language, 'dictionary.mjs')
+  const build = existsSync(own) ? (await import(pathToFileURL(own).href)).default : standard
+  await build({ ...kit, language, name: languageName(language) })
 }

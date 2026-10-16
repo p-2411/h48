@@ -6,9 +6,10 @@
 // ladder: 100% means every word is one the learner can use. "Then" is the same words, each credited
 // as it was known when first met in the video, so then and now always compare the same words. Its
 // reading level is how many of the language's most common words cover 90% of its words (a frequency
-// list, src/main/progress/frequency): the same rule for every language, with no model's opinion in
+// list, shared/languages/<code>/frequency.json): the same rule for every language, with no model's opinion in
 // it. Pure, for tests.
 import { keyWord, type WordState } from './knowledge'
+import { languageModule } from './languages'
 import type { Language, WordJob } from './types'
 
 /** A word of a video, as the watch log tallies it: its key, the form last seen, its job, how many
@@ -85,16 +86,12 @@ const HAN = /\p{Script=Han}/u
 
 const normal = (form: string): string => form.normalize('NFC').trim().toLocaleLowerCase()
 
-/** The forms a word may be listed under: its dictionary form and the form seen, and for a Korean
- * verb or describing word, whose list keeps stems (먹, not 먹다), each without its final 하다 or 다
- * (only those: a noun such as 바다 is not 바). */
+/** The forms a word may be listed under: its dictionary form and the form seen, and the others its
+ * language's list may keep it as (a Korean verb's stem: 먹 for 먹다; shared/languages, listForms). */
 function formsOf(language: Language, word: TalliedWord): string[] {
   const forms = [keyWord(language, word.key) ?? '', normal(word.text)]
-  if (language === 'ko' && (word.job === 'v' || word.job === 'a'))
-    for (const form of [...forms]) {
-      if (form.endsWith('하다')) forms.push(form.slice(0, -2))
-      if (form.endsWith('다')) forms.push(form.slice(0, -1))
-    }
+  const listForms = languageModule(language).listForms
+  if (listForms) for (const form of [...forms]) forms.push(...listForms(form, word.job))
   return [...new Set(forms.filter(Boolean))]
 }
 
@@ -124,12 +121,12 @@ function splitRank(form: string, rankOf: RankOf): number | undefined {
   return best[letters.length]?.rarest
 }
 
-/** A form's rank: as listed, or (in a language written without spaces) as listed parts; a phrase's
+/** A form's rank: as listed, or (in a language ranked by parts) as listed parts; a phrase's
  * is its rarest word's. Undefined when any word isn't listed. */
 function formRank(language: Language, form: string, rankOf: RankOf): number | undefined {
   let rarest = 0
   for (const part of form.split(/\s+/)) {
-    const rank = rankOf(part) ?? (language === 'es' ? undefined : splitRank(part, rankOf))
+    const rank = rankOf(part) ?? (languageModule(language).rankByParts ? splitRank(part, rankOf) : undefined)
     if (rank === undefined) return undefined
     rarest = Math.max(rarest, rank)
   }

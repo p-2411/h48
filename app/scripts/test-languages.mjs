@@ -1,8 +1,11 @@
 // Checks caption language detection (main/detect.ts) and the tutor's per-turn check (speaks) for every
-// language in shared/languages. Run: npx jiti scripts/test-languages.mjs
+// language in shared/languages, and that each language's folder has everything a language needs
+// (shared/languages/README.md). Run: npx jiti scripts/test-languages.mjs
+import { existsSync, readFileSync } from 'node:fs'
 import { detectLanguage } from '../src/main/detect.ts'
 import { joinTokens } from '../src/shared/levels.ts'
 import { LANGUAGE_CODES, languageModule, latinRanking, speaks } from '../src/shared/languages/index.ts'
+import { clipKey, voiceLines } from '../src/renderer/src/welcome/lines.ts'
 
 const check = (ok, what) => {
   if (!ok) throw new Error(what)
@@ -37,5 +40,23 @@ for (const code of LANGUAGE_CODES)
 // A taught language is never also weighed as an untaught one (it would tie with itself).
 const codes = latinRanking('hola').map((item) => item.code)
 check(new Set(codes).size === codes.length, 'a language is ranked twice')
+
+// Every language's folder is complete: what a new language still lacks is said here.
+const recorded = new Set(JSON.parse(readFileSync('src/renderer/src/welcome/voice-clips.json', 'utf8')))
+for (const code of LANGUAGE_CODES) {
+  const language = languageModule(code)
+  const list = `src/shared/languages/${code}/frequency.json`
+  check(existsSync(list), `${code}: no ${list} (scripts/make-frequency-lists.py makes it)`)
+  check(JSON.parse(readFileSync(list, 'utf8')).length >= 1000, `${code}: its frequency list has under 1,000 words`)
+  check(existsSync(`resources/dictionaries/${code}.sqlite`), `${code}: no dictionary pack (npm run dictionaries -- <folder> ${code})`)
+  check(language.voice.tag.startsWith(`${code}-`), `${code}: its voice tag (${language.voice.tag}) is for another language`)
+  const { welcome } = language
+  check(existsSync(`src/renderer/public/video/welcome/${welcome.video}.webm`), `${code}: no welcome video ${welcome.video}.webm`)
+  check(welcome.bands.length === 4 && welcome.bands.every((band) => band.length >= 2), `${code}: the placement test needs two words in each of four bands`)
+  for (const item of welcome.bands.flat())
+    check(new Set([item.en, ...item.wrong]).size === 4, `${code}: ${item.word}'s choices repeat`)
+  for (const line of voiceLines().filter((each) => each.lang === language.voice.tag))
+    check(recorded.has(clipKey(line.lang, line.text)), `${code}: "${line.text}" has no recording (npm run voice:welcome)`)
+}
 
 console.log('Language detection test passed.')

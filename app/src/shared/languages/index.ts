@@ -1,15 +1,12 @@
-// The languages Duet teaches. Adding one: a file beside this one that fills in LanguageModule (see
-// module.ts), and a line in LANGUAGE_MODULES. Everything else (the settings, the welcome window,
-// the line and tutor prompts, caption detection, the card schema) reads the list from here.
-import { es } from './es'
-import { ja } from './ja'
-import { ko } from './ko'
+// The languages Duet teaches: one folder each beside this file (README.md), listed in registry.ts by
+// scripts/languages.mjs. Everything else (the settings, the welcome window, the line and tutor
+// prompts, caption detection, the card schema, reading levels, the mascot, the credits) reads them
+// from here.
 import type { LanguageModule, Recognition } from './module'
 import { OTHER_LATIN } from './others'
+import { LANGUAGE_MODULES } from './registry'
 
-export type { LanguageModule, Recognition } from './module'
-
-const LANGUAGE_MODULES = { es, ja, ko } satisfies Record<string, LanguageModule>
+export type { LanguageModule, MascotCue, MascotPhrases, Recognition, Welcome, WelcomeItem } from './module'
 
 export type Language = keyof typeof LANGUAGE_MODULES
 

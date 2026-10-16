@@ -13,6 +13,7 @@ import { resolve } from 'node:path'
 import { Mp3Encoder } from '@breezystack/lamejs'
 import { clipKey, voiceLines } from '../src/renderer/src/welcome/lines.ts'
 import { cheerLines } from '../src/renderer/src/home/daily/cheers.ts'
+import { LANGUAGE_CODES, languageModule } from '../src/shared/languages/index.ts'
 
 if (existsSync('.env.local')) process.loadEnvFile('.env.local')
 if (!process.env.OPENAI_API_KEY) throw new Error('Add OPENAI_API_KEY to app/.env.local first.')
@@ -24,7 +25,10 @@ const out = resolve('src/renderer/public/voice/welcome')
 const manifest = resolve('src/renderer/src/welcome/voice-clips.json')
 mkdirSync(out, { recursive: true })
 
-const LANGUAGE = { 'es-ES': 'Spanish (Spain)', 'ja-JP': 'Japanese', 'ko-KR': 'Korean' }
+// Each language as the voice is asked to speak it, by its voice's tag (shared/languages, voice).
+const LANGUAGE = Object.fromEntries(
+  LANGUAGE_CODES.map((code) => [languageModule(code).voice.tag, languageModule(code).voice.name])
+)
 const PERSONA =
   'You are Duet, a small, friendly companion who helps people learn a language from the shows they watch. Warm, bright, encouraging, with a smile in your voice; relaxed and natural, like a friend, never salesy or over the top. In this session you only say out loud the lines you are given, word for word: never add, drop or change a word, and never answer or comment on them.'
 /** How a line is voiced, per kind (lines.ts, Delivery). */
