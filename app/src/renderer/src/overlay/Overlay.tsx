@@ -30,6 +30,8 @@ import { useSolid } from './useSolid'
 import { useRoomAbove } from './useRoomAbove'
 import { useStripTalk } from './useStripTalk'
 
+// An opened strip folds this long after the pointer leaves it.
+const FOLD_AFTER_LEAVE_MS = 400
 const TOAST_MS = 5000
 const TALK_LOOK_KEY = 'duet.talkLook'
 // The checkpoint card's content fades this quickly (seconds), before it folds and after it opens.
@@ -73,6 +75,8 @@ export function Overlay(): React.JSX.Element {
   // Clicked open: the strip shows more of the line, and its actions stay up (in React, so its size
   // change glides). Another click, or Escape, closes it.
   const [open, setOpen] = useState(false)
+  const foldTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => () => clearTimeout(foldTimer.current), [])
   const [toast, setToast] = useState<Toast>()
   const talk = useStripTalk(settings.language, useCallback((text: string) => setToast({ text }), []))
   // Duet and its subtitles while talking: dark, or light over a bright picture (the learner's pick,
@@ -231,6 +235,13 @@ export function Overlay(): React.JSX.Element {
           if (event.key !== 'Escape') return
           if (settingsOpen) setSettingsOpen(false)
           else setOpen(false)
+        }}
+        // Opened with a click, it folds again a moment after the pointer leaves the strip and its
+        // actions (coming back in time keeps it open).
+        onPointerEnter={() => clearTimeout(foldTimer.current)}
+        onPointerLeave={() => {
+          clearTimeout(foldTimer.current)
+          foldTimer.current = setTimeout(() => setOpen(false), FOLD_AFTER_LEAVE_MS)
         }}
       >
         <AnimatePresence>{settingsOpen && <SettingsPopover key="settings" settings={settings} />}</AnimatePresence>
