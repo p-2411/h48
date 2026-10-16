@@ -1,7 +1,8 @@
 // Dictionary entries for card backs, on top of any StructuredModel: several words in one request,
 // each with the line it was heard in (when there is one) so its meanings fit how the learner met it.
-// The answer is kept by src/main/dictionary, so a word is asked about once. The dictionary packs
-// planned in docs/design/cards/dictionary-packs.md would replace this.
+// The answer is kept by src/main/dictionary, so a word is asked about once. Only for a word the
+// offline dictionary pack lacks (docs/design/cards/dictionary-packs.md), and only while that
+// fallback is on.
 import { z } from 'zod'
 import { languageModule } from '../../../shared/languages'
 import type { Language } from '../../../shared/types'

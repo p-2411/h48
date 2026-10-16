@@ -1,20 +1,28 @@
-// Dictionary entries for card backs: pronunciation, syllables, part of speech, gender, meanings,
-// related words and an example. Each word is filled in by the app's own AI once (src/main/ai/entries)
-// and kept in the database, so the same word never costs a second request, offline included.
+// Dictionary entries for card backs and the word page: pronunciation, syllables, part of speech,
+// gender, meanings, related words and an example.
 //
-// Requests are kept few:
+// Each word comes, in order, from:
+// 1. The offline dictionary pack for the language (./packs.ts, built by scripts/build-dictionaries.mjs
+//    from Wiktionary, JMdict and UniDic): read from a local file, no request, no credits, offline.
+// 2. An entry kept from before: the database keeps every entry the AI wrote, so the same word never
+//    costs a second request.
+// 3. The app's own AI (src/main/ai/entries), only for a word the pack lacks, and only while the
+//    fallback is on (`aiFallback`). Off, such a word shows what Duet already knows about it.
+//
+// The AI's requests are kept few:
 // - Entries are fetched ahead of time, several words per request (prefetch): when a card is saved,
 //   when Review opens, when a session starts. By the time a card shows, its entry is usually here.
 // - Asking for a word whose request is already running waits for that request; it never asks again.
 // - A word the model has nothing for is remembered as missing for a month.
 // - Without the AI (no API key), nothing is asked: card backs show what Duet already knows.
-// What Duet already knows about a word (its card, the line it was heard in) is used first, and goes
-// with the request as a hint, so the meanings fit how the learner met it. Offline dictionary packs
-// (docs/design/cards/dictionary-packs.md) would replace the AI here.
+// What Duet already knows about a word (its card, the line it was heard in) goes with the request as
+// a hint, so the meanings fit how the learner met it. Nothing here ever blocks making a card: a word
+// with no entry still gets one.
 import { articleFor, type DictEntry } from '../../shared/flashcards'
 import type { Language } from '../../shared/types'
 import type { EntryOutput, EntryRequest } from '../ai'
 import { database } from '../store/db'
+import type { Packs } from './packs'
 
 // A missing word is asked about again after this long.
 const MISSING_FOR_MS = 30 * 86_400_000
@@ -56,20 +64,41 @@ function toEntry(language: Language, asked: string, output: EntryOutput): DictEn
   }
 }
 
+export type DictionaryOptions = {
+  /** The offline packs; none means every word goes to the AI. */
+  packs?: Packs
+  /** Whether a word the pack lacks is asked of the AI (on by default). */
+  aiFallback?: boolean
+}
+
 export class Dictionary {
   private running = new Map<string, Promise<DictEntry | undefined>>()
+  private readonly packs?: Packs
+  private readonly writer?: EntryWriter
 
-  /** `writer` is the app's AI; none (no API key) means entries are never asked for. */
-  constructor(private readonly writer?: EntryWriter) {}
+  /** `writer` is the app's AI; none (no API key), or the fallback off, means entries are never asked
+   * for. */
+  constructor(writer?: EntryWriter, options: DictionaryOptions = {}) {
+    this.packs = options.packs
+    this.writer = options.aiFallback === false ? undefined : writer
+  }
 
-  /** Whether entries can be asked for at all. */
+  /** Whether entries can be asked of the AI at all. */
   get available(): boolean {
     return !!this.writer
   }
 
-  /** The entry kept for the word: an entry, null when it's known to be missing, undefined when it was
-   * never asked for (or was missing long enough ago to ask again). */
+  /** The pack's entry for the word, if there is a pack and it has the word. */
+  packed(language: Language, word: string): DictEntry | undefined {
+    const entry = this.packs?.lookUp(language, word)
+    return entry && { ...entry, article: articleFor(language, entry.gender) }
+  }
+
+  /** The entry for the word without asking: the pack's, else the one kept; null when it's known to be
+   * missing, undefined when it was never asked for (or was missing long enough ago to ask again). */
   cached(language: Language, word: string, now = Date.now()): DictEntry | null | undefined {
+    const packed = this.packed(language, word)
+    if (packed) return packed
     const row = database()
       .prepare('SELECT entry, fetched_at FROM dictionary WHERE language = ? AND word = ?')
       .get(language, form(word)) as { entry: string | null; fetched_at: number } | undefined

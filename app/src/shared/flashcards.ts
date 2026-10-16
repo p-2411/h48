@@ -201,6 +201,10 @@ export type DictEntry = {
   syllables?: string
   /** "/ma.ðɾuˈɣaɾ/" */
   ipa?: string
+  /** Japanese: the word in kana ("たべる"). */
+  reading?: string
+  /** Japanese: the mora the pitch falls after (2 in たべꜜる); 0 when it never falls. */
+  pitch?: number
   /** "verb", "noun" */
   pos?: string
   /** For nouns: "feminine", "masculine". */
@@ -214,6 +218,28 @@ export type DictEntry = {
   /** An everyday example of it, with its English: a hand-made card's line when the learner leaves
    * theirs empty. */
   example?: { line: string; translation: string }
+}
+
+// Small kana that share a mora with the kana before them (しゃ is one mora, not two).
+const SMALL_KANA = /^[ゃゅょぁぃぅぇぉゎャュョァィゥェォヮ]$/
+
+/** A Japanese reading split into morae, each marked high or low in Tokyo pitch accent: with the
+ * pitch falling after mora `pitch` (たべꜜる: 2), or never (0). The first mora is low unless the
+ * fall comes right after it. `drop` marks the mora the pitch falls after. */
+export function pitchMorae(
+  reading: string,
+  pitch: number
+): { text: string; high: boolean; drop: boolean }[] {
+  const morae: string[] = []
+  for (const ch of reading) {
+    if (SMALL_KANA.test(ch) && morae.length) morae[morae.length - 1] += ch
+    else morae.push(ch)
+  }
+  return morae.map((text, index) => {
+    const at = index + 1
+    const high = pitch === 1 ? at === 1 : at > 1 && (pitch === 0 || at <= pitch)
+    return { text, high, drop: at === pitch }
+  })
 }
 
 /** The article a noun takes, where Duet knows it (Spanish): none when either fits. */

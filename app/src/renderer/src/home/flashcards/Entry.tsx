@@ -1,7 +1,15 @@
 // The dictionary entry: a card's back, and the word in Words, look the same. Headword in syllables
 // with its step's highlighter, sound and part of speech, the meaning that fits, where it was last
 // heard (like a dictionary's quotation), and one folded row of tips.
-import { mmss, type DictEntry, type LastHeard, type SplitLine, type Step, type Tip } from '../../../../shared/flashcards'
+import {
+  mmss,
+  pitchMorae,
+  type DictEntry,
+  type LastHeard,
+  type SplitLine,
+  type Step,
+  type Tip
+} from '../../../../shared/flashcards'
 import { icons, times } from './bits'
 
 export type EntryData = {
@@ -30,6 +38,32 @@ export function ByDuet(): React.JSX.Element {
 /** The step a word is on, as a dot in its colour. */
 export function StepDot({ step }: { step: Step }): React.JSX.Element {
   return <span className="dot" data-step={step} aria-hidden="true" />
+}
+
+/** A Japanese word's kana, with its pitch drawn when known: a line over the high morae and a mark
+ * where the pitch falls (た‾べꜜる). */
+export function Reading({ entry }: { entry: DictEntry }): React.JSX.Element | null {
+  if (!entry.reading) return null
+  if (entry.pitch === undefined)
+    return (
+      <span className="fc-reading" lang="ja">
+        {entry.reading}
+      </span>
+    )
+  const label = entry.pitch === 0 ? 'flat pitch' : `pitch falls after mora ${entry.pitch}`
+  return (
+    <span className="fc-reading" lang="ja" title={label} aria-label={`${entry.reading}, ${label}`}>
+      {pitchMorae(entry.reading, entry.pitch).map((mora, index) => (
+        <span
+          key={index}
+          className={mora.high ? 'high' : undefined}
+          data-drop={mora.drop || undefined}
+        >
+          {mora.text}
+        </span>
+      ))}
+    </span>
+  )
 }
 
 /** A line with its word bold. */
@@ -65,8 +99,9 @@ export function Entry({
         {entry?.article && <span className="art">{entry.article} </span>}
         {headword}
       </span>
-      {(entry?.ipa || meta || onSound) && (
+      {(entry?.reading || entry?.ipa || meta || onSound) && (
         <div className="fc-meta">
+          {entry?.reading && <Reading entry={entry} />}
           {entry?.ipa && <span>{entry.ipa}</span>}
           {onSound && (
             <button

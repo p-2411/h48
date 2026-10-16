@@ -3,7 +3,7 @@
 // its word, when a card comes back), the main process side (src/main/flashcards) and the card backs'
 // dictionary (src/main/dictionary: what it reuses, when it asks the AI and how few requests it makes),
 // on a temporary database with a fake "electron" module and fake AI, voice and quiz models. Also the
-// Wiktionary prototype (src/main/dictionary/wiktionary.ts), kept for the dictionary packs.
+// Wiktionary reader (src/main/dictionary/wiktionary.ts) the dictionary packs are built with.
 // Run: node scripts/test-flashcards.mjs
 import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
@@ -231,7 +231,7 @@ const KAIKKI = {
 }
 const jsonl = (word) => KAIKKI[word].map((entry) => JSON.stringify(entry)).join('\n')
 
-await test('the Wiktionary prototype reads an entry from its data', () => {
+await test('the Wiktionary reader reads an entry from its data', () => {
   const entry = parseEntry('es', 'madrugar', `${jsonl('madrugar')}\nnot json\n`)
   assert.equal(entry.ipa, '/madɾuˈɡaɾ/', 'the broad transcription')
   assert.equal(entry.syllables, 'ma·dru·gar')

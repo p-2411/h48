@@ -1,7 +1,7 @@
 // The home base: an ordinary window (with the Dock icon) for the hub and its places: Today, Watching,
 // Your words (with Review), Talk and Settings. Its page paints Duet's grain surface (styles/ui.css)
 // over the whole window, with the window buttons inset in the page, like the side panel.
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, shell } from 'electron'
 import { loadPage, webPreferences } from './load'
 
 export function createHomeWindow(dark = false): BrowserWindow {
@@ -31,6 +31,11 @@ export function createHomeWindow(dark = false): BrowserWindow {
         : {}),
     show: false,
     webPreferences
+  })
+  // A link on a page (Settings → Sources) opens in the browser, never in a Duet window.
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://')) void shell.openExternal(url)
+    return { action: 'deny' }
   })
   loadPage(window, 'home')
   window.once('ready-to-show', () => window.show())

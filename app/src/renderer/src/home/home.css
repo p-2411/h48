@@ -159,7 +159,8 @@ no box { align-items: center; text-align: center; gap: 12px; padding: 26px 0 6px
 .home-settings > * { width: 100%; max-width: 600px; }
 .settings-group { display: flex; flex-direction: column; gap: 6px; }
 .settings-group > .label { padding-left: 16px; }
-.settings-credit { padding-left: 16px; }
+.home-settings .glass a { color: var(--ink); }
+.sources-notice { white-space: pre-wrap; font-size: 11px; color: var(--sub); margin: 8px 0 0; }
 .settings-group .glass { align-items: stretch; gap: 12px; }
 .settings-group .btn { align-self: flex-start; }
 

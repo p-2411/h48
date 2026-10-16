@@ -19,7 +19,7 @@ import { say } from '../../components/errors'
 import { useRecorder } from '../../components/challenges/useRecorder'
 import { MicButton } from '../../components/MicButton'
 import { DuetMascot } from '../../components/duet/DuetMascot'
-import { Bolded, Entry, StepDot } from './Entry'
+import { Bolded, Entry, Reading, StepDot } from './Entry'
 import { confetti, icons, playClip } from './bits'
 import type { SessionApi } from './sample'
 
@@ -271,8 +271,9 @@ function Front({
         <>
           <StepRow view={view} />
           {word}
-          {(view.entry?.ipa || view.voice) && (
+          {(view.entry?.reading || view.entry?.ipa || view.voice) && (
             <div className="fc-meta">
+              {view.entry?.reading && <Reading entry={view.entry} />}
               {view.entry?.ipa && <span>{view.entry.ipa}</span>}
               {view.voice && (
                 <button

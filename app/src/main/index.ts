@@ -74,6 +74,7 @@ import { DailySession } from './daily'
 import { openAIQuiz } from './challenges/quiz'
 import { Flashcards } from './flashcards'
 import { Dictionary } from './dictionary'
+import { packFolder, Packs } from './dictionary/packs'
 import { Reminder } from './daily/reminder'
 import { Checkpoints } from './checkpoints'
 import { openAISceneJudge } from './checkpoints/scenes'
@@ -95,6 +96,9 @@ const TICK_MS = 100
 const HEARING_TICK_MS = 500
 // Progress catches up with the lines kept from before it this long after launch (once).
 const CATCH_UP_AFTER_MS = 3_000
+// Whether a word the offline dictionary pack lacks is looked up by the AI (it costs credits). Set
+// DUET_AI_ENTRIES=off to see what the packs alone give.
+const AI_ENTRY_FALLBACK = process.env.DUET_AI_ENTRIES !== 'off'
 
 let tray: Tray | undefined
 
@@ -265,8 +269,12 @@ app.whenReady().then(() => {
     currentVideo: () => watcher.currentVideo,
     voice: voice && { tts: voice.tts, coach: voice.coach, stt: voice.speechToText },
     quiz,
-    // Card backs' dictionary entries, from the same AI as the lines.
-    dictionary: new Dictionary(models?.entries)
+    // Card backs' dictionary entries: the offline packs first, then the same AI as the lines for
+    // a word the pack lacks (AI_ENTRY_FALLBACK turns that off).
+    dictionary: new Dictionary(models?.entries, {
+      packs: new Packs(packFolder(app.getAppPath())),
+      aiFallback: AI_ENTRY_FALLBACK
+    })
   })
   // The strip's window, for the features that talk to its page.
   const strip = {
