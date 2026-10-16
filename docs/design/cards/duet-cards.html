@@ -1,0 +1,384 @@
+<title>Duet cards</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap">
+<style>
+/* Layout: one sheet; each card type is a row, its note on the left and both faces on the right.
+   Every back is the same dictionary entry, so a word always reads like a page you know. */
+:root {
+  --paper: #f2f3f3; --card: #ffffff; --ink: #1b201f; --ink2: #3a403e; --sub: #62686a; --faint: #858b89;
+  --line: rgba(27,32,31,0.08); --line2: rgba(27,32,31,0.15); --soft: #f4f4f2; --on-ink: #ffffff; --accent: #e0583a;
+  --seen: #e8b923; --known: #f2952e; --say: #4d93e6; --use: #3fb579;
+  --mark-seen: rgba(255,205,40,0.55); --mark-known: rgba(255,160,40,0.42); --mark-say: rgba(77,163,255,0.30); --mark-use: rgba(63,181,121,0.30);
+  --shadow: 0 1px 2px rgba(27,32,31,0.04), 0 22px 44px -32px rgba(27,32,31,0.30);
+  --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --sans: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #121313; --card: #1b1d1d; --ink: #eef3f1; --ink2: #c9d0ce; --sub: #9aa3a0; --faint: #7a827f;
+  --line: rgba(238,243,241,0.08); --line2: rgba(238,243,241,0.16); --soft: rgba(238,243,241,0.06); --on-ink: #121313; --accent: #f08a68;
+  --mark-seen: rgba(255,214,10,0.28); --mark-known: rgba(255,159,10,0.26); --mark-say: rgba(77,163,255,0.26); --mark-use: rgba(50,215,75,0.22);
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 22px 44px -28px rgba(0,0,0,0.6); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #121313; --card: #1b1d1d; --ink: #eef3f1; --ink2: #c9d0ce; --sub: #9aa3a0; --faint: #7a827f;
+  --line: rgba(238,243,241,0.08); --line2: rgba(238,243,241,0.16); --soft: rgba(238,243,241,0.06); --on-ink: #121313; --accent: #f08a68;
+  --mark-seen: rgba(255,214,10,0.28); --mark-known: rgba(255,159,10,0.26); --mark-say: rgba(77,163,255,0.26); --mark-use: rgba(50,215,75,0.22);
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 22px 44px -28px rgba(0,0,0,0.6); color-scheme: dark }
+
+body { background: var(--paper); color: var(--ink); font: 15px/1.55 var(--sans); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.sheet { max-width: 1160px; margin: 0 auto; padding-block: 56px 96px; display: flex; flex-direction: column; gap: 64px; }
+h1, h2, h3, p { margin: 0; }
+h1, h2 { text-wrap: balance; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, summary:focus-visible { outline: 2px solid var(--say); outline-offset: 2px; }
+
+.intro { display: flex; flex-direction: column; gap: 14px; max-width: 66ch; }
+.intro h1 { font: 500 50px/1.04 var(--serif); letter-spacing: -0.01em; }
+.intro p { color: var(--ink2); font-size: 16px; }
+
+section { display: flex; flex-direction: column; gap: 24px; }
+.section-head { display: flex; align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--line2); }
+.section-head i { display: block; width: 10px; height: 10px; border-radius: 5px; flex-shrink: 0; }
+.section-head h2 { font: 400 30px/1.15 var(--serif); }
+.section-head p { margin-left: auto; color: var(--sub); font-size: 14px; text-align: right; max-width: 46ch; }
+
+.row { display: grid; grid-template-columns: 240px 1fr; gap: 32px; align-items: start; }
+.row + .row { border-top: 1px solid var(--line); padding-top: 28px; }
+.note { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.note h3 { font-size: 16px; font-weight: 600; }
+.note p { font-size: 14px; color: var(--sub); }
+.note .when { font-size: 12px; color: var(--ink2); padding: 3px 10px; border-radius: 999px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line2); align-self: flex-start; }
+.faces { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; min-width: 0; }
+.face { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.face > .label { font-size: 12px; color: var(--faint); padding-left: 4px; }
+
+/* The card itself. */
+.card { min-height: 430px; box-sizing: border-box; background: var(--card); border: 1px solid var(--line2); border-radius: 18px; padding: 22px 24px 18px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); min-width: 0; }
+.step { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--sub); }
+.step i { display: block; width: 7px; height: 7px; border-radius: 4px; }
+.step .src { margin-left: auto; color: var(--faint); }
+.prompt-word { font: 500 50px/1 var(--serif); letter-spacing: -0.01em; align-self: flex-start; }
+.prompt-line { font: 400 26px/1.3 var(--serif); }
+.prompt-line b { font-weight: 500; }
+.hint { font-size: 14px; color: var(--sub); }
+.hint b { color: var(--ink); font-weight: 600; }
+.m-seen { background: linear-gradient(transparent 58%, var(--mark-seen) 58%, var(--mark-seen) 92%, transparent 92%); padding: 0 3px; }
+.m-known { background: linear-gradient(transparent 58%, var(--mark-known) 58%, var(--mark-known) 92%, transparent 92%); padding: 0 3px; }
+.m-say { background: linear-gradient(transparent 58%, var(--mark-say) 58%, var(--mark-say) 92%, transparent 92%); padding: 0 3px; }
+.m-use { background: linear-gradient(transparent 58%, var(--mark-use) 58%, var(--mark-use) 92%, transparent 92%); padding: 0 3px; }
+.gap { display: inline-block; min-width: 100px; height: 0.9em; vertical-align: -0.12em; border-bottom: 2px solid var(--line2); }
+
+/* The moment: dark in both themes, like the video. */
+.clip { position: relative; height: 104px; flex-shrink: 0; border-radius: 12px; overflow: hidden; background: radial-gradient(60% 70% at 30% 30%, rgba(214,160,92,0.34), transparent 70%), radial-gradient(50% 60% at 80% 40%, rgba(120,150,140,0.28), transparent 70%), linear-gradient(180deg, #2c2925, #1b1a18); }
+.clip .sub-line { position: absolute; left: 12px; right: 12px; bottom: 11px; display: flex; justify-content: center; }
+.clip .sub-line span { font-size: 13px; color: #f4f4f2; background: rgba(0,0,0,0.5); padding: 3px 9px; border-radius: 6px; }
+.clip .sub-line b { color: #ffd60a; font-weight: 600; }
+.clip .play { position: absolute; right: 10px; top: 9px; width: 28px; height: 28px; border-radius: 14px; border: 0; display: grid; place-items: center; background: rgba(17,20,19,0.6); color: #f4f4f2; }
+
+/* Controls. */
+.reveal { margin-top: auto; align-self: center; border: 0; padding: 11px 24px; border-radius: 999px; background: var(--ink); color: var(--on-ink); font-size: 14px; font-weight: 600; }
+.under { align-self: center; font-size: 12px; color: var(--faint); }
+.mic { margin-top: auto; align-self: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.mic button { width: 56px; height: 56px; border-radius: 28px; border: 0; display: grid; place-items: center; background: var(--ink); color: var(--on-ink); box-shadow: 0 8px 20px -8px rgba(27,32,31,0.4); }
+.mic span { font-size: 12px; color: var(--sub); }
+.answers { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.answers button { border: 0; height: 44px; padding: 0 12px; flex-direction: row; justify-content: center; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 14px; font-weight: 600; }
+.answers small { font-size: 11px; font-weight: 400; opacity: 0.7; }
+.a-soft { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line2); }
+.a-ink { background: var(--ink); color: var(--on-ink); }
+.fine { align-self: center; display: flex; gap: 4px; font-size: 12px; color: var(--faint); }
+.fine button { border: 0; background: none; color: var(--sub); padding: 2px 6px; }
+.sound { width: 26px; height: 26px; border-radius: 13px; border: 0; display: inline-grid; place-items: center; background: var(--soft); color: var(--ink); vertical-align: middle; }
+
+/* The back: a dictionary entry. Serif for the headword and the meaning only; the rest is Inter. */
+.entry { display: flex; flex-direction: column; gap: 12px; }
+.hw-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.hw { font: 500 44px/1 var(--serif); letter-spacing: -0.01em; }
+.meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--sub); }
+.meta .pos { font-style: italic; }
+.meta .sep { width: 3px; height: 3px; border-radius: 2px; background: var(--faint); }
+.freq { display: inline-flex; gap: 3px; align-items: center; }
+.freq i { display: block; width: 6px; height: 6px; border-radius: 3px; background: var(--ink2); }
+.freq i.off { background: var(--line2); }
+.sense { display: grid; grid-template-columns: 18px 1fr; gap: 4px 6px; align-items: baseline; }
+.sense .n { font-size: 12px; font-weight: 600; color: var(--sub); }
+.sense .def { font: 400 23px/1.3 var(--serif); }
+.sense .ex { grid-column: 2; font-size: 15px; color: var(--ink2); }
+.sense .ex b { font-weight: 600; color: var(--ink); }
+.cite { display: flex; flex-direction: column; gap: 8px; }
+.cite-line { margin: 0; font: italic 400 20px/1.4 var(--serif); color: var(--ink); }
+.cite-line b { font-weight: 600; }
+.cite-en { display: block; font: normal 14px/1.5 var(--sans); color: var(--sub); margin-top: 2px; }
+.cite-src { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--sub); }
+.cite-src b { font-weight: 600; color: var(--ink); }
+.cite-src .times { margin-left: auto; color: var(--sub); white-space: nowrap; }
+.cite-src .replay { width: 22px; height: 22px; border-radius: 11px; }
+.by-duet { width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0; background: var(--soft); box-shadow: inset 0 0 0 1px var(--line2); display: flex; align-items: center; justify-content: center; gap: 2px; }
+.by-duet i { display: block; width: 5px; height: 4px; border-radius: 2px; background: var(--ink); }
+details.tips { border-top: 1px solid var(--line); padding-top: 10px; }
+details.tips summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--ink2); }
+details.tips summary::-webkit-details-marker { display: none; }
+details.tips .chev { transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+details.tips[open] .chev { transform: rotate(180deg); }
+details.tips .inner { padding-top: 8px; display: flex; flex-direction: column; }
+.tip { display: grid; grid-template-columns: 92px 1fr; gap: 10px; padding: 7px 0; font-size: 13px; color: var(--ink2); border-top: 1px solid var(--line); }
+.tip:first-child { border-top: 0; }
+.tip .k { font-size: 12px; color: var(--faint); }
+.heard-at { grid-column: 2; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--sub); margin-top: 2px; }
+.heard-at .times { margin-left: auto; color: var(--faint); }
+.heard-at .duet-ex { font-style: italic; }
+.replay { width: 20px; height: 20px; border-radius: 10px; border: 0; display: grid; place-items: center; background: var(--soft); color: var(--ink); flex-shrink: 0; }
+.sense .cite { grid-column: 2; font-size: 12px; color: var(--faint); }
+.extra { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink2); }
+.extra .k { font-size: 12px; color: var(--faint); }
+.colls { display: flex; flex-wrap: wrap; gap: 6px; }
+.colls span { font-size: 12px; padding: 3px 9px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line2); color: var(--ink2); }
+details.more summary { list-style: none; cursor: pointer; font-size: 12px; color: var(--sub); display: inline-flex; align-items: center; gap: 4px; }
+details.more summary::-webkit-details-marker { display: none; }
+details.more summary::before { content: '+'; font-size: 13px; width: 12px; }
+details.more[open] summary::before { content: '–'; }
+details.more .inner { padding-top: 8px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink2); }
+.yours { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; background: var(--soft); }
+.yours .said { font: 400 21px/1.3 var(--serif); }
+.yours .verdict { font-size: 13px; color: var(--ink2); display: flex; gap: 8px; align-items: flex-start; }
+.face-mark { flex-shrink: 0; width: 20px; height: 20px; border-radius: 7px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line2); display: flex; align-items: center; justify-content: center; gap: 2px; }
+.face-mark i { display: block; width: 5px; height: 4px; border-radius: 2px; background: var(--ink); }
+.wave { display: inline-flex; align-items: center; gap: 2px; height: 14px; color: var(--sub); vertical-align: middle; margin-right: 6px; }
+.wave i { display: block; width: 2.5px; border-radius: 2px; background: currentColor; }
+.proof { font-size: 12px; color: var(--sub); }
+
+/* The anatomy at the top. */
+.anatomy { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+.parts { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.parts li { display: grid; grid-template-columns: 26px 1fr; gap: 12px; padding: 13px 0; border-top: 1px solid var(--line); }
+.parts li:first-child { border-top: 0; padding-top: 0; }
+.parts .num { font-size: 12px; font-weight: 600; color: var(--sub); padding-top: 2px; }
+.parts b { display: block; font-weight: 600; font-size: 14px; }
+.parts span { font-size: 14px; color: var(--sub); }
+.pin { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 9px; background: var(--ink); color: var(--on-ink); font: 600 10px/1 var(--sans); vertical-align: middle; margin-left: 6px; }
+
+@media (max-width: 900px) {
+  .row, .anatomy { grid-template-columns: 1fr; gap: 16px; }
+  .section-head { flex-wrap: wrap; }
+  .section-head p { margin-left: 0; text-align: left; flex-basis: 100%; }
+}
+@media (max-width: 620px) {
+  .faces { grid-template-columns: 1fr; }
+  .intro h1 { font-size: 40px; }
+  .card { min-height: 0; }
+  .hw { font-size: 38px; }
+}
+</style>
+
+<main class="sheet">
+
+<header class="intro">
+<h1>Duet cards</h1>
+<p>Every card in the main app, front and back. The front changes with the step a word is on and with what Duet has for it: a moment from a video, a sentence, a sound, a picture. The back is always the same dictionary entry, with only the part that matters at that step brought forward. Every card ends with the same question: Forgot, or Got it.</p>
+</header>
+
+<!-- The entry, explained once -->
+<section aria-labelledby="anatomy-title">
+<div class="section-head"><i style="background: var(--ink);"></i><h2 id="anatomy-title">The back: one entry for every card</h2><p>The word, what it means, where you heard it. Tips fold away. One question.</p></div>
+<div class="anatomy">
+<div class="card" style="min-height: 0;">
+<div class="entry">
+<div class="hw-row"><span class="hw m-known">ma·dru·gar</span><span class="pin">1</span></div>
+<div class="meta"><span>/ma.ðɾuˈɣaɾ/</span><button class="sound" type="button" aria-label="Hear madrugar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"/></svg></button><span class="sep"></span><span class="pos">verb</span><span class="pin">2</span></div>
+<div class="sense"><span class="n">1</span><span class="def">to get up early, usually because you have to <span class="pin">3</span></span></div>
+<div class="cite"><p class="cite-line">Mañana tengo que <b>madrugar</b>.</p><p class="cite-src"><button class="replay" type="button" aria-label="Replay the moment in Un día en Madrid"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><span>Last heard in <b>Un día en Madrid</b> at 1:25</span><span class="times">Heard 4 times</span> <span class="pin">4</span></p></div>
+<details class="tips"><summary>Tips <span class="pin">5</span><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary><div class="inner"><div class="tip"><span class="k">Tip</span><span>Most often heard as <b>tengo que madrugar</b>, I have to get up early.</span></div><div class="tip"><span class="k">Also heard</span><span>Spanish on the street, 4:10 · Tortilla española, 0:31</span></div><div class="tip"><span class="k">Other meaning</span><span><i>figurative</i> to get ahead of others; to act first</span></div><div class="tip"><span class="k">Related</span><span>madrugada, the small hours · madrugador, an early riser</span></div></div></details>
+</div>
+<div class="answers" style="margin-top: 6px;"><button class="a-soft" type="button">Forgot</button><button class="a-ink" type="button">Got it <span class="pin" style="background: var(--on-ink); color: var(--ink);">6</span></button></div>
+</div>
+<ol class="parts">
+<li><span class="num">1</span><div><b>Headword</b><span>The word split into syllables, in serif, with the highlighter of its step behind it.</span></div></li>
+<li><span class="num">2</span><div><b>Sound and grammar</b><span>Pronunciation with a play button and the part of speech. Gender here for nouns: <i>la sartén</i>.</span></div></li>
+<li><span class="num">3</span><div><b>The meaning in this line</b><span>The sense that matches where you met it comes first, in serif. Other senses wait under Tips.</span></div></li>
+<li><span class="num">4</span><div><b>Where you last heard it</b><span>Like a dictionary’s quotation: your line in italic serif, and under it a replay button, the video and time, and how many times you’ve heard it. A word you haven’t heard yet gets an example by Duet, marked as such.</span></div></li>
+<li><span class="num">5</span><div><b>Tips, folded</b><span>One row with a down arrow, closed until you open it. Careful first, then Listen for and Tip, then the other places you heard it, other meanings and related words. No tips, no row.</span></div></li>
+<li><span class="num">6</span><div><b>One question</b><span>Forgot or Got it, on every card. No timings and no extra grades: Duet works out how hard it was from how long you took and how you said it, and schedules the rest.</span></div></li>
+</ol>
+</div>
+</section>
+
+<!-- Heard -->
+<section aria-labelledby="heard-title">
+<div class="section-head"><i style="background: var(--seen);"></i><h2 id="heard-title">Heard: do you know it?</h2><p>Recognising the word. Three fronts, depending on what Duet has.</p></div>
+
+<article class="row">
+<div class="note"><h3>Sentence card</h3><span class="when">The default, whenever there’s a line</span><p>The word in the line you met it in, with the moment to replay when it came from a video. You learn the word with its grammar and feeling attached.</p></div>
+<div class="faces">
+<div class="face"><span class="label">Front</span><div class="card">
+<span class="step"><i style="background: var(--seen);"></i>Heard<span class="src">Un día en Madrid · 1:25</span></span>
+<div class="clip"><button class="play" type="button" aria-label="Replay the moment"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><div class="sub-line"><span>Mañana tengo que <b>madrugar</b>.</span></div></div>
+<span class="prompt-word m-seen">madrugar</span>
+<span class="hint">Mañana tengo que <b>madrugar</b>.</span>
+<button class="reveal" type="button">Show the answer</button>
+</div></div>
+<div class="face"><span class="label">Back</span><div class="card">
+<div class="entry">
+<div class="hw-row"><span class="hw m-seen">ma·dru·gar</span></div>
+<div class="meta"><span>/ma.ðɾuˈɣaɾ/</span><button class="sound" type="button" aria-label="Hear madrugar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"/></svg></button><span class="sep"></span><span class="pos">verb</span></div>
+<div class="sense"><span class="n">1</span><span class="def">to get up early, usually because you have to</span></div>
+<div class="cite"><p class="cite-line">Mañana tengo que <b>madrugar</b>.</p><p class="cite-src"><button class="replay" type="button" aria-label="Replay the moment in Un día en Madrid"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><span>Last heard in <b>Un día en Madrid</b> at 1:25</span><span class="times">Heard 4 times</span></p></div>
+<details class="tips"><summary>Tips<svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary><div class="inner"><div class="tip"><span class="k">Tip</span><span>Most often heard as <b>tengo que madrugar</b>, I have to get up early.</span></div><div class="tip"><span class="k">Also heard</span><span>Spanish on the street, 4:10 · Tortilla española, 0:31</span></div><div class="tip"><span class="k">Related</span><span>madrugada, the small hours · madrugador, an early riser</span></div><div class="tip"><span class="k">Saying</span><span>A quien madruga, Dios le ayuda. The early bird catches the worm.</span></div></div></details>
+</div>
+<div class="answers"><button class="a-soft" type="button">Forgot</button><button class="a-ink" type="button">Got it</button></div>
+</div></div>
+</div>
+</article>
+
+<article class="row">
+<div class="note"><h3>Word card</h3><span class="when">When there’s no line yet</span><p>A plain word, from a basic Anki deck or a card you made by hand. Duet writes an example for the back and marks it as its own, then swaps in a real line once you hear one.</p></div>
+<div class="faces">
+<div class="face"><span class="label">Front</span><div class="card">
+<span class="step"><i style="background: var(--seen);"></i>Heard<span class="src">Spanish 5000, from Anki</span></span>
+<div style="margin: auto 0; display: flex; flex-direction: column; gap: 12px; align-items: flex-start;">
+<span class="prompt-word m-seen">aprovechar</span>
+<span class="meta"><span>/a.pɾo.βeˈtʃaɾ/</span><button class="sound" type="button" aria-label="Hear aprovechar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"/></svg></button></span>
+</div>
+<button class="reveal" type="button" style="margin-top: 0;">Show the answer</button>
+</div></div>
+<div class="face"><span class="label">Back</span><div class="card">
+<div class="entry">
+<div class="hw-row"><span class="hw m-seen">a·pro·ve·char</span></div>
+<div class="meta"><span>/a.pɾo.βeˈtʃaɾ/</span><button class="sound" type="button" aria-label="Hear aprovechar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"/></svg></button><span class="sep"></span><span class="pos">verb</span></div>
+<div class="sense"><span class="n">1</span><span class="def">to make the most of; to take advantage of</span></div>
+<div class="cite"><p class="cite-line">Hay que <b>aprovechar</b> el buen tiempo.</p><p class="cite-src"><span class="by-duet" aria-hidden="true"><i></i><i></i></span><span>An example by Duet</span><span class="times">Not heard yet</span></p></div>
+<details class="tips"><summary>Tips<svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary><div class="inner"><div class="tip"><span class="k">Tip</span><span><b>¡Que aproveche!</b> is what people say before a meal.</span></div><div class="tip"><span class="k">Careful</span><span><b>aprovecharse de</b> means taking unfair advantage of someone.</span></div></div></details>
+</div>
+<div class="answers"><button class="a-soft" type="button">Forgot</button><button class="a-ink" type="button">Got it</button></div>
+</div></div>
+</div>
+</article>
+
+<article class="row">
+<div class="note"><h3>Listening card</h3><span class="when">Now and then, when there’s sound</span><p>A twist on the sentence card, not a card of its own: the moment plays first with the words hidden. It trains the ear for real speed. Uses the video’s audio, an imported sound, or Duet’s voice.</p></div>
+<div class="faces">
+<div class="face"><span class="label">Front</span><div class="card">
+<span class="step"><i style="background: var(--seen);"></i>Heard · listen first<span class="src">Un día en Madrid · 1:25</span></span>
+<div style="margin: auto; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;">
+<button type="button" aria-label="Play the line" style="width: 76px; height: 76px; border-radius: 38px; border: 0; display: grid; place-items: center; background: var(--ink); color: var(--on-ink);"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
+<span class="prompt-line" style="font-size: 24px;">What did she say?</span>
+<span class="hint">Double-click to hear it slower</span>
+</div>
+<button class="reveal" type="button" style="margin-top: 0;">Show the words</button>
+</div></div>
+<div class="face"><span class="label">Back</span><div class="card">
+<div class="entry">
+<div class="hw-row"><span class="hw m-seen" style="font-size: 36px;">ma·dru·gar</span></div>
+<div class="meta"><span>/ma.ðɾuˈɣaɾ/</span><button class="sound" type="button" aria-label="Hear madrugar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"/></svg></button><span class="sep"></span><span class="pos">verb</span></div>
+<div class="sense"><span class="n">1</span><span class="def">to get up early</span></div>
+<div class="cite"><p class="cite-line">Mañana tengo que <b>madrugar</b>. <span class="cite-en">I have to get up early tomorrow.</span></p><p class="cite-src"><button class="replay" type="button" aria-label="Replay the moment in Un día en Madrid"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><span>Last heard in <b>Un día en Madrid</b> at 1:25</span><span class="times">Heard 4 times</span></p></div>
+<details class="tips"><summary>Tips<svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary><div class="inner"><div class="tip"><span class="k">Listen for</span><span>The <i>d</i> is soft, almost a <i>th</i>, and the <i>g</i> barely touches: ma-ðru-ɣar.</span></div><div class="tip"><span class="k">Tip</span><span>Most often heard as <b>tengo que madrugar</b>.</span></div></div></details>
+</div>
+<div class="answers"><button class="a-soft" type="button">Forgot</button><button class="a-ink" type="button">Got it</button></div>
+</div></div>
+</div>
+</article>
+
+<article class="row">
+<div class="note"><h3>Picture card</h3><span class="when">Only for imported pictures</span><p>Shown when an imported deck has an image, so those decks look like themselves. Duet never makes pictures; a moment from the video does that job better.</p></div>
+<div class="faces">
+<div class="face"><span class="label">Front</span><div class="card">
+<span class="step"><i style="background: var(--seen);"></i>Heard<span class="src">Kitchen words, from Anki</span></span>
+<svg role="img" aria-label="A frying pan on a stove" viewBox="0 0 300 150" style="width: 100%; height: auto; border-radius: 12px; background: var(--soft);"><rect x="40" y="108" width="220" height="10" rx="5" fill="#b3bab8"/><ellipse cx="130" cy="98" rx="70" ry="14" fill="#3a403e"/><ellipse cx="130" cy="94" rx="62" ry="10" fill="#565e5c"/><rect x="196" y="90" width="78" height="9" rx="4.5" fill="#3a403e"/><path d="M104 70c4-8-4-12 0-20M130 66c4-8-4-12 0-20M156 70c4-8-4-12 0-20" fill="none" stroke="#a8adab" stroke-width="2.5" stroke-linecap="round"/></svg>
+<span class="prompt-line" style="font-size: 24px; text-align: center;">What’s this called?</span>
+<button class="reveal" type="button">Show the answer</button>
+</div></div>
+<div class="face"><span class="label">Back</span><div class="card">
+<div class="entry">
+<div class="hw-row"><span class="hw m-seen"><span style="font-weight: 400; color: var(--sub);">la</span> sar·tén</span></div>
+<div class="meta"><span>/saɾˈten/</span><button class="sound" type="button" aria-label="Hear sartén"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"/></svg></button><span class="sep"></span><span class="pos">noun, feminine</span></div>
+<div class="sense"><span class="n">1</span><span class="def">frying pan</span></div>
+<div class="cite"><p class="cite-line">Calienta el aceite en la <b>sartén</b>.</p><p class="cite-src"><button class="replay" type="button" aria-label="Replay the moment in Tortilla española"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><span>Last heard in <b>Tortilla española</b> at 2:04</span><span class="times">Heard twice</span></p></div>
+<details class="tips"><summary>Tips<svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary><div class="inner"><div class="tip"><span class="k">Careful</span><span>It ends in -n but it’s <b>la</b> sartén, not el.</span></div><div class="tip"><span class="k">Listen for</span><span>The stress lands at the end: sar-TÉN.</span></div></div></details>
+</div>
+<div class="answers"><button class="a-soft" type="button">Forgot</button><button class="a-ink" type="button">Got it</button></div>
+</div></div>
+</div>
+</article>
+</section>
+
+<!-- Known -->
+<section aria-labelledby="known-title">
+<div class="section-head"><i style="background: var(--known);"></i><h2 id="known-title">Known: which word fits?</h2><p>Recalling the word and saying it. Saying it out loud is what moves it up.</p></div>
+
+<article class="row">
+<div class="note"><h3>Gap card</h3><span class="when">Every word you know</span><p>The line with the word taken out, and what it means in English. You say the missing word, and Duet adds one note on the sound. Saying it out loud is what moves the word up; typing still counts as remembering it.</p></div>
+<div class="faces">
+<div class="face"><span class="label">Front</span><div class="card">
+<span class="step"><i style="background: var(--known);"></i>Known<span class="src">Tortilla española · 2:04</span></span>
+<span class="prompt-line" style="margin-top: 28px;">Calienta el aceite en la <span class="gap"></span>.</span>
+<span class="hint">Heat the oil in the frying pan.</span>
+<div class="mic"><button type="button" aria-label="Say it"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><span>or type it</span></div>
+</div></div>
+<div class="face"><span class="label">Back</span><div class="card">
+<div class="yours"><span class="said"><span class="wave" aria-hidden="true"><i style="height: 5px;"></i><i style="height: 11px;"></i><i style="height: 14px;"></i><i style="height: 8px;"></i><i style="height: 12px;"></i></span>“sartén”</span><span class="verdict"><span class="face-mark" aria-hidden="true"><i></i><i></i></span>Clear. The stress lands at the end: sar-TÉN.</span></div>
+<div class="entry">
+<div class="hw-row"><span class="hw m-known" style="font-size: 38px;"><span style="font-weight: 400; color: var(--sub);">la</span> sar·tén</span></div>
+<div class="meta"><span>/saɾˈten/</span><button class="sound" type="button" aria-label="Hear sartén"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"/></svg></button><span class="sep"></span><span class="pos">noun, feminine</span></div>
+<div class="sense"><span class="n">1</span><span class="def">frying pan</span></div>
+<div class="cite"><p class="cite-line">Calienta el aceite en la <b>sartén</b>.</p><p class="cite-src"><button class="replay" type="button" aria-label="Replay the moment in Tortilla española"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><span>Last heard in <b>Tortilla española</b> at 2:04</span><span class="times">Heard twice</span></p></div>
+<details class="tips"><summary>Tips<svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary><div class="inner"><div class="tip"><span class="k">Careful</span><span>It ends in -n but it’s <b>la</b> sartén, not el.</span></div></div></details>
+</div>
+<div class="answers"><button class="a-soft" type="button">Forgot</button><button class="a-ink" type="button">Got it</button></div>
+</div></div>
+</div>
+</article>
+</section>
+
+<!-- You can say it -->
+<section aria-labelledby="say-title">
+<div class="section-head"><i style="background: var(--say);"></i><h2 id="say-title">You can say it: use it yourself</h2><p>Your own sentence, checked by Duet. The step only Duet can grade.</p></div>
+
+<article class="row">
+<div class="note"><h3>Use-it card</h3><span class="when">Every word you can say</span><p>A small situation to answer in your own words. Duet says whether it’s natural and what a local would say, then the entry shows related words so the next sentence comes easier.</p></div>
+<div class="faces">
+<div class="face"><span class="label">Front</span><div class="card">
+<span class="step"><i style="background: var(--say);"></i>You can say it</span>
+<span class="prompt-line" style="margin-top: 28px;">A friend asks you out tonight. Say no, and why.</span>
+<span class="hint">Use <b>madrugar</b>.</span>
+<div class="mic"><button type="button" aria-label="Say it"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><span>or type it</span></div>
+</div></div>
+<div class="face"><span class="label">Back</span><div class="card">
+<div class="yours"><span class="said">“No puedo, mañana tengo que <span class="m-say">madrugar</span>.”</span><span class="verdict"><span class="face-mark" aria-hidden="true"><i></i><i></i></span>Natural, just how a Spaniard would say it.</span></div>
+<div class="entry">
+<div class="hw-row"><span class="hw m-say" style="font-size: 36px;">ma·dru·gar</span><span class="meta"><span class="pos">verb</span></span></div>
+<div class="sense"><span class="n">1</span><span class="def">to get up early</span></div>
+<div class="cite"><p class="cite-line">Mañana tengo que <b>madrugar</b>.</p><p class="cite-src"><button class="replay" type="button" aria-label="Replay the moment in Un día en Madrid"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><span>Last heard in <b>Un día en Madrid</b> at 1:25</span><span class="times">Heard 4 times</span></p></div>
+</div>
+<div class="answers"><button class="a-soft" type="button">Forgot</button><button class="a-ink" type="button">Got it</button></div>
+</div></div>
+</div>
+</article>
+</section>
+
+<!-- You can use it -->
+<section aria-labelledby="use-title">
+<div class="section-head"><i style="background: var(--use);"></i><h2 id="use-title">You can use it: still yours?</h2><p>A two-second check every month or two.</p></div>
+
+<article class="row">
+<div class="note"><h3>Keep-fresh card</h3><span class="when">Every word you use</span><p>The lightest card: the word and a glance at its entry. Forgetting brings it back sooner but never takes it down the ladder.</p></div>
+<div class="faces">
+<div class="face"><span class="label">Front</span><div class="card" style="min-height: 300px;">
+<span class="step"><i style="background: var(--use);"></i>You can use it</span>
+<span class="prompt-word m-use" style="margin-top: 36px;">vale</span>
+<span class="hint">Still know it?</span>
+<button class="reveal" type="button">Show the answer</button>
+</div></div>
+<div class="face"><span class="label">Back</span><div class="card" style="min-height: 300px;">
+<div class="entry">
+<div class="hw-row"><span class="hw m-use" style="font-size: 38px;">va·le</span><span class="meta"><span class="pos">interjection</span></span></div>
+<div class="sense"><span class="n">1</span><span class="def">okay, sounds good</span></div>
+<div class="cite"><p class="cite-line"><b>Vale</b>, nos vemos luego.</p><p class="cite-src"><button class="replay" type="button" aria-label="Replay the moment in Spanish on the street"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><span>Last heard in <b>Spanish on the street</b> at 2:02</span><span class="times">Heard 9 times</span></p></div>
+</div>
+<div class="answers"><button class="a-soft" type="button">Forgot</button><button class="a-ink" type="button">Got it</button></div>
+</div></div>
+</div>
+</article>
+</section>
+
+</main>

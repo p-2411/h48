@@ -1,0 +1,1009 @@
+<title>Duet flashcards</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&display=swap">
+<style>
+/* Layout: Duet's main window (bar on top, one tile), with Your words open full. Two views in the
+   tile: Review (today, the ladder, collections, and the review itself) and Words (Anki's browser,
+   as a word list beside the word's dictionary entry). */
+:root {
+  --ground: #f2f3f3; --card: #ffffff; --ink: #1b201f; --ink2: #3a403e; --sub: #62686a; --faint: #858b89;
+  --line: rgba(27,32,31,0.08); --line2: rgba(27,32,31,0.15); --soft: #f4f4f2; --soft2: #f6f6f4; --seg: #eceded; --on-ink: #ffffff;
+  --face: #f7f8f7; --eye: #18211f; --accent: #e0583a; --flame-bg: rgba(240,110,50,0.09);
+  --k-new: #6b4fc8; --k-heard: #8a6a00; --k-known: #b35c00; --k-say: #1f63b8; --k-use: #1b7a3a; --k-ignored: #7a6c5e;
+  --d-new: #9478e4; --d-heard: #e8b923; --d-known: #f2952e; --d-say: #4d93e6; --d-use: #3fb579; --d-ignored: #a8998a;
+  --mark-heard: rgba(255,205,40,0.55); --mark-known: rgba(255,160,40,0.42); --mark-say: rgba(77,163,255,0.30); --mark-use: rgba(63,181,121,0.30);
+  --shadow: 0 1px 2px rgba(27,32,31,0.04), 0 22px 44px -32px rgba(27,32,31,0.30);
+  --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --sans: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --move: cubic-bezier(0.05, 0.9, 0.1, 1.05); --settle: cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --ground: #121313; --card: #1b1d1d; --ink: #eef3f1; --ink2: #c9d0ce; --sub: #9aa3a0; --faint: #7a827f;
+  --line: rgba(238,243,241,0.08); --line2: rgba(238,243,241,0.16); --soft: rgba(238,243,241,0.06); --soft2: rgba(238,243,241,0.04); --seg: rgba(238,243,241,0.07); --on-ink: #121313;
+  --face: #0e0f0f; --eye: #eef5f3; --accent: #f08a68; --flame-bg: rgba(255,140,70,0.12);
+  --k-new: #b9a6f7; --k-heard: #ffd60a; --k-known: #ff9f0a; --k-say: #4da3ff; --k-use: #32d74b; --k-ignored: #a8998a;
+  --mark-heard: rgba(255,214,10,0.28); --mark-known: rgba(255,159,10,0.26); --mark-say: rgba(77,163,255,0.26); --mark-use: rgba(50,215,75,0.22);
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 22px 44px -28px rgba(0,0,0,0.6); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --ground: #121313; --card: #1b1d1d; --ink: #eef3f1; --ink2: #c9d0ce; --sub: #9aa3a0; --faint: #7a827f;
+  --line: rgba(238,243,241,0.08); --line2: rgba(238,243,241,0.16); --soft: rgba(238,243,241,0.06); --soft2: rgba(238,243,241,0.04); --seg: rgba(238,243,241,0.07); --on-ink: #121313;
+  --face: #0e0f0f; --eye: #eef5f3; --accent: #f08a68; --flame-bg: rgba(255,140,70,0.12);
+  --k-new: #b9a6f7; --k-heard: #ffd60a; --k-known: #ff9f0a; --k-say: #4da3ff; --k-use: #32d74b; --k-ignored: #a8998a;
+  --mark-heard: rgba(255,214,10,0.28); --mark-known: rgba(255,159,10,0.26); --mark-say: rgba(77,163,255,0.26); --mark-use: rgba(50,215,75,0.22);
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 22px 44px -28px rgba(0,0,0,0.6); color-scheme: dark }
+
+body { background: var(--ground); color: var(--ink); font: 14px/1.5 var(--sans); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.page { max-width: 1120px; margin: 0 auto; padding-block: 32px 64px; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--d-say); outline-offset: 2px; }
+p, h1, h2, h3, ul, ol { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+
+/* The window. */
+.window { height: 720px; display: flex; flex-direction: column; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px var(--line2), 0 30px 60px -30px rgba(0,0,0,0.25); background: var(--ground); }
+.bar { height: 48px; flex-shrink: 0; position: relative; display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 14px; }
+.places { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--seg); }
+.places button { width: 36px; height: 28px; border-radius: 999px; display: grid; place-items: center; color: var(--sub); }
+.places button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 2px rgba(27,32,31,0.1); }
+.places .rule { width: 1px; height: 18px; margin: 0 3px; align-self: center; background: var(--line2); }
+.duet-face { position: absolute; left: 50%; top: 6px; margin-left: -18px; width: 36px; height: 36px; border-radius: 11px; background: var(--face); box-shadow: inset 0 0 0 1px var(--line2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+.duet-face .eyes { display: flex; gap: 3px; margin-top: 2px; }
+.duet-face .eyes i { width: 13px; height: 10px; border-radius: 5px; background: var(--eye); display: grid; place-items: center; }
+.duet-face .eyes i::after { content: ''; width: 5px; height: 2.5px; border-radius: 2px; background: var(--face); }
+.duet-face .smile { width: 6px; height: 2.5px; border-radius: 0 0 4px 4px; background: var(--eye); opacity: 0.75; }
+.right { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--sub); }
+.right .lang { height: 28px; padding: 0 8px; display: flex; align-items: center; gap: 4px; }
+.right .rule { width: 1px; height: 16px; margin: 0 4px; background: var(--line2); }
+.streak { display: flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px 0 7px; border-radius: 999px; background: var(--flame-bg); }
+.streak b { color: var(--ink); font-weight: 600; }
+.icon-btn { width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; color: var(--sub); }
+.work { flex-grow: 1; min-height: 0; padding: 0 8px 8px; }
+.tile { height: 100%; box-sizing: border-box; background: var(--card); border: 1px solid var(--line2); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; }
+.tile-head { flex-shrink: 0; height: 46px; display: flex; align-items: center; gap: 14px; padding: 0 12px 0 18px; }
+.tile-title { position: relative; font-size: 13px; font-weight: 600; padding-bottom: 4px; }
+.tile-title svg { position: absolute; left: -1px; bottom: -2px; width: calc(100% + 3px); height: 6px; }
+.seg { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--seg); }
+.seg button { font-size: 12px; padding: 5px 14px; border-radius: 999px; color: var(--sub); transition: background 0.2s ease, color 0.2s ease; }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 2px rgba(27,32,31,0.1); }
+.tile-head .spacer { flex-grow: 1; }
+.quiet { font-size: 13px; color: var(--sub); padding: 6px 8px; border-radius: 8px; }
+.quiet:hover { color: var(--ink); }
+.view { flex-grow: 1; min-height: 0; display: flex; flex-direction: column; animation: view-in 0.3s var(--settle); }
+@keyframes view-in { from { opacity: 0.4; transform: translateY(4px); } }
+
+/* Review: today. */
+.today { flex-grow: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 340px; }
+.today-main { padding: 40px 48px 32px; display: flex; flex-direction: column; gap: 36px; min-width: 0; }
+.big-count { display: flex; align-items: baseline; gap: 12px; }
+.big-count b { font: 500 80px/0.9 var(--serif); letter-spacing: -0.02em; }
+.big-count span { font: 400 34px/1 var(--serif); }
+.today-sub { font-size: 14px; color: var(--sub); }
+.start { align-self: flex-start; height: 44px; padding: 0 28px; border-radius: 999px; background: var(--ink); color: var(--on-ink); font-size: 14px; font-weight: 600; transition: transform 0.18s var(--settle); }
+.start:active { transform: scale(0.97); }
+.ladder { margin-top: auto; display: flex; flex-direction: column; gap: 14px; }
+.ladder-head { display: flex; justify-content: space-between; align-items: baseline; }
+.ladder-head span:first-child { font-size: 13px; font-weight: 600; }
+.ladder-head span:last-child { font-size: 12px; color: var(--sub); }
+.ladder-bar { display: flex; gap: 3px; height: 8px; }
+.ladder-bar span { border-radius: 4px; flex-basis: 0; }
+.ladder-counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.ladder-counts button { text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; margin: -6px -8px; border-radius: 10px; }
+.ladder-counts button:hover { background: var(--soft2); }
+.ladder-counts b { font: 400 30px/1 var(--serif); }
+.ladder-counts span { font-size: 12px; color: var(--sub); }
+.collections { border-left: 1px solid var(--line); background: var(--soft2); padding: 30px 24px 22px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.collections h2 { font-size: 13px; font-weight: 600; }
+.collections li button { width: 100%; text-align: left; display: flex; align-items: center; gap: 10px; padding: 13px 6px; border-top: 1px solid var(--line); border-radius: 0; }
+.collections li:first-child button { border-top: 0; }
+.collections li button:hover { background: var(--soft); }
+.col-name { display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0; }
+.col-name b { font-size: 14px; font-weight: 500; }
+.col-name span { font-size: 12px; color: var(--sub); }
+.col-due { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.col-due.none { font-weight: 400; color: var(--faint); }
+.col-foot { margin-top: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+
+.mix { display: flex; gap: 14px; font-size: 14px; color: var(--sub); }
+.mix b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.flash { align-self: flex-start; font-size: 13px; color: var(--ink2); padding: 7px 12px; border-radius: 999px; background: var(--soft); animation: view-in 0.4s var(--settle); }
+.flash b { font-weight: 600; color: var(--ink); }
+/* The ladder as steps: four blocks rising left to right, each its colour and count. */
+.stairs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; align-items: end; height: 170px; }
+.stairs button { display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; padding: 10px 12px; text-align: left; border-radius: 12px 12px 6px 6px; background: color-mix(in srgb, var(--dot) 14%, var(--card)); box-shadow: inset 0 3px 0 var(--dot); transition: transform 0.25s var(--settle), background 0.2s ease; }
+.stairs button:hover { transform: translateY(-3px); background: color-mix(in srgb, var(--dot) 22%, var(--card)); }
+.stairs b { font: 400 30px/1 var(--serif); }
+.stairs span { font-size: 12px; color: var(--ink2); }
+.next-line { font-size: 13px; color: var(--sub); max-width: 560px; margin-top: -4px; }
+.actions button[aria-pressed="true"] { background: color-mix(in srgb, var(--d-say) 16%, var(--card)); box-shadow: inset 0 0 0 1px var(--d-say); }
+/* Making a card: type the word, Duet fills the rest, the back shows as you go. */
+.make { flex-grow: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 36px; padding: 30px 40px; }
+.make-form { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.make-form h2 { font: 400 30px/1.15 var(--serif); }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > span { font-size: 12px; color: var(--sub); }
+.field input, .field select { font: inherit; font-size: 14px; color: var(--ink); background: var(--soft2); border: 1px solid var(--line2); border-radius: 10px; height: 40px; padding: 0 12px; outline: none; }
+.field input:focus, .field select:focus { border-color: var(--ink2); background: var(--card); }
+.field.big input { height: 52px; font: 500 24px var(--serif); }
+.field small { font-size: 12px; color: var(--faint); }
+.filled { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ink2); padding: 9px 12px; border-radius: 10px; background: var(--soft); }
+.make-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.make-actions button { height: 40px; padding: 0 18px; border-radius: 999px; font-size: 13px; }
+.make-actions .primary { background: var(--ink); color: var(--on-ink); font-weight: 600; }
+.make-actions .soft { background: var(--soft); }
+.make-preview { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.make-preview > span { font-size: 12px; color: var(--faint); padding-left: 4px; }
+.make-preview .card { animation: none; }
+.make-preview p { font-size: 13px; color: var(--sub); padding-left: 4px; }
+/* Review: today, compact. One line to start, what's up today, the ladder as one bar. */
+.today { display: flex; flex-direction: column; gap: 26px; padding: 32px 40px 24px; max-width: 760px; overflow: auto; }
+.today-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.today-row .count { display: flex; flex-direction: column; gap: 4px; flex-grow: 1; }
+.today-row .count > b { font: 500 32px/1.1 var(--serif); letter-spacing: -0.01em; }
+.today-row .start { align-self: center; }
+.up-today { display: flex; flex-direction: column; gap: 8px; }
+.up-today > span, .ladder > .ladder-head span:first-child { font-size: 12px; font-weight: 600; color: var(--ink2); }
+.up-words { display: flex; flex-wrap: wrap; gap: 6px; }
+.up-words span { font-size: 13px; font-weight: 500; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--dot) 13%, var(--card)); color: var(--ink); }
+.up-words .more { background: none; color: var(--sub); font-weight: 400; }
+.today .ladder { margin-top: 0; gap: 10px; }
+.today .ladder-counts b { font: 600 15px/1.2 var(--sans); }
+.today-foot { margin-top: auto; }
+.cols { flex-grow: 1; min-height: 0; overflow: auto; padding: 28px 40px 30px; display: flex; flex-direction: column; gap: 30px; }
+.cols section { display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+.cols-head { display: flex; flex-direction: column; gap: 3px; }
+.cols-head h2 { font: 400 26px/1.15 var(--serif); }
+.cols-head span { font-size: 13px; color: var(--sub); }
+.col-row { display: grid; grid-template-columns: minmax(0, 1fr) 110px 90px auto; gap: 14px; align-items: center; padding: 13px 4px; border-top: 1px solid var(--line); }
+.col-row:first-child { border-top: 0; }
+.col-count { font-size: 13px; color: var(--sub); font-variant-numeric: tabular-nums; }
+.col-go { height: 32px; padding: 0 16px; border-radius: 999px; font-size: 13px; background: var(--soft); }
+.col-go:disabled { opacity: 0.4; cursor: default; }
+.cols-foot { display: flex; gap: 8px; }
+.soft-pill { height: 36px; padding: 0 16px; border-radius: 999px; font-size: 13px; background: var(--soft); }
+.no-video { display: flex; gap: 10px; align-items: flex-start; max-width: 560px; font-size: 13px; color: var(--ink2); padding: 10px 12px; border-radius: 12px; background: var(--soft); }
+.no-video b { font-weight: 600; }
+/* Review: the session. */
+.progress { flex-shrink: 0; height: 2px; background: var(--line); }
+.progress i { display: block; height: 100%; background: var(--ink); transition: width 0.5s var(--settle); }
+.session { flex-grow: 1; min-height: 0; overflow: auto; display: flex; align-items: flex-start; justify-content: center; padding: 28px 24px; }
+.session-foot { flex-shrink: 0; height: 44px; display: flex; align-items: center; padding: 0 12px; }
+.session-foot .grow { flex-grow: 1; }
+.climbed { font-size: 12px; color: var(--sub); animation: view-in 0.4s var(--settle); }
+.climbed b { color: var(--ink); font-weight: 600; padding: 0 3px; }
+
+/* The card, as locked (docs/design/cards). */
+.card { width: 100%; max-width: 540px; box-sizing: border-box; background: var(--card); border: 1px solid var(--line2); border-radius: 18px; padding: 22px 24px 18px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); animation: card-in 0.34s var(--settle); }
+@keyframes card-in { from { opacity: 0.3; transform: translateX(14px); } }
+/* Two different moves. Revealing: the same card opens up (it grows to the back's height in JS, the
+   word glides into the headword, the entry rises in line by line). Next card: the answered card is
+   put away (up for Got it, down for Forgot) and the next is dealt from the stack behind. Undo: the
+   last card comes back from the left. */
+.session .card { animation: none; position: relative; }
+.stage { width: 100%; max-width: 540px; display: flex; flex-direction: column; gap: 10px; }
+.deck { position: relative; isolation: isolate; }
+.deck.more::before, .deck.more::after { content: ''; position: absolute; z-index: -1; height: 40px; bottom: -6px; left: 12px; right: 12px; border-radius: 0 0 16px 16px; background: var(--card); border: 1px solid var(--line2); border-top: 0; }
+.deck.more::after { bottom: -11px; left: 24px; right: 24px; opacity: 0.55; }
+.card.deal { animation: deal-in 0.34s var(--settle); }
+@keyframes deal-in { from { opacity: 0; transform: translateY(10px) scale(0.975); } }
+.card.back-in { animation: back-in 0.32s var(--settle); }
+@keyframes back-in { from { opacity: 0; transform: translateX(-30px) rotate(-1deg); } }
+.card.leave-got, .card.leave-forgot { transition: transform 0.18s cubic-bezier(0.4, 0, 1, 1), opacity 0.18s ease-in; opacity: 0; }
+.card.leave-got { transform: translate(-34px, -12px) rotate(-1.5deg); }
+.card.leave-forgot { transform: translate(-34px, 12px) rotate(1deg); }
+.card.revealed .entry > *:not(.hw), .card.revealed .answers, .card.revealed .yours { animation: rise 0.34s var(--settle) both; }
+.card.revealed .yours { animation-delay: 0.04s; }
+.card.revealed .entry > :nth-child(2) { animation-delay: 0.08s; }
+.card.revealed .entry > :nth-child(3) { animation-delay: 0.13s; }
+.card.revealed .entry > :nth-child(4) { animation-delay: 0.18s; }
+.card.revealed .entry > :nth-child(5) { animation-delay: 0.22s; }
+.card.revealed .answers { animation-delay: 0.26s; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+/* The first time a kind of card shows up: one line on what it asks. */
+.first-note { display: flex; align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 12px; background: var(--soft); font-size: 13px; color: var(--ink2); animation: rise 0.34s var(--settle) both; }
+.first-note .tag { font-size: 11px; font-weight: 600; color: var(--sub); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+.first-note b { color: var(--ink); font-weight: 600; }
+.first-note span.txt { flex-grow: 1; }
+.first-note button { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line2); white-space: nowrap; }
+.step { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--sub); }
+.step i { width: 7px; height: 7px; border-radius: 4px; display: block; }
+.step .src { margin-left: auto; color: var(--faint); }
+.clip { position: relative; height: 104px; border-radius: 12px; overflow: hidden; background: radial-gradient(60% 70% at 30% 30%, rgba(214,160,92,0.34), transparent 70%), radial-gradient(50% 60% at 80% 40%, rgba(120,150,140,0.28), transparent 70%), linear-gradient(180deg, #2c2925, #1b1a18); }
+.clip .sub-line { position: absolute; left: 12px; right: 12px; bottom: 11px; display: flex; justify-content: center; }
+.clip .sub-line span { font-size: 13px; color: #f4f4f2; background: rgba(0,0,0,0.5); padding: 3px 9px; border-radius: 6px; }
+.clip .sub-line b { color: #ffd60a; font-weight: 600; }
+.clip .play { position: absolute; right: 10px; top: 9px; width: 28px; height: 28px; border-radius: 14px; display: grid; place-items: center; background: rgba(17,20,19,0.6); color: #f4f4f2; }
+.prompt-word { font: 500 50px/1 var(--serif); letter-spacing: -0.01em; align-self: flex-start; }
+.prompt-line { font: 400 26px/1.3 var(--serif); }
+.hint { font-size: 14px; color: var(--sub); }
+.hint b { color: var(--ink); font-weight: 600; }
+.gap { display: inline-block; min-width: 100px; height: 0.9em; vertical-align: -0.12em; border-bottom: 2px solid var(--line2); }
+.m-heard { background: linear-gradient(transparent 58%, var(--mark-heard) 58%, var(--mark-heard) 92%, transparent 92%); padding: 0 3px; }
+.m-known { background: linear-gradient(transparent 58%, var(--mark-known) 58%, var(--mark-known) 92%, transparent 92%); padding: 0 3px; }
+.m-say { background: linear-gradient(transparent 58%, var(--mark-say) 58%, var(--mark-say) 92%, transparent 92%); padding: 0 3px; }
+.m-use { background: linear-gradient(transparent 58%, var(--mark-use) 58%, var(--mark-use) 92%, transparent 92%); padding: 0 3px; }
+.reveal { margin-top: 8px; align-self: center; height: 44px; padding: 0 26px; border-radius: 999px; background: var(--ink); color: var(--on-ink); font-size: 14px; font-weight: 600; }
+.mic { margin-top: 8px; align-self: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.mic button { width: 56px; height: 56px; border-radius: 28px; display: grid; place-items: center; background: var(--ink); color: var(--on-ink); }
+.mic span { font-size: 12px; color: var(--sub); }
+.yours { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; background: var(--soft); }
+.yours .said { font: 400 21px/1.3 var(--serif); }
+.yours .verdict { font-size: 13px; color: var(--ink2); }
+.entry { display: flex; flex-direction: column; gap: 12px; }
+.hw { font: 500 44px/1 var(--serif); letter-spacing: -0.01em; align-self: flex-start; }
+.hw .art { font-weight: 400; color: var(--sub); }
+.meta { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--sub); }
+.meta .pos { font-style: italic; }
+.meta .sep { width: 3px; height: 3px; border-radius: 2px; background: var(--faint); }
+.sound, .replay { width: 24px; height: 24px; border-radius: 12px; display: inline-grid; place-items: center; background: var(--soft); color: var(--ink); flex-shrink: 0; }
+.def { font: 400 23px/1.3 var(--serif); }
+.cite { display: flex; flex-direction: column; gap: 8px; }
+.cite-line { font: italic 400 20px/1.4 var(--serif); }
+.cite-line b { font-weight: 600; }
+.cite-src { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--sub); }
+.cite-src b { color: var(--ink); font-weight: 600; }
+.cite-src .times { margin-left: auto; white-space: nowrap; }
+.by-duet { width: 22px; height: 22px; border-radius: 7px; background: var(--soft); box-shadow: inset 0 0 0 1px var(--line2); display: flex; align-items: center; justify-content: center; gap: 2px; flex-shrink: 0; }
+.by-duet i { width: 5px; height: 4px; border-radius: 2px; background: var(--ink); display: block; }
+details.tips { border-top: 1px solid var(--line); padding-top: 10px; }
+details.tips summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--ink2); }
+details.tips summary::-webkit-details-marker { display: none; }
+details.tips .chev { transition: transform 0.25s var(--settle); }
+details.tips[open] .chev { transform: rotate(180deg); }
+.tip { display: grid; grid-template-columns: 92px 1fr; gap: 10px; padding: 7px 0; font-size: 13px; color: var(--ink2); border-top: 1px solid var(--line); }
+.tip:first-child { border-top: 0; margin-top: 8px; }
+.tip .k { font-size: 12px; color: var(--faint); }
+.answers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+.answers button { height: 44px; border-radius: 12px; font-size: 14px; font-weight: 600; transition: transform 0.18s var(--settle); }
+.answers button:active { transform: scale(0.97); }
+.a-soft { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line2); }
+.a-ink { background: var(--ink); color: var(--on-ink); }
+.done { margin: auto; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; animation: view-in 0.4s var(--settle); }
+.done h2 { font: 500 44px/1.05 var(--serif); }
+.done p { color: var(--sub); max-width: 40ch; }
+
+/* Words: the browser. */
+.words { flex-grow: 1; min-height: 0; display: grid; grid-template-columns: 320px minmax(0, 1fr); }
+.list { border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+.list-tools { padding: 12px 12px 8px; display: flex; flex-direction: column; gap: 8px; }
+.search { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 10px; background: var(--soft2); box-shadow: inset 0 0 0 1px var(--line); }
+.search input { flex-grow: 1; min-width: 0; border: 0; outline: none; background: none; font: inherit; font-size: 13px; color: var(--ink); }
+.filters { display: flex; flex-wrap: wrap; gap: 4px; }
+.filters button { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px 4px 8px; border-radius: 999px; color: var(--sub); box-shadow: inset 0 0 0 1px var(--line2); }
+.filters button i { width: 7px; height: 7px; border-radius: 4px; display: block; }
+.filters button[aria-pressed="true"] { color: var(--ink); background: var(--soft); box-shadow: inset 0 0 0 1px var(--ink2); }
+.rows { flex-grow: 1; min-height: 0; overflow: auto; padding: 0 6px 8px; }
+.rows button { width: 100%; text-align: left; display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px; }
+.rows button:hover { background: var(--soft2); }
+.rows button[aria-pressed="true"] { background: var(--soft); }
+.rows .w { font-size: 15px; font-weight: 500; }
+.rows .mean { font-size: 12px; color: var(--sub); }
+.rows .txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex-grow: 1; }
+.rows .tag { font-size: 11px; color: var(--faint); white-space: nowrap; }
+.rows .tag.today { color: var(--ink2); font-weight: 500; }
+.empty-list { padding: 20px 14px; font-size: 13px; color: var(--sub); }
+.detail { min-width: 0; overflow: auto; padding: 28px 36px; display: flex; flex-direction: column; gap: 18px; }
+.detail .entry { max-width: 560px; }
+.step-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.step-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; padding: 4px 11px 4px 9px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line2); }
+.step-chip i { width: 7px; height: 7px; border-radius: 4px; display: block; }
+.ladder-mini { display: flex; gap: 4px; }
+.ladder-mini span { width: 28px; height: 4px; border-radius: 2px; background: var(--line2); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; max-width: 560px; padding-top: 14px; border-top: 1px solid var(--line); }
+.actions button { height: 36px; padding: 0 16px; border-radius: 999px; font-size: 13px; }
+.actions .primary { background: var(--ink); color: var(--on-ink); font-weight: 600; }
+.actions .soft { background: var(--soft); }
+.actions .plain { color: var(--sub); }
+.actions { align-items: center; }
+.next-due { margin-left: auto; font-size: 12px; color: var(--sub); }
+.due-dot { width: 7px; height: 7px; border-radius: 4px; background: var(--ink2); flex-shrink: 0; }
+.more-menu { position: relative; }
+.more-menu summary { list-style: none; cursor: pointer; width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; color: var(--sub); font-size: 18px; line-height: 1; }
+.more-menu summary::-webkit-details-marker { display: none; }
+.more-menu summary:hover, .more-menu[open] summary { background: var(--soft); color: var(--ink); }
+.more-menu [role="menu"] { position: absolute; left: 0; bottom: calc(100% + 6px); min-width: 170px; padding: 5px; border-radius: 12px; background: var(--card); border: 1px solid var(--line2); box-shadow: var(--shadow); display: flex; flex-direction: column; z-index: 5; }
+.more-menu [role="menu"] button { height: 34px; padding: 0 10px; border-radius: 8px; text-align: left; font-size: 13px; }
+.more-menu [role="menu"] button:hover { background: var(--soft); }
+/* The finish: Duet celebrates, paper confetti falls once. */
+.done { position: relative; }
+.done-duet { width: 150px; height: 99px; }
+#confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.session.finished { position: relative; }
+/* Collections: each one a little pile of index cards with a real word on top (more cards, a
+   taller pile); click the pile to review it. Videos: their still with the line, and their words
+   in their own highlighter. No boxes, icons in squares or pill buttons per row. */
+.cols { gap: 38px; }
+.cols section { max-width: 900px; gap: 16px; }
+.cols-head { flex-direction: row; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.cols-head span { flex-grow: 1; }
+.text-link { font-size: 13px; color: var(--ink2); text-decoration: underline; text-decoration-color: var(--line2); text-underline-offset: 3px; }
+.text-link:hover { color: var(--ink); text-decoration-color: currentColor; }
+.stacks { display: flex; gap: 34px; flex-wrap: wrap; padding: 10px 4px 0; }
+.stack { width: 196px; display: flex; flex-direction: column; gap: 4px; text-align: left; }
+.stack:disabled { cursor: default; }
+.pile { position: relative; height: 120px; margin-bottom: 14px; }
+.sheet { position: absolute; inset: 0; border-radius: 12px; background: var(--card); border: 1px solid var(--line2); box-shadow: 0 1px 2px rgba(27,32,31,0.05); transition: transform 0.35s var(--settle); }
+.sheet.top { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 0 18px; box-shadow: var(--shadow); }
+.sheet .hw-mini { font: 500 26px/1.1 var(--serif); align-self: flex-start; }
+.sheet .mean { font: 400 14px/1.3 var(--serif); color: var(--sub); }
+.stack:not(:disabled):hover .sheet.top { transform: translateY(-6px) rotate(-1.5deg); }
+.stack:not(:disabled):hover .sheet.s2 { transform: var(--t2) translateY(-2px); }
+.stack-name { font-size: 14px; font-weight: 600; }
+.stack-meta { font-size: 12.5px; color: var(--sub); }
+.stack-meta b { color: var(--ink); font-weight: 600; }
+.stack:disabled .sheet.top { opacity: 0.75; }
+.vids { display: flex; flex-direction: column; }
+.vid { display: grid; grid-template-columns: 168px minmax(0, 1fr) auto; gap: 20px; align-items: center; padding: 16px 0; border-top: 1px solid var(--line); }
+.vid:first-child { border-top: 0; padding-top: 4px; }
+.vid-shot { position: relative; height: 94px; border-radius: 10px; overflow: hidden; }
+.vid-shot .sub-line { position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; justify-content: center; }
+.vid-shot .sub-line span { font-size: 11px; color: #f4f4f2; background: rgba(0,0,0,0.5); padding: 2px 7px; border-radius: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.vid-shot .sub-line b { color: #ffd60a; font-weight: 600; }
+.vid-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.vid-body > b { font: 500 21px/1.2 var(--serif); }
+.vid-meta { font-size: 12px; color: var(--sub); }
+.vid-words { font: 400 16px/1.6 var(--serif); color: var(--ink); }
+.vid-words .and { font: 400 13px var(--sans); color: var(--sub); }
+.go-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink); padding: 8px 4px; white-space: nowrap; }
+.go-link svg { transition: transform 0.25s var(--settle); }
+.go-link:hover svg { transform: translateX(3px); }
+.go-none { font-size: 12.5px; color: var(--faint); }
+@media (max-width: 640px) { .vid { grid-template-columns: 112px minmax(0, 1fr); } .vid > :last-child { grid-column: 2; } .stacks { gap: 22px; } .stack { width: calc(50% - 11px); } }
+/* How cards work: an overlay over the tile, the first time, and again from the ? in the header. */
+.tile { position: relative; }
+.help-btn { font-size: 13px; font-weight: 600; box-shadow: inset 0 0 0 1px var(--line2); margin-left: 4px; }
+.help-btn:hover { color: var(--ink); background: var(--soft); }
+.guide { position: absolute; inset: 0; z-index: 10; display: grid; place-items: center; padding: 20px; background: color-mix(in srgb, var(--ground) 72%, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: fade 0.25s ease; }
+.guide[hidden] { display: none; }
+@keyframes fade { from { opacity: 0; } }
+.guide-panel { width: 100%; max-width: 460px; max-height: 100%; overflow: auto; box-sizing: border-box; background: var(--card); border: 1px solid var(--line2); border-radius: 22px; padding: 16px 24px 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; transition: max-width 0.35s var(--settle); animation: deal-in 0.4s var(--settle); }
+.guide-panel.wide { max-width: 900px; }
+.guide-top { display: flex; align-items: center; }
+.guide-top .grow { flex-grow: 1; }
+.guide-duet { width: 88px; height: 58px; margin-left: -10px; }
+#guide-body { display: flex; flex-direction: column; gap: 12px; }
+#guide-body > * { animation: rise 0.34s var(--settle) both; }
+.g-visual { min-height: 150px; border-radius: 16px; background: var(--soft2); box-shadow: inset 0 0 0 1px var(--line); display: grid; place-items: center; padding: 18px; }
+.guide h2 { font: 500 28px/1.15 var(--serif); letter-spacing: -0.01em; }
+.guide p.g-text { color: var(--ink2); font-size: 14px; }
+.g-foot { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.g-foot .grow { flex-grow: 1; }
+.g-dots { display: flex; gap: 5px; }
+.g-dots i { width: 6px; height: 6px; border-radius: 3px; background: var(--line2); transition: width 0.3s var(--settle), background 0.3s; }
+.g-dots i.on { width: 18px; background: var(--ink); }
+.g-foot .start { height: 40px; padding: 0 22px; }
+/* Step visuals. */
+.g-card { width: 230px; background: var(--card); border: 1px solid var(--line2); border-radius: 14px; padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow); }
+.g-card .w { font: 500 28px/1 var(--serif); align-self: flex-start; }
+.g-card .d { font: 400 15px/1.3 var(--serif); color: var(--ink2); }
+.g-card .answers { gap: 6px; }
+.g-card .answers button { height: 32px; font-size: 12px; border-radius: 9px; pointer-events: none; }
+.g-steps { display: flex; align-items: flex-end; gap: 6px; width: 100%; max-width: 360px; }
+.g-steps span { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; padding: 8px 9px; border-radius: 10px 10px 5px 5px; font-size: 11.5px; line-height: 1.25; color: var(--ink); background: color-mix(in srgb, var(--dot) 15%, var(--card)); box-shadow: inset 0 3px 0 var(--dot); }
+.g-steps span small { font-size: 11px; color: var(--sub); }
+.g-keys { display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--ink2); }
+.g-keys div { display: flex; align-items: center; gap: 10px; }
+.g-keys kbd { min-width: 54px; text-align: center; font-size: 12px; padding: 4px 8px; margin: 0; background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line2), 0 2px 0 var(--line2); }
+/* Every kind of card. */
+.kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+.kind { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 14px; background: var(--soft2); box-shadow: inset 0 0 0 1px var(--line); }
+.kind-face { height: 64px; border-radius: 10px; background: var(--card); border: 1px solid var(--line2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 8px; overflow: hidden; text-align: center; font-size: 12px; color: var(--sub); }
+.kind-face .mw { font: 500 19px/1 var(--serif); color: var(--ink); }
+.kind-face .ml { font: 400 13px/1.3 var(--serif); color: var(--ink); }
+.kind-face .mini-clip { width: 100%; height: 26px; border-radius: 6px; background: radial-gradient(60% 70% at 30% 30%, rgba(214,160,92,0.4), transparent 70%), linear-gradient(180deg, #2c2925, #1b1a18); }
+.kind-face .bars { display: flex; gap: 4px; }
+.kind-face .bars i { height: 6px; border-radius: 3px; background: var(--line2); display: block; }
+.kind-face .gapline { display: inline-block; width: 34px; border-bottom: 2px solid var(--line2); vertical-align: -2px; }
+.kind-face .roundbtn { width: 24px; height: 24px; border-radius: 12px; display: grid; place-items: center; background: var(--ink); color: var(--on-ink); }
+.kind b { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.kind b i { width: 7px; height: 7px; border-radius: 4px; display: block; }
+.kind b small { font-weight: 400; color: var(--sub); font-size: 12px; }
+.kind p { font-size: 12px; color: var(--sub); line-height: 1.45; }
+.session { position: relative; }
+.back-link { position: absolute; top: 12px; left: 14px; z-index: 2; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--sub); padding: 6px 10px 6px 6px; border-radius: 999px; }
+.back-link:hover { color: var(--ink); background: var(--soft); }
+.session:not(.finished) { padding-top: 52px; }
+kbd { font: 500 11px var(--sans); padding: 1px 5px; border-radius: 5px; box-shadow: inset 0 0 0 1px var(--line2); color: var(--sub); margin-right: 4px; }
+
+@media (max-width: 900px) {
+  .today-ladder { border-left: 0; border-top: 1px solid var(--line); padding: 24px 20px; }
+  .col-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .col-count, .col-due { display: none; }
+  .make { grid-template-columns: 1fr; padding: 22px 20px; }
+  .window { height: auto; min-height: 720px; }
+  .today { grid-template-columns: 1fr; }
+  .collections { border-left: 0; border-top: 1px solid var(--line); }
+  .words { grid-template-columns: 1fr; }
+  .list { border-right: 0; border-bottom: 1px solid var(--line); max-height: 300px; }
+  .right .lang, .right .rule, .streak { display: none; }
+}
+@media (max-width: 560px) {
+  .today-main { padding: 28px 20px; }
+  .big-count b { font-size: 64px; }
+  .ladder-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .detail { padding: 22px 18px; }
+  .places button:nth-child(n+3) { display: none; }
+}
+.notes { max-width: 760px; margin: 28px auto 0; display: flex; flex-direction: column; gap: 10px; }
+.notes h2 { font-size: 13px; font-weight: 600; }
+.notes ol { list-style: decimal; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--ink2); }
+.notes b { font-weight: 600; color: var(--ink); }
+.notes code { font-size: 12px; padding: 1px 5px; border-radius: 5px; background: var(--soft); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+</style>
+
+<div class="page">
+<div class="window" role="application" aria-label="Duet, Your words">
+<header class="bar">
+<nav class="places" aria-label="Places">
+<button type="button" aria-label="Home"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7M6 9.5V19a1 1 0 0 0 1 1h3.5v-5h3v5H17a1 1 0 0 0 1-1V9.5"/></svg></button>
+<span class="rule" aria-hidden="true"></span>
+<button type="button" aria-label="Today"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M8 3v4m8-4v4M3.5 10h17"/><path d="m9 15 2 2 4-4"/></svg></button>
+<button type="button" aria-label="Watching"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m10 8 6 4-6 4Z"/></svg></button>
+<button type="button" aria-label="Your words" aria-pressed="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5C6.5 4.5 9.5 4.5 12 6c2.5-1.5 5.5-1.5 8-.5v13c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5Z"/><path d="M12 6v13.5"/></svg></button>
+</nav>
+<span class="duet-face" aria-hidden="true"><span class="eyes"><i></i><i></i></span><span class="smile"></span></span>
+<div class="right">
+<span class="lang">Spanish <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>
+<span class="rule" aria-hidden="true"></span>
+<span class="streak"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path fill="#f0582c" d="M12 2.5c.6 3.1-1.1 4.9-2.7 6.6C7.7 10.8 6 12.6 6 15.3A6 6 0 0 0 12 21.5a6 6 0 0 0 6-6.2c0-2.4-1.1-4.3-2.6-5.7.1 1.6-.5 2.9-1.6 3.4.4-3.9-.6-7.4-1.8-10.5z"/></svg><b>12</b> days</span>
+<button class="icon-btn" type="button" aria-label="Settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+</div>
+</header>
+<main class="work">
+<section class="tile" aria-label="Your words">
+<header class="tile-head">
+<span class="tile-title">Your words<svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#3fb579"/></svg></span>
+<div class="seg" role="group" aria-label="View" id="views"></div>
+<span class="spacer"></span>
+<span id="head-right"></span>
+<button class="icon-btn help-btn" type="button" data-guide="open" aria-label="How cards work" title="How cards work">?</button>
+</header>
+<div class="view" id="view"></div>
+<div class="guide" id="guide" hidden>
+<div class="guide-panel" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+<div class="guide-top"><svg id="guide-duet" class="duet-alive guide-duet" viewBox="0 17 100 66" aria-label="Duet"></svg><span class="grow"></span><button class="quiet" type="button" data-guide="close">Skip</button></div>
+<div id="guide-body"></div>
+</div>
+</div>
+</section>
+</main>
+</div>
+<section class="notes" aria-labelledby="notes-title">
+<h2 id="notes-title">Notes for building</h2>
+<ol>
+<li><b>Cards without a video fill themselves in.</b> A card made by hand or imported has no moment, so its back shows Duet’s example and its front is a word card. The first time the word is heard in a video, Duet attaches that moment (video, time, the line) to the card once, and the card can then show the sentence front and a replay.</li>
+<li><b>“Last heard” is never stored on the card.</b> The card reads it, and the times heard, from the word’s encounter record each time it’s shown, so it stays current without rewriting cards while you watch.</li>
+<li><b>It costs nothing during playback.</b> Duet already matches every subtitle word to its dictionary form and counts it. Finding the word’s card is a lookup by its key (cards already have one, <code>wordKey</code>), done in the background after the line is processed, never on the video’s path.</li>
+<li><b>Collections only appear when there’s more than one.</b> With every card from videos, the Collections view shows By video only.</li>
+</ol>
+</section>
+</div>
+
+<!--DUET--><style>.duet-alive{--bg: #080d0d;--eye: #edf6f4;--mouth: #c6ddd9;--blush: #ff8fa3;--g-body: .84;--g-glow: .24;--g-grainc: #0b1716;--g-grain: .2;--g-cloud: .13;--gc: color-mix(in oklab, var(--eye), var(--tc, #fff) var(--ta, 0%));display:block;flex:none;overflow:visible;user-select:none;-webkit-user-select:none}.duet-alive[data-theme=light]{--bg: #f6f7f6;--eye: #17211f;--mouth: #3a4644;--blush: #f07a90;--g-body: .86;--g-glow: .1;--g-grainc: #ffffff;--g-grain: .16;--g-cloud: .11}.duet-alive .sock,.duet-alive .hand{fill:var(--gc)}.duet-alive[data-finish=glass] .sock,.duet-alive[data-finish=glass] .hand{fill-opacity:var(--g-body)}.duet-alive .hand{stroke:var(--bg);stroke-width:1.4}.duet-alive .pupil{fill:var(--bg)}.duet-alive .mouth{fill:var(--mouth);stroke:var(--mouth);stroke-width:1.3;stroke-linejoin:round}.duet-alive .blush{fill:var(--blush)}.duet-alive .blush-lines{fill:none;stroke:var(--mouth);stroke-width:1.1;stroke-linecap:round}.duet-alive .brow{fill:none;stroke:var(--gc);stroke-width:2.6;stroke-linecap:round;stroke-dasharray:1 1}.duet-alive .z{fill:none;stroke:var(--mouth);stroke-width:.9;stroke-linecap:round;stroke-linejoin:round}.duet-alive .g-grain{opacity:var(--g-grain);pointer-events:none}.duet-alive .g-cloud{opacity:var(--g-cloud);pointer-events:none}.duet-alive[data-finish=flat] .g-grain,.duet-alive[data-finish=flat] .g-cloud{display:none}.duet-alive .g-flood{flood-color:var(--g-grainc)}.duet-alive .g-glow-flood{flood-color:var(--gc);flood-opacity:calc(var(--g-glow) + var(--g-boost, 0))}
+</style><script>(()=>{var s=(a,k)=>a+Math.random()*(k-a),Et=(a,k)=>Math.floor(s(a,k+1)),Ke=a=>a[Math.floor(Math.random()*a.length)],x=(a,k=0,M=1)=>Math.min(M,Math.max(k,a)),St=(a,k,M)=>a+(k-a)*M,S=a=>a*a*(3-2*a),w=a=>Math.sin(Math.PI*x(a)),o=a=>a.toFixed(2),Dt=(a,k=0)=>Math.sin(a*.71+k)*.5+Math.sin(a*1.37+k*2.1)*.3+Math.sin(a*2.13+k*.7)*.2,$e={open:1,lid:0,tilt:0,happy:0,shut:0,eyeW:1,eyeH:1,eyeN:3.4,eyeRot:0,eyeDy:0,pupil:1,pupW:1,pupH:1,lean:1,rot:0,smile:.8,mouthW:1,round:0,mouthX:0,mouthBase:0,mouthTilt:0,blush:0,brow:0},Ze=["lid","tilt","happy","shut","eyeW","eyeH","eyeN","eyeRot","eyeDy","pupil","pupW","pupH"],Ht=["open","lean","rot","smile","mouthW","round","mouthX","mouthTilt","blush","brow"],mn={lid:[160,18],tilt:[140,18],happy:[150,16],shut:[70,14],eyeW:[260,14],eyeH:[260,14],eyeN:[200,20],eyeRot:[180,15],eyeDy:[180,16],pupil:[220,16],pupW:[260,17],pupH:[260,17]},Tt={hidden:{},gasp:{L:[32,73,-24,8,13.5],R:[61.5,72.5,24,8,13.5]},cover:{L:[41.6,71.6,-16,7.5,12],R:[52,71.4,16,7.5,12]},cheer:{L:[7,24,-30,7.5,12.5],R:[93,24,30,7.5,12.5]},chin:{R:[56,77.5,-34,7.5,12]},cheeks:{L:[9,68,-16,7.5,11],R:[91,68,16,7.5,11]},shrug:{L:[6,75,-60,7.5,11],R:[94,75,60,7.5,11]},fist:{R:[92,66,0,9,9]},belly:{L:[33,81,-72,7.5,11.5],R:[61,81,72,7.5,11.5]},wave:{R:[96,38,18,7.5,12.5]}},Bt={L:[4,90],R:[96,90]},$={mint:"#8fdcb0",gold:"#f4c76a",sun:"#f7d774",amber:"#f2c98a",orange:"#f6a76b",flame:"#f28a5b",coral:"#f4a08f",pink:"#f5a6c0",rose:"#f28cb1",lavender:"#b9a8e3",violet:"#c5b3f0",teal:"#6cc9dc",blue:"#7fa6e6",dusk:"#9fb0d6",spark:"#fff2b8"},D=[.15,1.4],he=[.55,2.6],pn={correct:[$.mint,1,D],amazed:[$.gold,1.15,D],proud:[$.gold,.75,D],encourage:[$.orange,.8,D],almost:[$.amber,.55,D],oops:[$.coral,.7,D],surprised:[$.spark,.85,D],confused:[$.lavender,.7,D],curious:[$.teal,.6,D],laughing:[$.sun,.85,D],shy:[$.pink,.7,he],adoring:[$.rose,.9,he],sleepy:[$.dusk,.5,he],sad:[$.blue,.75,he],determined:[$.flame,.85,D],thinking:[$.violet,.35,he]},_e=[{o:1,w:1.05,r:0},{o:1,w:1.05,r:0},{o:.6,w:1.16,r:0},{o:.6,w:1.16,r:0},{o:.42,w:1.18,r:0},{o:.8,w:.78,r:.65},{o:.5,w:.68,r:.85}],Nt=["ox","oy","rot","sx","sy","open","happy","happyL","happyR","pupil","smile","mouthOpen","round","mouthX","mouthTilt","closeL","closeR","blush","brow","pitch","yaw","gx","gy","mouthW","hXL","hYL","hRL","hXR","hYR","hRR"],ce={L:{cx:30.56,cy:45.5},R:{cx:69.64,cy:45.57},w:35.2,h:28.8},Pe={x:50,y:74},g={x:-.3,y:.5},je=56,fn=Array.from({length:je},(a,k)=>{let M=k/je*Math.PI*2;return{c:Math.cos(M),s:Math.sin(M),kL:1+.018*Math.sin(2*M+1.3)+.011*Math.sin(3*M+1.3*2.3),kR:1+.018*Math.sin(2*M+4.1)+.011*Math.sin(3*M+4.1*2.3)}});function yn(a,k,M,m,q,u){let H=2/q,i="";for(let I=0;I<je;I++){let c=fn[I],G=u==="L"?c.kL:c.kR;i+=(I?"L":"M")+o(a+G*M*Math.sign(c.c)*Math.abs(c.c)**H)+" "+o(k+G*m*Math.sign(c.s)*Math.abs(c.s)**H)}return i+"Z"}function gn(a,k,M,m,q,u){let H=k-m*1.1,i=H+m*.12-u*2.6-q*.5,I=H+.5+m*3.3+q*6.2+u*2.6,c=(i-.25*H)/.75,G=(I-.25*H)/.75,r=M*(.55+.45*u);return`M${o(a-M)} ${o(H)}C${o(a-r)} ${o(c)} ${o(a+r)} ${o(c)} ${o(a+M)} ${o(H)}C${o(a+r)} ${o(G)} ${o(a-r)} ${o(G)} ${o(a-M)} ${o(H)}Z`}function bn(a){let k=u=>`
+    <g class="eye-wrap" data-k="wrap${u}"><g data-k="eye${u}" mask="url(#${a}mask${u})">
+      <path data-k="sock${u}" class="sock"/>
+      <g clip-path="url(#${a}clip${u})">
+        <path data-k="cloud${u}" class="g-cloud" fill="url(#${a}cloud)"/>
+        <path data-k="grain${u}" class="g-grain" fill="url(#${a}grain)"/>
+        <rect data-k="pup${u}" class="pupil"/>
+      </g>
+    </g></g>`,M=u=>`
+    <mask id="${a}mask${u}" maskUnits="userSpaceOnUse" x="-60" y="-60" width="220" height="220">
+      <rect x="-60" y="-60" width="220" height="220" fill="#fff"/>
+      <polygon data-k="lid${u}" fill="#000"/><ellipse data-k="cheek${u}" fill="#000"/>
+    </mask>`,m="M-3.4 1.4L-2 -1.4M-0.7 1.4L0.7 -1.4M2 1.4L3.4 -1.4",q="M-1.6 -1.6H1.6L-1.6 1.6H1.6";return`
+  <defs>
+    <clipPath id="${a}clipL"><path data-k="clipL"/></clipPath>
+    <clipPath id="${a}clipR"><path data-k="clipR"/></clipPath>
+    ${M("L")}${M("R")}
+    <filter id="${a}soft" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.6"/></filter>
+    <filter id="${a}grainF" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="3" numOctaves="2" seed="4" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.1 0 0 0 -0.3" result="a"/>
+      <feFlood class="g-flood"/><feComposite in2="a" operator="in"/>
+    </filter>
+    <filter id="${a}cloudF" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="3" seed="11" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  2 0 0 0 -0.7" result="a"/>
+      <feFlood class="g-flood"/><feComposite in2="a" operator="in"/>
+    </filter>
+    <filter id="${a}glow" x="-30%" y="-40%" width="160%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="b"/>
+      <feFlood class="g-glow-flood"/><feComposite in2="b" operator="in" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="${a}grain" patternUnits="userSpaceOnUse" width="24" height="24"><rect width="24" height="24" filter="url(#${a}grainF)"/></pattern>
+    <pattern id="${a}cloud" patternUnits="userSpaceOnUse" width="80" height="80"><rect width="80" height="80" filter="url(#${a}cloudF)"/></pattern>
+  </defs>
+  <g data-k="head">
+    <ellipse data-k="blushL" class="blush" filter="url(#${a}soft)" rx="6.5" ry="3"/>
+    <ellipse data-k="blushR" class="blush" filter="url(#${a}soft)" rx="6.5" ry="3"/>
+    <path data-k="linesL" class="blush-lines" d="${m}"/>
+    <path data-k="linesR" class="blush-lines" d="${m}"/>
+    <path data-k="browL" class="brow" pathLength="1"/>
+    <path data-k="browR" class="brow" pathLength="1"/>
+    ${k("L")}${k("R")}
+    <path data-k="mouth" class="mouth"/>
+    <rect data-k="handL" class="hand"/>
+    <rect data-k="handR" class="hand"/>
+    <path data-k="z0" class="z" d="${q}" opacity="0"/>
+    <path data-k="z1" class="z" d="${q}" opacity="0"/>
+    <path data-k="z2" class="z" d="${q}" opacity="0"/>
+  </g>`}var vn=0;function Yt(a,k={},M="idle"){let m={finish:"glass",theme:"dark",brows:"strong",pops:!0,doze:!1,...k},q=`duet${++vn}-`;a.innerHTML=bn(q);let u={};a.querySelectorAll("[data-k]").forEach(e=>u[e.dataset.k]=e);let H=matchMedia("(prefers-reduced-motion: reduce)").matches,i=H?.3:1,I=new WeakMap,c=(e,t,n)=>{let h=I.get(e);h||I.set(e,h={}),h[t]!==n&&(h[t]=n,e.setAttribute(t,n))},G=()=>{a.dataset.theme=m.theme,a.dataset.finish=m.finish;for(let e of["L","R"])m.finish==="glass"?u["wrap"+e].setAttribute("filter",`url(#${q}glow)`):u["wrap"+e].removeAttribute("filter")};G();let r={},Qe=[],b=(e,t,n,h)=>{Qe.push(r[e]={x:t,v:0,t,k:n,c:h})};b("gx",-.3,900,48),b("gy",.5,900,48),b("hx",0,55,11),b("hy",0,55,11),b("rot",0,60,10),b("bob",0,170,12),b("sx",1,300,11),b("sy",1,300,11),b("lean",1,90,14),b("open",1,220,18),b("smile",.8,160,16),b("mouthW",1,400,30),b("round",0,500,36),b("mouthOpen",0,750,42),b("mouthX",0,80,14),b("mouthTilt",0,120,14),b("blush",0,40,12),b("brow",0,150,17),b("zz",0,30,11);for(let e of["L","R"]){for(let t of Ze){let[n,h]=mn[t];b(t+e,$e[t],e==="R"?n*.86:n,h)}b("handX"+e,e==="L"?4:96,120,15),b("handY"+e,90,120,15),b("handR"+e,0,80,11),b("handS"+e,0,260,15),b("handW"+e,7.5,200,16),b("handH"+e,12,200,16)}let l=0,v=M,ue="warm",R={...$e},We="hidden",ze=new Set,C=(e,t)=>{let n=window.setTimeout(()=>{ze.delete(n),t()},e*1e3);ze.add(n)},qt={L:{p:null,via:0},R:{p:null,via:0}},de=null;function At(){for(let e of["L","R"]){let n=(de&&l<de.until?Tt[de.pose][e]:void 0)||Tt[We][e]||null,h=qt[e];if(n!==h.p){let Y=h.p&&n&&Math.hypot(h.p[0]-n[0],h.p[1]-n[1])>14;h.p=n,h.via=Y?l+.16:0}let y=r["handX"+e],p=r["handY"+e];n&&l>=h.via?(y.t=n[0],p.t=n[1],r["handR"+e].t=n[2],r["handW"+e].t=n[3],r["handH"+e].t=n[4],r["handS"+e].t=1):(y.t=Bt[e][0],p.t=Bt[e][1],r["handS"+e].t=n?.7:0,r["handR"+e].t=0)}}let me=[],T=(e,t)=>{me.push({t0:l,dur:e*s(.88,1.12),fn:t,amp:s(.85,1.15)})},P={nod:(e=1)=>T(.6,(t,n)=>{let h=e*i*(t<.35?S(t/.35):1-S((t-.35)/.65));n.pitch+=1.4*h,n.oy+=2.4*h,n.sy-=.04*h,n.gy-=.35*h}),mmhm:()=>T(.95,(e,t)=>{let n=i*Math.max(0,Math.sin(e*Math.PI*2-.3))**1.3*(1-.45*e);t.pitch+=1.2*n,t.oy+=2*n,t.sy-=.035*n,t.gy-=.3*n,t.happy+=.22*w(e),t.smile+=.25*w(e)}),yes:()=>T(1.1,(e,t)=>{let n=i*Math.max(0,Math.sin(e*Math.PI*4-.4))**1.2*(1-.35*e);t.pitch+=1.6*n,t.oy+=3*n,t.sy-=.05*n,t.gy-=.4*n,t.smile+=.25*w(e),t.happy+=.15*w(e)}),no:()=>T(1.25,(e,t)=>{let n=Math.sin(e*Math.PI*5)*(1-e)**.8*i;t.yaw+=1.5*n,t.ox+=2.2*n,t.rot-=1.5*n,t.gx-=.45*n,t.smile-=.35*w(e),t.mouthW-=.12*w(e)}),hop:()=>T(.95,(e,t)=>{if(!H)if(e<.16){let n=S(e/.16);t.sy-=.1*n,t.sx+=.07*n,t.oy+=1.6*n}else if(e<.68){let n=(e-.16)/.52;t.oy+=1.6*(1-S(Math.min(1,n*3)))-7.5*i*Math.sin(Math.PI*n),t.sy+=.07*Math.cos(Math.PI*n),t.sx-=.045*Math.cos(Math.PI*n)}else{let n=(e-.68)/.32;t.sy-=.08*w(n)*(1-n),t.sx+=.06*w(n)*(1-n)}}),surprise:()=>T(.5,(e,t)=>{let n=e<.12?e/.12:1-S((e-.12)/.88);t.open+=.24*n,t.brow+=1.4*n,t.pupil-=.28*n,t.round+=.85*n,t.mouthOpen+=.45*n,t.smile-=.6*n,t.sy+=.07*w(e/.3),t.oy-=1.8*n*i}),flinch:()=>T(.5,(e,t)=>{let n=w(e);t.sy-=.08*n,t.sx+=.05*n,t.oy+=1.4*n*i,t.ox+=Math.sin(e*40)*.5*(1-e)*i}),giggle:()=>T(1.1,(e,t)=>{let n=1-e,h=Math.sin(e*Math.PI*9);t.happy+=.6*w(e*1.6),t.smile+=.35*n,t.oy+=Math.abs(h)*-1.1*n*i,t.rot+=Math.sin(e*Math.PI*6)*2.2*n*i,t.mouthOpen+=.3*Math.abs(h)*n}),hmm:()=>T(1.2,(e,t)=>{t.rot+=3*i*w(e),t.mouthX+=1.2*w(e)}),wave:()=>{de={pose:"wave",until:l+1.7},T(1.8,(e,t)=>{t.hRR+=Math.sin(e*Math.PI*7)*26*(1-e*.5)*i,t.happy+=.2*w(e),t.smile+=.2*w(e),t.rot+=3*w(e)*i})},wink:()=>T(.6,(e,t)=>{let n=e<.22?S(e/.22):e<.6?1:1-S((e-.6)/.4);t.closeR+=n,t.smile+=.35*n,t.mouthTilt-=7*n,t.rot+=4*n*i,t.happyL+=.18*n}),yawn:()=>T(2.3,(e,t)=>{let n=Math.pow(w(e),.8);t.mouthOpen+=1.05*n,t.round+=.55*n,t.closeL+=.8*n,t.closeR+=.8*n,t.oy-=1.4*n*i,t.rot+=4*n*i,t.sy+=.05*n,t.smile-=.5*n}),wake:()=>T(.95,(e,t)=>{if(e<.22){let n=S(e/.22);t.sy-=.05*n,t.sx+=.035*n,t.oy+=1*n}else{let n=(e-.22)/.78,h=w(n)*(1-.3*n);t.sy+=.075*h*i,t.sx-=.045*h*i,t.oy-=2.6*h*i,t.brow+=.9*w(n),t.open+=.1*w(n),t.smile+=.2*w(n)}})},E=null,Je=1.5,U=(e=!1)=>{if(E&&l-E.t0<E.len)return;let t={t0:l,close:e?.14:.07,hold:e?.12:.035,open:e?.26:.12,len:0};t.len=t.close+t.hold+t.open,E=t,Math.random()<.14&&!e&&C(.26,()=>U())},Ft=()=>{if(!E)return 0;let e=l-E.t0;return e<E.close?S(e/E.close):e<E.close+E.hold?1:e<E.len?1-S((e-E.close-E.hold)/E.open):0},f={next:0,seq:[],base:{...g},micro:0,lookAround:8},L={t:-10,x:0,y:0,over:!1,near:!1},W=(e,t=0)=>[g.x+s(-e,e),g.y+t+s(-e,e)],te=1,Oe=0,z={since:0,left:-10,amount:0},Xt=()=>.5+.5*Math.sin(l*2*Math.PI/5.5),_={asleep:{face:{shut:1,eyeRot:-3,eyeDy:1.2,lean:.97,rot:5,smile:.3,mouthW:.6,round:.5,mouthBase:.05},live:e=>{let t=Xt(),n=1-z.amount;e.mouthOpen+=.07*t*n,e.oy+=(t-.5)*1.4*i*n,e.rot+=Math.sin(l*.35)*1.5*i*n},gaze:()=>[g.x+s(-.1,.1),g.y+.3,s(2,4)],noBlink:!0},idle:{face:{}},listening:{face:{open:1.07,happy:.06,pupil:1.08,lean:1.035,smile:.85},gaze:()=>Math.random()<.9?[...W(.06),s(.9,2.2)]:[g.x+s(-.45,.45),g.y+s(-.4,.2),s(.3,.6)],blinks:[2.8,6]},thinking:{face:{lidL:.2,tiltL:-2,lidR:.04,eyeHR:1.06,pupil:.9,smile:.1,mouthW:.62,round:.3},hands:"chin",enter:()=>{te=Math.random()<.5?-1:1,R.mouthX=te*2.2,R.rot=-te*5,C(.25,()=>v==="thinking"&&P.hmm())},gaze:()=>(Math.random()<.18&&(te*=-1),[te*s(.55,.9),s(-.95,-.55),s(.5,1.4)]),blinks:[1.4,3.6],noPointer:!0},speaking:{face:{open:1.03,happy:.12,smile:.85,lean:1.015},gaze:()=>[...W(.08),s(.6,1.4)]},correct:{face:{happy:.66,eyeRot:-5,smile:1.2,mouthW:1.2,mouthBase:.35,lean:1.04,blush:.35},hands:"cheer",enter:()=>P.hop(),live:e=>{let t=Math.sin(l*11);e.hYL+=t*1.4*i,e.hYR-=t*1.4*i,e.hRL+=t*8*i,e.hRR+=t*8*i,e.oy-=Math.abs(Math.sin(l*5.5))*.6*i},gaze:()=>Math.random()<.7?[...W(.05),s(1.2,2.4)]:[g.x+s(-.1,.1),g.y-.25,s(.4,.8)]},amazed:{face:{brow:1,open:1.16,eyeW:.84,eyeH:1.1,eyeN:2.3,pupil:1.05,pupW:.72,pupH:1.08,smile:.3,round:.9,mouthBase:.6,mouthW:.72,lean:1.05,blush:.55},hands:"gasp",enter:()=>{P.surprise(),r.sy.v+=2.5*i},live:e=>{let t=Math.sin(l*38)*.4*i,n=Math.sin(l*33+1)*.4*i;e.hXL+=t,e.hXR-=n,e.hRL+=t*6,e.hRR-=n*6,e.ox+=Math.sin(l*29)*.12*i},gaze:()=>[...W(.03),s(1.5,3)],blinks:[4,7]},proud:{face:{lid:.24,happy:.22,eyeRot:-3,smile:1.1,mouthW:1.12,mouthTilt:-7,mouthX:1,rot:-4,lean:1.02},enter:()=>P.nod(.6),gaze:()=>Math.random()<.65?[...W(.05),s(1.2,2.6)]:[g.x+s(.1,.4),g.y-s(.5,.8),s(.5,1)]},almost:{face:{open:.98,lid:.13,tiltL:-6,tiltR:6,happy:.06,smile:.55,mouthW:.9,rot:5},enter:()=>{f.seq=[[g.x+.05,.85,.5],[g.x,g.y,1.2]],C(.45,()=>v==="almost"&&P.nod(.7))},gaze:()=>[...W(.06),s(1,2)],slowBlinks:!0},oops:{face:{brow:1,eyeH:.42,happy:.62,eyeN:2.4,eyeW:.9,eyeRot:-12,pupil:.8,smile:-.1,mouthW:1.25,mouthTilt:5,rot:-3,lean:.97},hands:"cover",enter:()=>{P.flinch(),U()},gaze:()=>[g.x+s(-.2,.2),.8,s(1,2)]},encourage:{face:{open:1.05,happy:.2,eyeRot:-4,smile:1,mouthW:1.05,mouthBase:.12,lean:1.03},hands:"fist",enter:()=>P.yes(),live:e=>{e.hYR-=Math.pow(Math.abs(Math.sin(l*4.2)),3)*3*i,e.hRR+=Math.sin(l*4.2)*6*i},gaze:()=>[...W(.05),s(1,2)]},surprised:{face:{brow:1,open:1.24,eyeW:.86,eyeH:1.14,eyeN:2.4,pupil:.68,pupW:.8,pupH:1.05,smile:0,round:1,mouthBase:.3,mouthW:.6,lean:.96},enter:()=>{P.surprise(),r.sy.v+=3*i},gaze:()=>[...W(.03),s(1.5,3)],blinks:[4,7]},confused:{face:{brow:1,eyeHL:1.12,eyeWL:.92,eyeHR:.72,lidR:.16,eyeRotR:8,eyeRotL:-5,eyeDyL:-1.5,pupil:.9,smile:-.15,mouthW:.8,mouthTilt:10,mouthX:2,rot:7},hands:"shrug",live:e=>{e.rot+=Math.sin(l*.9)*1.5*i,e.hYL+=Math.sin(l*1.8)*.6,e.hYR+=Math.sin(l*1.8+1)*.6},gaze:()=>[Ke([-1,1])*s(.4,.7),s(-.6,-.1),s(.6,1.3)]},curious:{face:{eyeHL:1.1,eyeWL:1.04,eyeHR:.94,pupil:1.12,pupW:.85,pupH:1.12,lean:1.06,rot:-8,smile:.5,round:.25,mouthW:.7},live:e=>{e.rot+=Math.sin(l*.7)*2*i},gaze:()=>Math.random()<.85?[...W(.06),s(.8,1.8)]:[s(-.8,.8),s(-.3,.6),s(.3,.6)]},laughing:{face:{happy:.8,eyeRot:-9,eyeN:2.8,smile:1.3,mouthW:1.25,mouthBase:.7,blush:.45},hands:"belly",live:e=>{let t=Math.abs(Math.sin(l*9));e.oy-=t*1.2*i,e.mouthOpen+=t*.25,e.rot+=Math.sin(l*4.5)*1.5*i,e.hYL-=t*1.2*i,e.hYR-=t*1.2*i},gaze:()=>[...W(.05),s(1,2)],noPointer:!0},shy:{face:{eyeW:.86,eyeH:.86,eyeN:2.6,pupil:.92,smile:.6,mouthW:.6,blush:1,rot:6,lean:.97},hands:"cheeks",live:e=>{e.rot+=Math.sin(l*1.3)*1*i,e.hYL+=Math.sin(l*3)*.4,e.hYR+=Math.sin(l*3+2)*.4},gaze:()=>Math.random()<.25?[...W(.04),s(.3,.6)]:[s(.4,.8),s(.75,1),s(1,2.2)]},sleepy:{face:{lid:.52,eyeRot:-3,open:.95,pupil:.95,smile:.2,mouthW:.7,lean:.98},enter:()=>C(.9,()=>v==="sleepy"&&P.yawn()),live:e=>{e.oy+=Math.sin(l*.6)*.8*i,e.rot+=Math.sin(l*.4)*2.5*i,l>Oe&&(Oe=l+s(6,10),P.yawn())},gaze:()=>[s(-.4,.3),s(.6,.9),s(2,4)],blinks:[1.5,3],slowBlinks:!0,noPointer:!0},sad:{face:{brow:1,lid:.12,tiltL:-10,tiltR:10,eyeRot:-8,eyeH:.94,pupil:1.18,pupW:.9,pupH:1.15,smile:-.7,mouthW:.8,rot:4,lean:.97},gaze:()=>[s(-.4,.1),s(.8,1),s(1.5,3)],slowBlinks:!0,noPointer:!0},adoring:{face:{happy:.55,eyeN:2.6,eyeRot:-4,smile:1.05,mouthW:.95,blush:1,lean:1.02},hands:"cheeks",live:e=>{e.rot+=Math.sin(l*1.6)*3*i,e.ox+=Math.sin(l*1.6)*.8*i},gaze:()=>[...W(.04),s(1,2)]},determined:{face:{brow:1,lid:.26,tiltL:6,tiltR:-6,eyeRot:7,eyeH:.92,pupil:.88,smile:.3,mouthW:.95,lean:1.04},hands:"fist",enter:()=>P.yes(),gaze:()=>[...W(.03),s(1.2,2.5)]}},It={warm:{},gentle:{lid:.11,tiltL:-5,tiltR:5,eyeRot:-3,happy:.08,smile:.6,rot:4},excited:{open:1.1,happy:.3,eyeN:3,smile:1,pupil:1.05,lean:1.04}},O={t0:-9,c:"#fff",s:0,rise:D[0],fade:D[1],last:""};function et(e,t=1,[n,h]=D){m.pops&&Object.assign(O,{t0:l,c:e,s:Math.min(1.2,t),rise:n,fade:h})}function Ct(){let e=l-O.t0,t=e<O.rise?S(e/O.rise):e<O.rise+O.fade?1-S((e-O.rise)/O.fade):0,n=(t*O.s*(m.theme==="light"?54:68)).toFixed(1),h=O.c+n;h!==O.last&&(O.last=h,a.style.setProperty("--tc",O.c),a.style.setProperty("--ta",n+"%"),a.style.setProperty("--g-boost",(t*O.s*(m.theme==="light"?.14:.32)).toFixed(3)))}let Ee=0,ne=()=>{Ee=l};function se(e,t={}){let n=e!==v||!!t.tone&&t.tone!==ue,h=_[e];v=e,a.dataset.mood=v,ue=t.tone||"warm",Oe=l+8,ne(),R={...$e,...h.face,...v==="speaking"?It[ue]:{}},We=h.hands||"hidden",v==="listening"&&(R.rot=s(-3,3)),f.seq=[],n&&h.enter?.();for(let p of Ht)r[p].t=R[p];for(let p of["L","R"])for(let Y of Ze)r[Y+p].t=R[Y+p]??R[Y];if(!n)return;let y=pn[v];y&&et(y[0],y[1],y[2]),r.sy.v-=1*i,r.sx.v+=.7*i,r.bob.v+=7*i,v!=="asleep"&&Math.random()<.5&&U(),f.next=l}let j=null;function Se(){return j||(v!=="asleep"?Promise.resolve():(P.wake(),se("listening"),et($.teal,.85),r.shutL.k=r.shutR.k=260,C(.52,()=>U()),C(.9,()=>{r.shutL.k=70,r.shutR.k=60}),j=new Promise(e=>C(.8,()=>{j=null,e()})),j))}function Gt(){L.near&&!z.since&&(z.since=l),!L.near&&z.since&&(z.since=0,z.left=l);let e=z.since?l-z.since:0,t=!!z.since&&e>.15,n=!z.since&&l-z.left<.8;t?(r.shutL.t=e>1.3?.32:.48,r.shutR.t=e>1.3?.55:1,r.rot.t=1.5,r.smile.t=.5):n||(r.shutL.t=1,r.shutR.t=1,r.rot.t=R.rot,r.smile.t=R.smile),z.amount=St(z.amount,t||n?1:0,.08),R.round=.5*(1-z.amount),R.mouthBase=.05*(1-z.amount),r.zz.t=t||n?0:1}let B={env:0,vowel:_e[0],quiet:0,trough:0,prev:0,measured:!1},pe={on:!1,phase:"gap",timer:.08,p:0,dur:.15,amp:.6,wordsLeft:0,sylLeft:0,step(e){if(this.phase==="syl")return this.p+=e/this.dur,this.p<1?this.amp*Math.pow(Math.sin(Math.PI*this.p),.7):(--this.sylLeft>0?(this.phase="gap",this.timer=s(0,.03)):--this.wordsLeft>0?(this.phase="gap",this.timer=s(.04,.12)):(this.phase="gap",this.timer=s(.35,.65),Math.random()<.35&&U()),0);if((this.timer-=e)>0)return 0;this.wordsLeft<=0&&(this.wordsLeft=Et(3,7),nt());let t=this.sylLeft<=0;t&&(this.sylLeft=Et(1,3));let n=t&&Math.random()<.35;return this.phase="syl",this.p=0,this.dur=s(.09,.2),this.amp=n?s(.85,1):s(.4,.8),B.vowel=Ke(_e),n&&tt(),0}};function tt(){r.bob.v+=(ue==="excited"?16:11)*i,r.open.v+=.7,Math.random()<.25&&(r.rot.v+=s(-14,14)*i)}function nt(){Math.random()<.5&&(f.seq=[[s(-.9,.5),s(-.5,.8),s(.45,.9)],[g.x,g.y,1.5]],f.next=l)}function Ut(e){if(!(m.speaking??v==="speaking"))return pe.phase="gap",pe.wordsLeft=0,pe.sylLeft=0,Math.max(0,B.env-e*8);let t=m.speechLevel?.()??null;return t===null?pe.step(e):(t<.12?B.quiet+=e:(B.quiet>.3&&nt(),B.quiet=0),B.prev<.22&&t>=.22&&(B.vowel=Ke(_e),t-B.trough>.45&&tt()),t<B.prev&&(B.trough=t),B.prev=t,t)}function Vt(e,t){let n=Math.hypot(e-r.gx.t,t-r.gy.t);f.base.x=x(e,-1,1),f.base.y=x(t,-1,1),r.gx.t=f.base.x,r.gy.t=f.base.y,n>.6&&Math.random()<.4&&U()}function Kt(){if(l>f.lookAround){f.lookAround=l+s(20,34);let e=Math.random()<.5?-1:1;return f.seq=[[e*.9,s(-.2,.3),.8],[-e*.85,s(-.3,.2),.9]],[g.x,g.y,1.2]}return Math.random()<.86?[...W(.05),s(1.6,3.6)]:[g.x+s(-.75,.75),g.y+s(-.55,.25),s(.35,.8)]}function Zt(){return Math.random()<.9?[...W(.045),s(1.3,2.8)]:[g.x+s(-.5,.5),g.y+s(-.35,.15),s(.25,.5)]}function _t(){let e=_[v];if(l-L.t<1.6&&!e.noPointer)f.base.x=x(L.x,-1,1),f.base.y=x(L.y,-1,1),r.gx.t=f.base.x,r.gy.t=f.base.y,f.next=l+.6;else if(l>=f.next){let t=(m.speaking??!1)&&!e.noPointer,[n,h,y]=f.seq.length?f.seq.shift():t?Zt():(e.gaze||Kt)();Vt(n,h),f.next=l+y}else l>=f.micro&&(f.micro=l+s(.25,.7),r.gx.t=f.base.x+s(-.035,.035),r.gy.t=f.base.y+s(-.03,.03));r.hx.t=(r.gx.t-g.x)*.9,r.hy.t=(r.gy.t-g.y)*.9}function jt(e){let t=_[v];_t(),At(),v==="asleep"?Gt():r.zz.t=0,!t.noBlink&&l>Je&&(U(!!t.slowBlinks||v==="listening"&&Math.random()<.3),Je=l+s(...t.blinks||[2,5.2]));let n=B.env=Ut(e);if((m.speaking??v==="speaking")||n>.001){let h=B.vowel;r.mouthOpen.t=R.mouthBase+n*h.o*.85,r.mouthW.t=R.mouthW*(1+(h.w-1)*n*1.3),r.round.t=R.round+h.r*n,ne()}else r.mouthOpen.t=R.mouthBase,r.mouthW.t=R.mouthW,r.round.t=R.round;v==="idle"&&(r.happyL.t=r.happyR.t=L.over?.14:0),m.doze&&(v==="idle"||v==="sleepy")&&l-Ee>30&&(se("sleepy"),C(2.6,()=>{m.doze&&l-Ee>2.4&&v==="sleepy"&&se("asleep")}))}let st=[{t0:-9,dx:0},{t0:-9,dx:0},{t0:-9,dx:0}],ot=0;function Qt(){let e=r.zz.x;if(e>.5&&l>ot){ot=l+1.7;let t=st.reduce((n,h)=>n.t0<h.t0?n:h);t.t0=l,t.dx=s(-1,1)}st.forEach((t,n)=>{let h=(l-t.t0)/2.8,y=u["z"+n];if(h>=1||e<.01){c(y,"opacity","0");return}let p=82+h*8+t.dx+Math.sin(h*5)*1.2,Y=35-h*15,Q=.7+.6*h;c(y,"transform",`translate(${o(p)} ${o(Y)}) rotate(-10) scale(${o(Q)})`),c(y,"opacity",o(w(h)**.8*.8*e))})}let De={L:1,R:1};function Jt(e){let t=r,n=t.hx.x+e.yaw,h=t.hy.x+e.pitch,y=v==="sleepy"||v==="asleep",p=Math.sin(l*2*Math.PI/(y?6:4.4))*(y?1.6:1),Y=n*2.4*i+Dt(l*.3,1)*.7*i+e.ox,Q=h*1.4*i+p*.45*i+t.bob.x+e.oy,en=t.rot.x+e.rot+Dt(l*.35,4)*1.6*i+n*1.2*i,tn=t.sx.x+e.sx-p*.004,nn=t.sy.x+e.sy+p*.009,mt=t.lean.x;c(u.head,"transform",`translate(${o(Pe.x+Y)} ${o(Pe.y+Q)}) rotate(${o(en)}) scale(${(tn*mt).toFixed(4)} ${(nn*mt).toFixed(4)}) translate(-${Pe.x} -${Pe.y})`);let sn=Ft(),Ne=Math.max(.2,t.open.x+e.open),pt=x(t.gx.x+e.gx,-1.2,1.2),ft=x(t.gy.x+e.gy,-1.2,1.2),on=Math.hypot(t.gx.v,t.gy.v),yt=x(t.blush.x+e.blush),an=m.finish==="glass";for(let d of["L","R"]){let V=d==="L"?-1:1,N=Z=>t[Z+d].x,ae=1-V*n*.06*i,A=ce[d].cx+n*2.6*i-V*Math.abs(n)*.8*i,ye=x(sn+e["close"+d]+x(N("shut"))),ie=ce.h*ae*Ne*Math.max(.15,N("eyeH")),F=ie*(1-.92*ye),J=ce.w*ae*Math.max(.3,N("eyeW"))*(1+ye*.05)*(1+(1-Ne)*.2),X=ce[d].cy+h*1.6*i+N("eyeDy")+(ie-F)*.2,ge=x(N("eyeN"),1.8,6),be=-V*N("eyeRot"),ve=yn(A,X,J/2,F/2,ge,d);c(u["eye"+d],"transform",`rotate(${o(be)} ${o(A)} ${o(X)})`),c(u["sock"+d],"d",ve),c(u["clip"+d],"d",ve),an&&(c(u["grain"+d],"d",ve),c(u["cloud"+d],"d",ve));let Me=x(N("lid"),0,.9),re=x(N("happy")+e.happy+e["happy"+d],0,.85),Mt=Math.max(.4,N("pupil")+e.pupil)*ae,xt=X-F/2+Me*F*.85,Ye=X+F/2-xt,rn=xt+Ye/2,xe=Math.min(J*.42,7.6*Mt*Math.max(.3,N("pupW"))*(1+Math.min(.2,on*.01))),ke=Math.min(Ye*.62,5.4*Mt*Math.max(.3,N("pupH")))*Math.max(.12,F/ie),kt=.14,ln=Math.max(0,J/2-xe*(.5-kt)-1.8),hn=Math.max(0,Ye/2-ke*(.5-kt)-1.6),qe=(Math.abs(pt)**ge+Math.abs(ft)**ge)**(1/ge),wt=qe>.72?(.72+.28*Math.tanh((qe-.72)/.28))/qe:1,cn=A+pt*wt*ln,un=rn+ft*wt*hn,ee=u["pup"+d];c(ee,"x",o(cn-xe/2)),c(ee,"y",o(un-ke/2)),c(ee,"width",o(xe)),c(ee,"height",o(ke)),c(ee,"rx",o(Math.min(xe,ke)/2)),c(ee,"opacity",o((1-x((re-.3)/.25))*(1-x((ye-.62)/.25))));let Rt=-V*N("tilt")*x(Me/.12),Lt=Math.tan(Rt*Math.PI/180),$t=X-F/2+Me*F;c(u["lid"+d],"points",`${o(A-40)},${o($t-Lt*40-.6)} ${o(A+40)},${o($t+Lt*40-.6)} ${o(A+40)},${o(X-60)} ${o(A-40)},${o(X-60)}`);let Pt=F*.95,we=u["cheek"+d];c(we,"cx",o(A)),c(we,"rx",o(J*St(1.1,.66,x(re/.6)))),c(we,"ry",o(Pt)),c(we,"cy",o(X+F/2+Pt-re*F*1.1+.3));let le=u["brow"+d],Ae=m.brows==="on"?1-x(N("shut")):m.brows==="strong"?x(t.brow.x+e.brow):0;if(Ae>.02){let Z=3.4+x((Ne-1)*16,-1.4,4)-Me*3+re*1.2,Re=A+V*1.2,Le=X-ie/2-Z+ye*1.2+(1-Ae)*2.2,Ot=J*.44,Ve=1.3+re*.8;c(le,"d",`M${o(Re-V*Ot/2)} ${o(Le+Ve/2)}Q${o(Re)} ${o(Le-Ve)} ${o(Re+V*Ot/2)} ${o(Le+Ve/2)}`),c(le,"transform",`rotate(${o(be)} ${o(A)} ${o(X)}) rotate(${o(Rt*1.5)} ${o(Re)} ${o(Le)})`),c(le,"stroke-dashoffset",o(1-S(Ae))),c(le,"visibility","visible")}else c(le,"visibility","hidden");let dn=X+ie/2*Math.cos(be*Math.PI/180)+Math.abs(Math.sin(be*Math.PI/180))*J*.35,Fe=A+V*4*ae,Xe=Math.max(ce[d].cy+17.5+h*1.6*i,dn+3.4);c(u["blush"+d],"cx",o(Fe)),c(u["blush"+d],"cy",o(Xe)),c(u["lines"+d],"transform",`translate(${o(Fe)} ${o(Xe)}) scale(${o(ae)})`);let Ie=99;for(let Z of["L","R"])t["handS"+Z].x>.3&&(Ie=Math.min(Ie,Math.hypot(t["handX"+Z].x-Fe,t["handY"+Z].x-Xe)));De[d]=x((Ie-8)/4);let Ce=t["handS"+d].x,K=u["hand"+d];if(Ce<.03){c(K,"visibility","hidden");continue}c(K,"visibility","visible");let Wt=t["handX"+d].x+e["hX"+d],zt=t["handY"+d].x+e["hY"+d],Ge=t["handW"+d].x*Ce,Ue=t["handH"+d].x*Ce;c(K,"x",o(Wt-Ge/2)),c(K,"y",o(zt-Ue/2)),c(K,"width",o(Ge)),c(K,"height",o(Ue)),c(K,"rx",o(Math.min(Ge,Ue)/2)),c(K,"transform",`rotate(${o(t["handR"+d].x+e["hR"+d])} ${o(Wt)} ${o(zt)})`)}let gt=Math.min(De.L,De.R);for(let d of["L","R"])c(u["blush"+d],"opacity",o(yt*.12*gt)),c(u["lines"+d],"opacity",o(S(x((yt-.1)*1.5))*.75*gt));let bt=46.7+n*3.4*i+t.mouthX.x+e.mouthX,vt=68.2+h*2.2*i;c(u.mouth,"d",gn(bt,vt,5.5*Math.max(.4,t.mouthW.x+e.mouthW),t.smile.x+e.smile,Math.max(0,t.mouthOpen.x+e.mouthOpen),x(t.round.x+e.round))),c(u.mouth,"transform",`rotate(${o(t.mouthTilt.x+e.mouthTilt)} ${o(bt)} ${o(vt)})`),Qt(),Ct()}let fe={},He={},at=e=>{for(let t of Nt)e[t]=0},Te=performance.now(),oe=0,it=!1,rt=0;function Be(e){if(document.hidden)return;let t=Math.min(.05,(e-Te)/1e3);Te=e,l+=t,jt(t);let n=Math.ceil(t*120),h=t/n;for(let y=0;y<n;y++)for(let p of Qe)p.v+=(p.k*(p.t-p.x)-p.c*p.v)*h,p.x+=p.v*h;at(fe),_[v].live?.(fe);for(let y=me.length-1;y>=0;y--){let p=me[y],Y=(l-p.t0)/p.dur;if(Y>=1){me.splice(y,1);continue}at(He),p.fn(Y,He);for(let Q of Nt)fe[Q]+=He[Q]*p.amp}Jt(fe),oe=requestAnimationFrame(Be)}let lt=e=>{let t=a.getBoundingClientRect();if(!t.width)return;let n=e.clientX-(t.left+t.width/2),h=e.clientY-(t.top+t.height*.5);L.x=g.x+n/(t.width*.55),L.y=g.y+h/(t.height*.75)-.3;let y=Math.hypot(n/(t.width*.5),h/(t.height*.55));m.watch==="off"||m.watch==="near"&&y>2.6||(L.near=y<.95,L.t=l,ne())},ht=()=>{m.watch!=="off"&&(L.over=!0)},ct=()=>{L.over=!1,L.near=!1,L.t=l-1},ut=()=>{if(ne(),v==="asleep"){Se();return}P.surprise(),U(),r.sy.v-=3*i,r.sx.v+=2.2*i,C(.42,()=>P.giggle())};window.addEventListener("pointermove",lt),a.addEventListener("pointerenter",ht),a.addEventListener("pointerleave",ct),a.addEventListener("click",ut);let dt=()=>{cancelAnimationFrame(oe),document.hidden||(Te=performance.now(),oe=requestAnimationFrame(Be))};document.addEventListener("visibilitychange",dt),R={...$e,..._[M].face},a.dataset.mood=M,We=_[M].hands||"hidden";for(let e of Ht)r[e].x=r[e].t=R[e];for(let e of["L","R"])for(let t of Ze)r[t+e].x=r[t+e].t=R[t+e]??R[t];return oe=requestAnimationFrame(Be),{setState:(e,t)=>{let n=++rt;e!=="asleep"&&(v==="asleep"||j)?Se().then(()=>{!it&&n===rt&&se(e,t)}):se(e,t)},wake:Se,gesture:e=>{ne(),P[e]()},setOptions:e=>{let t=e.speaking===!0&&!m.speaking;Object.assign(m,e),t&&(f.seq=[],f.next=0),m.watch==="off"&&(L.t=-10,L.over=L.near=!1),G(),O.last=""},destroy:()=>{it=!0,cancelAnimationFrame(oe),document.removeEventListener("visibilitychange",dt),ze.forEach(e=>window.clearTimeout(e)),window.removeEventListener("pointermove",lt),a.removeEventListener("pointerenter",ht),a.removeEventListener("pointerleave",ct),a.removeEventListener("click",ut),a.innerHTML=""}}}window.createDuet=Yt;})();
+</script><!--/DUET-->
+<script>
+// The page's data: example words, as Duet would have them for a Spanish learner.
+const STEPS = {
+  heard: { name: 'Heard', mark: 'm-heard' },
+  known: { name: 'Known', mark: 'm-known' },
+  say: { name: 'You can say it', mark: 'm-say' },
+  use: { name: 'You can use it', mark: 'm-use' }
+};
+const WORDS = [
+  { id: 'madrugar', word: 'madrugar', syl: 'ma·dru·gar', ipa: '/ma.ðɾuˈɣaɾ/', pos: 'verb', mean: 'to get up early, usually because you have to', short: 'to get up early', step: 'heard', due: true, next: 'in 4 days', line: 'Mañana tengo que <b>madrugar</b>.', video: 'Un día en Madrid', at: '1:25', times: '4 times', col: 'videos',
+    tips: [['Tip', 'Most often heard as <b>tengo que madrugar</b>, I have to get up early.'], ['Also heard', 'Spanish on the street, 4:10 · Tortilla española, 0:31'], ['Related', 'madrugada, the small hours · madrugador, an early riser']] },
+  { id: 'sarten', word: 'sartén', syl: 'sar·tén', art: 'la', ipa: '/saɾˈten/', pos: 'noun, feminine', mean: 'frying pan', short: 'frying pan', step: 'known', due: true, next: 'in 6 days', line: 'Calienta el aceite en la <b>sartén</b>.', gapA: 'Calienta el aceite en la ', gapB: '.', en: 'Heat the oil in the frying pan.', video: 'Tortilla española', at: '2:04', times: 'twice', col: 'videos', said: 'sartén', verdict: 'Clear. The stress lands at the end: sar-TÉN.',
+    tips: [['Careful', 'It ends in -n but it’s <b>la</b> sartén, not el.']] },
+  { id: 'aprovechar', word: 'aprovechar', syl: 'a·pro·ve·char', ipa: '/a.pɾo.βeˈtʃaɾ/', pos: 'verb', mean: 'to make the most of; to take advantage of', short: 'to make the most of', step: 'heard', due: true, next: 'in 4 days', line: 'Hay que <b>aprovechar</b> el buen tiempo.', byDuet: true, col: 'anki',
+    tips: [['Tip', '<b>¡Que aproveche!</b> is what people say before a meal.'], ['Careful', '<b>aprovecharse de</b> means taking unfair advantage of someone.']] },
+  { id: 'vale', word: 'vale', syl: 'va·le', ipa: '/ˈba.le/', pos: 'interjection', mean: 'okay, sounds good', short: 'okay', step: 'use', due: true, next: 'in 2 months', line: '<b>Vale</b>, nos vemos luego.', video: 'Spanish on the street', at: '2:02', times: '9 times', col: 'videos', tips: [] },
+  { id: 'cocina', word: 'cocina', syl: 'co·ci·na', ipa: '/koˈθi.na/', pos: 'verb · noun, feminine', mean: 'cooks; the kitchen', short: 'cooks; the kitchen', step: 'say', due: false, next: 'in 9 days', line: 'Mi abuela <b>cocina</b> los domingos.', video: 'Tortilla española', at: '0:48', times: '3 times', col: 'videos', tips: [['Tip', 'As a verb, she cooks; with <b>la</b>, the kitchen.']] },
+  { id: 'huevo', word: 'huevo', syl: 'hue·vo', art: 'el', ipa: '/ˈwe.βo/', pos: 'noun, masculine', mean: 'egg', short: 'egg', step: 'say', due: false, next: 'in 3 days', line: 'Bate los <b>huevos</b> con sal.', video: 'Tortilla española', at: '1:10', times: '5 times', col: 'videos', tips: [['Listen for', 'The h is silent: WEH-vo.']] },
+  { id: 'cebolla', word: 'cebolla', syl: 'ce·bo·lla', art: 'la', ipa: '/θeˈβo.ʎa/', pos: 'noun, feminine', mean: 'onion', short: 'onion', step: 'known', due: false, next: 'tomorrow', line: 'Pica la <b>cebolla</b> muy fina.', video: 'Tortilla española', at: '3:30', times: 'twice', col: 'videos', tips: [] },
+  { id: 'quedar', word: 'quedar', syl: 'que·dar', ipa: '/keˈðaɾ/', pos: 'verb', mean: 'to meet up; to arrange to meet', short: 'to meet up', step: 'heard', due: false, next: 'tomorrow', line: '¿<b>Quedamos</b> a las ocho?', video: 'Spanish on the street', at: '1:44', times: 'twice', col: 'videos', tips: [['Careful', 'With <b>quedarse</b> it means to stay instead.']] },
+  { id: 'gracias', word: 'gracias', syl: 'gra·cias', ipa: '/ˈɡɾa.θjas/', pos: 'interjection', mean: 'thank you', short: 'thank you', step: 'use', due: false, next: 'in 3 months', line: 'Muchas <b>gracias</b> por todo.', video: 'Un día en Madrid', at: '0:12', times: '14 times', col: 'videos', tips: [] },
+  { id: 'temprano', word: 'temprano', syl: 'tem·pra·no', ipa: '/temˈpɾa.no/', pos: 'adverb', mean: 'early', short: 'early', step: 'known', due: false, next: 'in 5 days', line: 'Me levanto <b>temprano</b>.', byDuet: true, col: 'anki', tips: [] }
+];
+const COLLECTIONS = [
+  { id: 'videos', name: 'From your videos', meta: 'Kept while watching', due: 11 },
+  { id: 'anki', name: 'Spanish 5000', meta: 'From Anki', due: 3 },
+  { id: 'verbs', name: 'Chapter 3 verbs', meta: 'From Anki, a tag', due: 0 }
+];
+// Today's session: one card of each kind, in the order Duet would mix them.
+const SESSION = [
+  { id: 'madrugar', kind: 'sentence' },
+  { id: 'sarten', kind: 'gap' },
+  { id: 'aprovechar', kind: 'word' },
+  { id: 'vale', kind: 'fresh' }
+];
+const TOTAL = 14;
+const LOOKUP = {
+  despertarse: { syl: 'des·per·tar·se', ipa: '/des.peɾˈtaɾ.se/', pos: 'verb, reflexive', mean: 'to wake up', line: 'Me <b>despierto</b> a las siete.', tips: [['Careful', '<b>despertarse</b> is waking up; <b>levantarse</b> is getting out of bed.']] },
+  levantarse: { syl: 'le·van·tar·se', ipa: '/le.βanˈtaɾ.se/', pos: 'verb, reflexive', mean: 'to get up', line: 'Me <b>levanto</b> temprano.', tips: [] }
+};
+const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+function preview(m) {
+  const found = LOOKUP[m.word.trim().toLowerCase()] || {};
+  const typed = m.line.trim();
+  const stem = m.word.trim().slice(0, Math.max(3, m.word.trim().length - 3));
+  const bold = (line) => stem ? esc(line).replace(new RegExp('\\S*' + stem.replace(/[.*+?^${}()|[\]\\]/g, '\\const TOTAL = 14;') + '\\S*', 'i'), (x) => '<b>' + x + '</b>') : esc(line);
+  return {
+    word: esc(m.word) || 'Your word', syl: found.syl || esc(m.word) || 'Your word', ipa: found.ipa || '', pos: found.pos || '', step: 'heard',
+    mean: esc(m.mean) || found.mean || 'What it means', line: typed ? bold(typed) : (found.line || 'Duet writes an example for you.'),
+    own: !!typed, byDuet: !typed, tips: found.tips || []
+  };
+}
+
+// The first time each kind of card shows up, one line says what it asks.
+const KIND_NOTES = {
+  sentence: ['Sentence card', 'A word from your video, in its line. What does it mean here?'],
+  gap: ['Gap card', 'The line is missing a word. Say it out loud, or type it.'],
+  word: ['Word card', 'Just the word and its sound. What does it mean?'],
+  fresh: ['Keep-fresh card', 'A word you already use. A quick check that it’s still there.']
+};
+const state = { from: 'today', seen: {}, guide: null, enter: null, leaving: false, close: {}, made: null, view: 'review', mode: 'today', at: 0, side: 'front', climbed: null, filter: 'all', query: '', selected: 'madrugar' };
+const byId = (id) => WORDS.find((w) => w.id === id);
+const $ = (id) => document.getElementById(id);
+
+const icons = {
+  play: '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
+  sound: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"/></svg>',
+  chev: '<svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',
+  mic: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+  search: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
+};
+const dot = (step) => `var(--d-${step})`;
+const ink = (step) => `var(--k-${step})`;
+
+// The dictionary entry: the same on a card's back and in Words.
+function entry(w, { tipsOpen = false } = {}) {
+  const cite = w.own
+    ? `<p class="cite-src"><span>Your own line</span><span class="times">Not heard yet</span></p>`
+    : w.byDuet
+    ? `<p class="cite-src"><span class="by-duet" aria-hidden="true"><i></i><i></i></span><span>An example by Duet</span><span class="times">Not heard yet</span></p>`
+    : `<p class="cite-src"><button class="replay" type="button" aria-label="Replay the moment in ${w.video}">${icons.play}</button><span>Last heard in <b>${w.video}</b> at ${w.at}</span><span class="times">Heard ${w.times}</span></p>`;
+  const tips = w.tips.length
+    ? `<details class="tips"${tipsOpen ? ' open' : ''}><summary>Tips${icons.chev}</summary><div>${w.tips.map(([k, v]) => `<div class="tip"><span class="k">${k}</span><span>${v}</span></div>`).join('')}</div></details>`
+    : '';
+  return `<div class="entry">
+    <span class="hw ${STEPS[w.step].mark}">${w.art ? `<span class="art">${w.art}</span> ` : ''}${w.syl}</span>
+    <div class="meta"><span>${w.ipa}</span><button class="sound" type="button" aria-label="Hear ${w.word}">${icons.sound}</button><span class="sep"></span><span class="pos">${w.pos}</span></div>
+    <p class="def">${w.mean}</p>
+    <div class="cite"><p class="cite-line">${w.line}</p>${cite}</div>
+    ${tips}
+  </div>`;
+}
+
+function front(card, w) {
+  const step = `<span class="step"><i style="background: ${dot(w.step)}"></i>${STEPS[w.step].name}${w.video ? `<span class="src">${w.video} · ${w.at}</span>` : w.col === 'anki' ? '<span class="src">Spanish 5000, from Anki</span>' : ''}</span>`;
+  if (card.kind === 'sentence') return `${step}
+    <div class="clip"><span class="play" aria-hidden="true">${icons.play}</span><div class="sub-line"><span>${w.line}</span></div></div>
+    <span class="prompt-word ${STEPS[w.step].mark}">${w.word}</span>
+    <span class="hint">${w.line}</span>
+    <button class="reveal" type="button" data-act="reveal">Show the answer</button>`;
+  if (card.kind === 'gap') return `${step}
+    <span class="prompt-line" style="margin-top: 20px;">${w.gapA}<span class="gap"></span>${w.gapB}</span>
+    <span class="hint">${w.en}</span>
+    <div class="mic"><button type="button" data-act="reveal" aria-label="Say it">${icons.mic}</button><span>or type it</span></div>`;
+  if (card.kind === 'word') return `${step}
+    <span class="prompt-word ${STEPS[w.step].mark}" style="margin-top: 24px;">${w.word}</span>
+    <div class="meta"><span>${w.ipa}</span><button class="sound" type="button" aria-label="Hear ${w.word}">${icons.sound}</button></div>
+    <button class="reveal" type="button" data-act="reveal">Show the answer</button>`;
+  return `${step}
+    <span class="prompt-word ${STEPS[w.step].mark}" style="margin-top: 24px;">${w.word}</span>
+    <span class="hint">Still know it?</span>
+    <button class="reveal" type="button" data-act="reveal">Show the answer</button>`;
+}
+
+function back(card, w) {
+  const yours = card.kind === 'gap' ? `<div class="yours"><span class="said">“${w.said}”</span><span class="verdict">${w.verdict}</span></div>` : '';
+  const shown = card.kind === 'gap' ? { ...w, tips: w.tips } : w;
+  return `${yours}${entry(shown)}
+    <div class="answers"><button class="a-soft" type="button" data-act="forgot">Forgot</button><button class="a-ink" type="button" data-act="got">Got it</button></div>`;
+}
+
+// The two views.
+function renderViews() {
+  $('views').innerHTML = [['review', 'Review'], ['words', 'Words'], ['collections', 'Collections']].map(([id, name]) =>
+    `<button type="button" data-view="${id}" aria-pressed="${state.view === id}">${name}</button>`).join('');
+  const inSession = state.view === 'review' && state.mode === 'session';
+  if (state.view === 'review' && state.mode === 'make') { $('head-right').innerHTML = '<button class="quiet" type="button" data-act="stop">Cancel</button>'; return; }
+  $('head-right').innerHTML = inSession && state.at < SESSION.length
+    ? `<span style="font-size: 12px; color: var(--sub); font-variant-numeric: tabular-nums; margin-right: 6px;">${Math.min(3 + state.at, TOTAL)} of ${TOTAL}</span><button class="quiet" type="button" data-act="stop">Done for now</button>`
+    : '';
+}
+
+function renderToday() {
+  const counts = Object.keys(STEPS).map((k) => ({ k, n: { heard: 63, known: 88, say: 27, use: 19 }[k] }));
+  const sum = counts.reduce((x, c) => x + c.n, 0);
+  const due = WORDS.filter((w) => w.due);
+  return `<div class="today">
+    ${state.flash ? `<span class="flash"><b>${esc(state.flash)}</b> is kept. It joins your next review.</span>` : ''}
+    <div class="today-row">
+      <div class="count"><b>${TOTAL} cards today</b><p class="mix"><span><b>4</b> new</span><span><b>2</b> learning</span><span><b>8</b> to review</span></p></div>
+      <button class="start" type="button" data-act="start">Start</button>
+    </div>
+    <div class="up-today"><span>Up today</span><p class="up-words">${due.map((w) => `<span style="--dot: ${dot(w.step)}">${w.word}</span>`).join('')}<span class="more">and ${TOTAL - due.length} more</span></p></div>
+    <div class="ladder">
+      <div class="ladder-head"><span>Your ladder</span><span>${sum} words</span></div>
+      <div class="ladder-bar" aria-hidden="true">${counts.map((c) => `<span style="flex-grow: ${c.n}; background: ${dot(c.k)}"></span>`).join('')}</div>
+      <div class="ladder-counts">${counts.map((c) => `<button type="button" data-filter="${c.k}" aria-label="${c.n} words: ${STEPS[c.k].name}"><b style="color: ${ink(c.k)}">${c.n}</b><span>${STEPS[c.k].name}</span></button>`).join('')}</div>
+    </div>
+    <div class="today-foot"><button class="quiet" type="button" data-act="make" style="padding-left: 0;">Make a card</button></div>
+  </div>`;
+}
+
+// Collections: the groups your cards are in, and the videos they came from. Each shows where its
+// words stand (the ladder bar) and one direct action. Bringing in a deck is the last tile of the
+// groups, where a new group would appear; Make a card lives on Review.
+const VIDEOS = [
+  { name: 'Un día en Madrid', meta: 'Watched yesterday', words: 23, due: 4, ids: ['madrugar', 'gracias'], extra: ['levantarse', 'metro', 'temprano'], shot: 'radial-gradient(60% 80% at 25% 30%, rgba(236,170,92,0.55), transparent 70%), radial-gradient(50% 60% at 80% 60%, rgba(90,130,170,0.45), transparent 70%), linear-gradient(180deg, #33302b, #1d1c1a)' },
+  { name: 'Tortilla española', meta: 'Watched 3 days ago', words: 31, due: 5, ids: ['sarten', 'huevo', 'cebolla', 'cocina'], extra: [], shot: 'radial-gradient(55% 70% at 70% 35%, rgba(244,196,90,0.6), transparent 70%), radial-gradient(50% 60% at 20% 70%, rgba(170,90,60,0.5), transparent 70%), linear-gradient(180deg, #2e2a24, #1a1816)' },
+  { name: 'Spanish on the street', meta: 'Watched last week', words: 18, due: 2, ids: ['vale', 'quedar'], extra: ['oye', 'guay'], shot: 'radial-gradient(60% 70% at 40% 25%, rgba(140,180,160,0.5), transparent 70%), radial-gradient(50% 60% at 85% 70%, rgba(220,120,90,0.45), transparent 70%), linear-gradient(180deg, #2a2d2b, #171918)' }
+];
+const GROUPS = [
+  { name: 'From your videos', cards: 142, due: 11, sheets: 3, top: 'madrugar' },
+  { name: 'Spanish 5000', meta: 'from Anki', cards: 2340, due: 3, sheets: 4, top: 'aprovechar' },
+  { name: 'Chapter 3 verbs', meta: 'an Anki tag', cards: 48, due: 0, sheets: 2, top: 'quedar' }
+];
+const ARROW = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+function renderCollections() {
+  // The sheets under the top card sit a little askew, the way a real pile does.
+  const ANGLES = ['rotate(2.2deg) translate(5px, 3px)', 'rotate(-2.6deg) translate(-4px, 5px)', 'rotate(4deg) translate(8px, 7px)'];
+  const stack = (c) => {
+    const w = byId(c.top);
+    const under = ANGLES.slice(0, c.sheets - 1).map((t, i) => `<span class="sheet s${i + 2}" style="transform: ${t}; --t2: ${t}"></span>`).reverse().join('');
+    return `<button class="stack" type="button" ${c.due ? 'data-act="start" data-from="collections"' : 'disabled'} aria-label="${c.name}: ${c.due ? `review ${c.due}` : 'nothing due today'}">
+      <span class="pile">${under}<span class="sheet top"><span class="hw-mini ${STEPS[w.step].mark}">${w.word}</span><span class="mean">${w.short}</span></span></span>
+      <span class="stack-name">${c.name}</span>
+      <span class="stack-meta">${c.due ? `<b>${c.due} to review</b>` : 'All done today'} · ${c.cards.toLocaleString('en')} cards${c.meta ? `, ${c.meta}` : ''}</span>
+    </button>`;
+  };
+  const video = (v) => {
+    const words = [...v.ids.map((id) => { const w = byId(id); return `<span class="${STEPS[w.step].mark}">${w.word}</span>`; }), ...v.extra.map((x) => `<span class="m-heard">${x}</span>`)].slice(0, 4);
+    const line = byId(v.ids[0]).line;
+    return `<article class="vid">
+      <div class="vid-shot" style="background: ${v.shot}"><div class="sub-line"><span>${line}</span></div></div>
+      <div class="vid-body"><b>${v.name}</b><span class="vid-meta">${v.meta} · ${v.words} words</span><p class="vid-words">${words.join(', ')} <span class="and">and ${v.words - words.length} more</span></p></div>
+      ${v.due ? `<button class="go-link" type="button" data-act="start" data-from="collections">Review ${v.due}${ARROW}</button>` : '<span class="go-none">All done</span>'}
+    </article>`;
+  };
+  return `<div class="cols">
+    <section>
+      <div class="cols-head"><h2>Collections</h2><span>Your daily review mixes them all. Pick a pile to focus on it.</span><button class="text-link" type="button">Bring in an Anki deck</button></div>
+      <div class="stacks">${GROUPS.map(stack).join('')}</div>
+    </section>
+    <section>
+      <div class="cols-head"><h2>By video</h2><span>Go over a video’s words before the next episode.</span></div>
+      <div class="vids">${VIDEOS.map(video).join('')}</div>
+    </section>
+  </div>`;
+}
+
+// Back to wherever the session was started from: Review, a word in Words, or Collections.
+function backLink() {
+  const to = { today: 'Review', words: byId(state.selected).word, collections: 'Collections' }[state.from || 'today'];
+  return `<button class="back-link" type="button" data-act="stop"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back to ${to}</button>`;
+}
+function renderSession() {
+  const pct = Math.round(((2 + state.at) / TOTAL) * 100);
+  if (state.at >= SESSION.length) return `<div class="progress"><i style="width: 100%"></i></div>
+    <div class="session finished">${backLink()}<canvas id="confetti" aria-hidden="true"></canvas><div class="done">
+      <svg id="done-duet" class="duet-alive done-duet" viewBox="0 17 100 66" aria-label="Duet, pleased"></svg>
+      <h2>That’s today’s cards.</h2>
+      <p>Two words climbed a step. The rest come back when they need to.</p>
+    </div></div>`;
+  const card = SESSION[state.at];
+  const w = byId(card.id);
+  const climbed = state.climbed ? `<span class="climbed"><b class="${state.climbed.mark || ''}">${state.climbed.word}</b> ${state.climbed.name ? `is ${state.climbed.name} now, and ` : ''}comes back ${state.climbed.next}</span>` : '';
+  return `<div class="progress"><i style="width: ${pct}%"></i></div>
+    <div class="session">${backLink()}<div class="stage">
+      ${!state.seen[card.kind] ? `<p class="first-note"><span class="tag">New card</span><span class="txt"><b>${KIND_NOTES[card.kind][0]}.</b> ${KIND_NOTES[card.kind][1]}</span><button type="button" data-act="seen">OK</button></p>` : ''}
+      <div class="deck${state.at < SESSION.length - 1 ? ' more' : ''}"><article class="card${state.enter ? ' ' + state.enter : ''}" aria-label="${w.word}">${state.side === 'front' ? front(card, w) : back(card, w)}</article></div>
+    </div></div>
+    <div class="session-foot"><button class="quiet" type="button" data-act="undo"${state.at ? '' : ' hidden'} title="Back to the last card (←)"><kbd aria-hidden="true">←</kbd>Undo</button><span class="grow"></span>${climbed}<span class="grow"></span><button class="quiet" type="button">Ask Duet</button></div>`;
+}
+
+function renderWords() {
+  const q = state.query.trim().toLowerCase();
+  const rows = WORDS.filter((w) => (state.filter === 'all' || w.step === state.filter) && (!q || w.word.includes(q) || w.short.includes(q)));
+  if (!rows.find((w) => w.id === state.selected) && rows[0]) state.selected = rows[0].id;
+  const sel = byId(state.selected);
+  const filters = [['all', 'All'], ...Object.entries(STEPS).map(([k, v]) => [k, v.name])];
+  const stepIndex = Object.keys(STEPS).indexOf(sel.step);
+  return `<div class="words">
+    <div class="list">
+      <div class="list-tools">
+        <label class="search">${icons.search}<span class="sr-only" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);">Search your words</span><input id="q" type="search" placeholder="Search your words" value="${state.query.replace(/"/g, '&quot;')}"></label>
+        <div class="filters" role="group" aria-label="Show">${filters.map(([k, name]) => `<button type="button" data-filter="${k}" aria-pressed="${state.filter === k}">${k === 'all' ? '' : `<i style="background: ${dot(k)}"></i>`}${name}</button>`).join('')}</div>
+      </div>
+      <div class="rows">${rows.length ? rows.map((w) => `<button type="button" data-pick="${w.id}" aria-pressed="${w.id === state.selected}"><span class="txt"><span class="w" style="color: ${ink(w.step)}">${w.word}</span><span class="mean">${w.short}</span></span>${w.due ? '<span class="due-dot" title="Due today"><span class="sr-only" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);">Due today</span></span>' : ''}</button>`).join('') : '<p class="empty-list">No words match. Try another spelling, or clear the filter.</p>'}</div>
+    </div>
+    <div class="detail">
+      <div class="step-row"><span class="step-chip"><i style="background: ${dot(sel.step)}"></i>${STEPS[sel.step].name}</span><span class="ladder-mini" aria-hidden="true">${Object.keys(STEPS).map((k, i) => `<span style="${i <= stepIndex ? `background: ${dot(sel.step)}` : ''}"></span>`).join('')}</span><span class="next-due">Next review ${state.close[sel.id] ? 'sooner' : sel.next}</span></div>
+      ${entry(sel, { tipsOpen: false })}
+      ${sel.byDuet ? `<p class="no-video"><span class="by-duet" aria-hidden="true"><i></i><i></i></span><span>No video yet. Duet adds the moment the first time you hear it.</span></p>` : ''}
+      <div class="actions"><button class="primary" type="button" data-act="practise">Practise now</button><button class="soft" type="button" data-act="close" aria-pressed="${!!state.close[sel.id]}" title="Brings it back sooner, without counting it as forgotten">${state.close[sel.id] ? 'Recalling sooner' : 'Recall sooner'}</button>
+        <details class="more-menu"><summary aria-label="More">⋯</summary><div role="menu"><button type="button" role="menuitem">Edit card</button><button type="button" role="menuitem">Pause</button><button type="button" role="menuitem">Ignore this word</button></div></details></div>
+    </div>
+  </div>`;
+}
+
+function renderMake() {
+  const m = state.made;
+  return `<div class="make">
+    <div class="make-form">
+      <h2>Make a card</h2>
+      <label class="field big"><span>Word or phrase</span><input id="mk-word" type="text" value="${esc(m.word)}" autocomplete="off"></label>
+      <p class="filled"><span class="by-duet" aria-hidden="true"><i></i><i></i></span>Duet filled in the rest. Change anything you like.</p>
+      <label class="field"><span>What it means</span><input id="mk-mean" type="text" value="${esc(m.mean)}"></label>
+      <label class="field"><span>A line it’s used in</span><input id="mk-line" type="text" value="${esc(m.line)}" placeholder="Leave empty and Duet writes one"><small>Hear it in a video later and Duet adds that line too.</small></label>
+      <label class="field"><span>Collection</span><select id="mk-col">${COLLECTIONS.map((c) => `<option value="${c.id}"${c.id === m.col ? ' selected' : ''}>${c.name}</option>`).join('')}</select></label>
+      <div class="make-actions"><button class="primary" type="button" data-act="keep">Keep</button><button class="soft" type="button" data-act="keep-more">Keep and make another</button></div>
+    </div>
+    <div class="make-preview"><span>The back of its card</span><div class="card" id="mk-preview">${entry(preview(m))}</div><p>The front starts as a sentence card, then asks a little more each time the word climbs.</p></div>
+  </div>`;
+}
+
+function render() {
+  renderViews();
+  const v = $('view');
+  if (doneDuet) { doneDuet.destroy(); doneDuet = null; }
+  v.innerHTML = state.view === 'collections' ? renderCollections() : state.view === 'words' ? renderWords() : state.mode === 'session' ? renderSession() : state.mode === 'make' ? renderMake() : renderToday();
+  state.enter = null;
+  celebrate();
+}
+
+const NEXT_STEP = { heard: 'known', known: 'say', say: 'use' };
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+
+// Revealing: the same card opens up. Its height eases to the back's, and the prompt word glides
+// into the headword's place (FLIP), while the entry rises in under it (CSS, .revealed).
+function reveal() {
+  const before = document.querySelector('.session .card');
+  if (!before || state.side !== 'front') return;
+  const h0 = before.offsetHeight;
+  const word = before.querySelector('.prompt-word');
+  const r0 = word && word.getBoundingClientRect();
+  state.side = 'back'; state.climbed = null; state.enter = 'revealed'; render();
+  if (REDUCED) return;
+  const card = document.querySelector('.session .card');
+  const h1 = card.offsetHeight;
+  card.style.overflow = 'hidden';
+  card.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], { duration: 340, easing: EASE }).onfinish = () => (card.style.overflow = '');
+  const hw = card.querySelector('.hw');
+  if (r0 && hw) {
+    const r1 = hw.getBoundingClientRect();
+    hw.animate([
+      { transformOrigin: 'left top', transform: `translate(${r0.left - r1.left}px, ${r0.top - r1.top}px) scale(${r0.height / r1.height})` },
+      { transformOrigin: 'left top', transform: 'none' }
+    ], { duration: 380, easing: EASE });
+  }
+}
+
+// How cards work: three short steps, then every kind of card as a reference. Opens by itself the
+// first time Review is opened, and again from the ? in the tile header.
+const KINDS = [
+  ['heard', 'Sentence card', 'A word from your video, in its line. What does it mean here?', '<span class="mini-clip"></span><span class="mw m-heard">madrugar</span>'],
+  ['heard', 'Word card', 'Just the word and its sound, when Duet has no line for it yet.', `<span class="mw m-heard">madrugar</span><span>/ma.ðɾuˈɣaɾ/</span>`],
+  ['heard', 'Listening card', 'Hear the line with the words hidden. Double-click to hear it slower.', `<span class="roundbtn">${'<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'}</span><span class="bars"><i style="width: 22px"></i><i style="width: 34px"></i><i style="width: 18px"></i><i style="width: 28px"></i></span>`],
+  ['heard', 'Picture card', 'A picture, and “What’s this called?” Only when there’s a picture for the word.', '<svg width="54" height="34" viewBox="0 0 54 34" aria-hidden="true"><circle cx="20" cy="17" r="12" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M32 17h19" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></svg><span>What’s this called?</span>'],
+  ['known', 'Gap card', 'The line with the word missing. Say it out loud, or type it.', '<span class="ml">Calienta el aceite en la <span class="gapline"></span>.</span><span>Heat the oil in the frying pan.</span>'],
+  ['say', 'Use-it card', 'A small situation. Use the word in a sentence of your own.', '<span>You’re telling a friend about your 6 a.m. flight.</span><span class="ml">Use <b>madrugar</b></span>'],
+  ['use', 'Keep-fresh card', 'A word you already use. Now and then, a quick “Still know it?”', '<span class="mw m-use">vale</span><span>Still know it?</span>']
+];
+const GUIDE = [
+  { title: 'Every card asks one thing.', text: 'Answer it, then say if you got it. Duet works out how easy it was, and when to bring the word back.',
+    visual: () => `<div class="g-card"><span class="w m-heard">madrugar</span><span class="d">to get up early</span><div class="answers"><button class="a-soft" type="button" tabindex="-1">Forgot</button><button class="a-ink" type="button" tabindex="-1">Got it</button></div></div>` },
+  { title: 'Words climb four steps.', text: 'Each step asks a little more: know it when you hear it, recall it, say it, then use it. Forgetting brings a word back sooner. It never sends it down.',
+    visual: () => `<div class="g-steps">${[['heard', 'Heard', 'you know it'], ['known', 'Known', 'you recall it'], ['say', 'You can say it', 'out loud'], ['use', 'You can use it', 'in your words']].map(([k, n, s], i) => `<span style="--dot: ${dot(k)}; height: ${54 + i * 22}px">${n}<small>${s}</small></span>`).join('')}</div>` },
+  { title: 'Your hands can stay on the keys.', text: 'Or just click. Going back takes back your last answer, so the word is scheduled from what you choose next.',
+    visual: () => `<div class="g-keys"><div><kbd>Space</kbd>Show the answer, then Got it</div><div><kbd>1</kbd>Forgot</div><div><kbd>←</kbd>Back to the last card</div></div>` },
+  { title: 'Every kind of card.', text: 'The card changes as a word climbs. Each one explains itself the first time you meet it.', wide: true,
+    visual: () => `<div class="kinds">${KINDS.map(([k, name, text, face]) => `<div class="kind"><div class="kind-face">${face}</div><b><i style="background: ${dot(k)}"></i>${name}<small>· ${STEPS[k].name}</small></b><p>${text}</p></div>`).join('')}</div>` }
+];
+let guideDuet = null;
+function openGuide(step = 0) {
+  state.guide = step;
+  $('guide').hidden = false;
+  renderGuide();
+  if (!guideDuet && window.createDuet) {
+    const dark = document.documentElement.dataset.theme === 'dark' || (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+    guideDuet = window.createDuet($('guide-duet'), { theme: dark ? 'dark' : 'light', watch: 'near' }, 'asleep');
+    guideDuet.wake();
+  }
+}
+function closeGuide() {
+  state.guide = null;
+  $('guide').hidden = true;
+  if (guideDuet) { guideDuet.destroy(); guideDuet = null; }
+  document.querySelector('.help-btn').focus();
+}
+function renderGuide() {
+  const i = state.guide, g = GUIDE[i], last = i === GUIDE.length - 1;
+  document.querySelector('.guide-panel').classList.toggle('wide', !!g.wide);
+  document.querySelector('[data-guide="close"]').hidden = last;
+  $('guide-body').innerHTML = `${g.wide ? '' : `<div class="g-visual">${g.visual()}</div>`}
+    <h2 id="guide-title">${g.title}</h2><p class="g-text">${g.text}</p>
+    ${g.wide ? g.visual() : ''}
+    <div class="g-foot"><span class="g-dots" aria-label="Step ${i + 1} of ${GUIDE.length}">${GUIDE.map((_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span><span class="grow"></span>
+      ${i ? '<button class="quiet" type="button" data-guide="prev">Back</button>' : ''}
+      <button class="start" type="button" data-guide="next">${last ? 'Start reviewing' : i === GUIDE.length - 2 ? 'See the cards' : 'Next'}</button></div>`;
+  document.querySelector('[data-guide="next"]').focus();
+}
+
+// Answering: the card is put away (up for Got it, down for Forgot), then the next is dealt.
+function answer(act) {
+  if (state.leaving) return;
+  const card = document.querySelector('.session .card');
+  const go = () => {
+    state.leaving = false;
+    const w = byId(SESSION[state.at].id);
+    const up = act === 'got' && NEXT_STEP[w.step] && SESSION[state.at].kind !== 'word';
+    const next = act === 'forgot' ? 'in a minute' : w.next;
+    state.climbed = up ? { word: w.word, name: STEPS[NEXT_STEP[w.step]].name, mark: STEPS[NEXT_STEP[w.step]].mark, next } : { word: w.word, next };
+    state.seen[SESSION[state.at].kind] = true;
+    state.at += 1; state.side = 'front'; state.enter = 'deal'; render();
+  };
+  if (REDUCED || !card) return go();
+  state.leaving = true;
+  card.classList.add('leave-' + act);
+  setTimeout(go, 170);
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('button');
+  if (!t) return;
+  if (t.dataset.guide) {
+    const g = t.dataset.guide;
+    if (g === 'open') openGuide(0);
+    else if (g === 'close') closeGuide();
+    else if (g === 'prev') { state.guide -= 1; renderGuide(); }
+    else if (state.guide < GUIDE.length - 1) { state.guide += 1; renderGuide(); }
+    else { closeGuide(); state.from = 'today'; state.view = 'review'; state.mode = 'session'; state.at = 0; state.side = 'front'; state.climbed = null; state.enter = 'deal'; render(); }
+    return;
+  }
+  if (t.dataset.view) { state.view = t.dataset.view; if (state.view === 'review' && state.mode === 'session' && state.at >= SESSION.length) state.mode = 'today'; render(); return; }
+  if (t.dataset.filter) { state.view = 'words'; state.filter = t.dataset.filter; render(); return; }
+  if (t.dataset.pick) { state.selected = t.dataset.pick; render(); return; }
+  const act = t.dataset.act;
+  if (act === 'start' || act === 'practise') { state.from = t.dataset.from || (act === 'practise' ? 'words' : 'today'); state.view = 'review'; state.mode = 'session'; state.at = 0; state.side = 'front'; state.climbed = null; render(); }
+  else if (act === 'stop') { state.mode = 'today'; state.flash = null; if (state.from === 'words' || state.from === 'collections') state.view = state.from; state.from = 'today'; render(); }
+  else if (act === 'make') { state.view = 'review'; state.mode = 'make'; state.flash = null; state.made = { word: 'despertarse', mean: 'to wake up', line: '', col: 'videos' }; render(); $('mk-word').focus(); }
+  else if (act === 'keep') { state.flash = state.made.word.trim() || null; state.mode = 'today'; render(); }
+  else if (act === 'keep-more') { state.made = { word: '', mean: '', line: '', col: state.made.col }; render(); $('mk-word').focus(); }
+  else if (act === 'close') { const id = state.selected; state.close[id] = !state.close[id]; render(); }
+  else if (act === 'reveal') reveal();
+  else if (act === 'seen') { state.seen[SESSION[state.at].kind] = true; render(); }
+  else if (act === 'got' || act === 'forgot') answer(act);
+  else if (act === 'undo') { state.at = Math.max(0, state.at - 1); state.side = 'back'; state.climbed = null; state.enter = 'back-in'; render(); }
+});
+document.addEventListener('input', (e) => {
+  if (e.target.id && e.target.id.startsWith('mk-')) {
+    const key = { 'mk-word': 'word', 'mk-mean': 'mean', 'mk-line': 'line', 'mk-col': 'col' }[e.target.id];
+    state.made[key] = e.target.value;
+    if (key === 'word') { const found = LOOKUP[e.target.value.trim().toLowerCase()]; if (found) { state.made.mean = found.mean; $('mk-mean').value = found.mean; } }
+    $('mk-preview').innerHTML = entry(preview(state.made));
+    return;
+  }
+  if (e.target.id !== 'q') return;
+  state.query = e.target.value;
+  const pos = e.target.selectionStart;
+  render();
+  const q = $('q'); q.focus(); q.setSelectionRange(pos, pos);
+});
+document.addEventListener('keydown', (e) => {
+  if (state.guide !== null) {
+    if (e.key === 'Escape') closeGuide();
+    else if (e.key === 'ArrowRight') document.querySelector('[data-guide="next"]').click();
+    else if (e.key === 'ArrowLeft' && state.guide > 0) { state.guide -= 1; renderGuide(); }
+    return;
+  }
+  if (state.view !== 'review' || state.mode !== 'session' || state.at >= SESSION.length || e.target.tagName === 'INPUT') return;
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); state.side === 'front' ? reveal() : document.querySelector('[data-act="got"]').click(); }
+  else if (e.key === '1' && state.side === 'back') document.querySelector('[data-act="forgot"]').click();
+  else if (e.key === 'ArrowLeft' && state.at > 0) { e.preventDefault(); document.querySelector('[data-act="undo"]').click(); }
+});
+
+// The finish: the real Duet (components/duet, inlined by app/design-preview/cards/build.mjs)
+// cheers once, and a handful of paper bits in the word colours flutter down and are gone.
+let doneDuet = null;
+function celebrate() {
+  const svg = $('done-duet');
+  if (!svg) { if (doneDuet) { doneDuet.destroy(); doneDuet = null; } return; }
+  if (doneDuet || !window.createDuet) return;
+  const dark = document.documentElement.dataset.theme === 'dark' || (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+  doneDuet = window.createDuet(svg, { theme: dark ? 'dark' : 'light', watch: 'near' }, 'idle');
+  setTimeout(() => doneDuet && doneDuet.setState('correct', { tone: 'excited' }), 250);
+  setTimeout(() => doneDuet && doneDuet.setState('proud'), 2600);
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) confetti($('confetti'));
+}
+function confetti(canvas) {
+  const box = canvas.getBoundingClientRect();
+  const dpr = devicePixelRatio || 1;
+  canvas.width = box.width * dpr; canvas.height = box.height * dpr;
+  const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+  const css = getComputedStyle(document.documentElement);
+  const colours = ['--d-heard', '--d-known', '--d-say', '--d-use', '--d-new'].map((k) => css.getPropertyValue(k).trim());
+  const r = (a, b) => a + Math.random() * (b - a);
+  // Few, uneven, hand-cut: small paper slips and the odd curl, each falling and turning at its own pace.
+  const bits = Array.from({ length: 34 }, (_, i) => ({
+    x: box.width / 2 + r(-box.width * 0.32, box.width * 0.32), y: r(-box.height * 0.5, -10),
+    w: r(5, 10), h: r(3, 6), c: colours[i % colours.length], curl: Math.random() < 0.25,
+    vy: r(38, 70), sway: r(14, 34), freq: r(1.2, 2.4), phase: r(0, 6.3), spin: r(-3, 3), rot: r(0, 6.3)
+  }));
+  const start = performance.now();
+  const frame = (now) => {
+    if (!canvas.isConnected) return;
+    const t = (now - start) / 1000;
+    ctx.clearRect(0, 0, box.width, box.height);
+    const fade = Math.max(0, Math.min(1, (4.2 - t) / 0.8));
+    for (const b of bits) {
+      const y = b.y + b.vy * t, x = b.x + Math.sin(t * b.freq + b.phase) * b.sway;
+      const turn = Math.cos(t * b.freq * 1.7 + b.phase); // paper tumbling: it narrows as it turns
+      ctx.save(); ctx.globalAlpha = fade * 0.9; ctx.translate(x, y); ctx.rotate(b.rot + b.spin * t); ctx.fillStyle = b.c; ctx.strokeStyle = b.c;
+      if (b.curl) { ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(0, 0, b.w * 0.6, 0, Math.PI * 0.9 * Math.abs(turn) + 0.6); ctx.stroke(); }
+      else ctx.fillRect(-b.w / 2, (-b.h / 2) * Math.abs(turn), b.w, b.h * Math.abs(turn) + 0.6);
+      ctx.restore();
+    }
+    if (t < 4.2) requestAnimationFrame(frame); else ctx.clearRect(0, 0, box.width, box.height);
+  };
+  requestAnimationFrame(frame);
+}
+render();
+// The first time Review opens. (In the app: once, remembered in settings.)
+openGuide(0);
+</script>
