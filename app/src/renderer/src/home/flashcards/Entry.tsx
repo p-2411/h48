@@ -80,7 +80,8 @@ export function Entry({
           )}
           {meta && (
             <>
-              <span className="sep" aria-hidden="true" />
+              {/* A dot between, only when something comes before the word type. */}
+              {(entry?.ipa || onSound) && <span className="sep" aria-hidden="true" />}
               <span className="pos">{meta}</span>
             </>
           )}

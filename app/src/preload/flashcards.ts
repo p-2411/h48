@@ -53,6 +53,8 @@ export const flashcardsApi = {
 
   lookup: (language: Language, word: string) =>
     invoke<{ meaning?: string; entry?: DictEntry }>('flashcards:lookup', language, word),
+  /** Add to review: the word's card from what Duet heard; undefined when its meaning isn't known. */
+  keep: (language: Language, key: string) => invoke<WordView | undefined>('flashcards:keep', language, key),
   make: (draft: { language: Language; word: string; meaning?: string; line?: string }) =>
     invoke<Card>('flashcards:make', draft),
   picture: (cardId: string, from: PictureSource) =>

@@ -787,6 +787,24 @@ await test('the dictionary asks once per word, and never for a word without a ca
   assert.deepEqual(plain.entry.senses, ['have to'], 'its English in the line')
 })
 
+await test('Add to review: a heard word becomes a card at once, from the line, with no lookup', async () => {
+  const before = requests.length
+  const kept = await ask('keep', 'es', 'es:tener')
+  // Saving starts the background fill every saved card gets (one request), which nothing waits for.
+  assert.ok(requests.length - before <= 1, 'no lookup of its own')
+  assert.equal(kept.cards.length, 1, 'the word has its card')
+  const card = kept.cards[0]
+  assert.equal(card.meaning, 'have to', 'its meaning in the line')
+  assert.deepEqual(card.example, { line: 'Mañana tengo que madrugar.', byDuet: false }, 'the line it was heard in')
+  assert.equal(card.wordKey, 'es:tener')
+  const again = await ask('keep', 'es', 'es:tener')
+  assert.equal(again.cards.length, 1, 'a second click makes no second card')
+  assert.equal(await ask('keep', 'es', 'es:zzz'), undefined, 'no meaning known: the page opens Make a card')
+  // Gone again, so the tests after this see the cards they expect.
+  cards.collection.remove(card.id)
+  await settle()
+})
+
 await test('many words go in few requests; a running request is waited for, a failed one asked again', async () => {
   const words = Array.from({ length: 15 }, (_, index) => ({ word: `palabra${index}` }))
   const before = requests.length

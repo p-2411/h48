@@ -254,12 +254,20 @@ function Detail({
             </button>
           </>
         ) : (
-          // A word met but not yet reviewed: this makes its card, so it comes up in reviews.
+          // A word met but not yet reviewed: one click makes its card from what Duet heard (Make a card
+          // only when its meaning isn't known), so it comes up in reviews.
           <button
             type="button"
             className="primary"
-            title="Make a flashcard for this word, so it comes up in your reviews"
-            onClick={() => onMake(word.word)}
+            title="Makes a flashcard from where you heard it, so it comes up in your reviews"
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                const kept = await api.keep(language, word.key)
+                if (kept) setWord(kept)
+                else onMake(word.word)
+              }, 'That word couldn’t be added to your reviews.')
+            }
           >
             Add to review
           </button>

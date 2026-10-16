@@ -153,6 +153,7 @@ export class Flashcards {
     handle('videos', (lang) => this.videos(language(lang)))
     handle('lookup', (lang, word) => this.lookup(language(lang), text(word, 'The word')))
     handle('make', (draft) => this.make(draft))
+    handle('keep', (lang, key) => this.keep(language(lang), text(key, 'The word')))
     handle('picture', (cardId, from) =>
       this.setPicture(text(cardId, 'The card'), from as PictureSource)
     )
@@ -672,6 +673,33 @@ export class Flashcards {
       this.deps.cards.notifyChanged()
     }
     return this.card(card.id)
+  }
+
+  /** Add to review: a word heard in a video becomes a card at once, from what Duet heard (its meaning
+   * in the line, and the line), with no lookup; its entry follows in the background, as every saved
+   * card's does. Undefined when Duet doesn't know what it means (the page then opens Make a card). */
+  async keep(lang: Language, key: string): Promise<WordView | undefined> {
+    if (this.cardsOf(lang, key).length) return this.word(lang, key)
+    const heard = await this.word(lang, key)
+    const meaning = heard.meaning?.trim().slice(0, MAX_TEXT)
+    if (!meaning) return undefined
+    const result = this.deps.cards.saveDraft({
+      type: 'understand',
+      expression: heard.word,
+      meaning,
+      target: heard.word,
+      language: lang,
+      source: { kind: 'tutor' },
+      wordKey: key
+    })
+    const card = 'saved' in result ? result.saved : result.duplicate
+    const line = heard.lastHeard?.line?.trim()
+    if (line) {
+      const example: Card['example'] = { line: line.slice(0, MAX_TEXT), byDuet: false }
+      database().prepare('UPDATE cards SET example = ? WHERE id = ?').run(JSON.stringify(example), card.id)
+      this.deps.cards.notifyChanged()
+    }
+    return this.word(lang, key)
   }
 
   // —— Pictures ——

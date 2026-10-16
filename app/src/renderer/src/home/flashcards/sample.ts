@@ -36,7 +36,10 @@ export type SessionApi = Pick<
   | 'replay'
 >
 /** What a word's page uses from the main process. */
-export type WordApi = Pick<FlashcardsApi, 'word' | 'setSooner' | 'setPaused' | 'replay' | 'picture'>
+export type WordApi = Pick<
+  FlashcardsApi,
+  'word' | 'keep' | 'setSooner' | 'setPaused' | 'replay' | 'picture'
+>
 
 const DAY = 86_400_000
 const STATE_OF: Record<Step, 'encountered' | 'known' | 'speakable' | 'usable'> = {
@@ -420,6 +423,8 @@ export function sampleApi(): SessionApi & WordApi {
       note: 'Natural. That’s how a Spaniard would say it.'
     }),
     word: async (_language, key) => page(key),
+    // The tour's words all have cards already.
+    keep: async (_language, key) => page(key),
     setSooner: async (_language, key, on) => (on ? sooner.add(key) : sooner.delete(key), page(key)),
     setPaused: async (_language, key, on) => (on ? paused.add(key) : paused.delete(key), page(key)),
     replay: async () => false,
