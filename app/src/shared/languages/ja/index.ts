@@ -1,7 +1,10 @@
 // Japanese.
-import { sampleEnglish, token as t, type LanguageModule } from './module'
+import { sampleEnglish, token as t, type LanguageModule } from '../module'
+import { mascot } from './mascot'
+import { sources } from './sources'
+import { welcome } from './welcome'
 
-export const ja: LanguageModule = {
+const ja: LanguageModule = {
   name: 'Japanese',
   // Kana marks Japanese; kanji alone could be Chinese, so it only counts alongside kana.
   recognise: { kind: 'script', letters: /[\p{Script=Hiragana}\p{Script=Katakana}]/gu, alsoCounts: /\p{Script=Han}/gu, share: 0.3 },
@@ -30,5 +33,14 @@ export const ja: LanguageModule = {
       'Sentence-final particles carry the tone: a rising か asks, ね seeks agreement, a hard よ can sound pushy.',
       'Polite speech is said softly and evenly; said clipped or loud, polite words can still sound curt.'
     ]
-  }
+  },
+  voice: { tag: 'ja-JP', name: 'Japanese' },
+  font: "'Hiragino Sans', 'Yu Gothic UI', 'Meiryo'",
+  rankByParts: true,
+  dictionary: { letters: /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u, exampleLength: 40 },
+  welcome,
+  mascot,
+  sources
 }
+
+export default ja

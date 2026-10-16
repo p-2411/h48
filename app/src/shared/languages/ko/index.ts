@@ -1,7 +1,9 @@
 // Korean.
-import { sampleEnglish, token as t, type LanguageModule } from './module'
+import { sampleEnglish, token as t, type LanguageModule } from '../module'
+import { mascot } from './mascot'
+import { welcome } from './welcome'
 
-export const ko: LanguageModule = {
+const ko: LanguageModule = {
   name: 'Korean',
   recognise: { kind: 'script', letters: /\p{Script=Hangul}/gu, share: 0.3 },
   reading: {
@@ -30,5 +32,22 @@ export const ko: LanguageModule = {
       'A flat, clipped delivery can make 반말 sound rude; friendly 해요체 has a softer rise at the end.',
       'Syllables are even; English-style stress on one syllable sounds foreign.'
     ]
-  }
+  },
+  voice: { tag: 'ko-KR', name: 'Korean' },
+  font: "'Apple SD Gothic Neo', 'Malgun Gothic'",
+  rankByParts: true,
+  // The frequency list keeps a verb's or describing word's stem (먹, not 먹다), and a 하다 word's noun
+  // (공부, not 공부하다); only those forms are cut (a noun such as 바다 is not 바).
+  listForms: (form, job) =>
+    job === 'v' || job === 'a'
+      ? [
+          ...(form.endsWith('하다') ? [form.slice(0, -2)] : []),
+          ...(form.endsWith('다') ? [form.slice(0, -1)] : [])
+        ]
+      : [],
+  dictionary: { letters: /\p{Script=Hangul}/u, exampleLength: 50 },
+  welcome,
+  mascot
 }
+
+export default ko

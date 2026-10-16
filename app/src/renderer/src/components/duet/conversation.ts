@@ -1,5 +1,6 @@
 // Local, deterministic direction. No language assessment: explicit tutor feedback is the
 // authority for corrections/praise; learner confidence is never treated as correctness.
+import { LANGUAGE_CODES, languageModule, type MascotCue } from '../../../../shared/languages'
 import type { DuetGesture, DuetMood, DuetTone } from './engine'
 
 export type AnimationTurn = {
@@ -19,15 +20,23 @@ export type Reaction = {
 }
 export type AnimationCue = Reaction & { id: number; until: number }
 type Rule = Reaction & { role?: AnimationTurn['role']; pattern: RegExp }
+
+/** A cue's phrases: the English here, and each taught language's own (shared/languages/<code>,
+ * mascot), as one pattern that ignores case. */
+function phrases(cue: MascotCue, english: RegExp): RegExp {
+  const own = LANGUAGE_CODES.flatMap((code) => languageModule(code).mascot?.[cue] ?? [])
+  return new RegExp([english, ...own].map((pattern) => pattern.source).join('|'), 'iu')
+}
+
 // Ordered by priority: the first rule that matches a clause wins. Phrases cover how the tutor
-// actually talks (English, with the taught languages' everyday words: es, ja, ko), not one wording.
+// actually talks (English, with the taught languages' everyday words), not one wording.
 const rules: Rule[] = [
   {
     mood: 'oops',
     priority: 8,
     role: 'tutor',
     pattern:
-      /\b(my mistake|my bad|i was wrong|i got that wrong|sorry, i meant|let me correct myself)\b|me equivoqu[eé]|perd[oó]n, quise decir|私の間違い|間違えました|제가 잘못|제가 틀렸/iu
+      phrases('oops', /\b(my mistake|my bad|i was wrong|i got that wrong|sorry, i meant|let me correct myself)\b/)
   },
   {
     mood: 'almost',
@@ -35,21 +44,21 @@ const rules: Rule[] = [
     priority: 8,
     role: 'tutor',
     pattern:
-      /\b(not quite|almost(?: right| there| had it)|so close|very close|small (?:correction|fix|mistake)|tiny (?:fix|mistake)|more natural (?:to say|would be)|we(?:['’]d| would) (?:usually )?say|it should be|careful with|try saying|one small thing|actually,? it['’]?s)\b|^almost[,.!]|casi(?:[,.!]| lo tienes| correcto)|muy cerca|peque[ñn]a correcci[oó]n|mejor decir|deber[ií]as? decir|deber[ií]a ser|cuidado con|惜しい|少し違|ちょっと違|正しくは|〜の方が自然|조금 틀|거의 다|아쉬워|더 자연스|정확히는/iu
+      phrases('almost', /\b(not quite|almost(?: right| there| had it)|so close|very close|small (?:correction|fix|mistake)|tiny (?:fix|mistake)|more natural (?:to say|would be)|we(?:['’]d| would) (?:usually )?say|it should be|careful with|try saying|one small thing|actually,? it['’]?s)\b|^almost[,.!]/)
   },
   {
     mood: 'sad',
     tone: 'gentle',
     priority: 7,
     pattern:
-      /\b(i feel (?:really |so )?(?:sad|down|lonely)|i['’]?m (?:so |really )?sad|i lost my|passed away|sorry for your loss|that sounds (?:painful|hard|tough)|i['’]?m sorry to hear)\b|me siento (?:muy )?(?:triste|sol[oa])|estoy triste|lo siento mucho|lo siento por tu p[eé]rdida|悲しい|寂しい|亡くな|残念です|슬퍼요|슬퍼|외로워|돌아가셨|안타까/iu
+      phrases('sad', /\b(i feel (?:really |so )?(?:sad|down|lonely)|i['’]?m (?:so |really )?sad|i lost my|passed away|sorry for your loss|that sounds (?:painful|hard|tough)|i['’]?m sorry to hear)\b/)
   },
   {
     mood: 'encourage',
     tone: 'gentle',
     priority: 7,
     pattern:
-      /\b(i can['’]?t do (?:this|it)|i give up|this is (?:so |really )?(?:hard|difficult)|it['’]?s (?:so |too )?(?:hard|difficult)|i['’]?m (?:so )?(?:bad at|confused)|i don['’]?t (?:get|understand)|you can do (?:this|it)|don['’]?t give up|take your time|no rush|keep going|you['’]?re getting there|don['’]?t worry)\b|no te rindas|no puedo (?:hacerlo|m[aá]s)|es (?:muy )?dif[ií]cil|no entiendo|t[oó]mate tu tiempo|sigue as[ií]|no te preocupes|諦め|できません|難しい|わかりません|大丈夫|頑張って|포기하지|못하겠|어려워|모르겠어|괜찮아|힘내/iu
+      phrases('encourage', /\b(i can['’]?t do (?:this|it)|i give up|this is (?:so |really )?(?:hard|difficult)|it['’]?s (?:so |too )?(?:hard|difficult)|i['’]?m (?:so )?(?:bad at|confused)|i don['’]?t (?:get|understand)|you can do (?:this|it)|don['’]?t give up|take your time|no rush|keep going|you['’]?re getting there|don['’]?t worry)\b/)
   },
   {
     mood: 'amazed',
@@ -57,100 +66,100 @@ const rules: Rule[] = [
     priority: 6,
     role: 'tutor',
     pattern:
-      /\b(that was (?:incredible|amazing|impressive)|absolutely brilliant|amazing progress|incredible|impressive|outstanding|blown away|like a native)\b|incre[ií]ble|impresionante|progreso incre[ií]ble|como un nativo|本当にすごい|すごすぎ|ネイティブみたい|정말 대단|대박|원어민 같/iu
+      phrases('amazed', /\b(that was (?:incredible|amazing|impressive)|absolutely brilliant|amazing progress|incredible|impressive|outstanding|blown away|like a native)\b/)
   },
   {
     mood: 'proud',
     priority: 6,
     role: 'tutor',
     pattern:
-      /\b(proud of you|you['’]?ve improved|you['’]?re improving|you did it|look how far|you['’]?ve come a long way|so much better)\b|orgullos[oa] de ti|has mejorado|est[aá]s mejorando|lo lograste|上達しました|上手になり|成長した|많이 늘었|실력이 늘/iu
+      phrases('proud', /\b(proud of you|you['’]?ve improved|you['’]?re improving|you did it|look how far|you['’]?ve come a long way|so much better)\b/)
   },
   {
     mood: 'correct',
     priority: 6,
     role: 'tutor',
     pattern:
-      /\b(that['’]?s (?:right|correct|it|perfect)|well done|good job|great job|nice job|nicely done|you got it|you nailed it|exactly|perfect(?:ly said)?|excellent|spot on|nice one|good one|very good|bravo)\b|^(?:great|correct|right)[!.,]|muy bien|bien hecho|es correcto|^¡?correcto|perfecto|excelente|exacto|genial|eso es|正解|よくでき|完璧|上手|いいですね|その通り|정답|잘했어요|완벽해요|훌륭해요|맞아요|좋아요/iu
+      phrases('correct', /\b(that['’]?s (?:right|correct|it|perfect)|well done|good job|great job|nice job|nicely done|you got it|you nailed it|exactly|perfect(?:ly said)?|excellent|spot on|nice one|good one|very good|bravo)\b|^(?:great|correct|right)[!.,]/)
   },
   {
     mood: 'confused',
     priority: 5,
     role: 'tutor',
     pattern:
-      /\b(i['’]?m not sure what you mean|could you clarify|i didn['’]?t (?:understand|catch that)|sorry, what|could you (?:say|repeat) that again|i didn['’]?t quite get)\b|no entend[ií]|puedes aclarar|puedes repetir|意味がわかりません|もう一度言って|もう一度説明|이해하지 못|다시 말해|다시 설명/iu
+      phrases('confused', /\b(i['’]?m not sure what you mean|could you clarify|i didn['’]?t (?:understand|catch that)|sorry, what|could you (?:say|repeat) that again|i didn['’]?t quite get)\b/)
   },
   {
     mood: 'shy',
     priority: 5,
     role: 'learner',
     pattern:
-      /\b(you['’]?re (?:so |really )?(?:cute|adorable|sweet|the best)|duet.{0,12}(?:cute|adorable|best)|i love you)\b|eres (?:adorable|lind[oa]|el mejor)|te quiero|かわいい|大好き|귀여워|최고야|사랑해/iu
+      phrases('shy', /\b(you['’]?re (?:so |really )?(?:cute|adorable|sweet|the best)|duet.{0,12}(?:cute|adorable|best)|i love you)\b/)
   },
   {
     mood: 'adoring',
     priority: 4,
     pattern:
-      /\b(thank(?:s| you)(?: so much)?|i appreciate (?:you|it)|you['’]?re so (?:kind|helpful)|that helps)\b|gracias|te lo agradezco|ありがとう|助かり|고마워|감사합니다|감사해요/iu,
+      phrases('thanks', /\b(thank(?:s| you)(?: so much)?|i appreciate (?:you|it)|you['’]?re so (?:kind|helpful)|that helps)\b/),
     cooldown: 20_000
   },
   {
     mood: 'laughing',
     priority: 5,
     pattern:
-      /\b(ha(?:ha)+|lol|lmao|that['’]?s (?:hilarious|so funny)|that made me laugh|so funny)\b|ja(?:ja)+|qu[eé] gracioso|笑(?!顔)|ｗｗ|(?<![a-z.])w{2,}(?![a-z.])|あはは|ㅋㅋ+|ㅎㅎ+|하하|너무 웃겨/iu
+      phrases('laughing', /\b(ha(?:ha)+|lol|lmao|that['’]?s (?:hilarious|so funny)|that made me laugh|so funny)\b/)
   },
   {
     mood: 'surprised',
     priority: 5,
     pattern:
-      /\b(wow|whoa|no way|what a surprise|i didn['’]?t (?:expect|know) that)\b|\breally[?？]|^oh!|qu[eé] sorpresa|¿en serio\?|de verdad\?|no sab[ií]a|びっくり|本当に[?？]|えっ|へえ|놀랐|진짜[?？]|와[!！]/iu
+      phrases('surprised', /\b(wow|whoa|no way|what a surprise|i didn['’]?t (?:expect|know) that)\b|\breally[?？]|^oh!/)
   },
   {
     mood: 'determined',
     priority: 4,
     pattern:
-      /\b(let['’]?s (?:try (?:it )?again|do (?:this|it)|go|practi[cs]e)|i['’]?ll (?:try again|practi[cs]e|keep trying)|one more time|again!)\b|intent[eé]moslo|otra vez!|¡vamos|vamos!|voy a intentarlo|もう一度|頑張ります|やってみ|다시 해볼|한 번 더|해볼게/iu
+      phrases('determined', /\b(let['’]?s (?:try (?:it )?again|do (?:this|it)|go|practi[cs]e)|i['’]?ll (?:try again|practi[cs]e|keep trying)|one more time|again!)\b/)
   },
   {
     gesture: 'wave',
     priority: 4,
     pattern:
-      /^(?:hello|hi|hey|good (?:morning|evening|night)|goodbye|bye|see you|hola|buenos d[ií]as|buenas|adi[oó]s|hasta luego|chao)\b|こんにちは|おはよう|こんばんは|さようなら|またね|안녕/iu
+      phrases('hello', /^(?:hello|hi|hey|good (?:morning|evening|night)|goodbye|bye|see you)\b/)
   },
   {
     gesture: 'wink',
     priority: 4,
     role: 'tutor',
-    pattern: /\b(just kidding|only joking|between you and me|little secret)\b|es broma|un secreto|冗談|秘密|농담|비밀/iu
+    pattern: phrases('joke', /\b(just kidding|only joking|between you and me|little secret)\b/)
   },
-  { gesture: 'giggle', priority: 4, pattern: /\b(hehe|hihi|chuckle|teehee)\b|jeje|jiji|ふふ|へへ|헤헤|히히/iu },
+  { gesture: 'giggle', priority: 4, pattern: phrases('giggle', /\b(hehe|hihi|chuckle|teehee)\b/) },
   // The learner showing they understood: a pleased nod.
   {
     gesture: 'yes',
     priority: 3,
     role: 'learner',
-    pattern: /^(?:i (?:get|got) it|i understand|i see|oh,? i see|makes sense|got it)\b|^entiendo|^ya veo|^ah,? vale|^わかった|^なるほど|^알겠|^아하/iu
+    pattern: phrases('understood', /^(?:i (?:get|got) it|i understand|i see|oh,? i see|makes sense|got it)\b/)
   },
   {
     gesture: 'yes',
     priority: 3,
     role: 'tutor',
     pattern:
-      /^(?:yes|yeah|yep|absolutely|of course|sure|i agree|right,|s[ií],|claro|por supuesto)\b|^その通り|^はい[、。！]|^そうです|^맞아요|^네[,.!]/iu
+      phrases('agree', /^(?:yes|yeah|yep|absolutely|of course|sure|i agree|right,)\b/)
   },
   {
     gesture: 'no',
     priority: 3,
     role: 'tutor',
-    pattern: /^(?:no,|nope|i disagree|not exactly|not really|no es as[ií])|^いいえ|^違います|^아니요|^아뇨/iu
+    pattern: phrases('disagree', /^(?:no,|nope|i disagree|not exactly|not really)/)
   },
   // Wondering aloud or a learner's question: curious. A tutor's own questions are constant (it ends
   // most turns with one), so they only make Duet curious now and then, not every turn.
   {
     mood: 'curious',
     priority: 2,
-    pattern: /\b(tell me more|i wonder|how come|what happened|and then)\b|cu[eé]ntame m[aá]s|me pregunto|教えて|どうして|궁금|어떻게 됐/iu
+    pattern: phrases('curious', /\b(tell me more|i wonder|how come|what happened|and then)\b/)
   },
   { mood: 'curious', priority: 2, role: 'learner', pattern: /[?？]$/u, cooldown: 12_000 },
   { mood: 'curious', priority: 2, role: 'tutor', pattern: /[?？]$/u, cooldown: 30_000 },
@@ -158,17 +167,28 @@ const rules: Rule[] = [
   { tone: 'excited', priority: 1, role: 'tutor', pattern: /[!！]$|^¡/u, cooldown: 6_000 }
 ]
 
+// Translation and "say after me" exercises: their words aren't feelings.
+const EXERCISE = phrases(
+  'exercise',
+  /\b(translate|translation|how do (?:you|i) say|what does .+ mean|the word|say after me|repeat after me)\b/
+)
+// A negation just before a phrase ("not really great"), in English or a taught language.
+const NEGATIONS = [
+  'not',
+  'never',
+  "isn['’]?t",
+  "wasn['’]?t",
+  'no',
+  ...LANGUAGE_CODES.flatMap((code) => languageModule(code).mascot?.negations ?? [])
+]
+const NEGATED = new RegExp(`\\b(?:${NEGATIONS.join('|')})\\s+(?:really\\s+|actually\\s+)?$`, 'iu')
+
 export function classifyReaction(turn: AnimationTurn): Reaction | undefined {
   // Ignore quoted examples and explicit translation/definition exercises, not just their keywords.
   const text = turn.text
     .replace(/“[^”]*”|「[^」]*」|『[^』]*』|"[^"]*"|(?<!\p{L})'[^'\n]+'|‘[^’]*’/gu, '')
     .trim()
-  if (
-    /\b(translate|translation|how do (?:you|i) say|what does .+ mean|the word|say after me|repeat after me)\b|c[oó]mo se dice|qu[eé] significa|tradu|翻訳|という意味|どう言|번역|무슨 뜻|따라 해/iu.test(
-      `${turn.context ?? ''}\n${text}`
-    )
-  )
-    return
+  if (EXERCISE.test(`${turn.context ?? ''}\n${text}`)) return
   for (const { pattern, role, ...reaction } of rules) {
     if (role && role !== turn.role) continue
     const match = pattern.exec(text)
@@ -177,7 +197,7 @@ export function classifyReaction(turn: AnimationTurn): Reaction | undefined {
     // such as "not quite" are complete rules themselves and are deliberately retained.
     const prefix = text.slice(Math.max(0, match.index - 28), match.index)
     if (
-      /\b(?:not|never|isn['’]?t|wasn['’]?t|no|nunca)\s+(?:really\s+|actually\s+)?$/iu.test(prefix)
+      NEGATED.test(prefix)
     )
       continue
     return reaction

@@ -7,6 +7,7 @@
 // on what Duet has for it, and ends with Forgot or Got it; Duet works out how hard it was.
 import type { Card, Rating } from './cards'
 import { wordKey, type WordState } from './knowledge'
+import { languageModule } from './languages'
 import type { Language } from './types'
 
 /** The four steps, lowest first, as the page names them in code. */
@@ -242,10 +243,11 @@ export function pitchMorae(
   })
 }
 
-/** The article a noun takes, where Duet knows it (Spanish): none when either fits. */
+/** The article a noun takes, where its language has them (shared/languages, article): none when
+ * either fits. */
 export function articleFor(language: Language, gender: string | undefined): string | undefined {
-  if (language !== 'es' || !gender || gender.includes(' or ')) return undefined
-  return gender === 'feminine' ? 'la' : 'el'
+  if (!gender || gender.includes(' or ')) return undefined
+  return languageModule(language).article?.(gender)
 }
 
 /** Where the learner last heard the word, read from the watch log each time (never stored on the

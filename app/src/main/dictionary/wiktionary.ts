@@ -4,6 +4,7 @@
 // dictionary-packs.md); the app reads the finished packs (./packs.ts). Pure, and tested
 // (scripts/test-flashcards.mjs) so it stays honest.
 import { articleFor, type DictEntry } from '../../shared/flashcards'
+import { languageModule } from '../../shared/languages'
 import type { Language } from '../../shared/types'
 
 type Example = { text?: unknown; english?: unknown; translation?: unknown }
@@ -31,8 +32,6 @@ const SENSES = 4
 const RELATED = 3
 // Related "words" longer than this are sayings, not words.
 const RELATED_WORDS = 3
-// An example longer than this is a passage, not an everyday line.
-const EXAMPLE_LENGTH: Record<Language, number> = { es: 80, ja: 40, ko: 50 }
 // A note in brackets longer than this is an encyclopedia's, not a card's ("dog (the species…)").
 const NOTE_LENGTH = 30
 // Senses with these labels go after the everyday ones.
@@ -52,12 +51,10 @@ const POS: Record<string, string> = {
   prep_phrase: 'phrase',
   proverb: 'saying'
 }
-// The script a related word must be written in, so a gloss or a character note isn't taken for one.
-const SCRIPT: Record<Language, RegExp> = {
-  es: /\p{Script=Latin}/u,
-  ja: /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u,
-  ko: /\p{Script=Hangul}/u
-}
+// The letters a related word or an example must be written in, and the longest example kept (a
+// longer one is a passage, not an everyday line): each language's own (shared/languages,
+// dictionary).
+const letters = (language: Language): RegExp => languageModule(language).dictionary.letters
 
 const text = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
 const strings = (value: unknown): string[] =>
@@ -158,7 +155,7 @@ export function entryFrom(language: Language, word: string, raws: Raw[]): DictEn
     const tags = strings(linked.tags)
     if (
       !name ||
-      !SCRIPT[language].test(name) ||
+      !letters(language).test(name) ||
       /["“”()]/.test(name) ||
       name.split(/\s+/).length > RELATED_WORDS ||
       tags.includes('dialectal') ||
@@ -194,8 +191,9 @@ function exampleOf(language: Language, sense: Sense): DictEntry['example'] {
     const line = text(item.text)
     const translation = text(item.english) || text(item.translation)
     // In the language's own script only (a Japanese line in rōmaji is an old quote).
-    const own = SCRIPT[language].test(line) && (language === 'es' || !/[A-Za-z]/.test(line))
-    if (line && translation && own && line.length <= EXAMPLE_LENGTH[language])
+    const latin = languageModule(language).recognise.kind === 'words'
+    const own = letters(language).test(line) && (latin || !/[A-Za-z]/.test(line))
+    if (line && translation && own && line.length <= languageModule(language).dictionary.exampleLength)
       return { line, translation }
   }
   return undefined

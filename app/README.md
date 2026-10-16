@@ -163,11 +163,12 @@ same context. `watcher.moment(lineId?)` takes one.
 
 ## Adding things
 
-- **A language:** a file in `src/shared/languages/` that fills in `LanguageModule` (`module.ts`): its
-  name, how it is recognised, its romanisation if it isn't written in Latin letters, the welcome
-  sample, its note for the line prompt, and its own sections of the tutor's prompts. Add it to
-  `LANGUAGE_MODULES` in `index.ts`; the settings, prompts, detection and card schema read the list.
-  `npm test` checks every language's prompts and detection.
+- **A language:** a folder in `src/shared/languages/` (its code: `fr`). It holds the language
+  (`index.ts`, the shape in `module.ts`), its first run (`welcome.ts`), its word-frequency list,
+  and optionally its mascot phrases, credits and dictionary build. Nothing else changes:
+  `scripts/languages.mjs` lists the folder, and the settings, prompts, detection, reading levels,
+  cards, mascot and credits read the list. `src/shared/languages/README.md` has the steps, and
+  `npm test` names anything the folder still lacks.
 - **An AI provider:** implement `StructuredModel` (`ai/structured.ts`) in one new file in
   `ai/providers/` and add a case to its `index.ts`; every task then works on it. For voice, the same
   in `ai/voice/`. Throw `ModelError` for failures.

@@ -30,8 +30,9 @@ export default defineConfig(
     }
   },
   {
-    // Plain JavaScript scripts (tests, build helpers, dev tools) can't annotate return types.
-    files: ['scripts/**/*.mjs', 'dev/**/*.mjs'],
+    // Plain JavaScript scripts (tests, build helpers, dev tools, a language's dictionary builder)
+    // can't annotate return types.
+    files: ['scripts/**/*.mjs', 'dev/**/*.mjs', 'src/shared/languages/*/dictionary.mjs'],
     rules: { '@typescript-eslint/explicit-function-return-type': 'off' }
   },
   eslintConfigPrettier
