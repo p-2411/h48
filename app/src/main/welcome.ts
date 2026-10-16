@@ -1,4 +1,5 @@
-// First run: opens the welcome window until the learner has been through it once.
+// First run: opens the welcome window until the learner has been through it once. Settings and the
+// menu can replay it as a demo, which saves no choices (welcome.html?replay=1; see welcome/flow.ts).
 //
 // IPC (all "welcome:*"; the page reaches them through window.duet.welcome in src/preload/welcome.ts):
 //   welcome:open-settings   opens the System Settings pane for a permission
@@ -34,11 +35,12 @@ export class Welcome {
     })
   }
 
-  /** Shows the welcome window if it hasn't been finished yet (or always, when asked from the menu). */
-  open(always = false): void {
-    if (!always && this.settings.current.onboarded) return
+  /** Shows the welcome window if it hasn't been finished yet; with `replay`, as a demo, any time. */
+  open(replay = false): void {
+    if (!replay && this.settings.current.onboarded) return
     if (this.window && !this.window.isDestroyed()) return void this.window.focus()
-    this.window = createWelcomeWindow()
+    // Before the first run is through, even a replay is the real thing: its choices are saved.
+    this.window = createWelcomeWindow(replay && this.settings.current.onboarded)
     this.window.on('closed', () => (this.window = undefined))
   }
 }

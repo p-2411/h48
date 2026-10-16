@@ -1,0 +1,286 @@
+<title>Duet Guided Start</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif&family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* The first run, led by Duet. One window; Duet moves (Dock icon → the middle → the strip on the clip →
+   back) instead of screens replacing each other. Around the conversation, two things from the first
+   prototype keep it clear: three progress tracks in the title bar (You · Your level · Try it), and on
+   the clip a checklist of what to try, each with a tick and a way past it.
+   Colours are home-v2's paper tokens, by day and by night. */
+:root {
+  --ground: #f2f3f3; --card: #ffffff; --ink: #1b201f; --ink2: #3a403e; --sub: #666c6a; --faint: #8a908e;
+  --on-ink: #ffffff; --soft: #f2f1ed; --soft-hover: #ecebe7; --line: rgba(27,32,31,.07); --line2: rgba(27,32,31,.14);
+  --use: #1b7a3a; --desk: #d3d6d5; --desk2: #c3c8c6; --dockbar: rgba(255,255,255,.55); --tile: #f6f7f6;
+  --settle: cubic-bezier(.22,1,.36,1); --move: cubic-bezier(.05,.9,.1,1.05);
+  --serif: 'Instrument Serif', Georgia, serif; --sans: Inter, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --ground: #121313; --card: #1a1c1c; --ink: #eef3f1; --ink2: #c9d0ce; --sub: #9aa3a0; --faint: #6f7775;
+  --on-ink: #121313; --soft: rgba(238,243,241,.08); --soft-hover: rgba(238,243,241,.13); --line: rgba(238,243,241,.08); --line2: rgba(238,243,241,.16);
+  --use: #32d74b; --desk: #0b0c0c; --desk2: #050606; --dockbar: rgba(40,42,42,.6); --tile: #080d0d; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --ground: #121313; --card: #1a1c1c; --ink: #eef3f1; --ink2: #c9d0ce; --sub: #9aa3a0; --faint: #6f7775;
+  --on-ink: #121313; --soft: rgba(238,243,241,.08); --soft-hover: rgba(238,243,241,.13); --line: rgba(238,243,241,.08); --line2: rgba(238,243,241,.16);
+  --use: #32d74b; --desk: #0b0c0c; --desk2: #050606; --dockbar: rgba(40,42,42,.6); --tile: #080d0d; color-scheme: dark }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--desk2); color: var(--ink); font-family: var(--sans); display: flex; flex-direction: column; align-items: center; padding-inline: 16px; padding-block: 12px 16px; min-height: 100%; }
+:lang(ja) { font-family: 'Noto Sans JP', var(--sans); } :lang(ko) { font-family: 'Noto Sans KR', var(--sans); }
+button { font: inherit; color: inherit; }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+/* Review controls: not part of the design. */
+.review { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; font-size: 12px; margin-bottom: 12px; }
+.review button { height: 28px; padding: 0 12px; border-radius: 999px; border: 0; background: var(--soft); color: var(--sub); cursor: pointer; }
+.review button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.review .gap { width: 8px; }
+
+/* The desktop: a wallpaper, the Dock, and the window that opens out of Duet's icon. */
+.desk { position: relative; width: min(980px, 100%); height: 640px; border-radius: 16px; overflow: hidden; background: radial-gradient(80% 70% at 20% 10%, var(--desk), var(--desk2)); }
+.dockbar { position: absolute; left: 50%; bottom: 10px; translate: -50% 0; display: flex; gap: 10px; padding: 8px 10px; border-radius: 20px; background: var(--dockbar); backdrop-filter: blur(20px); box-shadow: inset 0 0 0 .5px var(--line2); z-index: 1; }
+.dockbar i { width: 44px; height: 44px; border-radius: 11px; background: var(--line2); }
+.dockbar .slot { width: 44px; height: 44px; display: grid; place-items: center; position: relative; }
+.dockbar .open-btn { position: absolute; inset: -4px; border: 0; background: transparent; cursor: pointer; border-radius: 12px; z-index: 6; }
+.hint { position: absolute; left: 50%; bottom: 84px; translate: -50% 0; font-size: 12.5px; color: var(--sub); background: var(--card); padding: 6px 12px; border-radius: 99px; box-shadow: 0 6px 20px rgba(0,0,0,.08); white-space: nowrap; animation: bob 1.8s ease-in-out infinite alternate; }
+@keyframes bob { to { translate: -50% -4px; } }
+.win.closed ~ .hint, .desk:has(.win.closed) .hint { display: block; }
+.desk:has(.win:not(.closed)) .hint { display: none; }
+
+.win { position: absolute; inset: 18px 18px 78px; border-radius: 14px; background: var(--ground); box-shadow: 0 30px 70px rgba(0,0,0,.25), 0 0 0 .5px var(--line2); overflow: hidden; transform-origin: 50% 110%; transition: transform .55s var(--move), opacity .3s ease; display: flex; flex-direction: column; }
+.win.closed { transform: scale(.06); opacity: 0; pointer-events: none; }
+.bar { height: 38px; flex: none; display: flex; align-items: center; padding: 0 14px; gap: 8px; }
+.lights { display: flex; gap: 8px; } .lights i { width: 12px; height: 12px; border-radius: 50%; }
+.lights i:nth-child(1) { background: #ff5f57; } .lights i:nth-child(2) { background: #febc2e; } .lights i:nth-child(3) { background: #28c840; }
+.win.win11 .lights { order: 2; margin-left: auto; gap: 18px; } .win.win11 .lights i { width: 10px; height: 1.5px; border-radius: 0; background: var(--sub); }
+.bar .spacer { flex: 1; }
+/* Progress: three tracks, each filling as its part goes by. */
+.chapters { position: absolute; left: 50%; translate: -50% 0; display: flex; gap: 6px; width: min(330px, 46%); }
+.chapter { flex: 1; display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: var(--faint); transition: color .2s; }
+.chapter.now { color: var(--ink); font-weight: 500; } .chapter.done { color: var(--sub); }
+.chapter .track { height: 3px; border-radius: 3px; background: var(--line2); overflow: hidden; }
+.chapter .track i { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--ink); transition: width .45s var(--settle); }
+.win[data-at="icon"] .chapters { opacity: 0; }
+.voice { width: 28px; height: 28px; border-radius: 8px; border: 0; background: none; color: var(--faint); cursor: pointer; display: grid; place-items: center; }
+.voice:hover { background: var(--soft); color: var(--ink); }
+.voice[aria-pressed="false"] .wave-on, .voice[aria-pressed="true"] .wave-off { display: none; }
+.skip { border: 0; background: none; color: var(--faint); font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.skip:hover { color: var(--ink); background: var(--soft); }
+.stage { position: relative; flex: 1; min-height: 0; }
+[data-scene] { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .35s ease; }
+[data-scene].on { opacity: 1; pointer-events: auto; }
+
+/* Duet: one element for the whole run, moved from slot to slot. */
+#duet-box { position: absolute; z-index: 5; transition: left .7s var(--move), top .7s var(--move), width .7s var(--move); pointer-events: none; }
+#duet-box svg { width: 100%; height: auto; display: block; }
+#duet-box::before { content: ''; position: absolute; inset: -18% -6%; border-radius: 24%; background: var(--tile); box-shadow: inset 0 0 0 1px var(--line2), 0 2px 6px rgba(0,0,0,.15); opacity: 0; transform: scale(.9); transition: opacity .45s ease, transform .6s var(--move); z-index: -1; }
+#duet-box.tile::before { opacity: 1; transform: none; }
+.slot-meet { position: absolute; left: calc(50% - 95px); top: 9%; width: 190px; aspect-ratio: 100 / 66; }
+.slot-perm { position: absolute; left: calc(50% - 55px); top: 6%; width: 110px; aspect-ratio: 100 / 66; }
+.slot-done { position: absolute; left: calc(50% - 85px); top: 10%; width: 170px; aspect-ratio: 100 / 66; }
+.icon-slot { width: 36px; aspect-ratio: 100 / 66; }
+
+/* What Duet says, and what you say back. */
+.talk { position: absolute; left: 50%; translate: -50% 0; top: calc(9% + 150px); width: min(560px, calc(100% - 40px)); display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; z-index: 4; transition: top .5s var(--settle); }
+.win[data-at="perms"] .talk { top: calc(6% + 84px); }
+.win[data-at="done"] .talk { top: calc(10% + 132px); }
+.win[data-at="icon"] .talk { opacity: 0; }
+#caption { min-height: 64px; font-size: 22px; line-height: 1.35; letter-spacing: -.01em; text-wrap: balance; color: var(--ink); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+#caption.native .said { font-size: 28px; font-weight: 500; }
+#caption .tok { animation: tok .28s var(--settle) both; }
+@keyframes tok { from { opacity: 0; filter: blur(3px); } to { opacity: 1; filter: none; } }
+#caption .show-en { border: 0; background: none; font-size: 12px; color: var(--faint); cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+#caption .show-en:hover { color: var(--ink); background: var(--soft); }
+#caption .en { font-size: 14px; color: var(--sub); }
+#you { min-height: 20px; font-size: 14px; color: var(--sub); }
+#you.in span { display: inline-block; padding: 5px 12px; border-radius: 14px 14px 4px 14px; background: var(--soft); color: var(--ink2); animation: tok .3s var(--settle); }
+#answers { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.chip { height: 40px; padding: 0 18px; border-radius: 999px; border: 0; cursor: pointer; background: var(--card); box-shadow: inset 0 0 0 1px var(--line2), 0 1px 2px rgba(0,0,0,.04); font-size: 14.5px; font-weight: 500; transition: transform .18s var(--settle), background .15s ease; animation: tok .35s var(--settle) both; }
+.chip:nth-child(2) { animation-delay: .05s; } .chip:nth-child(3) { animation-delay: .1s; } .chip:nth-child(4) { animation-delay: .15s; }
+.chip:hover { background: var(--soft); } .chip:active { transform: scale(.95); }
+.chip.quiet { background: transparent; box-shadow: none; color: var(--sub); font-weight: 400; }
+.mic { height: 40px; padding: 0 16px 0 12px; border-radius: 999px; border: 0; cursor: pointer; background: var(--ink); color: var(--on-ink); display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; animation: tok .35s var(--settle) both; }
+#answers.listening .mic { background: #ff453a; color: #fff; animation: pulse 1.2s ease-in-out infinite; }
+#answers.listening .chip { opacity: .4; pointer-events: none; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(255,69,58,.18); } }
+#listen { display: flex; gap: 3px; height: 18px; align-items: center; }
+#listen i { width: 3px; border-radius: 2px; background: #ff453a; animation: lv .5s ease-in-out infinite alternate; }
+#listen i:nth-child(2) { animation-delay: -.2s; } #listen i:nth-child(3) { animation-delay: -.35s; } #listen i:nth-child(4) { animation-delay: -.1s; } #listen i:nth-child(5) { animation-delay: -.4s; }
+@keyframes lv { from { height: 3px; } to { height: 16px; } }
+#pips { display: flex; gap: 6px; } #pips i { width: 22px; height: 3px; border-radius: 3px; background: var(--line2); transition: background .3s; }
+#pips i.done { background: var(--use); } #pips i.now { background: var(--ink); }
+#brand-new { position: absolute; left: 50%; bottom: 18px; translate: -50% 0; border: 0; background: none; color: var(--sub); font-size: 13px; cursor: pointer; padding: 6px 10px; border-radius: 8px; z-index: 4; }
+#brand-new:hover { background: var(--soft); color: var(--ink); }
+
+/* The OS's own prompt (only to show where it comes). */
+#sheet { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: rgba(0,0,0,.12); }
+#sheet:has(.ask-mic) { background: none; place-items: end center; padding-bottom: 120px; pointer-events: none; }
+.ask-mic { display: flex; gap: 8px; pointer-events: auto; }
+.sys { width: 280px; padding: 18px; border-radius: 14px; background: var(--card); box-shadow: 0 20px 50px rgba(0,0,0,.3); display: flex; flex-direction: column; gap: 6px; text-align: center; animation: tok .25s var(--settle); }
+.sys b { font-size: 13.5px; } .sys small { font-size: 12px; color: var(--sub); }
+.sys-row { display: flex; gap: 8px; margin-top: 10px; }
+.sys-btn { flex: 1; height: 30px; border-radius: 7px; border: 0; background: var(--soft); cursor: pointer; font-size: 13px; }
+.sys-btn.primary { background: #0a84ff; color: #fff; }
+
+/* Permissions. */
+.perms { position: absolute; left: 50%; top: calc(6% + 190px); translate: -50% 0; width: min(500px, calc(100% - 40px)); display: flex; flex-direction: column; gap: 8px; }
+.perm { display: flex; gap: 12px; align-items: center; padding: 13px 16px; border-radius: 14px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.perm .tick { width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line2); display: grid; place-items: center; flex: none; transition: background .3s; }
+.perm.on .tick { background: var(--use); box-shadow: none; }
+.perm .grow { flex: 1; display: flex; flex-direction: column; gap: 2px; text-align: left; min-width: 0; }
+.perm b { font-size: 14px; } .perm small { font-size: 12px; color: var(--sub); line-height: 1.4; }
+.perm .state { font-size: 12px; font-weight: 600; color: var(--use); }
+.btn { height: 30px; padding: 0 12px; border-radius: 99px; border: 0; background: var(--soft); cursor: pointer; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.btn:hover { background: var(--soft-hover); }
+.win[data-at="perms"] .talk { z-index: 4; }
+.win[data-at="perms"] #answers { position: absolute; top: 300px; }
+
+/* The clip: a dark room, the strip on it, and Duet sitting on the strip's left end. */
+.clip { background: #0d0f0f; }
+.room { position: absolute; inset: 0; background: radial-gradient(60% 50% at 30% 35%, rgba(214,160,92,.35), transparent 70%), radial-gradient(40% 40% at 75% 30%, rgba(120,150,140,.30), transparent 70%), radial-gradient(70% 60% at 55% 85%, rgba(90,60,40,.45), transparent 70%), linear-gradient(180deg, #2a2723, #1a1816); animation: pan 16s ease-in-out infinite alternate; }
+@keyframes pan { to { transform: scale(1.06) translateX(-10px); } }
+.clip.held .room { animation-play-state: paused; }
+.fig { position: absolute; left: 22%; top: 12%; width: 150px; height: 230px; border-radius: 75px 75px 18px 18px; background: rgba(40,34,30,.78); filter: blur(2px); }
+.fig.b { left: 60%; top: 22%; width: 120px; height: 200px; background: rgba(28,30,30,.7); }
+.vtitle { position: absolute; left: 16px; top: 12px; font-size: 12px; color: rgba(238,243,241,.6); }
+.vtitle b { color: rgba(238,243,241,.9); font-weight: 600; margin-right: 6px; }
+/* What to try on the clip: a small checklist on the video's top left. */
+.tasks { position: absolute; left: 14px; top: 38px; width: 232px; padding: 10px; border-radius: 14px; background: rgba(17,20,19,.82); backdrop-filter: blur(14px); border: .5px solid rgba(238,243,241,.12); color: #eef3f1; display: flex; flex-direction: column; gap: 2px; z-index: 4; transition: opacity .3s; }
+.tasks:empty { display: none; }
+.tasks h4 { margin: 0 4px 4px; font-size: 10.5px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: #9aa3a0; }
+.task { display: flex; align-items: center; gap: 9px; padding: 6px 4px; border-radius: 8px; font-size: 12.5px; color: #9aa3a0; transition: color .2s, background .2s; }
+.task.now { color: #eef3f1; background: rgba(238,243,241,.07); }
+.task.done { color: #6f7775; }
+.task .tk { flex: none; width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(238,243,241,.25); display: grid; place-items: center; transition: background .25s, box-shadow .25s; }
+.task.now .tk { box-shadow: inset 0 0 0 1.5px #eef3f1; }
+.task.done .tk { background: #32d74b; box-shadow: none; }
+.task .tk svg { opacity: 0; transform: scale(.4); transition: opacity .2s, transform .3s var(--move); }
+.task.done .tk svg { opacity: 1; transform: none; }
+.task .grow { flex: 1; }
+.task .past { border: 0; background: none; color: #9aa3a0; font-size: 11.5px; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.task .past:hover { color: #eef3f1; background: rgba(238,243,241,.1); }
+/* How much of the language: A on the strip, and its choices. */
+.lvl { position: absolute; right: 22px; top: 50%; translate: 0 -50%; width: 26px; height: 26px; border-radius: 99px; border: .5px solid rgba(238,243,241,.2); background: rgba(238,243,241,.08); color: #eef3f1; font-size: 12px; font-weight: 600; cursor: pointer; }
+.lvl.call { animation: pulse-w 1.4s ease-in-out infinite; }
+@keyframes pulse-w { 50% { box-shadow: 0 0 0 6px rgba(238,243,241,.15); } }
+.lvl-menu { position: absolute; right: 0; bottom: calc(100% + 10px); display: flex; gap: 2px; padding: 4px; border-radius: 12px; background: rgba(17,20,19,.95); border: .5px solid rgba(238,243,241,.14); z-index: 3; animation: tok .2s var(--move); }
+.lvl-menu button { width: 34px; height: 30px; border: 0; border-radius: 8px; background: none; color: #9aa3a0; cursor: pointer; font-size: 12.5px; font-weight: 600; }
+.lvl-menu button[aria-pressed="true"] { background: #eef3f1; color: #121313; }
+.vbar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.2); }
+#vbar-fill { height: 100%; width: 20%; background: #ff3b30; transition: width 20s linear; }
+#vbar-fill.play { width: 70%; }
+.dock { position: absolute; left: 0; right: 0; bottom: 40px; display: flex; justify-content: center; padding-inline: 16px; }
+#cap { position: relative; }
+#strip { position: relative; max-width: 560px; padding: 12px 58px 12px 70px; border-radius: 18px; background: rgba(17,20,19,.88); border: .5px solid rgba(238,243,241,.12); backdrop-filter: blur(18px); box-shadow: 0 10px 30px rgba(0,0,0,.35); color: #b9bfbd; }
+.strip-slot { position: absolute; left: 6px; top: 6px; width: 58px; aspect-ratio: 100 / 66; }
+.dot-ok { position: absolute; top: 9px; right: 10px; width: 7px; height: 7px; border-radius: 50%; background: #32d74b; box-shadow: 0 0 6px #32d74b; }
+#mix { margin: 0; font-size: 22px; line-height: 1.3; letter-spacing: -.012em; }
+#mix .w { border-radius: 5px; padding: 0 1px; }
+#mix .sw { transition: color .4s ease, background .15s ease; }
+#mix .sw.lit { font-weight: 500; }
+#mix .sw.lit { color: var(--c); animation: light .9s var(--settle) var(--d) both; cursor: pointer; }
+@keyframes light { 0% { text-shadow: none; } 35% { text-shadow: 0 0 14px var(--c); } 100% { text-shadow: none; } }
+#strip.hoverable .sw.lit:hover, #mix .sw.open { background: color-mix(in srgb, var(--c) 26%, transparent); }
+.more { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .3s var(--settle), opacity .2s; }
+.more > div { overflow: hidden; }
+#cap:hover .more { grid-template-rows: 1fr; opacity: 1; }
+#full { margin: 8px 0 2px; font-size: 14px; color: #eef3f1; } #en { margin: 0; font-size: 13px; filter: blur(5px); }
+#en:hover { filter: none; }
+.pop { position: absolute; bottom: calc(100% + 10px); min-width: 200px; max-width: 280px; padding: 14px; border-radius: 14px; background: rgba(17,20,19,.95); border: .5px solid rgba(238,243,241,.14); color: #eef3f1; box-shadow: 0 14px 34px rgba(0,0,0,.4); animation: tok .25s var(--move); z-index: 3; }
+.pop .head { display: flex; gap: 8px; align-items: baseline; }
+.pop .word { white-space: nowrap; font-size: 21px; font-weight: 600; color: var(--c); } .pop .read { font-size: 12px; color: #9aa3a0; }
+.pop .mean { font-size: 14px; margin: 3px 0 10px; }
+.act { width: 100%; height: 30px; border-radius: 99px; border: .5px solid rgba(238,243,241,.14); background: rgba(238,243,241,.08); color: #eef3f1; cursor: pointer; font-size: 12.5px; font-weight: 500; }
+.act.kept { background: #ffd60a; color: #121313; border-color: #ffd60a; }
+.clip-scrim { position: absolute; inset: 0; background: rgba(0,0,0,.35); opacity: 0; transition: opacity .3s; pointer-events: none; }
+.clip.held .clip-scrim { opacity: 1; }
+/* On the clip, what Duet says sits above the strip, as captions on dark glass. */
+.win[data-at="clip"] .talk { top: 13%; width: min(440px, calc(100% - 480px)); min-width: 260px; gap: 10px; }
+.win[data-at="clip"] #caption { color: #eef3f1; font-size: 18px; min-height: 0; padding: 10px 16px; border-radius: 14px; background: rgba(17,20,19,.82); backdrop-filter: blur(14px); }
+.win[data-at="clip"] #caption:empty { display: none; }
+.win[data-at="clip"] #caption.native .said { font-size: 22px; }
+.win[data-at="clip"] #caption .en, .win[data-at="clip"] #caption .show-en { color: #9aa3a0; }
+.win[data-at="clip"] #you.in span { background: rgba(238,243,241,.14); color: #eef3f1; }
+.win[data-at="clip"] .chip { background: rgba(17,20,19,.82); color: #eef3f1; box-shadow: inset 0 0 0 .5px rgba(238,243,241,.2); }
+.win[data-at="clip"] .chip.quiet { background: transparent; color: #b9bfbd; box-shadow: none; }
+.win[data-at="clip"] .mic { background: #eef3f1; color: #121313; }
+
+/* Done. */
+.done-body { position: absolute; left: 50%; top: calc(10% + 260px); translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 14px; width: min(520px, calc(100% - 40px)); }
+#summary { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+#summary span { padding: 7px 13px; border-radius: 99px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); font-size: 13px; color: var(--sub); }
+#summary b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.keys-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--sub); }
+#keys { display: flex; gap: 4px; }
+kbd { font: 500 12px var(--sans); min-width: 24px; height: 24px; padding: 0 6px; display: inline-grid; place-items: center; border-radius: 6px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line2), 0 1px 0 var(--line2); color: var(--ink); }
+.win[data-at="done"] #answers { position: absolute; top: 400px; }
+
+@media (max-width: 640px) {
+  .desk { height: 720px; }
+  #caption { font-size: 18px; } #caption.native .said { font-size: 22px; }
+  #strip { padding-left: 62px; } #mix { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01s !important; transition-duration: .01s !important; } }
+</style>
+<!--CSS-->
+
+<div class="review" aria-label="Preview controls">
+  <button type="button" data-theme-set="light" aria-pressed="false">Day</button>
+  <button type="button" data-theme-set="dark" aria-pressed="false">Night</button>
+  <span class="gap"></span>
+  <button type="button" data-os="mac" aria-pressed="true">macOS</button>
+  <button type="button" data-os="win" aria-pressed="false">Windows</button>
+  <span class="gap"></span>
+  <button type="button" id="fake-voice" aria-pressed="false" title="Don't use the real microphone: pretend each answer was said">Pretend I spoke</button>
+  <span class="gap"></span>
+  <button type="button" id="restart">Restart</button>
+</div>
+
+<div class="desk" id="desk">
+  <div class="win closed" id="win" data-at="icon">
+    <div class="bar"><div class="lights"><i></i><i></i><i></i></div>
+      <div class="chapters" id="chapters"></div>
+      <span class="spacer"></span>
+      <button type="button" class="voice" id="sound" aria-pressed="true" aria-label="Duet talks out loud" title="Duet talks out loud"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path class="wave-on" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path class="wave-off" d="M16 9l5 6M21 9l-5 6"/></svg></button>
+      <button type="button" class="skip" id="skip">Skip</button></div>
+    <div class="stage">
+      <section data-scene="meet"><div class="slot-meet" id="meet-slot"></div><button type="button" id="brand-new" hidden>I’m brand new</button></section>
+      <section data-scene="perms"><div class="slot-perm" id="perm-slot"></div><div class="perms" id="perm-list"></div></section>
+      <section data-scene="clip" class="clip" id="clip">
+        <div class="room"></div><div class="fig"></div><div class="fig b"></div>
+        <div class="vtitle"><b>YouTube</b>A short clip Duet picked · 0:48</div>
+        <div class="tasks" id="tasks"></div>
+        <div class="clip-scrim"></div>
+        <div class="dock">
+          <div id="cap">
+            <div id="pop-slot"></div>
+            <div id="strip">
+              <div class="strip-slot" id="strip-slot"></div>
+              <span class="dot-ok"></span>
+              <button type="button" class="lvl" id="lvl" title="How much of the line is in the language you're learning">A</button>
+              <p id="mix"></p>
+              <div class="more"><div><p id="full"></p><p id="en"></p></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="vbar"><div id="vbar-fill"></div></div>
+      </section>
+      <section data-scene="done"><div class="slot-done" id="done-slot"></div>
+        <div class="done-body"><div id="summary"></div><div class="keys-row"><span id="keys"></span>shows or hides me on any video</div></div>
+      </section>
+      <div class="talk">
+        <div id="caption" aria-live="polite"></div>
+        <div id="you"></div>
+        <div id="pips"></div>
+        <div id="listen" hidden><i></i><i></i><i></i><i></i><i></i></div>
+        <div id="answers"></div>
+      </div>
+      <div id="sheet" hidden></div>
+    </div>
+  </div>
+  <div class="hint">Open Duet</div>
+  <div class="dockbar"><i></i><i></i><span class="slot"><span class="icon-slot" id="icon-slot"></span><button type="button" class="open-btn" id="open" aria-label="Open Duet"></button></span><i></i></div>
+  <div id="duet-box"><svg id="duet" class="duet-alive" viewBox="0 17 100 66" aria-label="Duet"></svg></div>
+</div>
+<!--JS-->

@@ -1,0 +1,351 @@
+<title>Duet First Run</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* The first run, merged: the first prototype's sectioned window (progress across the title bar, a
+   column on the left, a live stage on the right) with Duet as that left column. It opens on Duet
+   alone, centred, writing (not talking) until the learner says it may; the stage slides in when
+   there is something to show. The caption strip on the stage is the app's own (overlay.css): its
+   glass, its hover row, its white word card, its Save toast. Colours are home-v2's paper tokens. */
+:root {
+  --ground: #f2f3f3; --card: #ffffff; --ink: #1b201f; --ink2: #3a403e; --sub: #666c6a; --faint: #8a908e;
+  --on-ink: #ffffff; --soft: #f2f1ed; --soft2: #f6f5f2; --soft-hover: #ecebe7; --line: rgba(27,32,31,.07); --line2: rgba(27,32,31,.14);
+  --stage: #ece7dd; --use: #1b7a3a; --desk: #d3d6d5; --desk2: #c3c8c6; --dockbar: rgba(255,255,255,.55); --tile: #f6f7f6; --lift: rgba(27,32,31,.08);
+  --settle: cubic-bezier(.22,1,.36,1); --move: cubic-bezier(.05,.9,.1,1.05); --ease: cubic-bezier(.16,1,.3,1);
+  --serif: 'Source Serif 4', Georgia, serif; --sans: Inter, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --ground: #121313; --card: #1a1c1c; --ink: #eef3f1; --ink2: #c9d0ce; --sub: #9aa3a0; --faint: #6f7775;
+  --on-ink: #121313; --soft: rgba(238,243,241,.08); --soft2: rgba(238,243,241,.04); --soft-hover: rgba(238,243,241,.13); --line: rgba(238,243,241,.08); --line2: rgba(238,243,241,.16);
+  --stage: rgba(238,243,241,.045); --use: #32d74b; --desk: #0b0c0c; --desk2: #050606; --dockbar: rgba(40,42,42,.6); --tile: #080d0d; --lift: rgba(0,0,0,.4); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --ground: #121313; --card: #1a1c1c; --ink: #eef3f1; --ink2: #c9d0ce; --sub: #9aa3a0; --faint: #6f7775;
+  --on-ink: #121313; --soft: rgba(238,243,241,.08); --soft2: rgba(238,243,241,.04); --soft-hover: rgba(238,243,241,.13); --line: rgba(238,243,241,.08); --line2: rgba(238,243,241,.16);
+  --stage: rgba(238,243,241,.045); --use: #32d74b; --desk: #0b0c0c; --desk2: #050606; --dockbar: rgba(40,42,42,.6); --tile: #080d0d; --lift: rgba(0,0,0,.4); color-scheme: dark }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--desk2); color: var(--ink); font-family: var(--sans); display: flex; flex-direction: column; align-items: center; padding-inline: 16px; padding-block: 12px 16px; min-height: 100%; overflow: auto; -webkit-font-smoothing: antialiased; }
+:lang(ja) { font-family: 'Noto Sans JP', var(--sans); } :lang(ko) { font-family: 'Noto Sans KR', var(--sans); }
+button { font: inherit; color: inherit; }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+/* Review controls: not part of the design. */
+.review { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; font-size: 12px; margin-bottom: 12px; }
+.review button { height: 28px; padding: 0 12px; border-radius: 999px; border: 0; background: var(--soft); color: var(--sub); cursor: pointer; }
+.review button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.review .gap { width: 8px; }
+
+/* The desktop: wallpaper, the Dock, and the window that opens out of Duet's icon. */
+/* The desktop follows the page, never smaller than 940 × 620 (the page scrolls instead) and never
+   larger than 1240 × 820; type inside follows the window (container units), so nothing collides. */
+.desk { position: relative; flex: none; width: clamp(940px, 100%, 1240px); height: clamp(620px, calc(100vh - 72px), 820px); container-type: size; border-radius: 16px; overflow: hidden; background: radial-gradient(80% 70% at 20% 10%, var(--desk), var(--desk2)); }
+.dockbar { position: absolute; left: 50%; bottom: 10px; translate: -50% 0; display: flex; gap: 10px; padding: 8px 10px; border-radius: 20px; background: var(--dockbar); backdrop-filter: blur(20px); box-shadow: inset 0 0 0 .5px var(--line2); z-index: 1; }
+.dockbar i { width: 44px; height: 44px; border-radius: 11px; background: var(--line2); }
+.dockbar .slot { width: 44px; height: 44px; display: grid; place-items: center; position: relative; }
+.dockbar .open-btn { position: absolute; inset: -4px; border: 0; background: transparent; cursor: pointer; border-radius: 12px; z-index: 6; }
+.hint { position: absolute; left: 50%; bottom: 84px; translate: -50% 0; font-size: 12.5px; color: var(--sub); background: var(--card); padding: 6px 12px; border-radius: 99px; box-shadow: 0 6px 20px rgba(0,0,0,.08); white-space: nowrap; animation: bob 1.8s ease-in-out infinite alternate; }
+@keyframes bob { to { translate: -50% -4px; } }
+.desk:has(.win:not(.closed)) .hint { display: none; }
+
+.win { position: absolute; inset: 16px 16px 76px; border-radius: 14px; background: var(--ground); box-shadow: 0 30px 70px rgba(0,0,0,.25), 0 0 0 .5px var(--line2); overflow: hidden; transform-origin: 50% 110%; transition: transform .55s var(--move), opacity .3s ease; display: flex; flex-direction: column; }
+.win.closed { transform: scale(.06); opacity: 0; pointer-events: none; }
+.bar { height: 40px; flex: none; display: flex; align-items: center; padding: 0 14px; gap: 8px; position: relative; }
+.lights { display: flex; gap: 8px; } .lights i { width: 12px; height: 12px; border-radius: 50%; }
+.lights i:nth-child(1) { background: #ff5f57; } .lights i:nth-child(2) { background: #febc2e; } .lights i:nth-child(3) { background: #28c840; }
+.win.win11 .lights { order: 2; margin-left: 8px; gap: 18px; } .win.win11 .lights i { width: 10px; height: 1.5px; border-radius: 0; background: var(--sub); }
+.bar .spacer { flex: 1; }
+/* Sections: four tracks, each filling as its part goes by. Not shown until there's a part to show. */
+/* Where you are: five quiet dots in the title bar; the current one a short pill that fills. */
+.chapters { position: absolute; left: 50%; translate: -50% 0; display: flex; align-items: center; gap: 6px; transition: opacity .4s; }
+.dot-step { width: 6px; height: 6px; border-radius: 99px; box-shadow: inset 0 0 0 1.25px var(--line2); overflow: hidden; transition: width .45s var(--settle), background .3s; }
+.dot-step.done { background: var(--sub); box-shadow: none; }
+.dot-step.now { width: 26px; background: var(--line2); box-shadow: none; }
+.dot-step.now i { display: block; height: 100%; min-width: 6px; border-radius: 99px; background: var(--ink); transition: width .45s var(--settle); }
+.win.intro .chapters { opacity: 0; }
+.voice { width: 28px; height: 28px; border-radius: 8px; border: 0; background: none; color: var(--faint); cursor: pointer; display: grid; place-items: center; }
+.voice:hover { background: var(--soft); color: var(--ink); }
+.voice[aria-pressed="false"] .wave-on, .voice[aria-pressed="true"] .wave-off { display: none; }
+.skip { border: 0; background: none; color: var(--faint); font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.skip:hover { color: var(--ink); background: var(--soft); }
+
+/* Two columns: Duet, and the stage. At first Duet has the window to itself, centred; the stage
+   slides in from the right once there's something to show. */
+.main { flex: 1; min-height: 0; display: grid; grid-template-columns: 360px calc(100% - 360px); transition: grid-template-columns .7s var(--settle); }
+.win.intro .main { grid-template-columns: 100% 0%; }
+
+/* ── Duet's section ────────────────────────────────────────────────────────────────────────────── */
+.duet-col { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 18px 30px 20px 34px; position: relative; transition: padding .6s var(--settle); }
+.duet-slot { width: 120px; aspect-ratio: 100 / 66; flex: none; margin: 6px 0 4px -6px; transition: width .6s var(--settle), margin .6s var(--settle); }
+.eyebrow { font-size: 11.5px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; color: var(--faint); min-height: 14px; }
+#caption { min-height: 76px; font-family: var(--serif); font-size: 27px; line-height: 1.2; letter-spacing: -.014em; text-wrap: balance; color: var(--ink); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+#caption.native .said { font-family: var(--sans); font-size: 25px; font-weight: 500; line-height: 1.25; letter-spacing: -.015em; }
+#caption .said:lang(ja) { font-family: 'Noto Sans JP', var(--sans); } #caption .said:lang(ko) { font-family: 'Noto Sans KR', var(--sans); }
+/* Duet's words: laid out from the start, each rising in from a soft blur, overlapping the next. */
+#caption .tok { display: inline-block; opacity: 0; filter: blur(6px); transform: translateY(.18em); transition: opacity .6s var(--settle), filter .6s var(--settle), transform .7s var(--settle); will-change: opacity, transform, filter; }
+#caption .tok.on { opacity: 1; filter: none; transform: none; }
+#caption.leaving .said { opacity: 0; transform: translateY(-.12em); transition: opacity .13s ease, transform .13s ease; }
+#caption .said { display: inline; transition: none; }
+@keyframes tok { from { opacity: 0; filter: blur(3px); } to { opacity: 1; filter: none; } }
+#caption .show-en { font-family: var(--sans); border: 0; background: none; font-size: 12px; color: var(--faint); cursor: pointer; padding: 2px 6px; margin-left: -6px; border-radius: 6px; }
+#caption .show-en:hover { color: var(--ink); background: var(--soft); }
+#caption .en { font-family: var(--sans); font-size: 14px; color: var(--sub); }
+#you { font-size: 14px; color: var(--sub); display: flex; justify-content: flex-end; }
+#you:empty { display: none; }
+#you.in span { display: inline-block; padding: 6px 12px; border-radius: 14px 14px 4px 14px; background: var(--soft); color: var(--ink2); animation: tok .3s var(--settle); }
+
+/* Answers: soft pills, the same height, a quiet second line where it helps (a language's own name). */
+#answers { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { max-width: 100%; text-align: center; min-height: 42px; padding: 7px 18px; border-radius: 21px; border: 0; cursor: pointer; background: var(--card); box-shadow: inset 0 0 0 1px var(--line2), 0 1px 2px var(--lift); font-size: 14px; font-weight: 500; letter-spacing: -.005em; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; transition: transform .25s var(--settle), box-shadow .2s ease, background .2s ease; animation: rise .4s var(--settle) both; }
+.chip small { font-size: 11.5px; font-weight: 400; color: var(--faint); margin-top: 1px; }
+.chip:nth-child(2) { animation-delay: .06s; } .chip:nth-child(3) { animation-delay: .12s; } .chip:nth-child(4) { animation-delay: .18s; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.chip:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px var(--ink), 0 4px 12px var(--lift); }
+.chip:active { transform: scale(.97); }
+/* Choosing: the picked pill stays a beat, the rest fade, then the row goes. */
+#answers.choosing .chip:not(.chosen), #answers.choosing .mic { opacity: 0; transform: translateY(4px); transition: opacity .2s ease, transform .25s var(--settle); }
+#answers.choosing .chip.chosen { box-shadow: inset 0 0 0 1.5px var(--ink); transform: scale(.98); transition: transform .2s var(--settle), box-shadow .15s; }
+#answers.gone { opacity: 0; transition: opacity .18s ease; }
+.chip.quiet { background: transparent; box-shadow: none; color: var(--sub); font-weight: 400; padding: 7px 10px; }
+.chip.quiet:hover { color: var(--ink); background: var(--soft); box-shadow: none; transform: none; }
+.mic { min-height: 42px; padding: 0 18px 0 14px; border-radius: 21px; border: 0; cursor: pointer; background: var(--soft); color: var(--ink); display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; transition: background .2s; animation: rise .4s var(--settle) both; }
+.mic:hover { background: var(--soft-hover); }
+#answers.listening .mic { background: #ff453a; color: #fff; animation: pulse 1.2s ease-in-out infinite; }
+#answers.listening .chip { opacity: .4; pointer-events: none; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(255,69,58,.18); } }
+#listen { display: flex; gap: 3px; height: 18px; align-items: center; }
+#listen i { width: 3px; border-radius: 2px; background: #ff453a; animation: lv .5s ease-in-out infinite alternate; }
+#listen i:nth-child(2) { animation-delay: -.2s; } #listen i:nth-child(3) { animation-delay: -.35s; } #listen i:nth-child(4) { animation-delay: -.1s; } #listen i:nth-child(5) { animation-delay: -.4s; }
+@keyframes lv { from { height: 3px; } to { height: 16px; } }
+
+/* Alone in the window: Duet a little bigger, everything centred in the upper middle. */
+.win.intro .duet-col { align-items: center; text-align: center; padding-top: 11%; }
+.win.intro .duet-slot { width: 168px; margin: 0 0 8px; }
+.win.intro #caption { align-items: center; font-size: 32px; min-height: 84px; }
+.win.intro #answers { justify-content: center; }
+.win.intro #you { justify-content: center; }
+
+/* The try-it list, as in the first prototype: a tick when done, Skip while it's the one to do. */
+#tasks { display: flex; flex-direction: column; gap: 6px; }
+#tasks:empty { display: none; }
+.task { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); font-size: 13px; color: var(--sub); transition: box-shadow .2s, color .2s; }
+.task.now { color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.task .tk { flex: none; width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line2); display: grid; place-items: center; transition: background .25s, box-shadow .25s; }
+.task.done .tk { background: var(--use); box-shadow: none; }
+.task .tk svg { opacity: 0; transform: scale(.4); transition: opacity .2s, transform .3s var(--move); }
+.task.done .tk svg { opacity: 1; transform: none; }
+.task .grow { flex: 1; }
+/* A step just done: the circle pops green, the check draws itself, the row glows a moment. */
+.task.fresh { animation: glow-row 1.1s var(--settle); }
+@keyframes glow-row { 0% { box-shadow: inset 0 0 0 1.5px var(--use); background: color-mix(in srgb, var(--use) 10%, var(--card)); } 100% { box-shadow: inset 0 0 0 1px var(--line); background: var(--card); } }
+.task.fresh .tk { animation: pop-tick .5s var(--move); }
+@keyframes pop-tick { 0% { transform: scale(.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.task .tk path { stroke-dasharray: 1; stroke-dashoffset: 0; }
+.task.fresh .tk svg { transition: none; opacity: 1; transform: none; }
+.task.fresh .tk path { animation: draw .35s var(--settle) .15s both; }
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.task .past { border: 0; background: none; color: var(--faint); font-size: 12px; cursor: pointer; padding: 3px 8px; border-radius: 6px; }
+.task .past:hover { color: var(--ink); background: var(--soft); }
+.col-foot { margin-top: auto; display: flex; align-items: center; gap: 10px; min-height: 32px; }
+
+/* Duet: one element, from the Dock icon into its section. */
+#duet-box { position: absolute; z-index: 5; transition: left .7s var(--move), top .7s var(--move), width .7s var(--move); pointer-events: none; }
+#duet-box svg { width: 100%; height: auto; display: block; }
+#duet-box::before { content: ''; position: absolute; inset: -18% -6%; border-radius: 24%; background: var(--tile); box-shadow: inset 0 0 0 1px var(--line2), 0 2px 6px rgba(0,0,0,.15); opacity: 0; transform: scale(.9); transition: opacity .45s ease, transform .6s var(--move); z-index: -1; }
+#duet-box.tile::before { opacity: 1; transform: none; }
+.icon-slot { width: 36px; aspect-ratio: 100 / 66; }
+
+/* ── The stage ───────────────────────────────────────────────────────────────────────────────────── */
+.stage { position: relative; min-width: 0; margin: 4px 14px 14px 0; border-radius: 16px; overflow: hidden; background: var(--stage); box-shadow: inset 0 0 0 1px var(--line2); transition: opacity .5s ease .15s, margin .7s var(--settle); }
+.win.intro .stage { opacity: 0; margin: 4px 0 14px 0; transition-delay: 0s; }
+[data-scene] { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .4s ease; }
+[data-scene].on { opacity: 1; pointer-events: auto; }
+
+/* The video, from the language step to the end of the clip. */
+.video { background: #0d0f0f; color: #fff; }
+.room { position: absolute; inset: 0; background: radial-gradient(60% 50% at 30% 35%, rgba(214,160,92,.35), transparent 70%), radial-gradient(40% 40% at 75% 30%, rgba(120,150,140,.30), transparent 70%), radial-gradient(70% 60% at 55% 85%, rgba(90,60,40,.45), transparent 70%), linear-gradient(180deg, #2a2723, #1a1816); animation: pan 16s ease-in-out infinite alternate; will-change: transform; }
+/* Drawn once: the video and its caption window repaint only what changes. */
+.video { contain: strict; }
+@keyframes pan { to { transform: scale(1.06) translateX(-10px); } }
+.video.held .room { animation-play-state: paused; }
+.fig { position: absolute; left: 22%; top: 12%; width: 150px; height: 230px; border-radius: 75px 75px 18px 18px; background: rgba(40,34,30,.78); box-shadow: 0 0 6px 2px rgba(40,34,30,.6); }
+.fig.b { left: 60%; top: 22%; width: 120px; height: 200px; background: rgba(28,30,30,.7); }
+.vtitle { position: absolute; left: 16px; top: 14px; font-size: 12px; color: rgba(238,243,241,.6); display: flex; gap: 8px; align-items: center; }
+.vtitle b { color: rgba(238,243,241,.9); font-weight: 600; }
+.vtitle .tag { padding: 2px 7px; border-radius: 99px; background: rgba(238,243,241,.12); color: #eef3f1; font-size: 10.5px; font-weight: 500; }
+.paused { position: absolute; left: 50%; top: 36%; translate: -50% -50%; width: 54px; height: 54px; border-radius: 50%; background: rgba(0,0,0,.45); display: grid; place-items: center; opacity: 0; transition: opacity .2s; }
+.video.held .paused { opacity: 1; }
+.vbar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.2); }
+#vbar-fill { height: 100%; width: 12%; background: #ff3b30; transition: width 20s linear; }
+#vbar-fill.play { width: 70%; }
+
+/* The caption window: the app's own, in a shadow root over the video (real-overlay.tsx). Its stage
+   pins the strip to the bottom, as in its own window. */
+.real-ov { position: absolute; inset: 0; z-index: 3; }
+
+/* A flashcard, as Review shows it in the Duet app: the word on the front, its meaning and the line
+   it came from on the back. It turns over once to show both sides. */
+.flash { position: absolute; right: 22px; top: 50px; width: 220px; height: 150px; perspective: 900px; z-index: 4; animation: fly .6s var(--move) both; }
+@keyframes fly { from { opacity: 0; transform: translate(-60px, 120px) scale(.6); } to { opacity: 1; transform: none; } }
+.flash .flip { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .7s var(--settle); }
+.flash.turned .flip { transform: rotateY(180deg); }
+.flash .face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 14px; background: #fff; color: #111; box-shadow: 0 18px 40px rgba(0,0,0,.35); padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+.flash .back { transform: rotateY(180deg); }
+.flash .k { font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #8a8a8e; }
+.flash .front b { margin: auto 0; font-size: 26px; font-weight: 600; text-align: center; }
+.flash .back b { font-size: 18px; } .flash .back i { font-style: normal; font-size: 12.5px; color: #555; line-height: 1.4; }
+.flash .where { margin-top: auto; font-size: 11px; color: #8a8a8e; display: flex; align-items: center; gap: 5px; }
+
+/* The level test: the bands across the top (where the test is, what's passed), the word in the
+   middle, the meaning shown once answered, and the estimate at the end. */
+.test { background: var(--stage); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 36px 28px; }
+.bands { position: absolute; top: 22px; left: 28px; right: 28px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.band { display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; color: var(--faint); }
+.band .seg { height: 6px; border-radius: 6px; background: var(--line2); transition: background .3s, box-shadow .3s; }
+.band.now { color: var(--ink); font-weight: 500; } .band.now .seg { background: var(--ink); animation: breathe 1.4s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: .45; } }
+.band.pass { color: var(--sub); } .band.pass .seg { background: var(--use); }
+.band.fail .seg { background: var(--line2); box-shadow: inset 0 0 0 1px var(--line2); }
+.test-card { width: min(400px, 100%); padding: 20px 24px 18px; border-radius: 18px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line), 0 10px 30px var(--lift); display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.test-card.in { animation: rise .4s var(--settle); }
+.test-card .k { font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+.test-card b { font-size: 40px; font-weight: 600; letter-spacing: -.02em; line-height: 1.15; }
+.test-card.line b { font-size: 22px; font-weight: 500; letter-spacing: -.01em; }
+.test-card .read { font-size: 13px; font-style: italic; color: var(--sub); min-height: 0; }
+.test-card .read:empty { display: none; }
+.hear { margin-top: 4px; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 99px; border: 0; background: var(--soft); color: var(--ink2); font-size: 12.5px; cursor: pointer; }
+.hear:hover { background: var(--soft-hover); }
+.test-card .mean { min-height: 20px; font-size: 15px; color: var(--use); font-weight: 500; }
+.test-card .mean:empty { visibility: hidden; }
+/* The result: the level, what it's built on, and what it does to the line. */
+/* The result: only the level, large, the brush stroke under it; the meter and note step away. */
+.estimate { display: flex; justify-content: center; }
+.estimate:empty { display: none; }
+.estimate b { position: relative; font-family: var(--serif); font-weight: 500; font-size: 64px; line-height: 1.05; letter-spacing: -.022em; color: var(--ink); animation: rise .6s var(--settle); }
+.estimate .brush { position: absolute; left: -3%; right: -3%; bottom: -.12em; width: 106%; height: .16em; fill: var(--use); opacity: .45; animation: wipe .6s var(--settle) .25s both; }
+@keyframes wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.test.done .bands { opacity: 0; transition: opacity .3s ease; }
+/* Under the meter while testing: it isn't a grade. */
+/* The meanings, under the word card: centred, the card's width. */
+.test-answers { display: grid; grid-template-columns: repeat(2, auto); justify-content: center; gap: 8px; max-width: 100%; }
+.test-answers .chip { width: 100%; }
+.test-answers .chip.unsure { grid-column: 1 / -1; justify-self: center; width: auto; min-height: 34px; }
+.test-answers:empty { display: none; }
+.chip.right { box-shadow: inset 0 0 0 1.5px var(--use); color: var(--use); }
+.chip.wrong { opacity: .5; text-decoration: line-through; }
+.chip:disabled { cursor: default; }
+
+/* Permissions, on the stage while Duet asks. */
+.perms-scene { background: var(--soft2); display: flex; flex-direction: column; justify-content: center; padding: 32px; gap: 10px; }
+.perm { display: flex; gap: 12px; align-items: center; padding: 14px 16px; border-radius: 14px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.perm .tick { width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line2); display: grid; place-items: center; flex: none; transition: background .3s; }
+.perm.on .tick { background: var(--use); box-shadow: none; }
+.perm .grow { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.perm b { font-size: 14px; } .perm small { font-size: 12px; color: var(--sub); line-height: 1.4; }
+.perm .state { font-size: 12px; font-weight: 600; color: var(--use); }
+.btn { height: 30px; padding: 0 12px; border-radius: 99px; border: 0; background: var(--soft); cursor: pointer; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.btn:hover { background: var(--soft-hover); }
+
+/* Ready: the whole window is Duet and what it says, bigger than at the start, set a little lower
+   so the two sit in the middle. Keys in a line are flat keycaps sized to the text. */
+.win.ending .duet-col { padding-top: 14%; gap: 22px; }
+.win.ending .duet-slot { width: 230px; }
+.win.ending #caption { font-size: 44px; line-height: 1.12; font-weight: 500; min-height: 0; max-width: 760px; }
+#caption .tok.keys { display: inline-flex; gap: .14em; vertical-align: .06em; margin: 0 .08em; }
+kbd { font: 600 12px var(--sans); min-width: 28px; height: 28px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; border-radius: 7px; background: var(--ground); box-shadow: inset 0 0 0 1px var(--line2); color: var(--ink); }
+#caption .keys kbd { font-size: .42em; min-width: 1.7em; height: 1.7em; padding: 0 .45em; border-radius: .38em; background: var(--card); box-shadow: inset 0 0 0 1px var(--line2), 0 2px 8px var(--lift); }
+#caption .keys kbd svg { width: 1.05em; height: 1.05em; }
+
+
+/* The OS's own prompt (only to show where it comes). */
+#sheet { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: rgba(0,0,0,.14); }
+.sys { width: 280px; padding: 18px; border-radius: 14px; background: var(--card); box-shadow: 0 20px 50px rgba(0,0,0,.3); display: flex; flex-direction: column; gap: 6px; text-align: center; animation: tok .25s var(--settle); }
+.sys b { font-size: 13.5px; } .sys small { font-size: 12px; color: var(--sub); }
+.sys-row { display: flex; gap: 8px; margin-top: 10px; }
+.sys-btn { flex: 1; height: 30px; border-radius: 7px; border: 0; background: var(--soft); cursor: pointer; font-size: 13px; }
+.sys-btn.primary { background: #0a84ff; color: #fff; }
+
+/* Waiting for a permission: a soft pulse, no button to press. */
+.waiting { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--sub); animation: rise .35s var(--settle) both; }
+.waiting i { width: 8px; height: 8px; border-radius: 50%; background: var(--use); animation: breathe 1.2s ease-in-out infinite; }
+
+/* The way into the app, under Duet's last line: a quiet link, not a button. */
+.open-app { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; border: 0; background: none; padding: 6px 4px; font: 500 15px var(--sans); color: var(--sub); cursor: pointer; border-bottom: 1px solid transparent; animation: rise .5s var(--settle) both; transition: color .15s, gap .2s var(--settle); }
+.open-app:hover { color: var(--ink); gap: 9px; }
+.open-app:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 6px; }
+
+/* Duet's words and the opening's size follow the window. */
+#caption { font-size: clamp(24px, 2.5cqw, 30px); }
+.win.intro #caption { font-size: clamp(28px, 3cqw, 38px); max-width: min(720px, 80cqw); }
+.win.intro .duet-slot { width: clamp(132px, 15cqw, 184px); }
+.win.intro .duet-col { padding-top: clamp(28px, 9cqh, 96px); }
+.win.ending #caption { font-size: clamp(34px, 3.8cqw, 48px); }
+.win.ending .duet-slot { width: clamp(170px, 19cqw, 240px); }
+.win.ending .duet-col { padding-top: clamp(36px, 11cqh, 120px); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01s !important; transition-duration: .01s !important; } }
+</style>
+<!--CSS-->
+
+<div class="review" aria-label="Preview controls">
+  <button type="button" data-theme-set="light" aria-pressed="false">Day</button>
+  <button type="button" data-theme-set="dark" aria-pressed="false">Night</button>
+  <span class="gap"></span>
+  <button type="button" data-os="mac" aria-pressed="true">macOS</button>
+  <button type="button" data-os="win" aria-pressed="false">Windows</button>
+  <span class="gap"></span>
+  <button type="button" id="fake-voice" aria-pressed="false" title="Don't use the real microphone: pretend each answer was said">Pretend I spoke</button>
+  <span class="gap"></span>
+  <button type="button" id="restart">Restart</button>
+</div>
+
+<div class="desk" id="desk">
+  <div class="win closed intro" id="win" data-at="icon">
+    <div class="bar"><div class="lights"><i></i><i></i><i></i></div>
+      <div class="chapters" id="chapters"></div>
+      <span class="spacer"></span>
+      <button type="button" class="voice" id="sound" aria-pressed="false" aria-label="Let Duet talk out loud" title="Duet’s voice"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path class="wave-on" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path class="wave-off" d="M16 9l5 6M21 9l-5 6"/></svg></button>
+      <button type="button" class="skip" id="skip">Skip</button></div>
+    <div class="main">
+      <section class="duet-col" aria-label="Duet">
+        <div class="duet-slot" id="duet-slot"></div>
+        <div class="eyebrow" id="eyebrow"></div>
+        <div id="caption" aria-live="polite"></div>
+        <button type="button" class="open-app" id="open-app" hidden>Open the Duet app<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <div id="you"></div>
+        <div id="listen" hidden><i></i><i></i><i></i><i></i><i></i></div>
+        <div id="answers"></div>
+        <div id="tasks"></div>
+      </section>
+
+      <section class="stage" aria-label="Preview">
+        <div data-scene="video" class="video" id="video">
+          <div class="room"></div><div class="fig"></div><div class="fig b"></div>
+          <div class="vtitle" id="vtitle"></div>
+          <div class="paused" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></div>
+          <div id="flash-slot"></div>
+          <!-- The caption window: the app's own (real-overlay.tsx), mounted here. -->
+          <div class="real-ov" id="real-ov"></div>
+          <div class="vbar"><div id="vbar-fill"></div></div>
+        </div>
+        <div data-scene="test" class="test">
+          <div class="test-card" id="test-card" hidden>
+            <span class="k">What does this mean?</span>
+            <b id="test-word"></b>
+            <span class="read" id="test-read"></span>
+            <button type="button" class="hear" id="hear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>Hear it</button>
+            <span class="mean" id="test-mean"></span>
+          </div>
+          <div class="test-answers" id="test-answers"></div>
+          <div class="estimate" id="estimate"></div>
+        </div>
+        <div data-scene="perms" class="perms-scene" id="perm-list"></div>
+        <div id="sheet" hidden></div>
+      </section>
+    </div>
+  </div>
+  <div class="hint">Open Duet</div>
+  <div class="dockbar"><i></i><i></i><span class="slot"><span class="icon-slot" id="icon-slot"></span><button type="button" class="open-btn" id="open" aria-label="Open Duet"></button></span><i></i></div>
+  <div id="duet-box"><svg id="duet" class="duet-alive" viewBox="0 17 100 66" aria-label="Duet"></svg></div>
+</div>
+<!--JS-->

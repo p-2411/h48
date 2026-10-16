@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <title>Welcome to Duet</title>
@@ -8,10 +8,62 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob: data:"
     />
+    <!-- Linked here, not imported from the script, so the window's first paint is already styled
+         (the window shows on its first paint; an import would leave it bare until the script ran). -->
+    <link rel="stylesheet" href="/src/components/duet/duet.css" />
+    <link rel="stylesheet" href="/src/welcome/welcome.css" />
   </head>
 
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/welcome/main.tsx"></script>
+    <!-- The first run (src/welcome/flow.ts fills it in). -->
+    <div class="win intro" id="win">
+      <div class="bar">
+        <div class="chapters" id="chapters" role="img"></div>
+        <span class="spacer"></span>
+        <button type="button" class="voice" id="sound" aria-pressed="false" aria-label="Let Duet talk out loud" title="Duet’s voice">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z" /><path class="wave-on" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" /><path class="wave-off" d="M16 9l5 6M21 9l-5 6" /></svg>
+        </button>
+        <button type="button" class="skip" id="skip">Skip</button>
+      </div>
+      <div class="main">
+        <section class="duet-col" aria-label="Duet">
+          <div class="duet-slot" id="duet-slot"></div>
+          <div class="eyebrow" id="eyebrow"></div>
+          <div id="caption" aria-live="polite"></div>
+          <button type="button" class="open-app" id="open-app" hidden>
+            Open the Duet app<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </button>
+          <div id="listen" hidden><i></i><i></i><i></i><i></i><i></i></div>
+          <div id="answers"></div>
+          <div id="tasks"></div>
+        </section>
+
+        <section class="stage" aria-label="Preview">
+          <div data-scene="video" class="video" id="video">
+            <!-- The clip: a few seconds of stock footage (Pexels, free to use), silent and looping;
+                 flow.ts picks one for the language. -->
+            <video class="clip" id="clip" muted loop playsinline preload="auto" aria-hidden="true"></video>
+            <div class="vtitle" id="vtitle"></div>
+            <div class="paused" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg></div>
+            <div id="flash-slot"></div>
+            <div class="strip-host" id="strip-host"></div>
+            <div class="vbar"><div id="vbar-fill"></div></div>
+          </div>
+          <div data-scene="test" class="test">
+            <div class="test-card" id="test-card" hidden>
+              <span class="k">What does this mean?</span>
+              <b id="test-word"></b>
+              <span class="read" id="test-read"></span>
+              <button type="button" class="hear" id="hear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /></svg>Hear it</button>
+              <span class="mean" id="test-mean"></span>
+            </div>
+            <div class="test-answers" id="test-answers"></div>
+            <div class="estimate" id="estimate"></div>
+          </div>
+        </section>
+      </div>
+      <div id="duet-box"><svg id="duet" class="duet-alive" viewBox="0 17 100 66" aria-label="Duet"></svg></div>
+    </div>
+    <script type="module" src="/src/welcome/main.ts"></script>
   </body>
 </html>

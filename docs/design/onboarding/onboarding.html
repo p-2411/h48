@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duet onboarding</title>
+<link rel="stylesheet" href="../home-v2/renders/duet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* The first run, as one window: words on the left, the thing itself on the right. From step 2 to
+   step 9 the right side is one video that keeps playing, and each step turns on one more part of
+   the strip for the learner to try. Nothing is explained that can be tried instead. */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: #d9dbda; font-family: Inter, system-ui, sans-serif; display: grid; place-items: center; min-height: 100vh; padding: 56px 16px 24px; }
+body.night { background: #070808; }
+:lang(ja) { font-family: 'Noto Sans JP', Inter, sans-serif; }
+:lang(ko) { font-family: 'Noto Sans KR', Inter, sans-serif; }
+
+/* Review controls, outside the window: not part of the design. */
+.review { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; font-size: 12px; z-index: 50; }
+.review button { font: inherit; height: 28px; padding: 0 12px; border-radius: 999px; border: 0; background: rgba(0,0,0,.08); color: #333; cursor: pointer; }
+.review button[aria-pressed=true] { background: #1b201f; color: #fff; }
+body.night .review button { background: rgba(255,255,255,.08); color: #bbb; }
+body.night .review button[aria-pressed=true] { background: #eef3f1; color: #111; }
+
+/* The window. */
+.win { width: min(1040px, 100%); height: 660px; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; background: var(--ground); color: var(--ink); box-shadow: 0 30px 80px rgba(0,0,0,.25), 0 0 0 .5px rgba(0,0,0,.15); position: relative; }
+.titlebar { height: 38px; flex: none; display: flex; align-items: center; padding: 0 14px; gap: 8px; }
+.lights { display: flex; gap: 8px; }
+.lights i { width: 12px; height: 12px; border-radius: 50%; background: var(--switch-off); }
+.win.mac .lights i:nth-child(1) { background: #ff5f57; } .win.mac .lights i:nth-child(2) { background: #febc2e; } .win.mac .lights i:nth-child(3) { background: #28c840; }
+.win.win11 .lights { order: 2; margin-left: auto; gap: 18px; }
+.win.win11 .lights i { width: 10px; height: 1.5px; border-radius: 0; background: var(--sub); }
+
+/* Chapters: four, each a thin track that fills as its steps go by. */
+.chapters { flex: 1; display: flex; gap: 6px; max-width: 420px; margin: 0 auto; }
+.chapter { flex: 1; display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: var(--faint); transition: color .2s ease; }
+.chapter.now { color: var(--ink); font-weight: 500; }
+.chapter.done { color: var(--sub); }
+.chapter .track { height: 3px; border-radius: 3px; background: var(--track); overflow: hidden; }
+.chapter .track i { display: block; height: 100%; width: 0; background: var(--ink); border-radius: 3px; transition: width .45s var(--settle); }
+.skip { font: inherit; font-size: 12px; border: 0; background: none; color: var(--faint); cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+.skip:hover { color: var(--ink); background: var(--soft); }
+.win.win11 .skip { order: 1; }
+
+.main { flex: 1; min-height: 0; display: grid; grid-template-columns: 380px 1fr; gap: 0; }
+.copy { padding: 26px 34px 20px 38px; display: flex; flex-direction: column; min-height: 0; }
+.copy-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+.eyebrow { font-size: 11.5px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+h1 { margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 40px; line-height: 1.05; letter-spacing: -.015em; position: relative; }
+h1 .stroke { position: relative; white-space: nowrap; }
+h1 .stroke svg { position: absolute; left: -2%; bottom: -6px; width: 104%; height: 12px; color: var(--w-known); opacity: .55; }
+h1 .stroke svg path { animation: wipe .5s var(--settle) .15s backwards; }
+p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink2); }
+p.small { font-size: 12.5px; color: var(--sub); }
+kbd { font: 500 12px Inter, sans-serif; display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 6px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line2), 0 1px 0 var(--line2); color: var(--ink); }
+kbd.big { font-size: 18px; min-width: 46px; height: 46px; border-radius: 11px; padding: 0 12px; box-shadow: inset 0 0 0 1px var(--line2), 0 2px 0 var(--line2); }
+
+/* A try-it task: grey until done, then a green tick. */
+.task { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); font-size: 13px; color: var(--ink2); transition: box-shadow .2s ease; }
+.task .tick { flex: none; width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line2); display: grid; place-items: center; transition: background .25s ease, box-shadow .25s ease; }
+.task .tick svg { opacity: 0; transform: scale(.5); transition: opacity .2s ease, transform .3s var(--move); }
+.task.done .tick { background: var(--w-use); box-shadow: none; }
+.task.done .tick svg { opacity: 1; transform: none; }
+.task.done { color: var(--sub); }
+.task b { color: var(--ink); font-weight: 500; }
+
+/* Choices. */
+.cards { display: flex; flex-direction: column; gap: 8px; }
+.pick { font: inherit; text-align: left; border: 0; cursor: pointer; padding: 12px 14px; border-radius: 12px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); display: flex; flex-direction: column; gap: 3px; transition: box-shadow .18s ease, transform .18s var(--settle); }
+.pick:hover { box-shadow: inset 0 0 0 1px var(--line2); }
+.pick:active { transform: scale(.985); }
+.pick[aria-pressed=true] { box-shadow: inset 0 0 0 1.5px var(--ink); }
+.pick b { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.pick span { font-size: 13px; color: var(--sub); }
+.pick .rec { font-size: 10.5px; font-weight: 500; padding: 2px 7px; border-radius: 99px; background: var(--soft); color: var(--sub); }
+.seg { display: flex; padding: 3px; border-radius: 10px; background: var(--seg); gap: 2px; }
+.seg button { font: inherit; flex: 1; border: 0; background: transparent; height: 34px; border-radius: 8px; cursor: pointer; color: var(--sub); font-size: 13px; font-weight: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
+.seg button small { font-size: 10px; font-weight: 400; color: var(--faint); }
+.seg button[aria-pressed=true] { background: var(--seg-on); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08), inset 0 0 0 1px var(--line); }
+.switchrow { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); font-size: 13.5px; }
+.switchrow .grow { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.switchrow small { color: var(--sub); font-size: 12px; }
+.switch { width: 38px; height: 22px; border-radius: 99px; background: var(--switch-off); border: 0; padding: 2px; cursor: pointer; flex: none; }
+.switch i { display: block; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.switch[aria-checked=true] { background: var(--w-use); }
+.switch[aria-checked=true] i { transform: translateX(16px); }
+.time { font: inherit; font-size: 13px; border: 0; border-radius: 8px; padding: 5px 8px; background: var(--soft); color: var(--ink); }
+
+.foot { display: flex; align-items: center; gap: 10px; padding-top: 16px; }
+.btn { font: inherit; font-size: 13.5px; font-weight: 500; height: 38px; padding: 0 18px; border-radius: 999px; border: 0; cursor: pointer; background: var(--soft); color: var(--ink); transition: background .18s ease, transform .18s var(--settle), opacity .2s ease; }
+.btn:hover { background: var(--soft-hover); }
+.btn:active { transform: scale(.96); }
+.btn.primary { background: var(--ink); color: var(--on-ink); }
+.btn.primary:hover { opacity: .9; }
+.foot .spacer { flex: 1; }
+.foot .hint { font-size: 12px; color: var(--faint); }
+
+/* ── The stage ─────────────────────────────────────────────────────── */
+.stage { position: relative; margin: 6px 14px 14px 0; border-radius: 16px; overflow: hidden; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.scene { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .35s var(--fade); }
+.scene.on { opacity: 1; pointer-events: auto; }
+
+/* Duet's face. Pupils follow the pointer; blinks now and then. */
+.face { --s: 1; width: calc(132px * var(--s)); height: calc(112px * var(--s)); border-radius: calc(36px * var(--s)); background: var(--face); box-shadow: inset 0 0 0 calc(1.5px * var(--s)) var(--line2), 0 calc(10px * var(--s)) calc(30px * var(--s)) rgba(0,0,0,.08); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(12px * var(--s)); position: relative; }
+.face .eyes { display: flex; gap: calc(14px * var(--s)); }
+.face .socket { width: calc(36px * var(--s)); height: calc(28px * var(--s)); border-radius: calc(13px * var(--s)); background: var(--eye); display: grid; place-items: center; overflow: hidden; animation: blink 6.2s ease-in-out infinite; }
+.face .pupil { width: calc(12px * var(--s)); height: calc(5px * var(--s)); border-radius: 3px; background: var(--face); transform: translate(var(--px, 0), var(--py, 0)); transition: transform .35s cubic-bezier(.32,.72,0,1); }
+.face .mouth { width: calc(18px * var(--s)); height: calc(6px * var(--s)); border-radius: 0 0 99px 99px; background: var(--mouth); transition: height .12s ease, width .12s ease; }
+.face.talking .mouth { animation: talk .32s ease-in-out infinite alternate; }
+@keyframes talk { from { height: calc(4px * var(--s)); } to { height: calc(11px * var(--s)); width: calc(14px * var(--s)); } }
+.face.hop { animation: hop .7s var(--move); }
+@keyframes hop { 0% { transform: translateY(0); } 35% { transform: translateY(-14px) rotate(-3deg); } 100% { transform: none; } }
+
+.scene-hello { display: grid; place-items: center; background: var(--soft3); }
+.scene-hello .say { position: absolute; left: 50%; top: calc(50% - 116px); transform: translateX(-50%); padding: 9px 14px; border-radius: 14px 14px 14px 4px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line), 0 6px 18px rgba(0,0,0,.06); font-size: 14px; white-space: nowrap; animation: arrive .4s var(--settle) .5s backwards; }
+.floaters span { position: absolute; font-family: 'Instrument Serif', serif; font-size: 26px; color: var(--faint); opacity: .55; animation: drift 9s ease-in-out infinite alternate; }
+@keyframes drift { to { transform: translateY(-14px); } }
+
+/* The video: a warm, blurred room, a progress bar, and Duet's strip on it. */
+.scene-video { background: #0d0f0f; color: #eef3f1; --w-new: #b9a6f7; --w-seen: #ffd60a; --w-known: #ff9f0a; --w-say: #4da3ff; --w-use: #32d74b; --w-ignored: #a8998a; }
+.room { position: absolute; inset: 0; background: radial-gradient(60% 50% at 30% 35%, rgba(214,160,92,.35), transparent 70%), radial-gradient(40% 40% at 75% 30%, rgba(120,150,140,.30), transparent 70%), radial-gradient(70% 60% at 55% 85%, rgba(90,60,40,.45), transparent 70%), linear-gradient(180deg, #2a2723, #1a1816); animation: pan 18s ease-in-out infinite alternate; }
+@keyframes pan { to { transform: scale(1.06) translateX(-10px); } }
+.figure { position: absolute; left: 24%; top: 16%; width: 150px; height: 230px; border-radius: 75px 75px 18px 18px; background: rgba(40,34,30,.78); filter: blur(2px); animation: sway 5s ease-in-out infinite alternate; }
+.figure.b { left: 58%; top: 26%; width: 120px; height: 200px; background: rgba(28,30,30,.7); animation-delay: -2s; }
+@keyframes sway { to { transform: translateX(6px); } }
+.vbar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.22); }
+.vbar i { display: block; height: 100%; width: 38%; background: #ff3b30; transition: width .5s linear; }
+.vtitle { position: absolute; left: 16px; top: 14px; font-size: 12px; color: rgba(238,243,241,.6); display: flex; gap: 8px; align-items: center; }
+.vtitle .site { font-weight: 600; color: rgba(238,243,241,.85); }
+.paused { position: absolute; left: 50%; top: 38%; transform: translate(-50%,-50%); width: 54px; height: 54px; border-radius: 50%; background: rgba(0,0,0,.45); display: grid; place-items: center; opacity: 0; transition: opacity .2s ease; }
+.scene-video.held .paused { opacity: 1; }
+
+.dock { position: absolute; left: 0; right: 0; bottom: 42px; padding: 0 14px; display: flex; justify-content: center; transition: right .42s var(--move); }
+.scene-video.explaining .dock { right: 282px; }
+.scene-video.explaining .strip { min-width: 0; }
+.scene-video.explaining .mix { font-size: 18px; }
+.scene-video.explaining .paused { left: calc(50% - 141px); }
+.cap { position: relative; display: flex; flex-direction: column; align-items: center; }
+.strip { position: relative; min-width: 300px; max-width: 520px; padding: 11px 40px 12px 18px; border-radius: 18px; background: rgba(17,20,19,.88); border: .5px solid rgba(238,243,241,.12); backdrop-filter: blur(18px); box-shadow: 0 10px 30px rgba(0,0,0,.35); z-index: 1; transition: box-shadow .3s ease; }
+.strip.attn { box-shadow: 0 10px 30px rgba(0,0,0,.35), 0 0 0 2px rgba(238,243,241,.35); animation: attn 1.6s ease-in-out infinite; }
+@keyframes attn { 50% { box-shadow: 0 10px 30px rgba(0,0,0,.35), 0 0 0 5px rgba(238,243,241,.12); } }
+.dot-ok { position: absolute; top: 9px; right: 10px; width: 7px; height: 7px; border-radius: 50%; background: #32d74b; box-shadow: 0 0 6px #32d74b; }
+.mix { margin: 0; font-size: 22px; line-height: 1.3; letter-spacing: -.012em; text-wrap: balance; color: #b9bfbd; }
+.mix .w { border-radius: 5px; padding: 0 1px; transition: background .15s ease, color .4s ease; }
+.mix .w.sw { font-weight: 500; cursor: pointer; color: var(--c); }
+.mix .w.sw:hover, .mix .w.sw.open { background: color-mix(in srgb, var(--c) 26%, transparent); }
+.mix .w.arrive { animation: swap .45s var(--move); display: inline-block; }
+@keyframes swap { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.more { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .3s var(--settle), opacity .18s ease; }
+.more > div { overflow: hidden; }
+.more .full { margin: 8px 0 2px; font-size: 14px; color: #eef3f1; }
+.more .en { font-size: 13px; color: #b9bfbd; filter: blur(5px); opacity: .7; transition: filter .2s ease, opacity .2s ease; cursor: help; }
+.more .en:hover { filter: none; opacity: 1; }
+.cap.can-hover:hover .more, .cap.pinned .more { grid-template-rows: 1fr; opacity: 1; }
+
+.acts { position: absolute; bottom: 100%; left: 0; right: 0; padding: 0 6px 7px; display: flex; justify-content: flex-end; gap: 5px; opacity: 0; transform: translateY(4px); transition: opacity .16s ease, transform .3s var(--settle); pointer-events: none; }
+.cap.can-hover:hover .acts, .cap.pinned .acts { opacity: 1; transform: none; pointer-events: auto; }
+.cap.talking .acts { opacity: 0 !important; pointer-events: none !important; }
+.act { font: inherit; font-size: 12px; font-weight: 500; height: 28px; padding: 0 11px; border-radius: 999px; border: .5px solid rgba(238,243,241,.12); background: rgba(17,20,19,.88); backdrop-filter: blur(18px); color: #eef3f1; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background .15s ease, transform .18s var(--settle), opacity .2s; }
+.act:hover { background: rgba(44,48,47,.95); }
+.act:active { transform: scale(.95); }
+.act.primary { background: #eef3f1; color: #121313; }
+.act.dim { opacity: .35; pointer-events: none; }
+.act.glow { box-shadow: 0 0 0 2px rgba(238,243,241,.5); animation: attn 1.6s ease-in-out infinite; }
+.mini-face { display: flex; gap: 2px; }
+.mini-face span { width: 8px; height: 6px; border-radius: 3px; background: #121313; display: grid; place-items: center; }
+.mini-face i { display: block; width: 3px; height: 1.5px; border-radius: 1px; background: #eef3f1; }
+
+/* A word's card, out of its word. */
+.pop { position: absolute; bottom: calc(100% + 44px); width: 244px; padding: 14px; border-radius: 14px; background: rgba(17,20,19,.94); border: .5px solid rgba(238,243,241,.14); backdrop-filter: blur(18px); box-shadow: 0 14px 34px rgba(0,0,0,.4); z-index: 3; animation: pop .24s var(--move) both; transform-origin: bottom center; }
+@keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.94); } to { opacity: 1; transform: none; } }
+.pop .head { display: flex; align-items: baseline; gap: 8px; }
+.pop .word { font-size: 22px; font-weight: 600; color: var(--c); }
+.pop .read { font-size: 12px; color: #9aa3a0; }
+.pop .mean { font-size: 14px; margin: 4px 0 10px; color: #eef3f1; }
+.pop .meta { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #9aa3a0; }
+.pop .meta i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); }
+.pop .row { display: flex; gap: 6px; margin-top: 12px; }
+.pop .row .act { flex: 1; justify-content: center; }
+.pop .act.kept { background: #ffd60a; color: #121313; border-color: #ffd60a; }
+
+/* Explain: the side panel, sliding in from the right. */
+.panel { position: absolute; top: 10px; right: 10px; bottom: 10px; width: 272px; border-radius: 14px; background: var(--card); color: var(--ink); box-shadow: 0 18px 40px rgba(0,0,0,.35); transform: translateX(110%); transition: transform .42s var(--move); display: flex; flex-direction: column; overflow: hidden; z-index: 4; }
+.scene-video.explaining .panel { transform: none; }
+.panel .tabs { display: flex; gap: 4px; padding: 10px 10px 0; }
+.panel .tabs span { font-size: 12px; padding: 5px 10px; border-radius: 99px; color: var(--sub); }
+.panel .tabs span.on { background: var(--soft); color: var(--ink); font-weight: 500; }
+.panel .pbody { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.panel .quote { font-size: 15px; font-weight: 500; line-height: 1.35; }
+.panel h4 { margin: 0; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); font-weight: 500; }
+.panel .pbody p { font-size: 12.5px; line-height: 1.5; }
+.panel .ear { display: flex; gap: 8px; align-items: flex-start; padding: 9px 10px; border-radius: 10px; background: var(--soft3); font-size: 12px; color: var(--ink2); line-height: 1.45; }
+.wave { display: flex; gap: 2px; align-items: center; height: 16px; flex: none; margin-top: 1px; }
+.wave i { width: 2px; border-radius: 2px; background: var(--w-say); animation: wave 1s ease-in-out infinite alternate; }
+@keyframes wave { from { height: 3px; } to { height: 14px; } }
+.panel .prow { display: flex; gap: 6px; margin-top: auto; padding: 0 16px 14px; }
+.panel .prow .btn { height: 30px; font-size: 12px; padding: 0 12px; }
+.typing::after { content: '▍'; animation: caret 1s steps(1) infinite; color: var(--faint); }
+@keyframes caret { 50% { opacity: 0; } }
+
+/* Talk: Duet comes up out of the strip and talks. */
+.talk { position: absolute; bottom: calc(100% + 10px); left: 50%; translate: -50% 0; display: flex; align-items: flex-end; gap: 10px; z-index: 3; animation: pop .3s var(--move) both; }
+.talk .bubble { max-width: 280px; padding: 11px 14px; border-radius: 16px 16px 16px 4px; background: rgba(17,20,19,.94); border: .5px solid rgba(238,243,241,.14); font-size: 13.5px; line-height: 1.45; color: #eef3f1; }
+.talk .face { --s: .42; --face: #0e0f0f; --eye: #eef5f3; --mouth: #c6ddd9; --line2: rgba(238,243,241,.2); flex: none; }
+.mic { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.mic button { width: 34px; height: 34px; border-radius: 50%; border: 0; background: #eef3f1; color: #121313; cursor: pointer; display: grid; place-items: center; }
+.mic.live button { background: #ff453a; color: #fff; animation: attn 1.4s infinite; }
+.mic small { font-size: 11.5px; color: #9aa3a0; }
+
+/* Checkpoint: a coral stroke draws along the strip's top and Duet peeks from behind it. */
+.cp { position: absolute; bottom: calc(100% - 14px); left: 22px; display: flex; align-items: flex-end; gap: 8px; z-index: 0; animation: peek .5s var(--move) .1s both; }
+@keyframes peek { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+.cp .face { --s: .34; --face: #0e0f0f; --eye: #eef5f3; --mouth: #c6ddd9; --line2: rgba(238,243,241,.2); }
+.cp .offer { margin-bottom: 18px; padding: 6px 11px; border-radius: 99px; background: #ff8a6a; color: #121313; font-size: 12px; font-weight: 600; cursor: pointer; border: 0; font-family: inherit; }
+.strip .coral { position: absolute; left: 14px; right: 14px; top: -1px; height: 2px; border-radius: 2px; background: #ff8a6a; box-shadow: 0 0 10px #ff8a6a; animation: wipe .6s var(--settle) .2s both; }
+.quiz { position: absolute; bottom: calc(100% + 10px); left: 50%; translate: -50% 0; width: 330px; padding: 14px; border-radius: 14px; background: rgba(17,20,19,.95); border: .5px solid rgba(238,243,241,.14); z-index: 3; animation: pop .28s var(--move) both; }
+.quiz h5 { margin: 0 0 4px; font-size: 11px; font-weight: 500; color: #ff8a6a; text-transform: uppercase; letter-spacing: .05em; }
+.quiz .q { font-size: 15px; margin-bottom: 10px; }
+.quiz .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.quiz .opts button { font: inherit; font-size: 13px; padding: 8px; border-radius: 9px; border: .5px solid rgba(238,243,241,.14); background: rgba(238,243,241,.06); color: #eef3f1; cursor: pointer; }
+.quiz .opts button.right { background: #32d74b; color: #111; border-color: #32d74b; }
+.quiz .opts button.wrong { background: rgba(255,69,58,.3); }
+.quiz .after { margin-top: 10px; font-size: 12px; color: #9aa3a0; }
+
+/* The ladder: one word, climbing. */
+.scene-ladder { background: var(--soft3); display: flex; align-items: center; justify-content: center; }
+.ladder { display: flex; flex-direction: column-reverse; gap: 8px; width: 330px; }
+.rung { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .3s ease, transform .35s var(--move); }
+.rung .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px color-mix(in srgb, var(--c) 60%, transparent); flex: none; }
+.rung .lbl { flex: 1; font-size: 13px; font-weight: 500; }
+.rung .how { font-size: 11.5px; color: var(--sub); }
+.rung .slot { width: 76px; text-align: right; font-weight: 600; font-size: 17px; color: var(--cw); }
+.rung.here { box-shadow: inset 0 0 0 1.5px var(--cw); transform: translateX(-6px); }
+.ladder-ctl { position: absolute; bottom: 18px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; }
+.forget { font-size: 11.5px; color: var(--sub); }
+
+/* Today. */
+.scene-today { background: var(--ground); padding: 26px; display: flex; flex-direction: column; gap: 14px; }
+.big-card { border-radius: 16px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); padding: 20px 22px; }
+.streak { display: flex; align-items: center; gap: 18px; }
+.streak .n { font-family: 'Instrument Serif', serif; font-size: 64px; line-height: 1; }
+.week { display: flex; gap: 6px; margin-top: 8px; }
+.week span { width: 30px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10.5px; color: var(--faint); }
+.week i { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line2); display: grid; place-items: center; font-style: normal; font-size: 11px; }
+.week i.kept { background: var(--ink); box-shadow: none; color: var(--on-ink); }
+.week i.freeze { background: color-mix(in srgb, var(--w-say) 18%, transparent); box-shadow: inset 0 0 0 1.5px var(--w-say); color: var(--w-say); }
+.week i.today { box-shadow: inset 0 0 0 1.5px var(--due); }
+.sess { display: flex; gap: 8px; }
+.sess li { list-style: none; flex: 1; padding: 12px; border-radius: 12px; background: var(--soft3); display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--sub); animation: arrive .35s var(--settle) backwards; }
+.sess li:nth-child(2) { animation-delay: .08s; } .sess li:nth-child(3) { animation-delay: .16s; }
+.sess li b { font-size: 13.5px; color: var(--ink); font-weight: 600; }
+.sess li em { font-style: normal; font-size: 11px; color: var(--faint); }
+.sess { margin: 12px 0 0; padding: 0; }
+
+/* The home base: four tiles. */
+.scene-home { background: var(--ground); padding: 18px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; }
+.tile { border-radius: 16px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); padding: 16px; display: flex; flex-direction: column; gap: 6px; position: relative; overflow: hidden; transition: transform .3s var(--settle), box-shadow .2s; cursor: default; }
+.tile:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 1px var(--line2), 0 8px 20px rgba(0,0,0,.05); }
+.tile h3 { margin: 0; font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 26px; }
+.tile p { font-size: 12.5px; color: var(--sub); }
+.tile .thumbs { display: flex; gap: 6px; margin-top: auto; }
+.tile .thumbs span { flex: 1; height: 54px; border-radius: 8px; background: linear-gradient(135deg, #3a2f26, #1c1a18); position: relative; overflow: hidden; }
+.tile .thumbs span i { position: absolute; left: 0; bottom: 0; height: 3px; background: #ff3b30; }
+.tile .bars { display: flex; gap: 3px; height: 8px; margin-top: auto; border-radius: 4px; overflow: hidden; }
+.tile .bars i { background: var(--c); }
+.tile .counts { display: flex; gap: 10px; font-size: 11px; color: var(--sub); flex-wrap: wrap; }
+.tile .counts span { display: flex; align-items: center; gap: 4px; }
+.tile .counts span::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.tile .due { position: absolute; top: 14px; right: 14px; font-size: 11px; font-weight: 600; color: var(--due); }
+.tile.talk-t { align-items: flex-start; }
+.tile.talk-t .face { --s: .5; margin-top: auto; }
+.local { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: 11px; color: var(--faint); display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+
+/* Permissions. */
+.scene-perm { background: var(--soft3); padding: 32px; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.perm { display: flex; gap: 12px; align-items: center; padding: 14px 16px; border-radius: 14px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.perm .tick { width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line2); display: grid; place-items: center; flex: none; transition: background .3s ease; }
+.perm.on .tick { background: var(--w-use); box-shadow: none; }
+.perm .grow { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.perm b { font-size: 14px; font-weight: 600; }
+.perm small { font-size: 12px; color: var(--sub); line-height: 1.4; }
+.perm .state { font-size: 12px; font-weight: 500; color: var(--faint); white-space: nowrap; }
+.perm.on .state { color: var(--w-use); }
+.perm .btn { height: 30px; font-size: 12px; padding: 0 12px; }
+.perm.later { opacity: .75; }
+.win-ok { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+
+/* Ready. */
+.scene-go { background: var(--soft3); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; }
+.keys { display: flex; gap: 8px; align-items: center; color: var(--faint); }
+.keys.pressed kbd { transform: translateY(2px); box-shadow: inset 0 0 0 1px var(--line2); background: var(--soft); }
+.browsers { display: flex; gap: 8px; }
+.browsers span { font-size: 12px; padding: 6px 11px; border-radius: 99px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); color: var(--sub); }
+.tray { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--sub); }
+.tray .tray-icon { width: 22px; height: 16px; border-radius: 5px; background: var(--ink); display: flex; gap: 2px; align-items: center; justify-content: center; }
+.tray .tray-icon i { width: 6px; height: 5px; border-radius: 2px; background: var(--on-ink); }
+
+@media (max-width: 860px) {
+  .main { grid-template-columns: 1fr; grid-template-rows: auto 300px; }
+  .win { height: auto; min-height: 760px; }
+  .stage { margin: 0 14px 14px; }
+  .copy { padding: 20px; }
+  h1 { font-size: 32px; }
+}
+</style>
+</head>
+<body>
+
+<div class="review" aria-label="Preview controls">
+  <button type="button" data-theme="light" aria-pressed="true">Day</button>
+  <button type="button" data-theme="dark" aria-pressed="false">Night</button>
+  <span style="width:10px"></span>
+  <button type="button" data-os="mac" aria-pressed="true">macOS</button>
+  <button type="button" data-os="win" aria-pressed="false">Windows</button>
+  <span style="width:10px"></span>
+  <button type="button" id="restart">Restart</button>
+</div>
+
+<div class="win theme-light grain-light mac" id="win">
+  <div class="titlebar">
+    <div class="lights"><i></i><i></i><i></i></div>
+    <div class="chapters" id="chapters"></div>
+    <button type="button" class="skip" id="skip" title="Skip the tour. It stays in the menu bar under Help.">Skip tour</button>
+  </div>
+  <div class="main">
+    <section class="copy">
+      <div class="copy-body arrive" id="copy"></div>
+      <div class="foot">
+        <button type="button" class="btn" id="back">Back</button>
+        <span class="spacer"></span>
+        <span class="hint" id="hint"></span>
+        <button type="button" class="btn primary" id="next">Continue</button>
+      </div>
+    </section>
+
+    <section class="stage" id="stage" aria-label="Preview">
+      <!-- Hello -->
+      <div class="scene scene-hello" data-scene="hello">
+        <div class="floaters" aria-hidden="true">
+          <span style="left:12%;top:18%">hola</span>
+          <span style="left:74%;top:22%;animation-delay:-3s" lang="ja">こんにちは</span>
+          <span style="left:16%;top:72%;animation-delay:-5s" lang="ko">안녕</span>
+          <span style="left:70%;top:74%;animation-delay:-1s">vámonos</span>
+        </div>
+        <div class="say" id="hello-say">Hi! I'm Duet.</div>
+        <div class="face hop" id="big-face" style="--s:1.2">
+          <div class="eyes"><span class="socket"><i class="pupil"></i></span><span class="socket"><i class="pupil"></i></span></div>
+          <span class="mouth"></span>
+        </div>
+      </div>
+
+      <!-- The video, with the strip -->
+      <div class="scene scene-video" data-scene="video" id="video">
+        <div class="room"></div><div class="figure"></div><div class="figure b"></div>
+        <div class="vtitle"><span class="site" id="vsite">YouTube</span><span id="vname">Casa de papel · S1 E3</span></div>
+        <div class="paused" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></div>
+        <div class="dock">
+          <div class="cap" id="cap">
+            <div class="acts" id="acts">
+              <button type="button" class="act" id="act-explain">Explain</button>
+              <button type="button" class="act" id="act-save">Save</button>
+              <button type="button" class="act" id="act-level" style="width:28px;padding:0;justify-content:center">A</button>
+              <button type="button" class="act primary" id="act-talk"><span class="mini-face" aria-hidden="true"><span><i></i></span><span><i></i></span></span>Talk</button>
+            </div>
+            <div id="cap-extra"></div>
+            <div class="strip" id="strip">
+              <span class="dot-ok" title="Lines are coming through"></span>
+              <span id="coral"></span>
+              <p class="mix" id="mix"></p>
+              <div class="more"><div><p class="full" id="full"></p><p class="en" id="en"></p></div></div>
+            </div>
+          </div>
+        </div>
+        <aside class="panel" id="panel">
+          <div class="tabs"><span>Script</span><span class="on">Explain</span></div>
+          <div class="pbody" id="pbody"></div>
+          <div class="prow"><button type="button" class="btn">↺ Replay</button><button type="button" class="btn">Save card</button><button type="button" class="btn">More</button></div>
+        </aside>
+        <div class="vbar"><i id="vprog"></i></div>
+      </div>
+
+      <!-- The ladder -->
+      <div class="scene scene-ladder" data-scene="ladder">
+        <div class="ladder" id="ladder"></div>
+        <div class="ladder-ctl"><button type="button" class="btn" id="climb">Next rung</button><button type="button" class="btn" id="forget-btn">Forget it</button></div>
+      </div>
+
+      <!-- Today -->
+      <div class="scene scene-today" data-scene="today">
+        <div class="big-card">
+          <div class="streak">
+            <div class="n" id="streak-n">0</div>
+            <div>
+              <div style="font-size:13px;font-weight:500">day streak</div>
+              <div class="week" id="week"></div>
+            </div>
+          </div>
+        </div>
+        <div class="big-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span class="serif" style="font-size:24px">Today's session</span>
+            <span style="font-size:12px;color:var(--sub)">about 5 minutes</span>
+          </div>
+          <ol class="sess">
+            <li><em>1</em><b>Your cards</b>The ones due, at most 12</li>
+            <li><em>2</em><b>Say it back</b>A line from your last video, in Duet's voice</li>
+            <li><em>3</em><b>One challenge</b>Recall a word, or use one in a sentence of your own</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Home -->
+      <div class="scene scene-home" data-scene="home">
+        <div class="tile"><h3>Today</h3><p>Your streak and today's session.</p><div class="week" style="margin-top:auto"><span><i class="kept">✓</i></span><span><i class="kept">✓</i></span><span><i class="freeze">❄</i></span><span><i class="kept">✓</i></span><span><i class="today"></i></span></div></div>
+        <div class="tile"><h3>Watching</h3><p>Every video you watched with Duet. Pick up where you left off.</p><div class="thumbs"><span><i style="width:62%"></i></span><span><i style="width:18%"></i></span><span><i style="width:90%"></i></span></div></div>
+        <div class="tile"><span class="due">8 due</span><h3>Your words</h3><p>Every word you met, by how well you know it. Cards and review live here.</p>
+          <div class="bars"><i style="--c:var(--w-seen);flex:5"></i><i style="--c:var(--w-known);flex:3"></i><i style="--c:var(--w-say);flex:2"></i><i style="--c:var(--w-use);flex:1"></i></div>
+          <div class="counts"><span style="--c:var(--w-seen)">41 heard</span><span style="--c:var(--w-known)">24 known</span><span style="--c:var(--w-say)">12 sayable</span><span style="--c:var(--w-use)">6 usable</span></div></div>
+        <div class="tile talk-t"><h3>Talk</h3><p>Just talk with Duet, about anything you watched.</p>
+          <div class="face"><div class="eyes"><span class="socket"><i class="pupil"></i></span><span class="socket"><i class="pupil"></i></span></div><span class="mouth"></span></div></div>
+      </div>
+
+      <!-- Permissions -->
+      <div class="scene scene-perm" data-scene="perm" id="perm-scene"></div>
+
+      <!-- Ready -->
+      <div class="scene scene-go" data-scene="go">
+        <div class="face" style="--s:.8" id="go-face"><div class="eyes"><span class="socket"><i class="pupil"></i></span><span class="socket"><i class="pupil"></i></span></div><span class="mouth"></span></div>
+        <div class="keys" id="keys"></div>
+        <div class="browsers"><span>Chrome</span><span>Arc</span><span>Edge</span><span>Brave</span></div>
+        <div class="tray"><span class="tray-icon"><i></i><i></i></span><span id="tray-text">Duet lives in your menu bar</span></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+// ── What there is to say, per language. Each pair: English, the word learnt, the level it swaps in
+// at (1 things, 2 actions, 3 describing, 4 people/names, 5 everything), and its rung on the ladder.
+const LANGS = {
+  es: {
+    name: 'Spanish', site: 'Netflix', video: 'La casa de papel · S1 E3',
+    sample: 'Deja las llaves en la mesa; vuelvo mañana.',
+    en: 'Leave the keys on the table; I’ll be back tomorrow.',
+    pairs: [
+      ['Leave', 'Deja', 2, 'unknown'], [' ', ' ', 0], ['the keys', 'las llaves', 1, 'seen'], [' ', ' ', 0], ['on', 'en', 5, 'ignored'], [' ', ' ', 0],
+      ['the table', 'la mesa', 1, 'known'], ['; ', '; ', 0], ['I’ll be back', 'vuelvo', 2, 'say'], [' ', ' ', 0], ['tomorrow', 'mañana', 3, 'use', true], ['.', '.', 0]
+    ],
+    focus: { word: 'llaves', read: 'YAH-ves', mean: 'keys', dict: 'la llave', met: 'Met 3 times · last in this video' },
+    climb: 'llaves', say: 'vuelvo',
+    explain: { means: '“Leave the keys on the table — I’ll be back tomorrow.” Vuelvo is present tense, but here it promises the future, which Spanish does all the time.', tone: 'She says it fast and flat, already turning away: not a request, a decision.' },
+    talk: ['Notice how she said “vuelvo”, not “volveré”?', 'Want to try it? Say “vuelvo mañana”.', '¡Eso es! Your “ue” was spot on.'],
+    quiz: { q: 'What did “las llaves” mean?', opts: ['the keys', 'the table', 'tomorrow', 'the door'] }
+  },
+  ja: {
+    name: 'Japanese', site: 'YouTube', video: '深夜食堂 · 第3話',
+    sample: '鍵はテーブルに置いといて。明日戻るから。',
+    en: 'Leave the keys on the table; I’ll be back tomorrow.',
+    pairs: [
+      ['Leave', '置いといて', 2, 'unknown'], [' ', ' ', 0], ['the keys', '鍵', 1, 'seen'], [' on ', ' on ', 0], ['the table', 'テーブル', 1, 'known'], ['; ', '; ', 0],
+      ['I’ll be back', '戻る', 2, 'say'], [' ', ' ', 0], ['tomorrow', '明日', 3, 'use', true], ['.', '。', 0]
+    ],
+    focus: { word: '鍵', read: 'kagi', mean: 'key, keys', dict: '鍵 (かぎ)', met: 'Met 3 times · last in this video' },
+    climb: '鍵', say: '戻る',
+    explain: { means: '“Leave the keys on the table, I’ll be back tomorrow.” 置いといて is the spoken form of 置いておいて: put it down and leave it there.', tone: 'Soft and quick, trailing off on から: friendly, a little tired.' },
+    talk: ['Did you catch “置いといて”? It’s how people really say it.', 'Try it: “明日戻るから”.', 'いいね! Nice and natural.'],
+    quiz: { q: 'What did “鍵” mean?', opts: ['the keys', 'the table', 'tomorrow', 'the door'] }
+  },
+  ko: {
+    name: 'Korean', site: 'Netflix', video: '이태원 클라쓰 · 3화',
+    sample: '열쇠는 탁자 위에 두고 가. 내일 돌아올게.',
+    en: 'Leave the keys on the table; I’ll be back tomorrow.',
+    pairs: [
+      ['Leave', '두고 가', 2, 'unknown'], [' ', ' ', 0], ['the keys', '열쇠', 1, 'seen'], [' on ', ' on ', 0], ['the table', '탁자', 1, 'known'], ['; ', '; ', 0],
+      ['I’ll be back', '돌아올게', 2, 'say'], [' ', ' ', 0], ['tomorrow', '내일', 3, 'use', true], ['.', '.', 0]
+    ],
+    focus: { word: '열쇠', read: 'yeolsoe', mean: 'key, keys', dict: '열쇠', met: 'Met 3 times · last in this video' },
+    climb: '열쇠', say: '돌아올게',
+    explain: { means: '“Leave the keys on the table, I’ll be back tomorrow.” 돌아올게 is a promise: -(으)ㄹ게 says “I will, for you”.', tone: 'Warm, low, almost a whisper: he doesn’t want to wake anyone.' },
+    talk: ['Hear the “-ㄹ게” at the end of 돌아올게? That’s a promise.', 'Try saying “내일 돌아올게”.', '좋아요! That ending was just right.'],
+    quiz: { q: 'What did “열쇠” mean?', opts: ['the keys', 'the table', 'tomorrow', 'the door'] }
+  }
+}
+const RUNG = { unknown: '--w-new', seen: '--w-seen', known: '--w-known', say: '--w-say', use: '--w-use', ignored: '--w-ignored' }
+const LADDER = [
+  ['unknown', 'New to you', 'You haven’t met it yet', 'var(--w-new)'],
+  ['seen', 'Heard', 'It went by in a video', 'var(--w-seen)'],
+  ['known', 'Known', 'You recalled what it means', 'var(--w-known)'],
+  ['say', 'You can say it', 'You said it back, out loud', 'var(--w-say)'],
+  ['use', 'You can use it', 'You used it in your own sentence', 'var(--w-use)'],
+  ['ignored', 'Ignored', 'You set it aside: no colour, no practice', 'var(--w-ignored)']
+]
+// The top of the climb: Ignored is drawn under New, off the ladder.
+const TOP = LADDER.length - 2
+const LEVELS = [['A', 'Auto', 0], ['1', 'Few', 1], ['2', 'Some', 2], ['3', 'More', 3], ['4', 'Most', 4], ['5', 'All', 5]]
+
+const state = { step: 0, lang: 'es', level: 0, os: 'mac', checkpoints: 'third', reminder: true, time: '19:30', did: {}, perm: { ax: false, audio: false } }
+const $ = (id) => document.getElementById(id)
+const L = () => LANGS[state.lang]
+const mac = () => state.os === 'mac'
+
+// ── The steps. Each: its chapter, the scene, the copy, what the stage allows, and an optional task.
+const CHAPTERS = ['Set up', 'On the video', 'Every day', 'Ready']
+const STEPS = [
+  { ch: 0, scene: 'hello', next: 'Let’s go',
+    copy: () => `<div class="eyebrow">Welcome</div>
+      <h1>Learn while you <span class="stroke">watch.${brush()}</span></h1>
+      <p>I sit on the videos you already watch, on YouTube and Netflix, and swap a few words of each line into the language you’re learning.</p>
+      <p>The more you know, the more I swap. Everything here takes about two minutes, and you’ll try each thing as we go.</p>` },
+  { ch: 0, scene: 'video', id: 'lang',
+    copy: () => `<div class="eyebrow">1 of 2</div><h1>Which language?</h1>
+      <div class="cards">${Object.entries(LANGS).map(([k, l]) => `<button type="button" class="pick" data-lang="${k}" aria-pressed="${state.lang === k}"><b>${l.name}</b><span lang="${k}">${l.sample}</span></button>`).join('')}</div>
+      <p class="small">More are on the way. You can change it any time in Settings.</p>` },
+  { ch: 0, scene: 'video', id: 'level',
+    copy: () => `<div class="eyebrow">2 of 2</div><h1>How much ${L().name} in each line?</h1>
+      <p>Pick one and watch the line change.</p>
+      <div class="seg" role="group" aria-label="Level">${LEVELS.map(([m, n, v]) => `<button type="button" data-level="${v}" aria-pressed="${state.level === v}">${m}<small>${n}</small></button>`).join('')}</div>
+      <p class="small" id="level-note"></p>` },
+  { ch: 1, scene: 'video', id: 'hover', task: 'hover', taskText: 'Point at the strip on the video',
+    copy: () => `<div class="eyebrow">The strip</div><h1>It sits where the subtitles do.</h1>
+      <p>Point at it and it opens: the whole line in ${L().name}, and the English underneath, blurred so you guess first. Point at the English to see it.</p>
+      ${task('hover', 'Point at the strip on the video')}
+      <p class="small">Drag it anywhere. The next video puts it back on the picture.</p>` },
+  { ch: 1, scene: 'video', id: 'word', task: 'keep',
+    copy: () => `<div class="eyebrow">Words</div><h1>Click a coloured word.</h1>
+      <p>You get what it means here, how it sounds and its dictionary form. Keep it, and it becomes a card for your daily session.</p>
+      ${task('open', `Click <b lang="${state.lang}">${L().focus.word}</b>`)}
+      ${task('keep', 'Press ★ Keep')}` },
+  { ch: 1, scene: 'ladder', id: 'ladder',
+    copy: () => `<div class="eyebrow">Colours</div><h1>Each colour is how well you know it.</h1>
+      <p>Every word climbs on its own. Meet it, recall it, say it, use it. Forget it, and it slides back down until you practise.</p>
+      <p class="small">On Auto, a word joins your lines as soon as you know it. Grey words are the little ones you don’t need yet.</p>` },
+  { ch: 1, scene: 'video', id: 'explain', task: 'explain',
+    copy: () => `<div class="eyebrow">Explain</div><h1>Lost? Ask about the line.</h1>
+      <p>Explain says what the line means <i>here</i>, and how it comes across. I listen to how it was actually said, so the tone is part of the answer.</p>
+      ${task('explain', 'Press <b>Explain</b> above the strip')}
+      <p class="small">The video waits for you. ${mac() ? 'macOS asks once, the first time, to let me hear the browser.' : ''}</p>` },
+  { ch: 1, scene: 'video', id: 'talk', task: 'talk',
+    copy: () => `<div class="eyebrow">Talk</div><h1>Or just talk to me.</h1>
+      <p>Talk about the line you’re on, out loud. I’ll explain, have you say it back, and tell you how it sounded.</p>
+      ${task('talk', 'Press <b>Talk</b>, then the microphone')}
+      <p class="small">Anything worth keeping, I can turn into a card while we talk.</p>` },
+  { ch: 1, scene: 'video', id: 'checkpoint', task: 'quiz',
+    copy: () => `<div class="eyebrow">Checkpoints</div><h1>Now and then, a quick one.</h1>
+      <p>When a scene ends, I may peek out with one small challenge from the last few minutes. Leave it, and it goes away in 10 seconds.</p>
+      ${task('quiz', 'Try this one')}
+      <div class="cards" style="gap:6px">
+        ${[['third', 'After my third video', 'Get settled first', true], ['now', 'From the start', ''], ['off', 'Off', 'Turn them on in Settings later']].map(([k, t, s, rec]) => `<button type="button" class="pick" data-cp="${k}" aria-pressed="${state.checkpoints === k}" style="padding:9px 12px"><b>${t}${rec ? '<span class="rec">Suggested</span>' : ''}</b>${s ? `<span>${s}</span>` : ''}</button>`).join('')}
+      </div>` },
+  { ch: 2, scene: 'today', id: 'today',
+    copy: () => `<div class="eyebrow">Today</div><h1>Five minutes a day keeps a streak.</h1>
+      <p>Your daily session is made from what you watched: the cards that are due, a line to say back, and one challenge for the words you’re closest to.</p>
+      <p class="small">Watching 10 minutes or finishing a checkpoint keeps the day too. Each week forgives two missed days.</p>
+      <div class="switchrow"><span class="grow">Remind me<small>Only on days I haven’t practised</small></span>
+        <input class="time" type="time" value="${state.time}" id="rtime" ${state.reminder ? '' : 'disabled'} aria-label="Reminder time">
+        <button type="button" class="switch" role="switch" aria-checked="${state.reminder}" id="rsw" aria-label="Daily reminder"><i></i></button></div>` },
+  { ch: 2, scene: 'home', id: 'home',
+    copy: () => `<div class="eyebrow">Home</div><h1>Everything in one place.</h1>
+      <p>Your home base opens from the ${mac() ? 'Dock' : 'taskbar'}: today’s session, the videos you watched, every word you’ve met, and me.</p>
+      <p class="small">It all stays on this computer. Nothing you watch or save is uploaded, except the lines I translate and the ones you ask about.</p>` },
+  { ch: 3, scene: 'perm', id: 'perm', os: 'mac',
+    copy: () => `<div class="eyebrow">Permissions</div><h1>Two switches, once.</h1>
+      <p>macOS asks for each one the first time. I use them only while a video plays.</p>
+      <p class="small">You can skip them for now. The strip tells you if it needs one.</p>` },
+  { ch: 3, scene: 'go', id: 'go', next: 'Start watching',
+    copy: () => `<div class="eyebrow">Ready</div><h1>Go watch something.</h1>
+      <p>Open a ${L().name} video on YouTube or Netflix and I’ll be on it. No captions needed on YouTube.</p>
+      <p>Press the keys to hide or show the strip.</p>
+      <p class="small">You can change the keys in Settings, and run this tour again from the ${mac() ? 'menu bar' : 'tray'} under Help.</p>` }
+]
+const steps = () => STEPS.filter((s) => !s.os || s.os === state.os)
+
+function brush() {
+  return `<svg viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8 C 40 3, 90 10, 130 5 S 190 6, 198 4" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg>`
+}
+function task(key, text) {
+  return `<div class="task${state.did[key] ? ' done' : ''}" data-task="${key}"><span class="tick"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span><span>${text}</span></div>`
+}
+function done(key) {
+  if (state.did[key]) return
+  state.did[key] = true
+  document.querySelectorAll(`[data-task="${key}"]`).forEach((t) => t.classList.add('done'))
+  updateNext()
+}
+
+// ── The strip.
+function swapped(p) {
+  const [, , lvl, rung] = p
+  if (!lvl) return false
+  if (state.level === 0) return lvl === 1 || rung === 'known' || rung === 'say' || rung === 'use'
+  return lvl <= state.level
+}
+let lastSwapped = new Set()
+function renderStrip() {
+  const l = L()
+  const now = new Set()
+  if (state.level === 5) {
+    $('mix').innerHTML = `<span lang="${state.lang}">${l.sample}</span>`
+  } else {
+    $('mix').innerHTML = l.pairs.map((p, i) => {
+      if (!swapped(p)) return `<span class="w">${p[0]}</span>`
+      now.add(i)
+      const c = `var(${RUNG[p[3]]})`
+      const isFocus = p[1].includes(l.focus.word)
+      return `<span class="w sw${lastSwapped.has(i) ? '' : ' arrive'}" lang="${state.lang}" style="--c:${c}" data-i="${i}" ${isFocus ? 'data-focus' : ''}>${p[1]}</span>`
+    }).join('')
+  }
+  lastSwapped = now
+  $('full').innerHTML = `<span lang="${state.lang}">${l.sample}</span>`
+  $('en').textContent = l.en
+  $('vsite').textContent = l.site
+  $('vname').textContent = l.video
+  $('act-level').textContent = LEVELS.find((x) => x[2] === state.level)[0]
+  const note = $('level-note')
+  if (note) note.textContent = {
+    0: 'Auto starts with a few things, then brings in each word as you learn it. Most people stay here.',
+    1: 'Swaps in things.', 2: 'Swaps in things and actions.', 3: 'Adds describing words.', 4: 'Adds people and names.', 5: 'The whole line, in ' + l.name + '.'
+  }[state.level]
+}
+
+// The word card, opening out of its word.
+function openWord(el) {
+  const l = L()
+  closeExtras()
+  el.classList.add('open')
+  const pop = document.createElement('div')
+  pop.className = 'pop'
+  pop.style.setProperty('--c', getComputedStyle(el).getPropertyValue('--c'))
+  const f = el.hasAttribute('data-focus') ? l.focus : { word: el.textContent, read: '', mean: l.pairs[el.dataset.i][0].toLowerCase(), dict: el.textContent, met: 'Met in this video' }
+  pop.innerHTML = `<div class="head"><span class="word" lang="${state.lang}">${f.word}</span><span class="read">${f.read}</span></div>
+    <div class="mean">${f.mean}</div>
+    <div class="meta"><i></i>${f.met} · ${f.dict}</div>
+    <div class="row"><button type="button" class="act" id="keep">★ Keep</button><button type="button" class="act" id="pop-explain">Explain</button></div>`
+  const cap = $('cap')
+  const r = el.getBoundingClientRect(), cr = cap.getBoundingClientRect()
+  pop.style.left = Math.max(-40, r.left - cr.left + r.width / 2 - 122) + 'px'
+  $('cap-extra').appendChild(pop)
+  done('open')
+  $('keep').onclick = (e) => {
+    e.target.classList.add('kept')
+    e.target.textContent = '★ Kept'
+    done('keep')
+  }
+  $('pop-explain').onclick = () => {}
+}
+function closeExtras() {
+  $('cap-extra').innerHTML = ''
+  document.querySelectorAll('.mix .w.open').forEach((w) => w.classList.remove('open'))
+}
+
+// Explain: the panel fills as if it were being written.
+function openExplain() {
+  const l = L()
+  $('video').classList.add('explaining', 'held')
+  $('pbody').innerHTML = `<div class="quote" lang="${state.lang}">${l.sample}</div>
+    <h4>What it means here</h4><p id="ex-means" class="typing"></p>
+    <h4>How it comes across</h4><div class="ear"><span class="wave">${'<i></i>'.repeat(5)}</span><span id="ex-tone"></span></div>`
+  document.querySelectorAll('.wave i').forEach((w, i) => (w.style.animationDelay = `${-i * 0.17}s`))
+  type($('ex-means'), l.explain.means, () => type($('ex-tone'), l.explain.tone, () => done('explain')))
+}
+let typer
+function type(el, text, then) {
+  clearInterval(typer)
+  let i = 0
+  el.classList.add('typing')
+  typer = setInterval(() => {
+    i += 2
+    el.textContent = text.slice(0, i)
+    if (i >= text.length) { clearInterval(typer); el.classList.remove('typing'); then && then() }
+  }, 18)
+}
+
+// Talk: Duet comes up out of the strip and speaks.
+function openTalk() {
+  const l = L()
+  closeExtras()
+  $('cap').classList.add('talking')
+  $('video').classList.add('held')
+  $('cap-extra').innerHTML = `<div class="talk"><div class="face talking" id="tface"><div class="eyes"><span class="socket"><i class="pupil"></i></span><span class="socket"><i class="pupil"></i></span></div><span class="mouth"></span></div>
+    <div class="bubble"><span id="tsay"></span><div class="mic" id="mic"><button type="button" aria-label="Speak"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><small>Press, then say it</small></div></div></div>`
+  say(l.talk[0], () => setTimeout(() => say(l.talk[1]), 500))
+  $('mic').querySelector('button').onclick = () => {
+    const mic = $('mic')
+    mic.classList.add('live')
+    mic.querySelector('small').textContent = 'Listening…'
+    setTimeout(() => {
+      mic.classList.remove('live')
+      mic.querySelector('small').innerHTML = `You said: <span lang="${state.lang}">“${l.say}…”</span>`
+      say(l.talk[2], () => done('talk'))
+    }, 1600)
+  }
+}
+function say(text, then) {
+  const face = $('tface')
+  face && face.classList.add('talking')
+  type($('tsay'), text, () => { face && face.classList.remove('talking'); then && then() })
+}
+
+// Checkpoint: the coral stroke, Duet peeking, and one question.
+function offerCheckpoint() {
+  closeExtras()
+  $('coral').innerHTML = '<span class="coral"></span>'
+  $('cap-extra').innerHTML = `<div class="cp"><div class="face"><div class="eyes"><span class="socket"><i class="pupil"></i></span><span class="socket"><i class="pupil"></i></span></div><span class="mouth"></span></div><button type="button" class="offer" id="offer">Quick one?</button></div>`
+  $('offer').onclick = () => {
+    const l = L()
+    $('video').classList.add('held')
+    $('cap-extra').innerHTML = `<div class="quiz"><h5>Checkpoint</h5><div class="q">${l.quiz.q}</div><div class="opts">${l.quiz.opts.map((o, i) => `<button type="button" data-ok="${i === 0}">${o}</button>`).join('')}</div><div class="after" id="after"></div></div>`
+    document.querySelectorAll('.quiz .opts button').forEach((b) => (b.onclick = () => {
+      const ok = b.dataset.ok === 'true'
+      b.classList.add(ok ? 'right' : 'wrong')
+      $('after').textContent = ok ? 'Right. It climbs a rung, and the video plays on.' : 'Not quite. It’s a card now, so you’ll see it again.'
+      done('quiz')
+      setTimeout(() => { $('video').classList.remove('held'); $('coral').innerHTML = '' }, 1400)
+    }))
+  }
+}
+
+// ── The ladder scene: one word climbs, and can slide back.
+let rung = 1
+function renderLadder() {
+  const l = L()
+  $('ladder').innerHTML = LADDER.map(([k, lbl, how, c], i) => `<div class="rung${i === rung ? ' here' : ''}" style="--c:${c};--cw:${c}${k === 'ignored' ? ';order:-1;margin-bottom:8px' : ''}"><span class="dot"></span><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span class="lbl">${lbl}</span><span class="how">${how}</span></span><span class="slot" lang="${state.lang}">${i === rung ? l.climb : ''}</span></div>`).join('')
+  $('climb').disabled = rung === TOP
+  $('forget-btn').disabled = rung <= 1
+}
+$('climb').onclick = () => { rung = Math.min(TOP, rung + 1); renderLadder() }
+$('forget-btn').onclick = () => { rung = Math.max(1, rung - 1); renderLadder() }
+
+// ── Today and Permissions and Ready.
+function renderWeek() {
+  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+  const marks = ['kept', 'kept', 'freeze', 'kept', 'today', '', '']
+  $('week').innerHTML = days.map((d, i) => `<span><i class="${marks[i]}">${marks[i] === 'kept' ? '✓' : marks[i] === 'freeze' ? '❄' : ''}</i>${d}</span>`).join('')
+  let n = 0
+  const tick = setInterval(() => { n++; $('streak-n').textContent = n; if (n >= 4) clearInterval(tick) }, 120)
+}
+function renderPerm() {
+  const p = state.perm
+  const row = (k, title, hint, btn) => `<div class="perm${p[k] ? ' on' : ''}"><span class="tick">${p[k] ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>' : ''}</span>
+    <span class="grow"><b>${title}</b><small>${hint}</small></span>${p[k] ? '<span class="state">On</span>' : `<button type="button" class="btn" data-perm="${k}">${btn}</button>`}</div>`
+  $('perm-scene').innerHTML = row('ax', 'Accessibility', 'To read the captions on screen, and to pause the video when you ask about a line.', 'Open Settings')
+    + row('audio', 'System Audio Recording', 'To hear the video, so Explain knows how a line was said. Only the last minute, kept in memory.', 'Allow')
+    + `<div class="perm later"><span class="tick"></span><span class="grow"><b>Microphone</b><small>Asked the first time you Talk. Not now.</small></span><span class="state">Later</span></div>`
+  document.querySelectorAll('[data-perm]').forEach((b) => (b.onclick = () => {
+    b.textContent = 'Waiting…'
+    setTimeout(() => { state.perm[b.dataset.perm] = true; renderPerm(); updateNext() }, 900)
+  }))
+}
+function renderKeys() {
+  const keys = mac() ? ['⌥', '⇧', 'D'] : ['Alt', 'Shift', 'D']
+  $('keys').innerHTML = keys.map((k) => `<kbd class="big">${k}</kbd>`).join('<span>+</span>')
+  $('tray-text').textContent = mac() ? 'Duet lives in your menu bar' : 'Duet lives in your system tray'
+}
+document.addEventListener('keydown', (e) => {
+  if (steps()[state.step].id !== 'go') return
+  if (e.altKey && e.shiftKey && e.code === 'KeyD') {
+    $('keys').classList.add('pressed')
+    $('go-face').classList.remove('hop'); void $('go-face').offsetWidth; $('go-face').classList.add('hop')
+    setTimeout(() => $('keys').classList.remove('pressed'), 200)
+  }
+})
+
+// ── Moving through.
+function render() {
+  const list = steps()
+  const s = list[state.step]
+  // Chapters.
+  $('chapters').innerHTML = CHAPTERS.map((name, c) => {
+    const inCh = list.filter((x) => x.ch === c)
+    const idx = inCh.indexOf(s)
+    const fill = s.ch > c ? 100 : s.ch < c ? 0 : ((idx + 1) / inCh.length) * 100
+    return `<div class="chapter ${s.ch === c ? 'now' : s.ch > c ? 'done' : ''}"><span class="track"><i style="width:${fill}%"></i></span>${name}</div>`
+  }).join('')
+  // Copy, re-arriving each step.
+  const copy = $('copy')
+  copy.innerHTML = s.copy()
+  copy.classList.remove('arrive'); void copy.offsetWidth; copy.classList.add('arrive')
+  // Scene.
+  document.querySelectorAll('.scene').forEach((el) => el.classList.toggle('on', el.dataset.scene === s.scene))
+  // The video's parts, per step.
+  const v = $('video'), cap = $('cap'), strip = $('strip')
+  v.classList.remove('explaining', 'held')
+  cap.classList.remove('talking')
+  closeExtras()
+  $('coral').innerHTML = ''
+  cap.classList.toggle('can-hover', ['hover', 'word', 'explain', 'talk'].includes(s.id))
+  cap.classList.toggle('pinned', ['explain', 'talk'].includes(s.id))
+  strip.classList.toggle('attn', s.id === 'hover' && !state.did.hover)
+  $('act-explain').className = 'act' + (s.id === 'explain' ? ' glow' : s.id === 'talk' ? ' dim' : '')
+  $('act-talk').className = 'act primary' + (s.id === 'talk' ? ' glow' : s.id === 'explain' ? ' dim' : '')
+  if (s.id === 'checkpoint') setTimeout(offerCheckpoint, 500)
+  if (s.scene === 'video') renderStrip()
+  if (s.scene === 'ladder') { rung = 1; renderLadder() }
+  if (s.scene === 'today') renderWeek()
+  if (s.scene === 'perm') renderPerm()
+  if (s.scene === 'go') renderKeys()
+  if (s.scene === 'hello') { const f = $('big-face'); f.classList.remove('hop'); void f.offsetWidth; f.classList.add('hop') }
+  // Copy's own controls.
+  copy.querySelectorAll('[data-lang]').forEach((b) => (b.onclick = () => { state.lang = b.dataset.lang; lastSwapped = new Set(); render() }))
+  copy.querySelectorAll('[data-level]').forEach((b) => (b.onclick = () => { state.level = +b.dataset.level; copy.querySelectorAll('[data-level]').forEach((x) => x.setAttribute('aria-pressed', x === b)); renderStrip() }))
+  copy.querySelectorAll('[data-cp]').forEach((b) => (b.onclick = () => { state.checkpoints = b.dataset.cp; copy.querySelectorAll('[data-cp]').forEach((x) => x.setAttribute('aria-pressed', x === b)) }))
+  const rsw = $('rsw')
+  if (rsw) rsw.onclick = () => { state.reminder = !state.reminder; rsw.setAttribute('aria-checked', state.reminder); $('rtime').disabled = !state.reminder }
+  $('back').style.visibility = state.step === 0 ? 'hidden' : 'visible'
+  $('next').textContent = s.next || 'Continue'
+  updateNext()
+}
+// Tasks never block: Continue always works, but it says "Skip" while the try-it isn't done.
+function updateNext() {
+  const s = steps()[state.step]
+  const pending = s.task && !state.did[s.task]
+  const permPending = s.id === 'perm' && !(state.perm.ax && state.perm.audio)
+  $('hint').textContent = pending ? 'Try it, or' : ''
+  $('next').textContent = s.next || (pending ? 'Skip' : permPending ? 'Not now' : 'Continue')
+  $('next').classList.toggle('primary', !pending && !permPending)
+}
+$('next').onclick = () => {
+  if (state.step < steps().length - 1) { state.step++; render() }
+  else { $('copy').innerHTML = `<h1>Enjoy the show.</h1><p>(Here the window closes and the home base opens.)</p>` }
+}
+$('back').onclick = () => { if (state.step > 0) { state.step--; render() } }
+$('skip').onclick = () => { state.step = steps().length - 1; render() }
+
+// The strip's own interactions.
+$('cap').addEventListener('mouseenter', () => { if ($('cap').classList.contains('can-hover')) { done('hover'); $('strip').classList.remove('attn') } })
+$('mix').addEventListener('click', (e) => {
+  const w = e.target.closest('.sw')
+  const id = steps()[state.step].id
+  if (w && ['word', 'hover', 'explain', 'talk'].includes(id)) openWord(w)
+})
+$('act-explain').onclick = openExplain
+$('act-talk').onclick = openTalk
+$('act-save').onclick = (e) => { e.target.textContent = 'Saved'; setTimeout(() => (e.target.textContent = 'Save'), 1200) }
+$('video').addEventListener('click', (e) => { if (e.target.isConnected && !e.target.closest('.cap, .panel')) { closeExtras(); $('video').classList.remove('explaining') } })
+
+// Pupils follow the pointer, a little.
+document.addEventListener('pointermove', (e) => {
+  document.querySelectorAll('.face').forEach((f) => {
+    const r = f.getBoundingClientRect()
+    const dx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / 300))
+    const dy = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / 300))
+    f.style.setProperty('--px', dx * 9 * (parseFloat(getComputedStyle(f).getPropertyValue('--s')) || 1) + 'px')
+    f.style.setProperty('--py', dy * 6 * (parseFloat(getComputedStyle(f).getPropertyValue('--s')) || 1) + 'px')
+  })
+})
+// The video's progress creeps on, unless something holds it.
+setInterval(() => {
+  if ($('video').classList.contains('held')) return
+  const bar = $('vprog'); const w = parseFloat(bar.style.width) || 38
+  bar.style.width = (w >= 70 ? 38 : w + 0.4) + '%'
+}, 500)
+
+// Review controls.
+document.querySelectorAll('[data-theme]').forEach((b) => (b.onclick = () => {
+  const dark = b.dataset.theme === 'dark'
+  $('win').className = `win ${dark ? 'theme-dark grain-dark' : 'theme-light grain-light'} ${mac() ? 'mac' : 'win11'}`
+  document.body.classList.toggle('night', dark)
+  document.querySelectorAll('[data-theme]').forEach((x) => x.setAttribute('aria-pressed', x === b))
+}))
+document.querySelectorAll('[data-os]').forEach((b) => (b.onclick = () => {
+  state.os = b.dataset.os
+  $('win').classList.toggle('mac', mac()); $('win').classList.toggle('win11', !mac())
+  document.querySelectorAll('[data-os]').forEach((x) => x.setAttribute('aria-pressed', x === b))
+  state.step = Math.min(state.step, steps().length - 1)
+  render()
+}))
+$('restart').onclick = () => { Object.assign(state, { step: 0, did: {}, perm: { ax: false, audio: false } }); render() }
+
+render()
+</script>
+</body>
+</html>
