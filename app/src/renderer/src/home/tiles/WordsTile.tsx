@@ -3,7 +3,7 @@
 // cards due now with Review. It opens Your words.
 import type { HomeToday } from '../../../../shared/home'
 import { STATE_LABELS, type WordState } from '../../../../shared/knowledge'
-import { metAndKnown, metAndKnownLine } from '../progress'
+import { metAndKnown } from '../progress'
 import { useLoaded } from '../useLoaded'
 import { Tile } from './Tile'
 import { useWordsSummary } from './useWordsSummary'
@@ -66,8 +66,6 @@ export function WordsTile({
               ))}
             </div>
           )}
-          {counted > 0 && <p className="faint">{metAndKnownLine(summary.counts)}</p>}
-          {counted === 0 && <p className="faint">{met} met so far. Review them and they climb.</p>}
           <span className="faint">Met lately</span>
           <p className="tile-recent" aria-label="Met most recently">
             {summary.words

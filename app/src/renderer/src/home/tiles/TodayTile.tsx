@@ -1,5 +1,4 @@
 ﻿import type { HomeToday } from '../../../../shared/home'
-import { streakNote } from '../streak'
 import { useLoaded } from '../useLoaded'
 import { Tile } from './Tile'
 const loadToday = (): Promise<HomeToday> => window.duet.home.getToday()
@@ -67,7 +66,6 @@ export function TodayTile({ onOpen }: { onOpen: (tile: HTMLElement) => void }): 
                 </li>
               ))}
             </ol>
-            <p className="faint hub-streak-note">{streakNote(today.streak)}</p>
           </div>
           {(today.hasWatched || today.due > 0) && (
             <div className="today-start">

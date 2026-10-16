@@ -53,7 +53,10 @@
   color: var(--on-ink);
   box-shadow: none;
 }
+/* Its "today" class also matches the daily session's .today (a flex column), which lifted the letter. */
 .workspace .week-day.today {
+  display: grid;
+  flex: none;
   outline: 1px solid var(--ink);
   outline-offset: 2px;
   color: var(--ink);
@@ -527,11 +530,6 @@
   font-weight: 500;
   color: var(--ink);
 }
-.hub-streak-note {
-  flex-basis: 100%;
-  margin: 0;
-  font-size: 12px;
-}
 .today-start {
   flex-direction: row-reverse;
   justify-content: flex-end !important;
@@ -548,8 +546,12 @@
   color: var(--ink);
   margin-right: 5px;
 }
+/* The rung counts in the same serif as the "ready to review" number. */
 .workspace .tile-words .rung dd {
-  font-size: 25px;
+  font:
+    400 30px/1.1 'Source Serif 4',
+    Georgia,
+    serif;
 }
 .workspace .tile-words .ladder-bar {
   display: none;
