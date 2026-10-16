@@ -6,6 +6,7 @@
 // word's popup and the settings. Clicks pass through the empty part to the video; the page says
 // when the pointer is over something of Duet's (duet:solid), and only then does the window take
 // clicks.
+import type { EventEmitter } from 'events'
 import { app, BrowserWindow, screen, type Rectangle } from 'electron'
 import type { Settings } from '../settings'
 import { loadPage, webPreferences } from './load'
@@ -63,7 +64,6 @@ export function createOverlay(settings: Settings): BrowserWindow {
 
   loadPage(overlay, 'index')
 
-  overlay.once('ready-to-show', () => overlay.showInactive())
   // The strip can have the focus (a click on it), so Alt+F4 would close it, and the show/hide key
   // and the tray would have no strip left. It only hides; it closes when Duet quits.
   let quitting = false
@@ -76,12 +76,51 @@ export function createOverlay(settings: Settings): BrowserWindow {
   return overlay
 }
 
-export function toggleOverlay(overlay: BrowserWindow): void {
+// A closed video's strip waits this long before hiding, so a page changing doesn't flicker it.
+const LEAVE_MS = 1500
+
+function showStrip(overlay: BrowserWindow): void {
   if (overlay.isDestroyed()) return
-  if (overlay.isVisible()) overlay.hide()
-  else {
-    overlay.showInactive()
-    // Windows can drop a window from the top after a video goes full screen: put it back on top.
-    overlay.setAlwaysOnTop(true, 'screen-saver')
+  overlay.showInactive()
+  // Windows can drop a window from the top after a video goes full screen: put it back on top.
+  overlay.setAlwaysOnTop(true, 'screen-saver')
+}
+
+/** The strip shows while a video is open, and hides a moment after it closes. The show/hide key and
+ * the menu bar hide it for that video (and show it again); `show` brings it up anyway (Talk). */
+export function stripFollowsVideo(
+  overlay: BrowserWindow,
+  watcher: EventEmitter & { currentVideo?: unknown }
+): { toggle: () => void; show: () => void } {
+  let hiddenByLearner = false
+  let leaving: ReturnType<typeof setTimeout> | undefined
+  const hide = (): void => {
+    if (!overlay.isDestroyed()) overlay.hide()
+  }
+  watcher.on('video', (video: unknown) => {
+    clearTimeout(leaving)
+    if (video) {
+      if (!hiddenByLearner && !overlay.isDestroyed() && !overlay.isVisible()) showStrip(overlay)
+    } else
+      leaving = setTimeout(() => {
+        hiddenByLearner = false
+        hide()
+      }, LEAVE_MS)
+  })
+  // Opened with a video already in front: shown as soon as the page is ready.
+  overlay.once('ready-to-show', () => {
+    if (watcher.currentVideo) showStrip(overlay)
+  })
+  return {
+    toggle: () => {
+      if (overlay.isDestroyed()) return
+      hiddenByLearner = overlay.isVisible()
+      if (hiddenByLearner) hide()
+      else showStrip(overlay)
+    },
+    show: () => {
+      hiddenByLearner = false
+      showStrip(overlay)
+    }
   }
 }

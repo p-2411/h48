@@ -9,7 +9,7 @@
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
-    "test": "npm run test:tutor && npm run test:tutor-actions && npm run test:overlay && npm run test:languages && npm run test:player && npm run test:tutor-window && npm run test:conversation && npm run test:cards-ui && npm run test:watch-log && npm run test:home && npm run test:daily && npm run test:checkpoints && npm run test:talk && npm run test:lines && npm run test:knowledge && npm run test:words-join && npm run test:mascot && npm run test:home-workspace && npm run test:flashcards && npm run test:sources && npm run test:progress && npm run test:updates && npm run test:reports && npm run test:account",
+    "test": "npm run test:tutor && npm run test:tutor-actions && npm run test:overlay && npm run test:languages && npm run test:player && npm run test:tutor-window && npm run test:conversation && npm run test:cards-ui && npm run test:watch-log && npm run test:home && npm run test:daily && npm run test:checkpoints && npm run test:talk && npm run test:lines && npm run test:knowledge && npm run test:words-join && npm run test:mascot && npm run test:home-workspace && npm run test:flashcards && npm run test:sources && npm run test:progress && npm run test:updates && npm run test:reports && npm run test:account && npm run test:strip-visibility",
     "test:tutor": "jiti scripts/smoke-tutor.mjs",
     "test:tutor-actions": "jiti scripts/test-tutor-actions.mjs",
     "test:overlay": "jiti scripts/test-overlay.mjs",
@@ -32,6 +32,7 @@
     "test:progress": "node scripts/test-progress.mjs",
     "test:updates": "jiti scripts/test-updates.mjs",
     "test:reports": "jiti scripts/test-reports.mjs",
+    "test:strip-visibility": "node scripts/test-strip-visibility.mjs",
     "test:native-reader": "node scripts/smoke-native-reader.mjs",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",

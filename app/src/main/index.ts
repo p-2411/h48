@@ -78,7 +78,7 @@ import { Reminder } from './daily/reminder'
 import { Checkpoints } from './checkpoints'
 import { openAISceneJudge } from './checkpoints/scenes'
 import { isFrom } from './windows/from'
-import { createOverlay, toggleOverlay } from './windows/overlay'
+import { createOverlay, stripFollowsVideo } from './windows/overlay'
 import { installAppIcons } from './icons'
 
 // In development, settings such as OPENAI_API_KEY can live in app/.env.local (git-ignored).
@@ -191,6 +191,8 @@ app.whenReady().then(() => {
   })
 
   const overlay = createOverlay(settings)
+  // The strip shows while a video is open (and hides when it closes); the show/hide key overrides it.
+  const stripShown = stripFollowsVideo(overlay, watcher)
   // The watch log: videos, lines met, words and study days, for the daily session, checkpoints and
   // the streak (src/main/watchlog). Watching counts only while the strip is shown.
   const watchLog = new WatchLog()
@@ -326,9 +328,9 @@ app.whenReady().then(() => {
   // Global keys, a setting each (Settings, in the home base): one shows or hides the overlay, the
   // other starts talking to Duet (showing the strip first, if it was hidden).
   const shortcuts = {
-    show: new Shortcut(settings.current.shortcut, () => toggleOverlay(overlay)),
+    show: new Shortcut(settings.current.shortcut, () => stripShown.toggle()),
     talk: new Shortcut(settings.current.talkShortcut, () => {
-      if (!overlay.isVisible()) overlay.showInactive()
+      if (!overlay.isVisible()) stripShown.show()
       strip.send('duet:talk-keys', null)
     })
   }
@@ -396,7 +398,7 @@ app.whenReady().then(() => {
   updates.start()
   tray = createTray({
     openHome: () => home.open(),
-    toggleOverlay: () => toggleOverlay(overlay),
+    toggleOverlay: () => stripShown.toggle(),
     showScript,
     explainLine: () => explainLine(),
     openCards: () => home.open('cards'),

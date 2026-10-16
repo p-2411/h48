@@ -68,12 +68,14 @@ export class Watcher extends EventEmitter {
           this.video = { source, id, url: change.url, title }
           player.reset()
           this.open()
+          this.emit('video', this.currentVideo)
         }
       } else if (this.video) {
         // Left the video (another page, or no video page found): nothing is being watched.
         this.video = undefined
         player.reset()
         this.open()
+        this.emit('video', undefined)
       }
     })
     // Captions in another language than the one being learnt (English captions on a Spanish video)
