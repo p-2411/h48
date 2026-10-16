@@ -36,6 +36,8 @@ const window = {
   bounds: { x: 0, y: 0, width: 900, height: 598 },
   webContents: { on: () => undefined },
   isDestroyed: () => false,
+  // Windows puts the strip back on top for each new frame (placement.ts).
+  setAlwaysOnTop: () => undefined,
   getBounds() { return { ...this.bounds } },
   setBounds(bounds) { this.bounds = { ...bounds } }
 }

@@ -1,7 +1,7 @@
 # The Duet app on Windows: checks and tests the committed Windows readers, builds them afresh
 # (native/windows, with the C# compiler that comes with Windows), runs their self-tests and the
 # app's checks there, and keeps the readers and an unsigned installer as downloads, to commit
-# (resources/bin) and to try on a Windows PC.
+# (resources/bin), to try on a Windows PC, and to add to a release.
 name: Windows
 
 on:
@@ -54,12 +54,20 @@ jobs:
           path: |
             app/resources/bin/caption-reader-windows.exe
             app/resources/bin/audio-reader-windows.exe
+      # Sign-in and crash reports are built in from the repository's Actions variables (not secrets:
+      # both ship inside the app), as app/.env.local gives them to a Mac build.
       - name: Installer (unsigned)
+        env:
+          MAIN_VITE_WORKOS_CLIENT_ID: ${{ vars.MAIN_VITE_WORKOS_CLIENT_ID }}
+          MAIN_VITE_SENTRY_DSN: ${{ vars.MAIN_VITE_SENTRY_DSN }}
         run: npx electron-vite build && npx electron-builder --win --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: app/dist/*-setup.exe
+          path: |
+            app/dist/*-setup.exe
+            app/dist/*-setup.exe.blockmap
+            app/dist/latest.yml
       - name: Committed readers are up to date
         if: steps.committed.outcome != 'success'
         run: |
