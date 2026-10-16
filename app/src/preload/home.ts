@@ -16,5 +16,7 @@ export const homeApi = {
   /** Replays the welcome window as a demo (Settings › Demo); it saves no choices. */
   openWelcome: () => ipcRenderer.send('home:open-welcome'),
   /** Main asks for a place (Home opened on Cards, Settings…). */
-  onPlace: (listener: (message: { place: HomePlace }) => void) => subscribe('home:place', listener)
+  onPlace: (listener: (message: { place: HomePlace }) => void) => subscribe('home:place', listener),
+  /** The menu bar's Send feedback…: Settings opens on the feedback box. */
+  onFeedback: (listener: () => void) => subscribe('home:feedback', listener)
 }

@@ -19,6 +19,7 @@ type Actions = {
   explainLine: () => void
   openCards: () => void
   openWelcome: () => void
+  sendFeedback: () => void
   updates: Updates
 }
 
@@ -29,6 +30,7 @@ export function createTray({
   explainLine,
   openCards,
   openWelcome,
+  sendFeedback,
   updates
 }: Actions): Tray {
   const windows = process.platform === 'win32'
@@ -64,6 +66,7 @@ export function createTray({
         { type: 'separator' },
         // Windows asks for no permissions.
         { label: windows ? 'Welcome…' : 'Welcome and permissions…', click: openWelcome },
+        { label: 'Send feedback…', click: sendFeedback },
         { type: 'separator' },
         ...updateItems,
         { label: 'Quit Duet', role: 'quit' }

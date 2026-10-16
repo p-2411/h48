@@ -66,7 +66,21 @@ export const SCHEMA = [
     last_beat_at timestamptz not null,
     ended_at timestamptz
   )`,
-  `create index if not exists watch_open on watch_sessions (user_id) where ended_at is null`
+  `create index if not exists watch_open on watch_sessions (user_id) where ended_at is null`,
+  // Feedback from the app, kept, then forwarded to the team's Discord (feedback.js).
+  `create table if not exists feedback (
+    id bigserial primary key,
+    user_id text not null references users (id),
+    message text not null,
+    details jsonb,
+    reply_to text,
+    plan text,
+    created_at timestamptz not null,
+    forwarded_at timestamptz,
+    tries integer not null default 0
+  )`,
+  `create index if not exists feedback_waiting on feedback (id) where forwarded_at is null`,
+  `create index if not exists feedback_recent on feedback (user_id, created_at)`
 ];
 
 export async function migrate(db) {

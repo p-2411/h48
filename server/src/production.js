@@ -17,6 +17,7 @@ export function productionDeps(env = process.env) {
   const stripeReady = env.STRIPE_SECRET_KEY && env.STRIPE_PRICE_ID && env.STRIPE_WEBHOOK_SECRET;
   const stripe = stripeReady ? new Stripe(env.STRIPE_SECRET_KEY) : null;
   const workosKey = env.WORKOS_API_KEY;
+  const discordWebhook = env.DISCORD_FEEDBACK_WEBHOOK;
   return {
     db: database(env),
     keySet: workosKeySet(clientId),
@@ -28,6 +29,18 @@ export function productionDeps(env = process.env) {
     stripeLib: stripe,
     stripePrice: env.STRIPE_PRICE_ID ?? '',
     stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET ?? '',
+    // Feedback goes on to the team's Discord channel through this webhook (kept here, never in the app).
+    postDiscord: discordWebhook
+      ? async message => {
+          const response = await fetch(discordWebhook, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(message),
+            signal: AbortSignal.timeout(5000)
+          });
+          return response.ok;
+        }
+      : null,
     fetchEmail: workosKey
       ? async userId => {
           const response = await fetch(`https://api.workos.com/user_management/users/${encodeURIComponent(userId)}`, {

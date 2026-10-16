@@ -1,5 +1,6 @@
 // What every Duet page can reach as window.duet: one section per window, each in its own file, so
 // work on one window never touches another's bridge.
+import { feedbackApi } from './feedback'
 import { contextBridge, ipcRenderer } from 'electron'
 import { accountApi } from './account'
 import { cardsApi } from './cards'
@@ -21,7 +22,7 @@ import { welcomeApi } from './welcome'
 // starts reporting exactly when the main process does.
 const reports = ipcRenderer.sendSync('duet:reports') === true
 
-const duet = { platform: process.platform, ...overlayApi, reports, tutor: tutorApi, panel: panelApi, explain: explainApi, cards: cardsApi, flashcards: flashcardsApi, checkpoint: checkpointApi, home: homeApi, daily: dailyApi, knowledge: knowledgeApi, progress: progressApi, talk: talkApi, updates: updatesApi, welcome: welcomeApi, account: accountApi }
+const duet = { platform: process.platform, ...overlayApi, reports, tutor: tutorApi, panel: panelApi, explain: explainApi, cards: cardsApi, flashcards: flashcardsApi, checkpoint: checkpointApi, home: homeApi, daily: dailyApi, knowledge: knowledgeApi, progress: progressApi, talk: talkApi, updates: updatesApi, welcome: welcomeApi, account: accountApi, feedback: feedbackApi }
 
 export type DuetApi = typeof duet
 

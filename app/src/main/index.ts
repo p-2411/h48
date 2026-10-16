@@ -79,6 +79,7 @@ import { Checkpoints } from './checkpoints'
 import { openAISceneJudge } from './checkpoints/scenes'
 import { isFrom } from './windows/from'
 import { createOverlay, stripFollowsVideo } from './windows/overlay'
+import { connectFeedback } from './feedback'
 import { installAppIcons } from './icons'
 
 // In development, settings such as OPENAI_API_KEY can live in app/.env.local (git-ignored).
@@ -232,6 +233,8 @@ app.whenReady().then(() => {
     openWelcome: () => welcome.open(true),
     closed: () => tutor.end(home)
   })
+  // Feedback from the home base (Settings) or the side panel: to Duet's server (on to Discord) and Sentry.
+  connectFeedback({ server, account, settings, owns: (sender) => home.owns(sender) || panel.owns(sender) })
   // The side panel is drawn as the home base is, light or dark.
   panel.setDark(home.dark)
   home.onLook((dark) => panel.setDark(dark))
@@ -405,6 +408,11 @@ app.whenReady().then(() => {
     showScript,
     explainLine: () => explainLine(),
     openCards: () => home.open('cards'),
+    sendFeedback: () => {
+      home.open('settings')
+      // Once the page is up (it may have only just opened), Settings goes to the feedback box.
+      setTimeout(() => home.send('home:feedback', null), 700)
+    },
     openWelcome: () => welcome.open(true),
     updates
   })

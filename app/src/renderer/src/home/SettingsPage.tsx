@@ -17,6 +17,7 @@ import {
 } from '../components/SettingControls'
 import { LoadState } from '../components/LoadState'
 import { AccountSection } from './AccountSection'
+import { FeedbackSection } from './FeedbackSection'
 
 // The reminder's time when it is first turned on.
 const DEFAULT_REMINDER = '19:00'
@@ -235,6 +236,7 @@ export function SettingsPage({
               </button>
             </div>
           </section>
+          <FeedbackSection />
           <section className="settings-group" aria-labelledby="settings-privacy">
             <h2 className="label" id="settings-privacy">
               Privacy

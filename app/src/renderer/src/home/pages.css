@@ -778,3 +778,18 @@
 .workspace .settings-panel .btn {
   font-size: 13px;
 }
+
+/* Settings › Feedback: the prompt above a full-width box. */
+.workspace .settings-panel .settings-group .glass > .field.feedback-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.workspace .settings-panel .settings-group .glass > .field.feedback-field > span {
+  max-width: none;
+}
+.workspace .feedback-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
