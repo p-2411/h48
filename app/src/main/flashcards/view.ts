@@ -9,7 +9,10 @@
 // whose entry wasn't fetched ahead (the worst case).
 import type { Card } from '../../shared/cards'
 import {
+  cardKey,
   chooseKind,
+  fold,
+  mmss,
   orderTips,
   splitLine,
   stepOf,
@@ -20,7 +23,7 @@ import {
   type Step,
   type Tip
 } from '../../shared/flashcards'
-import { keyWord, pairKeys, wordKey, type WordState } from '../../shared/knowledge'
+import { keyWord, pairKeys, type WordState } from '../../shared/knowledge'
 import { pairReading, pairText } from '../../shared/levels'
 import type { Moment } from '../../shared/moment'
 import type { Language, ProcessedLine, Site, WordJob } from '../../shared/types'
@@ -82,14 +85,9 @@ type LineRow = {
   title: string | null
 }
 
-/** The card's word key: the one it names, or its expression's (a card from before the ladder). */
-export function keyOf(card: Card): string {
-  return card.wordKey ?? wordKey(card.language, card.expression)
-}
-
 /** The word a card is for, as the dictionary has it. */
 export function wordOf(card: Card): string {
-  return keyWord(card.language, keyOf(card)) ?? card.expression
+  return keyWord(card.language, cardKey(card)) ?? card.expression
 }
 
 /** The form of the word last seen on screen, and how many times it was. */
@@ -154,7 +152,7 @@ function ownMoment(card: Card): Encounter | undefined {
   if (card.source.kind !== 'video') return undefined
   const { line, video } = card.source.moment
   return {
-    ...inLine(card.language, line.processed, keyOf(card)),
+    ...inLine(card.language, line.processed, cardKey(card)),
     line: line.original,
     translation: line.processed?.translation,
     video: video.title?.trim() || 'a video',
@@ -183,13 +181,6 @@ export function momentOf(language: Language, place: Encounter): Moment {
     takenAt: Date.now()
   }
 }
-
-const mmss = (seconds?: number): string => {
-  if (seconds === undefined) return ''
-  const whole = Math.max(0, Math.floor(seconds))
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
-}
-const fold = (text: string): string => text.normalize('NFC').toLocaleLowerCase()
 
 /** The back's tips: from the explanation the card came from, its note, the other places the word was
  * heard, the dictionary's other meanings and related words. */
@@ -298,7 +289,7 @@ export async function cardView(
   deps: { dictionary: Dictionary; voice: boolean; picture: (id: string) => string | undefined }
 ): Promise<FlashcardView> {
   const step: Step = stepOf(state)
-  const key = keyOf(card)
+  const key = cardKey(card)
   const word = wordOf(card)
   const back = await backFor(card.language, key, word, card, deps)
   const picture = deps.picture(card.id)

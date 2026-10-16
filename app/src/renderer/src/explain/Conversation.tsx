@@ -99,7 +99,18 @@ export function Conversation({
 
   // A failed text reply can be asked again: main sends the same message without adding it twice.
   const last = state.chat.at(-1)
-  const animation = useConversationAnimation({ live, chat: state.chat, replying: !!state.replying || !!state.loading, cheering: cards.cheering })
+  const conversation = useConversationAnimation({ live, chat: state.chat, replying: !!state.replying || !!state.loading, cheering: cards.cheering })
+  // Talk animates Duet as above the caption strip (TalkBubble): from the voice alone.
+  const voiceOnly = useConversationAnimation({ live })
+  const animation = free ? voiceOnly : conversation
+  // Talk's frosted Duet in the app's theme: dark on the light page, light on the dark one.
+  const [appDark, setAppDark] = useState(() => !!document.querySelector('.theme-dark'))
+  useEffect(() => {
+    const check = (): void => setAppDark(!!document.querySelector('.theme-dark'))
+    const watcher = new MutationObserver(check)
+    watcher.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] })
+    return () => watcher.disconnect()
+  }, [])
   // While Duet answers (thinking, writing, speaking) it keeps to its own animation instead of
   // following the cursor.
   const answering =
@@ -236,7 +247,11 @@ export function Conversation({
               width={420 * mascotScale}
               wake
               speechAudio={live.playback}
-              watch={answering ? 'off' : 'window'}
+              // In Talk, as above the caption strip: frosted glass in the app's theme, watching the
+              // pointer only when it comes close and never while speaking.
+              finish="glass"
+              theme={free && !appDark ? 'light' : 'dark'}
+              watch={free ? (animation.speaking ? 'off' : 'near') : answering ? 'off' : 'window'}
             />
           </div>,
           mascotSlot

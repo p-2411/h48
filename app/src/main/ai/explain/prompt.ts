@@ -64,4 +64,3 @@ export const ExplanationOutputSchema = z.object({
   card: z.object({ expression: z.string(), meaning: z.string(), target: z.string(), situation: z.string() })
 })
 
-export type ExplanationOutput = z.infer<typeof ExplanationOutputSchema>

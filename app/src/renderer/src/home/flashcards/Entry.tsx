@@ -1,8 +1,8 @@
 // The dictionary entry: a card's back, and the word in Words, look the same. Headword in syllables
 // with its step's highlighter, sound and part of speech, the meaning that fits, where it was last
 // heard (like a dictionary's quotation), and one folded row of tips.
-import type { DictEntry, LastHeard, SplitLine, Step, Tip } from '../../../../shared/flashcards'
-import { icons, mmss, times } from './bits'
+import { mmss, type DictEntry, type LastHeard, type SplitLine, type Step, type Tip } from '../../../../shared/flashcards'
+import { icons, times } from './bits'
 
 export type EntryData = {
   word: string

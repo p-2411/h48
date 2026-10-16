@@ -8,9 +8,6 @@
 
 /* Explain's line card: the line large, the words worth noticing glowing in their rung's colour, on
    glass a step lighter than the window, as the home base's tiles are. */
-.line-card { gap: 8px; flex: none;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035)); border-color: rgba(255, 255, 255, 0.11); }
-.line-card .line { font-size: 22px; line-height: 1.35; letter-spacing: -0.01em; }
 /* Inside Duet's messages: the explanation's parts, and the label on one that was heard. */
 .bubble .lead { color: #fff; }
 .bubble .lead ~ p { color: var(--fg-2); }
@@ -86,9 +83,6 @@
 .bar-mic:hover { background: rgba(118, 118, 128, 0.36); }
 .bar-send { background: #fff; color: #111; }
 .bar-send:disabled { opacity: 0.3; }
-.more-explain { display: flex; flex-direction: column; gap: 12px; }
-.more-explain[open] summary { margin-bottom: 10px; }
-.more-explain .part + .part { margin-top: 12px; }
 /* Results and errors under the conversation; one live region, so each new one is read out. */
 .notices { display: flex; flex-direction: column; gap: 10px; }
 .notices:empty { display: contents; }

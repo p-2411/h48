@@ -128,11 +128,8 @@ app.whenReady().then(() => {
   const demo = demoEnabled()
   // Listen to the browser only while a video is being watched in it.
   watcher.on('status', (status) => audio.listen(watcher.currentVideo ? status.bundle : undefined))
-  // Practising a card opens Explain, and its conversation, on the card's moment. My cards and Review
-  // are places in the home base.
+  // Cards live in the home base; open() shows one there.
   const cards = new Cards({
-    replay: replayMoment,
-    practise: (moment) => explain.open(moment),
     open: (cardId) => home.open('cards', cardId)
   })
   // The knowledge ladder: each word met and what the learner did with it (src/main/knowledge).

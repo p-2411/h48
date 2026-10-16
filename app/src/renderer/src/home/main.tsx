@@ -4,7 +4,6 @@ import '../cards/cards.css'
 import '../review/review.css'
 import '../explain/explain.css'
 import './home.css'
-import './words/words.css'
 import './workspace.css'
 import './pages.css'
 

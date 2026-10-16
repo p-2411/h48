@@ -31,13 +31,15 @@
 }
 
 /* The steps: three thin bars with their names; the one you're on half full. */
+/* The steps centred, Skip in its own column on the right, so the two never overlap as the tile narrows. */
 .today-top {
   flex-shrink: 0;
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 420px) 1fr;
   align-items: center;
-  justify-content: center;
-  padding: 10px 16px 0;
+  column-gap: 8px;
+  padding: 10px 12px 0;
   min-height: 40px;
 }
 .today-steps {
@@ -48,6 +50,7 @@
   gap: 6px;
   width: 100%;
   max-width: 420px;
+  grid-column: 2;
 }
 .today-steps li {
   flex: 1;
@@ -89,9 +92,9 @@
   color: var(--ink);
 }
 .today-skip {
-  position: absolute;
-  right: 12px;
-  top: 8px;
+  grid-column: 3;
+  justify-self: end;
+  white-space: nowrap;
   font: inherit;
   font-size: 12px;
   border: 0;

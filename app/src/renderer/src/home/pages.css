@@ -178,8 +178,7 @@
   color: var(--sub);
   font-size: 13px;
 }
-.workspace .seg,
-.workspace .segments {
+.workspace .seg {
   display: flex;
   padding: 3px;
   border-radius: 9px;
@@ -187,8 +186,7 @@
   gap: 2px;
   border: 0;
 }
-.workspace .seg button,
-.workspace .segments button {
+.workspace .seg button {
   background: transparent;
   color: var(--sub);
   padding: 6px 10px;
@@ -196,8 +194,7 @@
   border-radius: 6px;
   font-size: 12px;
 }
-.workspace .seg button.selected,
-.workspace .segments button[aria-pressed='true'] {
+.workspace .seg button.selected {
   background: var(--seg-on);
   color: var(--ink);
   box-shadow: 0 1px 3px #0000000a;
@@ -224,48 +221,6 @@
 }
 .workspace .settings-group .toggle {
   border-color: var(--line);
-}
-.workspace .your-words {
-  padding: 0;
-  gap: 0;
-}
-.workspace .yw-head {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--line);
-  gap: 12px;
-}
-.workspace .yw-browse {
-  grid-template-columns: 320px minmax(0, 1fr);
-  gap: 0;
-}
-.workspace .yw-side {
-  padding: 16px;
-  border-right: 1px solid var(--line);
-  gap: 12px;
-}
-.workspace .yw-row {
-  padding: 12px 10px;
-  border-radius: 7px;
-}
-.workspace .yw-row:hover {
-  background: var(--soft3);
-}
-.workspace .yw-detail {
-  border: 0;
-  border-radius: 0;
-  padding: 24px;
-  background: none;
-  box-shadow: none;
-}
-.workspace .yw-word {
-  font:
-    500 52px/1.15 'Source Serif 4',
-    Georgia,
-    serif;
-  text-shadow: none;
-}
-.workspace .yw-rung-pick {
-  background: var(--soft2);
 }
 .workspace .home-talk {
   padding: 22px 20px 0;
@@ -299,28 +254,6 @@
   background: var(--soft2);
   border-color: var(--line2);
 }
-@container (max-width:700px) {
-  .workspace .yw-browse {
-    display: flex;
-    flex-direction: column;
-  }
-  .workspace .yw-side {
-    width: 100%;
-    max-height: min(210px, 45%);
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-    flex-shrink: 0;
-  }
-  .workspace .yw-counts {
-    display: none;
-  }
-  .workspace .yw-detail {
-    padding: 18px;
-  }
-  .workspace .yw-word {
-    font-size: 44px;
-  }
-}
 @container (max-width:520px) {
   .watch-lede {
     display: none;
@@ -330,9 +263,6 @@
   }
   .workspace .home-page {
     padding: 18px;
-  }
-  .workspace .your-words {
-    padding: 0;
   }
   .workspace .home-talk {
     padding: 16px 14px 0;
@@ -421,25 +351,8 @@
 .workspace .settings-preview .w.sw {
   font-weight: 600;
 }
-.workspace .yw-word {
-  font-family: Inter, sans-serif;
-  font-size: 13px;
-}
-.workspace .yw-big {
-  font:
-    500 52px/1.15 'Source Serif 4',
-    Georgia,
-    serif;
-  letter-spacing: -0.01em;
-  margin: 0;
-}
 /* A big word (Your words' word, Today's word) sits in ink on its state's highlighter. Ignored has
    no highlighter: it wears stone. */
-.workspace .yw-big .w {
-  --mark: var(--mark-new);
-  color: var(--ink);
-  background: linear-gradient(transparent 58%, var(--mark) 58%, var(--mark) 92%, transparent 92%);
-}
 .workspace :is(.yw-big .w, .word-large)[data-k='encountered'] {
   --mark: var(--mark-seen);
 }
@@ -455,33 +368,6 @@
 .workspace :is(.yw-big .w, .word-large)[data-k='ignored'] {
   --mark: transparent;
   color: var(--w-ignored);
-}
-.workspace .yw-climb {
-  gap: 4px;
-  flex-wrap: nowrap;
-}
-.workspace .yw-climb li {
-  flex: 1;
-  display: block;
-  min-width: 0;
-  border-top: 4px solid var(--track);
-  padding-top: 7px;
-  font-size: 10px;
-}
-.workspace .yw-climb li::before {
-  display: none;
-}
-.workspace .yw-climb li span {
-  border: 0;
-  padding: 0;
-  box-shadow: none;
-  white-space: normal;
-}
-.workspace .yw-climb li.is-at {
-  border-color: var(--c);
-}
-.workspace .yw-climb li.is-past {
-  border-color: var(--ink);
 }
 .workspace .turn.duet .bubble {
   background: var(--soft2);
@@ -564,26 +450,10 @@
   color: var(--ink);
   border-color: var(--line2);
 }
-.workspace .home-number {
-  font:
-    500 56px/1.1 'Source Serif 4',
-    Georgia,
-    serif;
-}
-.workspace .card-expression,
-.workspace .review-expression {
-  font-family: 'Source Serif 4', Georgia, serif;
-  color: var(--ink);
-}
 .workspace .today-word .word-large {
   --mark: var(--mark-new);
   text-decoration: none;
   background: linear-gradient(transparent 58%, var(--mark) 58%, var(--mark) 92%, transparent 92%);
-}
-@container (max-width:700px) {
-  .workspace .yw-big {
-    font-size: 44px;
-  }
 }
 .workspace .tile {
   padding: 24px;
@@ -701,28 +571,6 @@
 .workspace .settings-group .glass > .row {
   margin-top: 10px;
 }
-.workspace .yw-head > h1 {
-  display: none;
-}
-.workspace .yw-side {
-  gap: 10px;
-  padding: 12px;
-}
-.workspace .yw-more {
-  display: none;
-}
-.workspace .yw-find .search {
-  padding: 6px 10px;
-}
-.workspace .yw-show button {
-  padding: 5px 7px;
-}
-.workspace .yw-row {
-  padding: 9px 10px;
-}
-.workspace .yw-detail {
-  flex: 1;
-}
 .workspace .home-talk-head {
   position: relative;
   display: flex;
@@ -730,13 +578,8 @@
   min-height: 72px;
   margin-bottom: 8px;
 }
+/* Duet full size, on the page itself (not boxed like an icon). */
 .workspace .home-talk-head .head-slot {
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--face);
-  min-height: 64px;
-  min-width: 64px;
   display: grid;
   place-items: center;
 }
@@ -753,12 +596,6 @@
   --g-grain: 0;
   --g-cloud: 0;
   --g-body: 1;
-}
-.workspace .stage-front {
-  font:
-    400 37px/1.2 'Source Serif 4',
-    Georgia,
-    serif;
 }
 .workspace .rate.good {
   background: var(--ink);
@@ -790,41 +627,10 @@
   box-shadow: 0 8px 24px #0002;
   color: var(--ink);
 }
-.workspace .nuance-box {
-  background: var(--soft2);
-  border-color: var(--line);
-  box-shadow: none;
-}
 .workspace .keys {
   letter-spacing: 0;
   background: var(--soft);
   color: var(--ink);
-}
-.workspace .yw-head {
-  padding: 8px 14px;
-}
-.workspace .yw-side {
-  padding: 8px;
-  gap: 4px;
-}
-.workspace .yw-find .search,
-.workspace .yw-rung-pick {
-  height: 28px;
-  padding: 3px 8px;
-}
-.workspace .yw-show {
-  height: 27px;
-}
-.workspace .yw-show button {
-  padding: 2px 6px;
-  font-size: 11px;
-}
-.workspace .yw-row {
-  padding: 4px 8px;
-  gap: 0;
-}
-.workspace .yw-list {
-  min-height: 26px;
 }
 .home-level-picker {
   padding: 12px 0;
@@ -837,10 +643,6 @@
 }
 .workspace .home-talk-head {
   max-width: 680px;
-}
-.workspace .yw-show {
-  overflow-x: auto;
-  flex-shrink: 0;
 }
 .workspace .watch-toolbar {
   flex-wrap: wrap;
@@ -874,8 +676,7 @@
   opacity: 1;
   transform: scale(1);
 }
-.workspace .detail .glass,
-.workspace .nuance-box {
+.workspace .detail .glass {
   background: var(--soft2);
   box-shadow: none;
 }
@@ -890,13 +691,6 @@
 }
 .workspace .floating-empty {
   padding: 14px;
-}
-.workspace .home-talk-head .head-slot {
-  padding: 0;
-  width: 64px;
-  min-width: 64px;
-  height: 64px;
-  border-radius: 20px;
 }
 .workspace .head-mascot {
   align-items: center;
@@ -918,15 +712,6 @@
 .workspace .today-word .word-large {
   font-size: clamp(40px, 6cqi + 14px, 64px);
 }
-.workspace .stage-front {
-  font-size: clamp(26px, 4.4cqi + 8px, 44px);
-}
-.workspace .yw-big {
-  font-size: clamp(38px, 5.5cqi + 12px, 60px);
-}
-.workspace .home-number {
-  font-size: clamp(44px, 6cqi + 12px, 64px);
-}
 .workspace .watch-lede {
   font-size: clamp(22px, 2.4cqi + 10px, 32px);
 }
@@ -934,11 +719,6 @@
   font-size: clamp(32px, 3cqi + 18px, 44px);
 }
 /* The ladder: every step up to where the word is, in the word's colour. */
-.workspace .yw-climb li.is-past,
-.workspace .yw-climb li.is-at {
-  border-color: var(--c-at, var(--ink));
-  transition: border-color 0.35s ease;
-}
 /* Words met in a video: plain words in their colours, not chips. */
 .workspace .video-words span {
   padding: 0;

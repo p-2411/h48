@@ -14,7 +14,8 @@ import { LoadState } from '../components/LoadState'
 import type { TalkStart } from './tiles/TalkTile'
 
 // The mascot at the head of Talk: big enough to see it listen, think and speak (420 x 190 at full size).
-const TALK_MASCOT_SCALE = 64 / 420
+// Duet full size at the head of Talk, as big as in the first run.
+const TALK_MASCOT_SCALE = 165 / 420
 
 export function TalkPage({ start }: { start?: TalkStart }): React.JSX.Element {
   const [thread, setThread] = useState<ThreadState>()

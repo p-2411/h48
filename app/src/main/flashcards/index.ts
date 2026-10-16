@@ -17,6 +17,8 @@
 import type { BrowserWindow, WebContents } from 'electron'
 import type { Card } from '../../shared/cards'
 import {
+  cardKey,
+  fold,
   sameWord,
   stepOf,
   type AnswerSignals,
@@ -45,7 +47,7 @@ import type { Knowledge } from '../knowledge'
 import { database, readSetting, writeSetting } from '../store/db'
 import { captureStill, generatePicture, uploadPicture } from './pictures'
 import { FlashcardSession, videoCardIds } from './session'
-import { backFor, cardView, encounters, hintFor, keyOf, momentOf, seenWord, wordOf } from './view'
+import { backFor, cardView, encounters, hintFor, momentOf, seenWord, wordOf } from './view'
 
 const PREFS_KEY = 'flashcards'
 const KINDS: CardKind[] = ['sentence', 'word', 'listening', 'picture', 'gap', 'use', 'fresh']
@@ -92,8 +94,6 @@ const recording = (clip: unknown): { data: Uint8Array; mimeType: string } => {
     throw new Error('That recording could not be used. Try recording again.')
   return { data, mimeType: 'audio/wav' }
 }
-const fold = (value: string): string => value.normalize('NFC').toLocaleLowerCase()
-
 export class Flashcards {
   readonly dictionary: Dictionary
   private session: FlashcardSession
@@ -273,7 +273,7 @@ export class Flashcards {
   }
 
   private stepOf(card: Card): Step {
-    const key = keyOf(card)
+    const key = cardKey(card)
     return stepOf(this.deps.knowledge.statesFor(card.language, [key])[key])
   }
 
@@ -284,7 +284,7 @@ export class Flashcards {
   }
 
   private view(card: Card): ReturnType<typeof cardView> {
-    const key = keyOf(card)
+    const key = cardKey(card)
     const state = this.deps.knowledge.statesFor(card.language, [key])[key]
     return cardView(card, state, {
       dictionary: this.dictionary,
@@ -314,7 +314,7 @@ export class Flashcards {
     if (what === 'line') {
       const back = await backFor(
         card.language,
-        keyOf(card),
+        cardKey(card),
         word,
         card,
         { dictionary: this.dictionary },
@@ -339,7 +339,7 @@ export class Flashcards {
     const word = wordOf(card)
     const back = await backFor(
       card.language,
-      keyOf(card),
+      cardKey(card),
       word,
       card,
       { dictionary: this.dictionary },
@@ -348,7 +348,7 @@ export class Flashcards {
     return [
       back.line?.found ? back.line.word : '',
       word,
-      seenWord(card.language, keyOf(card)).text ?? '',
+      seenWord(card.language, cardKey(card)).text ?? '',
       card.expression
     ].filter(Boolean)
   }
@@ -373,7 +373,7 @@ export class Flashcards {
     const right =
       sameWord(heard, forms) || forms.some((form) => form && fold(heard).includes(fold(form)))
     const good = right && attempt.good
-    const key = keyOf(card)
+    const key = cardKey(card)
     if (heard) {
       this.deps.knowledge.noteAttempt(card.language, key, 'recall', right)
       if (right) this.deps.knowledge.noteAttempt(card.language, key, 'say', attempt.good)
@@ -391,7 +391,7 @@ export class Flashcards {
     const card = this.card(cardId)
     const forms = await this.forms(card)
     const good = sameWord(answer, forms)
-    this.deps.knowledge.noteAttempt(card.language, keyOf(card), 'recall', good)
+    this.deps.knowledge.noteAttempt(card.language, cardKey(card), 'recall', good)
     return { heard: answer, note: good ? 'That’s it.' : `It’s ${forms[0] || wordOf(card)}.`, good }
   }
 
@@ -431,7 +431,7 @@ export class Flashcards {
     )
     const good = verdict.words.some((item) => item.used && item.correct)
     const used = verdict.words.some((item) => item.used)
-    const key = keyOf(card)
+    const key = cardKey(card)
     if (used) this.deps.knowledge.noteAttempt(card.language, key, 'use', good, sentence)
     if (spoken && used) this.deps.knowledge.noteAttempt(card.language, key, 'say', good)
     return {
@@ -471,13 +471,13 @@ export class Flashcards {
 
   /** A word's cards, by its key (which names its language). */
   private cardsWithKey(key: string): Card[] {
-    return this.deps.cards.collection.list({ show: 'all' }).filter((card) => keyOf(card) === key)
+    return this.deps.cards.collection.list({ show: 'all' }).filter((card) => cardKey(card) === key)
   }
 
   private cardsOf(lang: Language, key: string): Card[] {
     return this.deps.cards.collection
       .list({ show: 'all' })
-      .filter((card) => card.language === lang && keyOf(card) === key)
+      .filter((card) => card.language === lang && cardKey(card) === key)
   }
 
   async word(lang: Language, key: string): Promise<WordView> {

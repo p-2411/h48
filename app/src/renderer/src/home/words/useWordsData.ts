@@ -3,7 +3,7 @@
 // ladder and when a card changes. A failed reload keeps what was shown. Also the full cards (with
 // their review history) of the word that is open.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Card, CardDetail } from '../../../../shared/cards'
+import type { Card } from '../../../../shared/cards'
 import type { WordsSummary } from '../../../../shared/knowledge'
 import type { Language } from '../../../../shared/types'
 import { say } from '../../components/errors'
@@ -55,36 +55,4 @@ export function useWordsData(language?: Language): {
   }, [reload])
   // Another language's words are not shown while this one's load.
   return { data: data?.language === language ? data : undefined, error, reload }
-}
-
-/** The cards with these ids, with their review history; loaded again each time `version` changes
- * (the cards were loaded again). Undefined while the first load for these ids runs. */
-export function useCardDetails(
-  ids: string[],
-  version: unknown
-): { cards?: CardDetail[]; error?: string } | undefined {
-  const key = ids.join(',')
-  const [state, setState] = useState<{ key: string; cards?: CardDetail[]; error?: string }>()
-  useEffect(() => {
-    if (!key) return
-    let live = true
-    Promise.all(key.split(',').map((id) => window.duet.cards.get(id))).then(
-      (found) => {
-        if (live) setState({ key, cards: found.filter((card): card is CardDetail => !!card) })
-      },
-      (cause) => {
-        // A failed reload keeps the cards shown.
-        if (live)
-          setState((last) => ({
-            key,
-            cards: last?.key === key ? last.cards : undefined,
-            error: say(cause, 'Could not load its card.')
-          }))
-      }
-    )
-    return () => {
-      live = false
-    }
-  }, [key, version])
-  return key && state?.key === key ? state : undefined
 }

@@ -1,5 +1,5 @@
-// Cards for any page (src/main/cards): Explain saves them, My cards browses and reviews them.
-import type { Card, CardContent, CardDetail, CardDraft, CardQuery, Rating, ReviewQueue, ReviewSettings, SaveResult } from '../shared/cards'
+// Cards for any page (src/main/cards): Explain saves them, the flashcards page edits them.
+import type { Card, CardContent, CardDetail, CardDraft, CardQuery, SaveResult } from '../shared/cards'
 import { invoke } from './invoke'
 import { subscribe } from './subscribe'
 
@@ -16,23 +16,12 @@ export const cardsApi = {
   remove: (id: string) => invoke<void>('cards:delete', id),
   restore: (id: string) => invoke<void>('cards:restore', id),
 
-  startReview: () => invoke<ReviewQueue>('cards:review-start'),
-  reviewQueue: () => invoke<ReviewQueue>('cards:review-queue'),
-  rate: (cardId: string, revision: number, rating: Rating) =>
-    invoke<ReviewQueue>('cards:rate', cardId, revision, rating, crypto.randomUUID()),
-  skip: (cardId: string) => invoke<ReviewQueue>('cards:skip', cardId),
-  undo: () => invoke<ReviewQueue>('cards:undo'),
-  getSettings: () => invoke<ReviewSettings>('cards:get-settings'),
-  setSettings: (change: Partial<ReviewSettings>) => invoke<ReviewSettings>('cards:set-settings', change),
-
   exportBackup: () => invoke<string | undefined>('cards:export-backup'),
   exportText: () => invoke<string | undefined>('cards:export-text'),
   restoreBackup: () => invoke<{ cards: number; reviews: number } | undefined>('cards:restore-backup'),
 
   /** Opens My cards, on one card when given. */
   open: (id?: string) => invoke<void>('cards:open', id),
-  replay: (id: string) => invoke<void>('cards:replay', id),
-  practise: (id: string) => invoke<void>('cards:practise', id),
   onChanged: (listener: () => void) => subscribe('cards:changed', listener),
   onShow: (listener: (id: string) => void) => subscribe('cards:show', listener)
 }

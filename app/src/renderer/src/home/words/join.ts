@@ -4,7 +4,8 @@
 // alongside), marked with its language. Then the search and filters over the rows. Pure, for tests
 // (scripts/test-words-join.mjs).
 import type { Card } from '../../../../shared/cards'
-import { wordKey, type WordsSummary, type WordState } from '../../../../shared/knowledge'
+import { cardKey, fold } from '../../../../shared/flashcards'
+import { type WordsSummary, type WordState } from '../../../../shared/knowledge'
 import type { Language } from '../../../../shared/types'
 
 /** One row: a word on the ladder (with its cards, if any), or a card's word that is not on it. */
@@ -39,8 +40,6 @@ export function isDue(card: Card, now = Date.now()): boolean {
   return !card.paused && card.state !== 'new' && card.due <= now
 }
 
-const keyOf = (card: Card): string => card.wordKey ?? wordKey(card.language, card.expression)
-
 function item(
   key: string,
   text: string,
@@ -74,7 +73,7 @@ export function joinWords(
     (a, b) => Number(a.language !== language) - Number(b.language !== language) || b.createdAt - a.createdAt
   )
   for (const card of newestFirst) {
-    const key = keyOf(card)
+    const key = cardKey(card)
     byKey.set(key, [...(byKey.get(key) ?? []), card])
   }
   const rows = words.map((word) => item(word.key, word.word, byKey.get(word.key) ?? [], now, word))
@@ -84,8 +83,6 @@ export function joinWords(
       rows.push(item(key, own[0].expression, own, now, undefined, own[0].language === language ? undefined : own[0].language))
   return rows
 }
-
-const fold = (text: string): string => text.normalize('NFC').toLocaleLowerCase()
 
 /** Everything a search looks in: the word, the form seen, and its cards' text. */
 function haystack(row: WordItem): string {

@@ -3,11 +3,9 @@
 // Storing is store.ts, scheduling scheduler.ts, the review queue review.ts.
 //
 // IPC (all "cards:*"; pages reach them through window.duet.cards in src/preload/cards.ts):
-//   list, get, save, update, save-as-new, pause, delete, restore    the collection
-//   review-start, review-queue, rate, skip, undo                     reviewing
-//   get-settings, set-settings                                       review settings
+//   list, get, save, update, save-as-new, delete, restore           the collection
 //   export-backup, export-text, restore-backup                       files
-//   open, replay, practise                                           going elsewhere
+//   open                                                             going elsewhere
 // The class emits "changed" (with the due counts) when cards change (the home base reloads them),
 // and "saved" (the new card) when a card is saved, for the watch log.
 import { EventEmitter } from 'events'
@@ -26,7 +24,7 @@ import type {
 } from '../../shared/cards'
 import type { DueCounts } from '../../shared/types'
 import type { Moment } from '../../shared/moment'
-import { readSetting, writeSetting } from '../store/db'
+import { readSetting } from '../store/db'
 import { reviewCounts, reviewsSince, ReviewSession } from './review'
 import { Scheduler } from './scheduler'
 import { CardStore, readBackup, UNDO_DELETE_MS } from './store'
@@ -44,11 +42,6 @@ export class Cards extends EventEmitter {
   private store = new CardStore()
   private settings = loadSettings()
   private scheduler = new Scheduler(this.settings)
-  private review = new ReviewSession(
-    this.store,
-    () => this.scheduler,
-    () => this.settings
-  )
   private voiceReview = new ReviewSession(
     this.store,
     () => this.scheduler,
@@ -56,12 +49,8 @@ export class Cards extends EventEmitter {
   )
 
   constructor({
-    replay,
-    practise,
     open
   }: {
-    replay: (moment: Moment) => void
-    practise: (moment: Moment) => void
     /** Opens My cards, on one card when given. */
     open: (cardId?: string) => void
   }) {
@@ -100,48 +89,11 @@ export class Cards extends EventEmitter {
         this.store.saveAsNew(id, content, this.scheduler)
       )
     )
-    handle(
-      'pause',
-      changing((id: string, paused: boolean) => this.store.setPaused(id, paused))
-    )
     handle('delete', (id: string) => this.remove(id))
     handle(
       'restore',
       changing((id: string) => this.store.restore(id))
     )
-
-    handle('review-start', () => {
-      this.review.restart()
-      return this.review.queue()
-    })
-    handle('review-queue', () => this.review.queue())
-    handle(
-      'rate',
-      changing((cardId: string, revision: number, rating: Rating, eventId: string) =>
-        this.review.rate(cardId, revision, rating, eventId)
-      )
-    )
-    handle('skip', (cardId: string) => this.review.skip(cardId))
-    handle(
-      'undo',
-      changing(() => this.review.undo())
-    )
-
-    handle('get-settings', () => this.settings)
-    handle('set-settings', (change: Partial<ReviewSettings>) => {
-      const desiredRetention = Math.min(
-        0.97,
-        Math.max(0.8, Number(change.desiredRetention ?? this.settings.desiredRetention))
-      )
-      const newPerDay = Math.min(
-        100,
-        Math.max(0, Math.round(Number(change.newPerDay ?? this.settings.newPerDay)))
-      )
-      this.settings = { desiredRetention, newPerDay }
-      this.scheduler = new Scheduler(this.settings)
-      writeSetting(SETTINGS_KEY, this.settings)
-      return this.settings
-    })
 
     handleFrom('export-backup', (parent) =>
       this.saveFile(
@@ -170,18 +122,6 @@ export class Cards extends EventEmitter {
     )
 
     handle('open', (id?: string) => open(id))
-    const momentOf = (id: string): Moment | undefined => {
-      const card = this.store.get(id)
-      return card?.source.kind === 'video' ? card.source.moment : undefined
-    }
-    handle('replay', (id: string) => {
-      const moment = momentOf(id)
-      if (moment) replay(moment)
-    })
-    handle('practise', (id: string) => {
-      const moment = momentOf(id)
-      if (moment) practise(moment)
-    })
   }
 
   /** A review session of its own on the same cards, scheduler and settings, for the flashcards page

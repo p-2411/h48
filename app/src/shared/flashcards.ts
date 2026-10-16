@@ -6,7 +6,7 @@
 // (shared/knowledge.ts works out which). A card asks one question that depends on its word's step and
 // on what Duet has for it, and ends with Forgot or Got it; Duet works out how hard it was.
 import type { Card, Rating } from './cards'
-import type { WordState } from './knowledge'
+import { wordKey, type WordState } from './knowledge'
 import type { Language } from './types'
 
 /** The four steps, lowest first, as the page names them in code. */
@@ -136,7 +136,18 @@ export function comesBack(due: number, now: number): string {
  * when the word couldn't be found (then `before` is the whole line). */
 export type SplitLine = { before: string; word: string; after: string; found: boolean }
 
-const fold = (text: string): string => text.normalize('NFC').toLocaleLowerCase()
+/** A word as matching sees it: composed and lower case. */
+export const fold = (text: string): string => text.normalize('NFC').toLocaleLowerCase()
+
+/** The key of the word a card is for. */
+export const cardKey = (card: Card): string => card.wordKey ?? wordKey(card.language, card.expression)
+
+/** Seconds as m:ss ("" for none). */
+export function mmss(seconds?: number): string {
+  if (seconds === undefined) return ''
+  const whole = Math.max(0, Math.floor(seconds))
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
+}
 
 /** Finds the word in the line: the form seen on screen first, then the dictionary form, then the
  * longest shared start (a verb's stem: "madrug" in "madrugué"), whole words only where words are

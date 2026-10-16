@@ -1,27 +1,7 @@
-/* Review: one card at a time on a stage, recall first (the answer blurred), then show it and rate.
-   Shown in Your words and in the daily session. */
-.review { max-width: 620px; width: 100%; align-self: center; display: flex; flex-direction: column; gap: 18px; }
-.counts { display: flex; gap: 18px; font-size: 13px; color: var(--fg-2); }
-/* The stage: centred, the card's front large with its word glowing, the answer blurred under it. */
-.card-stage { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 26px 0 6px; text-align: center; }
-.card-stage > p { margin: 0; }
-.stage-front { font-size: 30px; line-height: 1.35; letter-spacing: -0.01em; overflow-wrap: anywhere; }
-.stage-back { font-size: 17px; line-height: 1.45; color: var(--fg-2); transition: filter 0.3s var(--ease), opacity 0.3s var(--ease); }
-.stage-back.is-hidden { filter: blur(7px); opacity: 0.6; user-select: none; }
-.stage-reading { margin-top: -6px; font-size: 14.5px; letter-spacing: 0.01em; color: var(--text-2); transition: filter 0.3s var(--ease), opacity 0.3s var(--ease); }
-.stage-reading.is-hidden { filter: blur(7px); opacity: 0.6; user-select: none; }
-.stage-answer { width: 100%; margin-top: 8px; text-align: left; align-items: stretch; }
-.stage-answer p { margin: 0; }
-.stage-show, .stage-more { display: flex; justify-content: center; }
+/* The four ratings (explain/CardPreview.tsx). */
 .ratings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .rate { flex-direction: column; gap: 2px; padding: 10px; border-radius: 16px; }
 .rate.again { box-shadow: inset 0 0 0 1px rgba(255, 105, 97, 0.5); }
 .rate.good { box-shadow: inset 0 0 0 1px rgba(50, 215, 75, 0.5); }
-.legend { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; font-size: 12px; color: var(--text-2); }
-.review-settings { display: flex; flex-direction: column; gap: 10px; }
-.review-settings .field { margin-top: 10px; }
-.scene { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 14px; }
-.scene mark { background: rgba(255, 214, 10, 0.22); color: inherit; border-radius: 4px; padding: 0 2px; }
-.scene .faint { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 /* Narrow: the four ratings in two rows. */
-@media (max-width: 520px) { .ratings { grid-template-columns: repeat(2, 1fr); } .legend { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { .ratings { grid-template-columns: repeat(2, 1fr); } }

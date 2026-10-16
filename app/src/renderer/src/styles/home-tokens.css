@@ -75,7 +75,6 @@
 /* Today */
 @container (max-width: 560px) {
   .today-line { font-size: 30px !important; }
-  .today-big { font-size: 44px !important; }
   .today-steps li { width: auto !important; flex: 1; }
   .today-steps span:last-child { display: none; }
 }

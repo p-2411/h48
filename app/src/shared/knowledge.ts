@@ -68,10 +68,6 @@ export function rank(state: WordState): number {
   return state === 'ignored' ? LADDER.length : LADDER.indexOf(state)
 }
 
-/** Whether a word is on `rung` or above (ignored words are not). */
-export function atLeast(state: WordState, rung: Exclude<WordState, 'ignored'>): boolean {
-  return state !== 'ignored' && rank(state) >= rank(rung)
-}
 
 const dayOf = (at: number): string => new Date(at).toDateString()
 

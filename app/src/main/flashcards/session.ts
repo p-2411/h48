@@ -13,12 +13,12 @@ import {
   type FlashcardView,
   type SessionScope,
   type SessionState,
-  type Step
+  type Step,
+  cardKey
 } from '../../shared/flashcards'
 import type { ReviewSession } from '../cards/review'
 import type { CardStore } from '../cards/store'
 import { database } from '../store/db'
-import { keyOf } from './view'
 
 export type SessionDeps = {
   store: CardStore
@@ -88,7 +88,7 @@ export class FlashcardSession {
     if (scope.kind === 'practise') {
       this.practise = this.deps.store
         .list({ show: 'all' })
-        .filter((card) => keyOf(card) === scope.key)
+        .filter((card) => cardKey(card) === scope.key)
         .map((card) => card.id)
       this.total = this.practise.length
     } else {
@@ -172,7 +172,7 @@ export class FlashcardSession {
     const after = this.deps.store.get(cardId)
     const step = after ? this.deps.stepOf(after) : before
     const climbedTo = STEPS.indexOf(step) > STEPS.indexOf(before) ? step : undefined
-    if (climbedTo) this.climbed.add(keyOf(shown.card))
+    if (climbedTo) this.climbed.add(cardKey(shown.card))
     this.deps.changed()
     return this.next(
       { word, comesBack: after ? comesBack(after.due, now) : undefined, climbed: climbedTo },
@@ -195,7 +195,7 @@ export class FlashcardSession {
     this.answeredIds.pop()
     this.done = Math.max(0, this.done - 1)
     const card = this.deps.store.get(last)
-    if (card) this.climbed.delete(keyOf(card))
+    if (card) this.climbed.delete(cardKey(card))
     this.deps.changed()
     const shown = card && this.review!.present(card.id, now)
     this.current = shown ? await this.deps.view(shown.card) : undefined

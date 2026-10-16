@@ -9,19 +9,6 @@
 
 /* The top bar: Duet, the language learnt, the gear. It sits beside the window buttons and drags
    the window. */
-.home-bar {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 16px 0 96px;
-  -webkit-app-region: drag;
-}
-.home-bar button { -webkit-app-region: no-drag; }
-.home-mark { display: grid; place-items: center; color: #fff; }
-.home-brand { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
 /* The language learnt: its name opens a short menu of the languages. */
 .language-menu { position: relative; -webkit-app-region: no-drag; }
 .language-name { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px; font-size: 13px; color: var(--text-2); }
@@ -32,16 +19,6 @@
 }
 .language-list button { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 10px; border-radius: 8px; font-size: 13px; text-align: left; }
 .language-list button:hover, .language-list button:focus-visible { background: var(--fill); outline: none; }
-.home-gear {
-  width: 30px;
-  height: 30px;
-  border-radius: 15px;
-  display: grid;
-  place-items: center;
-  background: var(--fill);
-  color: var(--fg-2);
-}
-.home-gear:hover { color: #fff; background: rgba(118, 118, 128, 0.36); }
 
 /* The hub: Today down the left, Continue watching across the top right, Your words and Talk below. */
 .hub {
@@ -53,7 +30,6 @@
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
 }
-.stage-open .hub, .stage-open .home-bar { visibility: hidden; }
 .tile-today { grid-row: 1 / 3; }
 .tile-watching { grid-column: 2 / 4; }
 /* Narrower windows: two columns, Today across the top. */
@@ -144,13 +120,8 @@
 
 /* The surface a tile grows into and shrinks back from: solid, so the tiles never show through it
    on the way (useSurface moves and scales it onto its tile, and sets when it shows). */
-.home-surface { position: absolute; inset: 0; z-index: 5; background: #1d1d20; opacity: 0; pointer-events: none; transform-origin: 0 0; will-change: transform, opacity; }
 
 /* An open page, over the hub: ‹ Home beside the window buttons; the page's top drags the window. */
-.home-open { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; min-height: 0; }
-.home-open::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 52px; -webkit-app-region: drag; }
-.home-back { position: absolute; z-index: 1; top: 11px; left: 96px; -webkit-app-region: no-drag; }
-.home-open > .notice { margin: 64px 26px 0; }
 
 /* A page: a column under the top bar that scrolls on its own. */
 .home-page {
@@ -165,7 +136,6 @@
 .home-page h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
 .home-page h1:focus { outline: none; }
 .home-page .glass > p { margin: 0; }
-.home-number { font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
 
 /* Today's session: one step at a time { align-items: center; }
 /* The steps as bars across the top: done white,

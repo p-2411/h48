@@ -96,13 +96,6 @@ export async function playClip(
   await audio.play()
 }
 
-/** "1:25": seconds into a video. */
-export function mmss(seconds?: number): string {
-  if (seconds === undefined) return ''
-  const whole = Math.max(0, Math.floor(seconds))
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
-}
-
 /** "4 times", "twice", "once". */
 export function times(n: number): string {
   return n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`

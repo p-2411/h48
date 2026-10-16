@@ -4,6 +4,7 @@
 // (or ←) brings the last one back. The end is Duet, pleased, and a little paper.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
+  cardKey,
   KIND_NAMES,
   KIND_NOTES,
   STEP_LABELS,
@@ -11,24 +12,21 @@ import {
   type FlashcardView,
   type SessionScope,
   type SessionState,
-  type SpokenCheck
+  type SpokenCheck,
+  mmss
 } from '../../../../shared/flashcards'
-import { wordKey } from '../../../../shared/knowledge'
 import { say } from '../../components/errors'
 import { useRecorder } from '../../components/challenges/useRecorder'
 import { MicButton } from '../../components/MicButton'
 import { DuetMascot } from '../../components/duet/DuetMascot'
 import { Bolded, Entry, StepDot } from './Entry'
-import { confetti, icons, mmss, playClip } from './bits'
+import { confetti, icons, playClip } from './bits'
 import type { SessionApi } from './sample'
 
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 // How long the answered card takes to be put away before the next is dealt.
 const LEAVE_MS = 170
 const reduced = (): boolean => matchMedia('(prefers-reduced-motion: reduce)').matches
-
-const keyOf = (view: FlashcardView): string =>
-  view.card.wordKey ?? wordKey(view.card.language, view.card.expression)
 
 /** The card's top line: its step, and where it's from. */
 function StepRow({ view }: { view: FlashcardView }): React.JSX.Element {
@@ -516,7 +514,7 @@ export function Session({
     if (!view) return
     replays.current++
     void api
-      .replay(view.card.language, keyOf(view))
+      .replay(view.card.language, cardKey(view.card))
       .catch((cause) => setError(say(cause, 'That moment couldn’t be played.')))
   }
   const check = async (work: () => Promise<SpokenCheck>): Promise<void> => {
