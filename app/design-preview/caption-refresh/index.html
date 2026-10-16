@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caption window · refresh</title>
+<!-- Design preview only, never loaded by the app: today's caption strip, unchanged in layout, beside the
+     same strip in the current design scheme. Served by the home-design preview at
+     /@fs/<this folder>/index.html (not as a plain file: the mascot is bundled by the dev server). -->
+</head>
+<body>
+  <div id="root"></div>
+  <!-- Served from /@fs/, so Vite doesn't add React's refresh preamble itself. -->
+  <script type="module">
+    import RefreshRuntime from '/@react-refresh'
+    RefreshRuntime.injectIntoGlobalHook(window)
+    window.$RefreshReg$ = () => {}
+    window.$RefreshSig$ = () => (type) => type
+    window.__vite_plugin_react_preamble_installed__ = true
+  </script>
+  <script type="module" src="./main.tsx"></script>
+</body>
+</html>

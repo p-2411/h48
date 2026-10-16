@@ -1,0 +1,114 @@
+/* Sea glass explorations for the home hub. Preview only: loaded by design-preview, never by the app.
+   Pick a look with ?look=wash | light | pebble (or the switcher, bottom right). */
+
+/* The palette: sea glass seen at night — each colour frosted, never full strength, so the word
+   colours (the knowledge ladder) stay the only bright colour on screen. */
+:root {
+  --sg-honey: #e9b872;
+  --sg-aqua: #6cc9dc;
+  --sg-foam: #9ad8c2;
+  --sg-lilac: #b9a8e3;
+  --sg-clear: #dfe8ea;
+}
+.tile-today { --sg: var(--sg-honey); }
+.tile-watching { --sg: var(--sg-aqua); }
+.tile-words { --sg: var(--sg-clear); }
+.tile-talk { --sg: var(--sg-lilac); }
+
+[data-look] .tile { transition: background 0.5s var(--ease), box-shadow 0.5s var(--ease), border-color 0.5s var(--ease); }
+[data-look] .tile .tile-title { color: color-mix(in srgb, var(--sg) 75%, var(--text-3)); }
+
+/* ── A · Wash: the colour sits inside the glass, strongest where light enters (top left). ─────────── */
+[data-look='wash'] .tile {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--sg) 13%, transparent), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.025));
+  border-color: color-mix(in srgb, var(--sg) 20%, transparent);
+  box-shadow: inset 0 1px color-mix(in srgb, var(--sg) 22%, transparent), 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+/* Wet glass: on hover the frost clears and the colour deepens, as sea glass does in the water. */
+[data-look='wash'] .tile:hover {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--sg) 20%, transparent), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+  border-color: color-mix(in srgb, var(--sg) 32%, transparent);
+}
+
+/* ── B · Cast light: neutral glass, but each piece throws its colour onto the table beneath it,
+   like the photo's shadows. The colour is in the light, not the object. ────────────────────────── */
+[data-look='light'] .hub { overflow: visible; }
+[data-look='light'] .tile {
+  overflow: visible;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), color-mix(in srgb, var(--sg) 5%, rgba(255, 255, 255, 0.03)));
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.07),
+    inset 0 -1px color-mix(in srgb, var(--sg) 30%, transparent),
+    0 18px 40px -12px color-mix(in srgb, var(--sg) 22%, transparent);
+}
+[data-look='light'] .tile::after {
+  /* The pool of coloured light, offset down and right as if lit from the top left. */
+  position: absolute;
+  inset: 30% -4% -10% 8%;
+  z-index: -2;
+  border-radius: 40%;
+  background: color-mix(in srgb, var(--sg) 16%, transparent);
+  filter: blur(34px);
+  content: '';
+  pointer-events: none;
+  transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+  opacity: 0.8;
+}
+[data-look='light'] .tile:hover::after { opacity: 1; transform: translate(4px, 6px); }
+
+/* ── C · Pebble: frosted, tactile, worn smooth. Rounder, a rim catching light on one side, the body
+   tinted through, and the mascot takes the colour of the glass it sits in. ─────────────────────── */
+[data-look='pebble'] .hub { gap: 14px; }
+[data-look='pebble'] .tile {
+  border-radius: 28px;
+  border-color: transparent;
+  background:
+    var(--grain) 0 0 / 90px 90px,
+    radial-gradient(140% 100% at 15% 0%, color-mix(in srgb, var(--sg) 18%, transparent), transparent 65%),
+    radial-gradient(100% 80% at 100% 100%, color-mix(in srgb, var(--sg) 8%, transparent), transparent 70%),
+    rgba(255, 255, 255, 0.04);
+  box-shadow:
+    inset 1.5px 1.5px 0 color-mix(in srgb, var(--sg) 35%, transparent),
+    inset -10px -14px 30px rgba(0, 0, 0, 0.22),
+    0 14px 30px rgba(0, 0, 0, 0.35);
+}
+[data-look='pebble'] .tile:hover {
+  background:
+    var(--grain) 0 0 / 90px 90px,
+    radial-gradient(140% 100% at 15% 0%, color-mix(in srgb, var(--sg) 26%, transparent), transparent 70%),
+    radial-gradient(100% 80% at 100% 100%, color-mix(in srgb, var(--sg) 12%, transparent), transparent 70%),
+    rgba(255, 255, 255, 0.05);
+}
+[data-look='pebble'] .tile .btn,
+[data-look='pebble'] .tile-composer { border-radius: 999px; }
+[data-look='pebble'] .tile-video .thumb { border-radius: 16px; }
+[data-look='pebble'] .tile-talk .duet-mascot .socket {
+  border-color: color-mix(in srgb, var(--sg) 80%, #fff);
+  background:
+    radial-gradient(circle at 26% 8%, rgba(255, 255, 255, 0.34), transparent 42%),
+    color-mix(in srgb, var(--sg) 28%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 0 28px color-mix(in srgb, var(--sg) 35%, transparent);
+}
+
+/* Streak dots as little pieces of glass collected — kept days are honey glass, not white. */
+[data-look] .week-day.kept {
+  background: radial-gradient(circle at 35% 30%, #fff8, transparent 55%), var(--sg-honey);
+  color: #2a1d08;
+  box-shadow: 0 3px 10px -2px color-mix(in srgb, var(--sg-honey) 60%, transparent);
+}
+[data-look] .week-day.frozen { background: color-mix(in srgb, var(--sg-aqua) 45%, transparent); }
+[data-look] .week-day.today { outline-color: color-mix(in srgb, var(--sg-honey) 70%, transparent); }
+
+/* The switcher (preview only). */
+#look-switch {
+  position: fixed; right: 12px; bottom: 12px; z-index: 99; display: flex; gap: 2px; padding: 3px;
+  border-radius: 999px; background: rgba(30, 30, 34, 0.9); border: 1px solid var(--line); font-size: 12px;
+}
+#look-switch button { padding: 5px 10px; border-radius: 999px; color: var(--text-2); }
+#look-switch button[aria-pressed='true'] { background: #fff; color: #111; }

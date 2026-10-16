@@ -1,22 +1,49 @@
 /* The overlay: a subtitle-sized strip at the bottom of a transparent window. The window's empty
    space lets clicks through to the video (see useSolid); the strip, its actions, the word popup
    and the settings sit above it when reached for. */
-/* The room below the strip (44px) is for the checkpoint glow's full reach; it is OVERLAY.padding in
-   src/main/windows/overlay-size.ts, which places the window by it. */
+/* The room below the strip (44px) is OVERLAY.padding in src/main/windows/overlay-size.ts, which places
+   the window by it. (It was sized for the old checkpoint glow's reach outside the strip; the light is
+   inside the strip now, so it could shrink, but only together with overlay-size.ts.) */
 .stage { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 64px 44px; }
 .dock { position: relative; max-width: 100%; display: flex; flex-direction: column; align-items: center; }
 
-/* Duet's surfaces: nearly opaque dark glass, as macOS draws its HUDs. */
-.strip, .settings, .act, .checkpoint {
-  --glass: rgba(30, 30, 32, 0.92);
-  --glass-edge: rgba(255, 255, 255, 0.1);
+/* The strip in Duet's own look (the home window's): Inter for the interface, Source Serif 4 for what
+   Duet says and a word shown large, the home's green-tinted ink in place of Apple's grey, and its ink
+   whites in place of pure white. Over video it is always the dark look, whatever the app's theme. */
+@font-face {
+  font-family: Inter;
+  src: url('../assets/fonts/Inter.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Source Serif 4';
+  src: url('../assets/fonts/SourceSerif4-Variable.ttf') format('truetype');
+  font-weight: 200 900;
+  font-display: swap;
+}
+:root {
+  --fg: #eef3f1;
+  --fg-2: #c9d0ce;
+  --text-2: #9aa3a0;
+  --text-3: #9aa3a0;
+  --line: rgba(238, 243, 241, 0.08);
+  --serif: 'Source Serif 4', Georgia, serif;
+  /* Duet's surfaces: nearly opaque, flat ink glass, and that glass pressed. */
+  --glass: rgba(20, 23, 22, 0.92);
+  --glass-edge: rgba(238, 243, 241, 0.1);
+  --glass-hover: rgba(44, 48, 47, 0.95);
+  /* Words left in English: one plain ink grey, so only the words being learned carry colour. */
+  --plain: #c9d0ce;
+  /* The windows' curve (home window, Hyprland's): fast out, a hair past, settle. */
+  --ease-window: cubic-bezier(0.05, 0.9, 0.1, 1.05);
 }
 
 /* The strip: as small as the line it carries. Its background drags it anywhere. */
 .strip {
   position: relative; max-width: min(860px, var(--fit, 860px)); min-width: 320px; padding: 10px 46px 12px 20px; border-radius: 18px;
   background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg);
-  display: flex; flex-direction: column; gap: 6px; user-select: none;
+  display: flex; flex-direction: column; gap: 6px; user-select: none; isolation: isolate;
 }
 .strip.dragging { cursor: grabbing; }
 .strip p { margin: 0; }
@@ -39,7 +66,7 @@
 .mix .w.sw { font-weight: 500; }
 /* Words left in English are all one plain light grey, so only the swapped words (the ones
    being learned) carry colour. */
-.mix .w:not(.sw) { --c: #b4b4b8; color: var(--c); text-shadow: none; }
+.mix .w:not(.sw) { --c: var(--plain); color: var(--c); text-shadow: none; }
 .w.live { cursor: pointer; border-radius: 5px; }
 .mix .w.live:hover { background: color-mix(in srgb, var(--c, #fff) 28%, transparent); }
 
@@ -73,7 +100,7 @@
 .level-slider.open { padding: 0 2px; }
 .level-track { display: flex; align-items: center; gap: 2px; cursor: ew-resize; touch-action: none; }
 .level-slot { position: relative; width: 24px; height: 24px; display: grid; place-items: center; }
-.level-handle { position: absolute; inset: 0; border-radius: 50%; background: #fff; }
+.level-handle { position: absolute; inset: 0; border-radius: 50%; background: var(--fg); }
 .level-digit { position: relative; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--fg-2); }
 /* Folded, the circle is drawn by its blob, which a swipe tugs: stretched, squashed, sprung back
    (LevelSlider.tsx). */
@@ -83,15 +110,16 @@
   position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; overflow: hidden;
   background: var(--glass); border: 0.5px solid var(--glass-edge); transition: background 0.15s;
 }
-.level-slider:not(.open):hover .level-blob { background: rgba(58, 58, 62, 0.95); }
-.level-slider:not(.open) .level-digit { color: #fff; font-size: 13px; }
-.level-digit.on { color: #111; }
-.level-slider:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.6); outline-offset: 2px; }
+.level-slider:not(.open):hover .level-blob { background: var(--glass-hover); }
+.level-slider:not(.open) .level-digit { color: var(--fg); font-size: 13px; }
+.level-digit.on { color: #121313; }
+.level-slider:focus-visible { outline: 2px solid rgba(238, 243, 241, 0.6); outline-offset: 2px; }
 .act.icon { width: 28px; padding: 0; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
-.act:hover { background: rgba(58, 58, 62, 0.95); }
-.act.primary { background: #fff; color: #111; border-color: #fff; }
-.act.primary:hover { background: #e6e6e6; }
-.act.on { background: #fff; color: #111; }
+.act:hover { background: var(--glass-hover); }
+/* The primary action is ink white on the ink glass. */
+.act.primary { background: var(--fg); color: #121313; border-color: var(--fg); }
+.act.primary:hover { background: #dce3e0; }
+.act.on { background: var(--fg); color: #121313; }
 .act:disabled { opacity: 0.4; cursor: default; }
 
 /* A word's popup, just above the strip, over the actions row. */
@@ -100,23 +128,26 @@
   position: absolute; z-index: 3; bottom: calc(100% + 6px); left: clamp(140px, var(--x), calc(100% - 140px));
   /* Centred by Motion (x: -50%), which also opens it out of its word. */
   transform-origin: bottom center; width: max-content; max-width: 280px;
-  background: #fff; color: #111; border-radius: 12px; padding: 9px 12px; display: flex; flex-direction: column; gap: 2px;
-  font-size: 13px;
+  /* The home's paper, with its grain, and ink text. */
+  background: url('../assets/grain-light.svg') 0 0 / 160px 160px, #f7f8f7; color: #1b201f;
+  border-radius: 14px; padding: 10px 14px 12px; box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.6);
+  display: flex; flex-direction: column; gap: 2px; font-size: 13px;
 }
 /* Bridges the gap down past the strip's edge to its words, so the pointer can go from a word up to
    the popup; resting on it closes the popup after a moment, as leaving does (LineView). */
 .popup-bridge { position: absolute; left: 0; right: 0; top: 100%; height: 16px; }
-.popup b { font-size: 17px; font-weight: 600; }
-.popup .reading { font-size: 12.5px; font-style: italic; color: #555; }
-.popup .job { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #555; }
+/* The word in Duet's serif, its voice, at a size the serif reads well. */
+.popup b { font: 400 26px/1.1 var(--serif); margin: 2px 0; }
+.popup .reading { font-size: 12.5px; font-style: italic; color: #8a908e; }
+.popup .job { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #8a908e; }
 /* The word card's header: what kind of word it is, then, quieter at the far end, its rung, in the
    rung's colour darkened to read on the white card (grey for new words). */
 .popup .card-labels { display: flex; gap: 12px; align-items: baseline; }
-.popup .rung { margin-left: auto; font-size: 11px; font-weight: 500; white-space: nowrap; color: color-mix(in srgb, var(--c, #6e6e73) 55%, #111); }
+.popup .rung { margin-left: auto; font-size: 11px; font-weight: 500; white-space: nowrap; color: color-mix(in srgb, var(--c, #6e6e73) 55%, #1b201f); }
 .popup .row { display: flex; gap: 6px; margin-top: 6px; }
-.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; padding: 4px 9px; border-radius: 999px; background: #efeff2; color: #111; }
-.pill:hover { background: #e2e2e7; }
-.pill.on { background: #111; color: #fff; }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; padding: 4px 9px; border-radius: 999px; background: #eceded; color: #1b201f; white-space: nowrap; }
+.pill:hover { background: #e0e2e1; }
+.pill.on { background: #1b201f; color: #fff; }
 
 /* The settings, above the strip on the right. */
 .settings {
@@ -128,7 +159,15 @@
 .settings .label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
 .segment { display: flex; padding: 2px; border-radius: 8px; background: var(--fill); }
 .segment button { flex: 1; padding: 4px 6px; border-radius: 6px; font-size: 12px; color: var(--fg-2); }
-.segment button[aria-pressed='true'] { background: #636366; color: #fff; font-weight: 500; }
+.segment button[aria-pressed='true'] { background: #2c2f2f; box-shadow: inset 0 0 0 1px rgba(238, 243, 241, 0.1); color: var(--fg); font-weight: 500; }
+/* The home's switches, light on dark: off is a dim track, on is ink white with a dark knob. */
+.settings .toggle { padding: 2px 0; color: var(--fg); }
+.settings .switch { background: #3a3e3d; }
+.settings .switch i { background: var(--fg); transition: transform 0.28s var(--ease-window), background 0.2s; }
+.settings .toggle.is-on .switch { background: var(--fg); }
+.settings .toggle.is-on .switch i { background: #121313; }
+/* The two ways out, side by side under a hairline. */
+.quiet-row { display: flex; gap: 14px; padding-top: 9px; border-top: 1px solid var(--line); }
 .quiet { align-self: flex-start; font-size: 12px; color: var(--text-2); }
 .quiet:hover { color: var(--fg); }
 
@@ -137,58 +176,31 @@
 .notice { padding-top: 6px; border-top: 1px solid var(--line); }
 .toast { color: var(--fg); }
 
-/* A checkpoint offered or open: light in the Apple Intelligence colours flows around the strip and
-   glows outward from its edge, wavy and alive like Siri's (no text, no sound). Four layers just behind
-   the strip (Overlay.tsx), so only what's outside it shows and the subtitles stay clear: a thin
-   stroke on the edge, then three glows, each wider and softer. Each layer's colours turn at their own
-   speed (some the other way) and each one's reach swells and shrinks on its own rhythm, so where they
-   meet the glow thickens and thins and its shape keeps moving round the box. It comes up bright, then
-   at once settles to a quieter glow for as long as it stays (--glow-strength, 1 → 0.35). Motion fades
-   it in when offered and out over half a second when it's done; for people who ask for reduced motion
-   it is the quiet glow, still. */
-@property --glow-strength { syntax: '<number>'; inherits: true; initial-value: 1; }
-@property --glow-turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
-@property --glow-reach { syntax: '<length>'; inherits: false; initial-value: 0px; }
-.strip-glow {
-  position: absolute; inset: 0; pointer-events: none;
-  animation: glow-settle 1.8s ease-out forwards;
+/* A checkpoint offered or open: light from below, inside the glass, in the home's sea-glass colours
+   (honey, foam, aqua, lilac), fading in from clear at both ends; it breathes slowly. Inside the strip,
+   under the line (the strip isolates, so z-index -1 sits on its glass, below its text): the subtitles
+   stay clear and it reads over dark and bright video alike, noticed, never pulling from the line.
+   Motion fades the layer in when offered and out when it's done (Overlay.tsx); its breath is here.
+   Reduced motion: held still, halfway through a breath. */
+.sea-glow {
+  position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  animation: sea-under 6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
-.glow-layer {
-  --reach-from: 2px; --reach-to: 4px;
-  position: absolute; inset: calc(-1 * var(--glow-reach)); border-radius: calc(18px + var(--glow-reach));
-  background: conic-gradient(from var(--glow-turn), var(--glow-colours));
-  animation: glow-turn var(--turn-time) linear infinite var(--turn-way, normal), glow-reach var(--reach-time) ease-in-out infinite alternate;
+.sea-glow::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 32px; border-radius: 0 0 18px 18px;
+  background: linear-gradient(90deg, rgba(223, 232, 234, 0) 2%, #e9b872 18%, #9ad8c2 42%, #6cc9dc 64%, #b9a8e3 84%, rgba(223, 232, 234, 0) 98%);
+  -webkit-mask: linear-gradient(to top, #000 0 1.5px, rgba(0, 0, 0, 0.55) 2.5px, rgba(0, 0, 0, 0.22) 12px, transparent);
+  mask: linear-gradient(to top, #000 0 1.5px, rgba(0, 0, 0, 0.55) 2.5px, rgba(0, 0, 0, 0.22) 12px, transparent);
+  animation: sea-band 6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
-/* The stroke on the edge: crisp; softer once settled, but always there. */
-.glow-layer:nth-child(1) {
-  --glow-colours: #bc82f3, #f5b9ea, #8d9fff, #ff6778, #ffba71, #c686ff, #bc82f3;
-  --turn-time: 6s; --reach-from: 1.5px; --reach-to: 1.5px; --reach-time: 1s;
-  filter: blur(0.5px); opacity: calc(0.5 + 0.5 * var(--glow-strength));
+@keyframes sea-under {
+  0%, 100% { box-shadow: inset 0 -12px 20px -12px rgba(238, 243, 241, 0.14); }
+  50% { box-shadow: inset 0 -18px 26px -12px rgba(238, 243, 241, 0.3); }
 }
-/* Close glow: a little blurred, turning the other way. */
-.glow-layer:nth-child(2) {
-  --glow-colours: #f5b9ea, #8d9fff 20%, #bc82f3 35%, #ffba71 55%, #ff6778 70%, #c686ff 85%, #f5b9ea;
-  --turn-time: 8s; --turn-way: reverse; --reach-from: 2px; --reach-to: 5px; --reach-time: 2.7s;
-  filter: blur(4px); opacity: calc(0.9 * var(--glow-strength));
-}
-/* Wide glow. */
-.glow-layer:nth-child(3) {
-  --glow-colours: #8d9fff, #ff6778 25%, #ffba71 40%, #bc82f3 60%, #f5b9ea 80%, #8d9fff;
-  --turn-time: 10s; --reach-from: 4px; --reach-to: 10px; --reach-time: 3.6s;
-  filter: blur(12px); opacity: calc(0.8 * var(--glow-strength));
-}
-/* Widest glow, out into the video; turning the other way, slowly. */
-.glow-layer:nth-child(4) {
-  --glow-colours: #c686ff, #8d9fff 30%, #f5b9ea 50%, #ff6778 65%, #ffba71 85%, #c686ff;
-  --turn-time: 14s; --turn-way: reverse; --reach-from: 8px; --reach-to: 16px; --reach-time: 4.7s;
-  filter: blur(22px); opacity: calc(0.6 * var(--glow-strength));
-}
-@keyframes glow-turn { to { --glow-turn: 360deg; } }
-@keyframes glow-reach { from { --glow-reach: var(--reach-from); } to { --glow-reach: var(--reach-to); } }
-@keyframes glow-settle { 0%, 30% { --glow-strength: 1; } 100% { --glow-strength: 0.35; } }
+@keyframes sea-band { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.85; } }
 @media (prefers-reduced-motion: reduce) {
-  .strip-glow { animation: none; --glow-strength: 0.35; }
-  .glow-layer { animation: none; --glow-reach: var(--reach-from); }
+  .sea-glow { animation: none; box-shadow: inset 0 -15px 23px -12px rgba(238, 243, 241, 0.22); }
+  .sea-glow::after { animation: none; opacity: 0.62; }
 }
 .strip.glow { cursor: pointer; }
 /* An open checkpoint grows up out of the strip: the card sits flush on it, exactly as wide as the
@@ -199,7 +211,7 @@
 .strip-row:has(.checkpoint) { display: flex; flex-direction: column; align-items: stretch; }
 .checkpoint {
   position: relative; overflow: hidden; width: 0; min-width: 100%;
-  border-radius: 18px 18px 0 0; background: var(--glass); border: 0.5px solid var(--glass-edge); border-bottom-color: rgba(255, 255, 255, 0.06);
+  border-radius: 18px 18px 0 0; background: var(--glass); border: 0.5px solid var(--glass-edge); border-bottom-color: rgba(238, 243, 241, 0.06);
 }
 .checkpoint-body { max-height: min(400px, calc(var(--room, 446px) - 60px)); overflow-y: auto; }
 .checkpoint .challenge { padding: 14px 20px 12px; border: 0; border-radius: 0; background: none; }
@@ -214,38 +226,77 @@
   /* Held to the strip's bottom edge, which stays put: the strip grows upward on hover, and a button
      centred on it would move out from under the pointer. 1px up centres it on a one-line strip (38px). */
   position: absolute; right: calc(100% + 8px); bottom: 1px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
-  background: rgba(30, 30, 32, 0.92); border: 0.5px solid rgba(255, 255, 255, 0.1); color: var(--fg-2);
+  background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg-2);
   opacity: 0.55; transition: opacity 0.2s var(--ease), color 0.2s var(--ease);
 }
 .dock:hover .talk-button, .talk-button:focus-visible, .talk-button.on { opacity: 1; color: var(--fg); }
 .talk-button:disabled { opacity: 0.25; }
-.talk-button svg { width: 20px; height: 20px; }
+/* Inside, Duet's face (flat, the small-size finish); hovered, it lifts and tilts as in the home bar. */
+/* Motion moves the seat's contents in and out (Overlay.tsx), so the hover moves what's inside them. */
+.talk-face { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; }
+.talk-face > * { transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
+.talk-face .duet-alive { display: block; overflow: visible; }
+.talk-button:hover .talk-face > * { transform: translateY(-1px) scale(1.06) rotate(-2deg); }
+.talk-button:active .talk-face > * { transform: scale(0.95); transition-duration: 0.08s; }
+/* While Duet is out: the arrow that brings it back, nudging left on hover. */
+.talk-back { color: var(--fg); }
+.talk-back .icon { width: 18px; height: 18px; }
+.talk-button:hover .talk-back > * { transform: translateX(-2px); }
+@media (prefers-reduced-motion: reduce) { .talk-button:hover .talk-face > * { transform: none; } }
 .talk-bubble {
   /* Above the actions row (Explain, star, replay, ⚙), which shows on hover. */
   /* Centred by Motion (x: -50%), which also opens and closes it. */
   position: absolute; z-index: 5; bottom: calc(100% + 48px); left: 50%; transform-origin: bottom center; width: min(420px, 100%);
   max-height: calc(var(--room, 480px) - 54px);
-  display: flex; flex-direction: column; align-items: center; gap: 4px; color: #fff; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--fg); text-align: center;
 }
-/* No card: the text reads over the video by its shadow. */
+/* No card: bright, slightly heavy text that reads over the video by its shadow (the light look has
+   none: dark ink reads on a bright picture by itself). */
 .talk-lines, .talk-actions { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.6); }
-.talk-lines { display: flex; flex-direction: column; gap: 1px; font-size: 13px; line-height: 1.35; max-width: 100%; min-height: 0; overflow-y: auto; }
+.talk-bubble.light .talk-lines, .talk-bubble.light .talk-actions { text-shadow: none; }
+.talk-lines { display: flex; flex-direction: column; gap: 1px; font-size: 13px; line-height: 1.35; max-width: 100%; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+.talk-lines::-webkit-scrollbar { display: none; }
 .talk-lines p { margin: 0; overflow-wrap: anywhere; }
-.talk-heard { color: rgba(255, 255, 255, 0.72); }
-.talk-said { font-size: 14.5px; }
-.talk-wait { color: rgba(255, 255, 255, 0.72); }
+.talk-heard { color: #dde4e1; font-weight: 500; }
+/* What Duet says, in its voice: the serif. */
+.talk-said { font: 500 20px/1.3 var(--serif); color: #fff; }
+.talk-wait { color: #dde4e1; font-weight: 500; }
 .talk-error { color: #ff8a80; }
 .talk-actions { display: flex; gap: 14px; }
-.talk-link { padding: 2px 4px; font-size: 12.5px; color: rgba(255, 255, 255, 0.8); background: none; border: 0; }
-.talk-link:hover, .talk-link:focus-visible { color: #fff; text-decoration: underline; }
+.talk-link { padding: 2px 4px; font-size: 12.5px; font-weight: 500; color: #eef3f1; background: none; border: 0; }
+.talk-link:hover, .talk-link:focus-visible { color: var(--fg); text-decoration: underline; }
+.talk-link:disabled { opacity: 0.45; text-decoration: none; }
+/* Mute, the look, Continue in Duet: quiet round icon buttons, big enough to hit, no card behind
+   them; each lights faintly when pointed at. */
+.talk-actions { align-items: center; gap: 6px; }
+.talk-tool {
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  color: #fff; background: none; border: 0; transition: background 0.16s var(--ease), color 0.16s var(--ease);
+}
+.talk-tool .icon { width: 15px; height: 15px; stroke-width: 2.2; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.8)); }
+.talk-bubble.light .talk-tool .icon { filter: none; }
+.talk-tool:hover, .talk-tool:focus-visible { color: var(--fg); background: rgba(238, 243, 241, 0.14); }
+.talk-tool:disabled { opacity: 0.4; background: none; }
+.talk-tool.on { color: #ff9f8a; }
+/* Light, for a bright picture: Duet flat in its light colours (crisp ink eyes, DuetMascot) and the
+   subtitles in ink, with no halo or shadow at all: clean, a little heavier, so they read on their own. */
+.talk-bubble.light { color: #1b201f; }
+.talk-bubble.light .talk-heard, .talk-bubble.light .talk-wait { color: #3a4644; font-weight: 500; }
+.talk-bubble.light .talk-said { color: #1b201f; }
+.talk-bubble.light .talk-link { color: rgba(27, 32, 31, 0.85); }
+.talk-bubble.light .talk-link:hover, .talk-bubble.light .talk-link:focus-visible { color: #1b201f; }
+.talk-bubble.light .talk-tool { color: #1b201f; }
+.talk-bubble.light .talk-tool:hover, .talk-bubble.light .talk-tool:focus-visible { background: rgba(27, 32, 31, 0.08); }
+.talk-bubble.light .talk-tool.on { color: #b3341c; }
+.talk-bubble.light .talk-error { color: #b3261e; }
 
 /* A part that broke says so where it was (components/ErrorBoundary.tsx): the strip itself, or just
    above it for a checkpoint or the talk bubble. The page has no ui.css, so its buttons are drawn here. */
 .strip-crash {
-  padding: 10px 14px; border-radius: 14px; background: rgba(30, 30, 32, 0.92); border: 0.5px solid rgba(255, 255, 255, 0.1); color: var(--fg);
+  padding: 10px 14px; border-radius: 14px; background: var(--glass); border: 0.5px solid var(--glass-edge); color: var(--fg);
 }
 .crashed .notice, .strip-crash .notice { border-top: 0; padding-top: 0; }
 .crashed .btn, .strip-crash .btn {
   font-size: 12px; font-weight: 500; height: 28px; padding: 0 11px; border-radius: 999px;
-  background: rgba(58, 58, 62, 0.95); border: 0.5px solid rgba(255, 255, 255, 0.1); color: var(--fg);
+  background: var(--glass-hover); border: 0.5px solid var(--glass-edge); color: var(--fg);
 }

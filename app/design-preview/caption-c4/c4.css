@@ -1,0 +1,109 @@
+/* C4, Duet's tile inside the strip: talking, status, checkpoints. Builds on ../caption-v2/caption-v2.css.
+   Preview only, never loaded by the app. Inter for the strip and controls; Source Serif 4 only for what
+   Duet says, at 20px and up. */
+.scene { height: 380px; }
+.scenes.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1400px) { .scenes.cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.c4 .strip { min-width: 320px; }
+.c4 .body { flex: 1; }
+
+/* ── The conversation, in the strip or in a card grown out of it ─────────────────────────── */
+.convo { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-top: 1px; }
+.convo p { margin: 0; }
+.you { font-size: 14px; line-height: 1.4; color: var(--ink2); }
+.you.small { font-size: 12.5px; color: var(--sub); }
+.duet-says { font-family: 'Source Serif 4', Georgia, serif; font-size: 22px; font-weight: 400; line-height: 1.25; letter-spacing: -0.005em; color: var(--ink); }
+.duet-says b { font-weight: 500; color: var(--c); }
+.duet-aside { font-size: 13px; color: var(--ink2); }
+.state { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--sub); min-height: 20px; }
+.strip-end { display: flex; gap: 6px; align-items: center; align-self: center; margin-left: auto; padding-left: 8px; flex: none; }
+.strip-end.top { align-self: flex-start; }
+.mini { height: 26px; min-width: 26px; padding: 0 9px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; font-weight: 500; background: rgba(238, 243, 241, 0.08); color: var(--ink2); }
+.mini:hover { background: rgba(238, 243, 241, 0.14); color: var(--ink); }
+.mini.end { background: rgba(238, 243, 241, 0.14); color: var(--ink); }
+.mini svg { width: 14px; height: 14px; }
+.mini.ask { color: var(--ink); }
+.mini.ask::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #ff9f0a; }
+
+/* TA: the video's line waits above the strip, small and paused. */
+.paused-line { display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px; max-width: 100%; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.6); opacity: 0.85; }
+.paused-line .pause { width: 8px; height: 8px; flex: none; fill: var(--ink2); align-self: center; }
+.mix.quiet { font-size: 13.5px; line-height: 1.3; }
+.mix.quiet .w.sw::after { opacity: 0.4; }
+.talk-in .strip { align-items: flex-start; }
+.talk-in .perch.inside .tile-face { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1.5px rgba(238, 243, 241, 0.35); }
+
+/* TB and KA open: a card grown up out of the strip, the two one shape; Duet moves up into it and
+   its place in the strip stays open. */
+.c4 .strip-row { position: relative; display: flex; flex-direction: column; align-items: stretch; max-width: 100%; }
+.grown {
+  position: relative; display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px 12px 10px; border-radius: 18px 18px 0 0;
+  background: var(--grain-d) 0 0 / 160px 160px, var(--glass); border: 0.5px solid var(--edge); border-bottom-color: rgba(238, 243, 241, 0.06);
+}
+.grown .convo { flex: 1; }
+.strip.joined { border-top-left-radius: 0; border-top-right-radius: 0; border-top-color: transparent; }
+.tile-gap { width: 36px; flex: none; }
+
+/* Pointed at: what pressing does, and the status, above the tile. */
+.perch.inside.pointed .tile-face { transform: scale(1.06) rotate(-2deg); }
+.tip {
+  position: absolute; left: 4px; bottom: calc(100% + 8px); white-space: nowrap; line-height: 1;
+  padding: 7px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; color: var(--ink);
+  background: var(--glass); border: 0.5px solid var(--edge); box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.6);
+}
+
+/* Thinking dots and the voice level. */
+.dots { display: inline-flex; gap: 4px; align-items: center; }
+.dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink); animation: dot 1.2s ease-in-out infinite; }
+.dots i:nth-child(2) { animation-delay: 0.15s; }
+.dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dot { 0%, 100% { opacity: 0.3; transform: none; } 40% { opacity: 1; transform: translateY(-2px); } }
+.bars { display: inline-flex; align-items: center; gap: 2.5px; height: 16px; }
+.bars i { width: 3px; height: 5px; border-radius: 2px; background: var(--ink); opacity: 0.85; }
+.bars i:nth-child(2) { height: 10px; }
+.bars i:nth-child(3) { height: 14px; }
+.bars i:nth-child(4) { height: 8px; }
+.bars.live i { animation: voice 0.9s ease-in-out infinite alternate; }
+.bars.live i:nth-child(2) { animation-delay: -0.3s; }
+.bars.live i:nth-child(3) { animation-delay: -0.6s; }
+.bars.live i:nth-child(4) { animation-delay: -0.15s; }
+.bars.live i:nth-child(5) { animation-delay: -0.45s; }
+@keyframes voice { from { transform: scaleY(0.4); } to { transform: scaleY(1.3); } }
+
+/* ── Checkpoints ─────────────────────────────────────────────────────────────────────────── */
+@property --turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.glow { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.glow i {
+  position: absolute; inset: -2px; border-radius: 20px;
+  background: conic-gradient(from var(--turn), #ffd60a, #ff9f0a, #4da3ff, #32d74b, #ffd60a);
+  animation: turn 12s linear infinite;
+}
+.glow i:nth-child(2) { inset: -6px; border-radius: 24px; filter: blur(8px); opacity: 0.45; animation-direction: reverse; animation-duration: 16s; }
+@keyframes turn { to { --turn: 360deg; } }
+.offer-light.step-offered .strip { cursor: pointer; }
+
+/* KB: the tile rings through the ladder's colours. */
+.perch.inside.ringing .tile-face { animation: ladder-ring 6s linear infinite; }
+@keyframes ladder-ring {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1.5px rgba(255, 214, 10, 0.8), 0 0 12px rgba(255, 214, 10, 0.35); }
+  25% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1.5px rgba(255, 159, 10, 0.8), 0 0 12px rgba(255, 159, 10, 0.35); }
+  50% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1.5px rgba(77, 163, 255, 0.8), 0 0 12px rgba(77, 163, 255, 0.35); }
+  75% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1.5px rgba(50, 215, 75, 0.8), 0 0 12px rgba(50, 215, 75, 0.35); }
+}
+.offer-ask.step-open .strip { align-items: flex-start; }
+
+/* The question's answers, and the answered line. */
+.choices { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.choice { font-size: 12.5px; font-weight: 500; padding: 6px 11px; border-radius: 999px; background: rgba(238, 243, 241, 0.08); color: var(--ink); }
+.choice.right { box-shadow: inset 0 0 0 1px rgba(238, 243, 241, 0.3); }
+.done-line { margin: 2px 0; font-size: 15px; line-height: 1.6; color: var(--ink2); }
+.done-line b { color: var(--c); font-weight: 600; }
+.done-line .tick { color: #32d74b; font-weight: 700; margin-right: 2px; }
+.rung-word { color: #ff9f0a; font-weight: 500; }
+
+@media (prefers-reduced-motion: reduce) { .glow i, .dots i, .bars i, .perch.inside.ringing .tile-face { animation: none !important; } }
+
+/* KB offered: "Quick one?" waits just above the strip's right end, so the line keeps its width. */
+.offer-ask.step-offered .strip-end { position: absolute; right: 8px; bottom: calc(100% + 6px); padding: 0; }
+.offer-ask.step-offered .mini.ask { background: var(--glass); border: 0.5px solid var(--edge); height: 28px; border-radius: 999px; padding: 0 11px; }
+.version h2 { font-size: 26px; }

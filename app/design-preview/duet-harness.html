@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Duet mascot (preview)</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; gap: 24px; background: #111; color: #ddd; font: 13px system-ui, sans-serif; }
+  .row { display: flex; gap: 40px; align-items: end; padding: 40px; border-radius: 16px; background: linear-gradient(135deg, #2b2f3a, #10141a 60%, #3a2a20); }
+  .cell { display: grid; justify-items: center; gap: 10px; }
+  button { font: inherit; padding: 5px 10px; border-radius: 99px; border: 1px solid #444; background: #222; color: #ddd; cursor: pointer; }
+  #controls { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 700px; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="cell"><svg id="small" class="duet-alive" viewBox="0 17 100 66" width="120" height="79"></svg><span>Talk bubble size (120 px)</span></div>
+    <div class="cell"><svg id="big" class="duet-alive" viewBox="0 17 100 66" width="300" height="198"></svg><span>Large (300 px)</span></div>
+  </div>
+  <div id="controls"></div>
+  <script type="module" src="./duet-harness.ts"></script>
+</body>
+</html>

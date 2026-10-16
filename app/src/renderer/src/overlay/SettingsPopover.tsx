@@ -11,12 +11,14 @@ export function SettingsPopover({ settings }: { settings: OverlaySettings }): Re
     <motion.div className="settings" data-solid role="dialog" aria-label="Settings" {...pop()}>
       <span className="label">While watching</span>
       <QuickToggles settings={settings} />
-      <button type="button" className="quiet" onClick={() => window.duet.openSettings()}>
-        More settings
-      </button>
-      <button type="button" className="quiet" onClick={() => window.duet.showScript()}>
-        Open the whole script
-      </button>
+      <div className="quiet-row">
+        <button type="button" className="quiet" onClick={() => window.duet.openSettings()}>
+          More settings
+        </button>
+        <button type="button" className="quiet" onClick={() => window.duet.showScript()}>
+          Open the whole script
+        </button>
+      </div>
     </motion.div>
   )
 }

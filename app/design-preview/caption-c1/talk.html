@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caption window · talk and checkpoint</title>
+<!-- Design preview only, never loaded by the app: round four, C1's talking pill and checkpoint state,
+     with the real Duet mascot. Served by the home-design preview at /@fs/<this folder>/talk.html
+     (it doesn't open as a plain file: the mascot is bundled by the dev server). -->
+<link rel="stylesheet" href="../caption-v2/caption-v2.css">
+<link rel="stylesheet" href="./c1.css">
+<link rel="stylesheet" href="./talk.css">
+</head>
+<body>
+  <div id="root"></div>
+  <!-- Served from /@fs/, so Vite doesn't add React's refresh preamble itself. -->
+  <script type="module">
+    import RefreshRuntime from '/@react-refresh'
+    RefreshRuntime.injectIntoGlobalHook(window)
+    window.$RefreshReg$ = () => {}
+    window.$RefreshSig$ = () => (type) => type
+    window.__vite_plugin_react_preamble_installed__ = true
+  </script>
+  <script type="module" src="./talk.tsx"></script>
+</body>
+</html>

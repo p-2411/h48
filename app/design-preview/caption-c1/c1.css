@@ -1,0 +1,76 @@
+/* Round three: C1, the corner tile, refined. Builds on ../caption-v2/caption-v2.css (the strip, the
+   card, the scene). Preview only, never loaded by the app. */
+.scenes.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.scenes.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.scenes.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 1400px) { .scenes.cols-3, .scenes.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cols-4 .scene { height: 300px; }
+.cols-4 .mix { font-size: 16px; }
+.cols-4 .strip { min-width: 0; }
+.tall .scene { height: 390px; }
+.scene.bright {
+  background:
+    radial-gradient(50% 60% at 30% 25%, rgba(255, 255, 255, 0.9), transparent 70%),
+    radial-gradient(40% 40% at 80% 30%, rgba(200, 230, 245, 0.9), transparent 70%),
+    linear-gradient(180deg, #e9e4dc 0%, #d8d0c4 60%, #b9ae9f 100%);
+}
+.scene.bright::before { background: rgba(120, 100, 85, 0.55); }
+
+/* ── Seats ──────────────────────────────────────────────────────────────────────────────────── */
+.c1 .strip { min-width: 280px; }
+/* Corner: half over the top edge, 14px in (round two). */
+.seat-corner .perch.tile { left: 14px; top: -26px; }
+.perch.tile .tile-face { flex: none; }
+/* Shelf: a smaller tile sat on the edge, its bottom just over it. */
+.seat-shelf .perch.tile { left: 20px; top: -27px; }
+.seat-shelf .tile-face { width: 28px; height: 28px; border-radius: 9px; }
+.seat-shelf .tile-face .duet-alive { width: 23px; height: auto; }
+/* Badge: over the corner itself, half outside the strip. */
+.seat-badge .perch.tile { left: -13px; top: -15px; }
+.seat-badge .strip { padding-left: 24px; }
+.c1 .actions { padding-left: 62px; }
+.seat-badge .actions { padding-left: 34px; }
+
+/* ── Reaching for Duet ────────────────────────────────────────────────────────────────────── */
+.perch.tile { display: flex; align-items: center; }
+.show-duet .tile-face { transform: translateY(-1px) scale(1.06) rotate(-2deg); }
+.tip {
+  position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%); white-space: nowrap; line-height: 1;
+  padding: 7px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; color: var(--ink);
+  background: var(--glass); border: 0.5px solid var(--edge); box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.6);
+}
+.tip span { color: var(--sub); font-weight: 400; }
+/* The word card opens clear of the tile: its left edge never comes in past the tile's right. */
+.c1 .card { left: max(62px, 34%); transform: none; }
+
+/* ── Talking: the tile opens into a pill (Duet, what it is doing, End) ───────────────────────── */
+.perch.tile.talking {
+  gap: 8px; padding: 0 4px 0 0; height: 36px; border-radius: 12px;
+  background: #0e0f0f; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 6px 16px -8px rgba(0, 0, 0, 0.7);
+}
+.perch.tile.talking .tile-face { box-shadow: none; background: none; }
+.tile-label { font-size: 12px; font-weight: 500; color: var(--ink); }
+.tile-end { font-size: 11.5px; font-weight: 500; padding: 5px 9px; border-radius: 8px; background: rgba(238, 243, 241, 0.1); color: var(--ink); }
+.show-talking .actions, .show-speaking .actions { display: none; }
+.talk-lines {
+  position: absolute; bottom: calc(100% + 26px); left: 50%; transform: translateX(-50%); width: min(420px, 100%);
+  display: flex; flex-direction: column; gap: 2px; text-align: center; color: #fff; font-size: 13px; line-height: 1.35;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.6);
+}
+.talk-lines p { margin: 0; }
+.talk-lines .heard { color: rgba(255, 255, 255, 0.72); }
+.talk-lines .said { font-size: 14.5px; }
+
+/* ── A checkpoint offered: today's flowing light, round the strip and the tile as one shape ──── */
+@property --turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.glow { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.glow i {
+  position: absolute; inset: -2px; border-radius: 20px;
+  background: conic-gradient(from var(--turn), #bc82f3, #f5b9ea, #8d9fff, #ff6778, #ffba71, #c686ff, #bc82f3);
+  animation: turn 8s linear infinite;
+}
+.glow i:nth-child(2) { inset: -5px; border-radius: 23px; filter: blur(6px); opacity: 0.55; animation-direction: reverse; animation-duration: 10s; }
+.glow i:nth-child(3) { inset: -12px; border-radius: 30px; filter: blur(18px); opacity: 0.35; animation-duration: 14s; }
+@keyframes turn { to { --turn: 360deg; } }
+.show-offer .tile-face { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1.5px rgba(198, 134, 255, 0.75), 0 0 14px rgba(188, 130, 243, 0.45); }
+.show-offer .strip { cursor: pointer; }

@@ -1,0 +1,88 @@
+/* Round four: C1's talking pill and checkpoint. Builds on ../caption-v2/caption-v2.css and c1.css.
+   Preview only, never loaded by the app. */
+.tall .scene { height: 400px; }
+
+/* ── T2 · Voice pill ─────────────────────────────────────────────────────────────────────── */
+.level-pill { gap: 6px; padding-right: 4px !important; }
+.level-bars { display: inline-flex; align-items: center; gap: 2.5px; height: 18px; padding: 0 2px; }
+.level-bars i { width: 3px; height: 5px; border-radius: 2px; background: var(--ink); opacity: 0.8; }
+.level-bars i:nth-child(2) { height: 10px; }
+.level-bars i:nth-child(3) { height: 14px; }
+.level-bars i:nth-child(4) { height: 8px; }
+.level-bars.live i { animation: voice 0.9s ease-in-out infinite alternate; }
+.level-bars.live i:nth-child(2) { animation-delay: -0.3s; }
+.level-bars.live i:nth-child(3) { animation-delay: -0.6s; }
+.level-bars.live i:nth-child(4) { animation-delay: -0.15s; }
+.level-bars.live i:nth-child(5) { animation-delay: -0.45s; }
+@keyframes voice { from { transform: scaleY(0.4); } to { transform: scaleY(1.3); } }
+.level-bars:not(.live) i { height: 3px; opacity: 0.45; }
+.dots { display: inline-flex; gap: 4px; align-items: center; padding: 0 4px; }
+.dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink); animation: dot 1.2s ease-in-out infinite; }
+.dots i:nth-child(2) { animation-delay: 0.15s; }
+.dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dot { 0%, 100% { opacity: 0.3; transform: none; } 40% { opacity: 1; transform: translateY(-2px); } }
+.level-pill .type, .level-pill .end { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: rgba(238, 243, 241, 0.08); color: var(--ink2); }
+.level-pill .end { background: rgba(238, 243, 241, 0.14); color: var(--ink); }
+.level-pill .type svg, .level-pill .end svg { width: 14px; height: 14px; }
+
+/* ── T3 · Speech bubble: grows up and right out of the tile, on ink, the tail at Duet ───────── */
+.talking-bubble .actions { display: none; }
+.bubble-wrap { background: none !important; box-shadow: none !important; }
+.bubble-wrap .tile-face { background: #0e0f0f !important; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 10px -4px rgba(0, 0, 0, 0.6) !important; }
+.speech {
+  position: absolute; left: 0; bottom: calc(100% + 8px); width: 320px; display: flex; flex-direction: column; gap: 4px;
+  padding: 11px 14px 10px; border-radius: 16px 16px 16px 5px; line-height: 1.4; text-align: left; white-space: normal;
+  background: var(--grain-d) 0 0 / 160px 160px, rgba(16, 19, 18, 0.94); border: 0.5px solid var(--edge); color: var(--ink);
+  box-shadow: inset 0 1px rgba(238, 243, 241, 0.06), 0 14px 30px -12px rgba(0, 0, 0, 0.6);
+  transform-origin: bottom left; animation: bubble-in 0.32s var(--move);
+}
+@keyframes bubble-in { from { opacity: 0; transform: scale(0.6); } }
+.speech-heard { font-size: 12.5px; color: var(--sub); }
+.speech-said { font-size: 14.5px; }
+.speech-hint { font-size: 12.5px; color: var(--ink2); }
+.speech .dots { padding: 4px 0 2px; }
+.speech-actions { display: flex; gap: 14px; margin-top: 4px; font-size: 12px; font-weight: 500; color: var(--ink2); }
+.speech-actions span:last-child { margin-left: auto; color: var(--ink); }
+
+/* ── Checkpoints ─────────────────────────────────────────────────────────────────────────── */
+.dock.c1 .strip-row { position: relative; display: flex; flex-direction: column; align-items: stretch; }
+/* K2: the light in the knowledge ladder's colours, two layers, slower. */
+.offer-ladder .glow i { background: conic-gradient(from var(--turn), #ffd60a, #ff9f0a, #4da3ff, #32d74b, #ffd60a); animation-duration: 12s; }
+.offer-ladder .glow i:nth-child(2) { opacity: 0.4; }
+.offer-ladder .glow i:nth-child(3) { display: none; }
+.offer-ladder.step-offered .tile-face, .offer-ladder.step-open .tile-face { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1.5px rgba(255, 214, 10, 0.7), 0 0 12px rgba(255, 159, 10, 0.35); }
+.offer-glow.step-offered .tile-face, .offer-glow.step-open .tile-face { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1.5px rgba(198, 134, 255, 0.75), 0 0 14px rgba(188, 130, 243, 0.45); }
+/* K3: only the tile: a soft ring that turns through the ladder, and a small dot. */
+.offer-tile.step-offered .tile-face, .offer-tile.step-open .tile-face { animation: ladder-ring 6s linear infinite; }
+@keyframes ladder-ring {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1.5px rgba(255, 214, 10, 0.8), 0 0 12px rgba(255, 214, 10, 0.35); }
+  25% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1.5px rgba(255, 159, 10, 0.8), 0 0 12px rgba(255, 159, 10, 0.35); }
+  50% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1.5px rgba(77, 163, 255, 0.8), 0 0 12px rgba(77, 163, 255, 0.35); }
+  75% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1.5px rgba(50, 215, 75, 0.8), 0 0 12px rgba(50, 215, 75, 0.35); }
+}
+.badge { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: #ff9f0a; box-shadow: 0 0 0 2px #0e0f0f; }
+.perch.tile[hidden] { display: none; }
+
+/* Open: the question's card sits flush on the strip (one shape), Duet on its top corner. */
+.checkpoint {
+  position: relative; padding: 18px 20px 12px 20px; border-radius: 18px 18px 0 0;
+  background: var(--grain-d) 0 0 / 160px 160px, var(--glass); border: 0.5px solid var(--edge); border-bottom-color: rgba(238, 243, 241, 0.06);
+}
+.step-open .strip { border-top-left-radius: 0; border-top-right-radius: 0; border-top-color: transparent; }
+
+
+.checkpoint .ask { margin: 0 0 10px; font-size: 15px; color: var(--ink); }
+.checkpoint .kicker { display: block; margin-bottom: 3px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); }
+.checkpoint .ask b { font-family: 'Source Serif 4', Georgia, serif; font-weight: 400; font-size: 20px; color: var(--c); }
+.choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.choice { font-size: 12.5px; font-weight: 500; padding: 6px 11px; border-radius: 999px; background: rgba(238, 243, 241, 0.08); color: var(--ink); }
+.choice.right { box-shadow: inset 0 0 0 1px rgba(238, 243, 241, 0.3); }
+.step-open .glow i { border-radius: 20px; }
+/* Duet rides on the card's corner while it's open. */
+.perch.tile.cp-perch { position: absolute; left: 14px; top: -26px; z-index: 2; }
+
+/* Answered: the strip says what moved, in the rung's colour; Duet pleased. */
+.done-line { margin: 2px 0; font-size: 15px; color: var(--ink2); }
+.done-line b { color: var(--c); font-weight: 600; }
+.done-line .tick { color: #32d74b; font-weight: 700; margin-right: 2px; }
+.rung-word { color: #ff9f0a; font-weight: 500; }

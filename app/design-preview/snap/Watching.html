@@ -1,0 +1,205 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="duet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bar-face .pupil{display:block;transform:translate(var(--px,0px),var(--py,0px));transition:transform .35s cubic-bezier(.32,.72,0,1)}
+.bar-face .socket i{animation:bar-blink 6.2s ease-in-out infinite}
+@keyframes bar-blink{0%,44%,49%,100%{scale:1 1}46.5%{scale:1 .15}}
+.bar-btn{transition:background .35s cubic-bezier(.4,0,.2,1),color .35s cubic-bezier(.4,0,.2,1)}
+.bar-btn:hover{color:#1b201f}
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</head><body style="margin:0">
+<div class="grain-light" style="width: 1120px; height: 720px; box-sizing: border-box; background: #f2f3f3; color: #1b201f; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden;">
+
+<header style="height: 48px; width: 1120px; box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 0 12px 0 14px; font-family: Inter, system-ui, sans-serif; color: #1b201f;">
+<div style="display: flex; align-items: center;">
+<nav aria-label="Places" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: #e9eaea;">
+
+<a href="Tiling.dc.html" class="bar-btn" aria-label="Home" title="Home" aria-current="false" style="border: 0; cursor: pointer; width: 36px; height: 28px; border-radius: 999px; display: grid; place-items: center; text-decoration: none; background: transparent; box-shadow: none; color: #666c6a;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7M6 9.5V19a1 1 0 0 0 1 1h3.5v-5h3v5H17a1 1 0 0 0 1-1V9.5"></path></svg>
+</a>
+<span style="width: 1px; height: 18px; align-self: center; margin: 0 3px; background: rgba(27,32,31,0.16);" aria-hidden="true"></span>
+
+<a href="Today.dc.html" class="bar-btn" aria-label="Today" title="Today" aria-current="false" style="border: 0; cursor: pointer; width: 36px; height: 28px; border-radius: 999px; display: grid; place-items: center; text-decoration: none; background: transparent; box-shadow: none; color: #666c6a;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8z"></path></svg>
+</a>
+
+
+<a href="Watching.dc.html" class="bar-btn" aria-label="Watching" title="Watching" aria-current="page" style="border: 0; cursor: pointer; width: 36px; height: 28px; border-radius: 999px; display: grid; place-items: center; text-decoration: none; background: #ffffff; box-shadow: 0 1px 2px rgba(27,32,31,0.10), inset 0 0 0 1px rgba(27,32,31,0.06); color: #1b201f;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM10 9v6l5-3z"></path></svg>
+</a>
+
+
+<a href="Words.dc.html" class="bar-btn" aria-label="Your words" title="Your words" aria-current="false" style="border: 0; cursor: pointer; width: 36px; height: 28px; border-radius: 999px; display: grid; place-items: center; text-decoration: none; background: transparent; box-shadow: none; color: #666c6a;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h11a2 2 0 0 1 2 2v9M5 8h11a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z"></path></svg>
+</a>
+
+
+</nav>
+</div>
+<a href="Duet.dc.html" aria-label="Talk to Duet" title="Talk to Duet" style="position: relative; width: 44px; height: 44px; display: grid; place-items: center; text-decoration: none;">
+
+<span class="bar-face" style="width: 36px; height: 36px; border-radius: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: #f7f8f7; box-shadow: inset 0 0 0 1px rgba(27,32,31,0.12), 0 1px 2px rgba(27,32,31,0.06);">
+<span style="display: flex; gap: 3px; margin-top: 2px;">
+<span class="socket" style="width: 13px; height: 10px; border-radius: 5px; background: #18211f; display: grid; place-items: center;"><i class="pupil" style="width: 5px; height: 2.5px; border-radius: 2px; background: #f7f8f7;"></i></span>
+<span class="socket" style="width: 13px; height: 10px; border-radius: 5px; background: #18211f; display: grid; place-items: center;"><i class="pupil" style="width: 5px; height: 2.5px; border-radius: 2px; background: #f7f8f7;"></i></span>
+</span>
+<span style="display: block; width: 6px; height: 2.5px; border-radius: 0 0 4px 4px; background: #3a4644;"></span>
+</span>
+
+
+</a>
+<div style="justify-self: end; display: flex; align-items: center; gap: 6px;">
+<button type="button" title="Change language" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; background: none; color: #666c6a; display: flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; border-radius: 8px;">Spanish<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<span style="width: 1px; height: 16px; margin: 0 4px; background: rgba(27,32,31,0.16);" aria-hidden="true"></span>
+<span title="12 days in a row" style="display: flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px 0 7px; border-radius: 999px; background: rgba(240,110,50,0.09); font-size: 13px; color: #666c6a;">
+<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="bar-flame" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#f0582c"></stop><stop offset="1" stop-color="#f8a43c"></stop></linearGradient></defs><path fill="url(#bar-flame)" d="M12 2.5c.6 3.1-1.1 4.9-2.7 6.6C7.7 10.8 6 12.6 6 15.3A6 6 0 0 0 12 21.5a6 6 0 0 0 6-6.2c0-2.4-1.1-4.3-2.6-5.7.1 1.6-.5 2.9-1.6 3.4.4-3.9-.6-7.4-1.8-10.5z"></path><path fill="#ffe0a0" d="M12.2 13.2c1.6 1.3 2.4 2.6 2.4 3.9A2.6 2.6 0 0 1 12 19.8a2.6 2.6 0 0 1-2.6-2.7c0-1.5 1.1-2.4 2.8-3.9z"></path></svg>
+<b style="color: #1b201f;">12</b> days
+</span>
+<button type="button" aria-label="Dark mode" title="Dark mode" style="border: 0; cursor: pointer; width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; background: none; color: #666c6a;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg></button>
+<a href="Settings.dc.html" class="bar-btn" aria-label="Settings" title="Settings" aria-current="false" style="border: 0; cursor: pointer; width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; text-decoration: none; background: transparent; box-shadow: none; color: #666c6a;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+</div>
+</header>
+
+<main style="flex-grow: 1; min-height: 0; padding: 0 8px 8px;">
+<section aria-label="Watching" style="height: 100%; box-sizing: border-box; background: #ffffff; border: 1px solid rgba(27,32,31,0.09); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+<header style="flex-shrink: 0; display: flex; align-items: center; height: 46px; padding: 0 18px;">
+<h1 style="margin: 0; font-size: 13px; font-weight: 600;"><span style="position: relative; display: inline-block; padding-bottom: 4px;">Watching<svg class="brush" viewBox="0 0 100 8" preserveAspectRatio="none" style="position: absolute; left: -1px; bottom: -2px; width: calc(100% + 3px); height: 6px;" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#3fa6dc"></path></svg></span></h1>
+</header>
+<div style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column;">
+
+<div class="body" style="font-family: Inter, system-ui, sans-serif; color: var(--ink); background: var(--card);">
+<div style="display: flex; align-items: center; gap: 12px; padding: 2px 16px 14px;">
+<p class="serif watch-lede" style="margin: 0; font-size: 28px; line-height: 1.1;">Pick up where you left off.</p>
+<div style="flex-grow: 1;"></div>
+<div class="seg" role="group" aria-label="Show" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--seg);">
+
+<button type="button" aria-pressed="true" style="font: inherit; font-size: 12px; border: 0; cursor: pointer; padding: 6px 12px; border-radius: 999px; white-space: nowrap; background: var(--seg-on); box-shadow: 0 1px 2px rgba(27,32,31,0.10); color: var(--ink);">All</button>
+
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 12px; border: 0; cursor: pointer; padding: 6px 12px; border-radius: 999px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">Still watching</button>
+
+</div>
+</div>
+<div style="flex-grow: 1; min-height: 0; overflow: auto; padding: 0 16px 18px;">
+<ul class="arrive" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 20px 16px;">
+
+<li>
+<a href="#" class="video lift" aria-label="Continue Cómo hacer tortilla española" style="display: flex; flex-direction: column; gap: 7px; color: inherit; text-decoration: none;">
+<span style="position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; background: #2b302f; overflow: hidden;">
+<span style="position: absolute; left: 0; right: 0; bottom: 18%; display: flex; justify-content: center;"><span style="font-size: 12px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 5px; white-space: nowrap;">heat the <b style="color: #ff9f0a; font-weight: 600;">sartén</b> first</span></span>
+<span class="play" style="position: absolute; inset: 0; display: grid; place-items: center;"><span style="width: 42px; height: 42px; border-radius: 21px; background: rgba(255,255,255,0.92); color: var(--ink); display: grid; place-items: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span></span>
+<span style="position: absolute; left: 0; bottom: 0; height: 3px; width: 41%; background: var(--soft2);"></span>
+<span style="position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--soft2); background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 4px;">12:40</span>
+</span>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.3;">Cómo hacer tortilla española</span>
+<span style="font-size: 12px; color: var(--sub);">YouTube · left off at 5:12 · yesterday</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px;">
+<span style="color: var(--w-known);">sartén</span><span style="color: var(--w-known);">cebolla</span><span style="color: var(--w-say);">huevo</span>
+<span style="color: var(--faint);">+1 new</span>
+</span>
+</a>
+</li>
+
+<li>
+<a href="#" class="video lift" aria-label="Continue Un día en Madrid" style="display: flex; flex-direction: column; gap: 7px; color: inherit; text-decoration: none;">
+<span style="position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; background: #33302a; overflow: hidden;">
+<span style="position: absolute; left: 0; right: 0; bottom: 18%; display: flex; justify-content: center;"><span style="font-size: 12px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 5px; white-space: nowrap;">I have to <b style="color: #ffd60a; font-weight: 600;">madrugar</b></span></span>
+<span class="play" style="position: absolute; inset: 0; display: grid; place-items: center;"><span style="width: 42px; height: 42px; border-radius: 21px; background: rgba(255,255,255,0.92); color: var(--ink); display: grid; place-items: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span></span>
+<span style="position: absolute; left: 0; bottom: 0; height: 3px; width: 18%; background: var(--soft2);"></span>
+<span style="position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--soft2); background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 4px;">8:05</span>
+</span>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.3;">Un día en Madrid</span>
+<span style="font-size: 12px; color: var(--sub);">YouTube · left off at 1:25 · 2 days ago</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px;">
+<span style="color: var(--w-seen);">madrugar</span><span style="color: var(--w-seen);">vámonos</span>
+
+</span>
+</a>
+</li>
+
+<li>
+<a href="#" class="video lift" aria-label="Continue Despacito (en vivo)" style="display: flex; flex-direction: column; gap: 7px; color: inherit; text-decoration: none;">
+<span style="position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; background: #2b2a33; overflow: hidden;">
+<span style="position: absolute; left: 0; right: 0; bottom: 18%; display: flex; justify-content: center;"><span style="font-size: 12px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 5px; white-space: nowrap;"><b style="color: #4da3ff; font-weight: 600;">despacito</b>, slowly</span></span>
+<span class="play" style="position: absolute; inset: 0; display: grid; place-items: center;"><span style="width: 42px; height: 42px; border-radius: 21px; background: rgba(255,255,255,0.92); color: var(--ink); display: grid; place-items: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span></span>
+<span style="position: absolute; left: 0; bottom: 0; height: 3px; width: 14%; background: var(--soft2);"></span>
+<span style="position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--soft2); background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 4px;">4:41</span>
+</span>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.3;">Despacito (en vivo)</span>
+<span style="font-size: 12px; color: var(--sub);">YouTube · left off at 0:40 · 3 days ago</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px;">
+<span style="color: var(--w-say);">despacito</span>
+
+</span>
+</a>
+</li>
+
+<li>
+<a href="#" class="video lift" aria-label="Continue Mercado de San Miguel, a walk" style="display: flex; flex-direction: column; gap: 7px; color: inherit; text-decoration: none;">
+<span style="position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; background: #2f2a2a; overflow: hidden;">
+<span style="position: absolute; left: 0; right: 0; bottom: 18%; display: flex; justify-content: center;"><span style="font-size: 12px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 5px; white-space: nowrap;">everything is so <b style="color: #ff9f0a; font-weight: 600;">rico</b></span></span>
+<span class="play" style="position: absolute; inset: 0; display: grid; place-items: center;"><span style="width: 42px; height: 42px; border-radius: 21px; background: rgba(255,255,255,0.92); color: var(--ink); display: grid; place-items: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span></span>
+<span style="position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--soft2);"></span>
+<span style="position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--soft2); background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 4px;">15:02</span>
+</span>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.3;">Mercado de San Miguel, a walk</span>
+<span style="font-size: 12px; color: var(--sub);">YouTube · watched · last week</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px;">
+<span style="color: var(--w-known);">rico</span><span style="color: var(--w-say);">probar</span><span style="color: var(--w-seen);">puesto</span>
+<span style="color: var(--faint);">+3</span>
+</span>
+</a>
+</li>
+
+<li>
+<a href="#" class="video lift" aria-label="Continue Spanish slang you hear on the street" style="display: flex; flex-direction: column; gap: 7px; color: inherit; text-decoration: none;">
+<span style="position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; background: #2a3030; overflow: hidden;">
+<span style="position: absolute; left: 0; right: 0; bottom: 18%; display: flex; justify-content: center;"><span style="font-size: 12px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 5px; white-space: nowrap;">that is so <b style="color: #ffd60a; font-weight: 600;">guay</b></span></span>
+<span class="play" style="position: absolute; inset: 0; display: grid; place-items: center;"><span style="width: 42px; height: 42px; border-radius: 21px; background: rgba(255,255,255,0.92); color: var(--ink); display: grid; place-items: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span></span>
+<span style="position: absolute; left: 0; bottom: 0; height: 3px; width: 80%; background: var(--soft2);"></span>
+<span style="position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--soft2); background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 4px;">11:28</span>
+</span>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.3;">Spanish slang you hear on the street</span>
+<span style="font-size: 12px; color: var(--sub);">YouTube · left off at 9:10 · last week</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px;">
+<span style="color: var(--w-seen);">guay</span><span style="color: var(--w-use);">vale</span>
+
+</span>
+</a>
+</li>
+
+<li>
+<a href="#" class="video lift" aria-label="Continue Paella, the real way" style="display: flex; flex-direction: column; gap: 7px; color: inherit; text-decoration: none;">
+<span style="position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; background: #33302c; overflow: hidden;">
+<span style="position: absolute; left: 0; right: 0; bottom: 18%; display: flex; justify-content: center;"><span style="font-size: 12px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 5px; white-space: nowrap;">add the <b style="color: #ff9f0a; font-weight: 600;">arroz</b> now</span></span>
+<span class="play" style="position: absolute; inset: 0; display: grid; place-items: center;"><span style="width: 42px; height: 42px; border-radius: 21px; background: rgba(255,255,255,0.92); color: var(--ink); display: grid; place-items: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span></span>
+<span style="position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--soft2);"></span>
+<span style="position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--soft2); background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 4px;">18:44</span>
+</span>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.3;">Paella, the real way</span>
+<span style="font-size: 12px; color: var(--sub);">YouTube · watched · 2 weeks ago</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px;">
+<span style="color: var(--w-use);">arroz</span><span style="color: var(--w-seen);">sofrito</span>
+<span style="color: var(--faint);">+5</span>
+</span>
+</a>
+</li>
+
+</ul>
+</div>
+</div>
+
+</div>
+</section>
+</main>
+</div>
+</body></html>

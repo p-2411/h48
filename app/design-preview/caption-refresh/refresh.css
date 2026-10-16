@@ -1,0 +1,231 @@
+/* Today's caption strip (overlay.css, base.css, as shipped) and the same strip in the current design
+   scheme. One set of rules for the layout, which doesn't change; the two looks differ only in the
+   variables at the bottom of each .orig / .new block. Preview only, never loaded by the app. */
+@font-face { font-family: Inter; src: url('../../src/renderer/src/assets/fonts/Inter.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Source Serif 4'; src: url('../../src/renderer/src/assets/fonts/SourceSerif4-Variable.ttf') format('truetype'); font-weight: 200 900; font-display: swap; }
+
+/* ── The page ─────────────────────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+body { margin: 0; background: #121313 url('../../src/renderer/src/assets/grain-dark.svg') 0 0 / 160px 160px; color: #eef3f1; font: 14px/1.45 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+header { max-width: 1640px; margin: 0 auto; padding: 48px 40px 8px; }
+header h1 { margin: 0; font: 500 50px/1.08 'Source Serif 4', Georgia, serif; letter-spacing: -0.015em; }
+.brushed { position: relative; isolation: isolate; }
+.brushed::after {
+  content: ''; position: absolute; z-index: -1; left: -2%; right: -2%; bottom: -0.02em; height: 0.26em; background: #ffd60a; opacity: 0.85;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'%3E%3Cpath d='M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'%3E%3Cpath d='M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+}
+header p { margin: 12px 0 0; max-width: 760px; color: #9aa3a0; }
+.changes { margin: 16px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 28px; font-size: 12.5px; color: #c9d0ce; max-width: 1200px; }
+.changes b { color: #eef3f1; font-weight: 600; margin-right: 4px; }
+main { max-width: 1640px; margin: 0 auto; padding: 20px 40px 80px; }
+.cols-head { display: grid; grid-template-columns: 220px 1fr 1fr; gap: 16px; padding: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #6f7775; }
+.cols-head::before { content: ''; }
+.row-pair { display: grid; grid-template-columns: 220px 1fr; gap: 16px; padding: 18px 0; border-top: 1px solid rgba(238, 243, 241, 0.08); }
+.row-label h2 { margin: 0; font: 400 24px/1.15 'Source Serif 4', Georgia, serif; }
+.row-label p { margin: 8px 0 0; font-size: 12.5px; color: #9aa3a0; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 1200px) { .row-pair { grid-template-columns: 1fr; } .cols-head { grid-template-columns: 1fr 1fr; } .cols-head::before { display: none; } }
+
+/* A mock video frame: a dim kitchen at dusk. */
+.scene {
+  position: relative; height: 340px; border-radius: 14px; overflow: hidden;
+  background:
+    radial-gradient(40% 55% at 26% 30%, rgba(255, 186, 120, 0.35), transparent 70%),
+    radial-gradient(30% 40% at 80% 25%, rgba(110, 170, 200, 0.25), transparent 70%),
+    linear-gradient(180deg, #3b3029 0%, #2a2421 55%, #1a1715 100%);
+}
+.scene::before { content: ''; position: absolute; left: 22%; top: 10%; width: 15%; height: 58%; border-radius: 48% 48% 10% 10%; background: rgba(20, 16, 14, 0.9); }
+.scene::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, #ff3b30 38%, rgba(255, 255, 255, 0.25) 38%); }
+
+/* ── The strip: today's layout, for both looks (overlay.css) ──────────────────────────────── */
+.stage { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 64px 26px; color: var(--fg); }
+.dock { position: relative; max-width: 100%; display: flex; flex-direction: column; align-items: center; }
+.strip-row { position: relative; max-width: 100%; }
+.strip {
+  position: relative; max-width: 860px; min-width: 320px; padding: 10px 46px 12px 20px; border-radius: 18px;
+  background: var(--strip-bg); border: 0.5px solid var(--edge); box-shadow: var(--strip-shadow, none); color: var(--fg);
+}
+.line { display: flex; flex-direction: column; }
+.mix { margin: 0; font-size: 22px; line-height: 1.3; letter-spacing: -0.012em; text-wrap: balance; }
+.w { --c: var(--fg); color: var(--c); border-radius: 6px; padding: 0 0.04em; text-shadow: 0 0 14px color-mix(in srgb, var(--c) 60%, transparent); }
+[data-k='unknown'] { --c: #b9a6f7; }
+[data-k='encountered'] { --c: #ffd60a; }
+[data-k='known'] { --c: #ff9f0a; }
+[data-k='speakable'] { --c: #4da3ff; }
+[data-k='usable'] { --c: #32d74b; }
+[data-k='ignored'] { --c: #a8998a; }
+.mix .w.sw { font-weight: 500; }
+.mix .w:not(.sw) { --c: var(--plain); text-shadow: none; }
+.w.live { cursor: pointer; }
+.mix .w.live:hover { background: color-mix(in srgb, var(--c) 28%, transparent); }
+.more { display: flex; flex-direction: column; gap: 2px; padding-top: 4px; }
+.more p { margin: 0; }
+.source { font-size: 15px; line-height: 1.4; color: var(--fg); }
+.english { font-size: 13px; line-height: 1.45; color: var(--sub); }
+.english.guess { filter: blur(5px); opacity: 0.7; cursor: help; }
+.english.guess:hover { filter: none; opacity: 1; }
+.dot { position: absolute; top: 9px; right: 10px; width: 7px; height: 7px; border-radius: 50%; }
+.dot.ok { background: #32d74b; box-shadow: 0 0 6px #32d74b; }
+.dot.busy { background: #ffd60a; box-shadow: 0 0 6px #ffd60a; }
+
+.actions {
+  position: absolute; bottom: 100%; left: 0; right: 0; padding: 0 8px 6px; display: flex; justify-content: flex-end; gap: 4px; align-items: center;
+  opacity: 0; visibility: hidden;
+}
+.dock.pinned .actions { opacity: 1; visibility: visible; }
+.actions .spacer { flex: 1; }
+.act, .level-blob {
+  font-size: 12px; font-weight: 500; height: 28px; padding: 0 11px; border-radius: 999px; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--glass); border: 0.5px solid var(--edge); color: var(--fg);
+}
+.act.icon, .level-blob { width: 28px; padding: 0; font-size: 14px; }
+.level-blob { border-radius: 50%; font-size: 13px; font-weight: 600; }
+.act:hover { background: var(--hover); }
+.act.primary { background: var(--primary-bg); color: var(--primary-fg); border-color: var(--primary-bg); }
+.act .icon { width: 14px; height: 14px; }
+
+/* A word's card, over its word. */
+.popup {
+  position: absolute; z-index: 3; bottom: calc(100% + 6px); left: 190px; transform: translateX(-50%); width: max-content; max-width: 280px;
+  display: flex; flex-direction: column; gap: 2px; font-size: 13px;
+  background: var(--card-bg); color: var(--card-fg); border-radius: var(--card-radius); padding: var(--card-pad); box-shadow: var(--card-shadow, none);
+}
+.popup .card-labels { display: flex; gap: 12px; align-items: baseline; }
+.popup .job { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--card-sub); }
+.popup .rung { margin-left: auto; font-size: 11px; font-weight: 500; white-space: nowrap; color: color-mix(in srgb, var(--c) 55%, var(--card-fg)); }
+.popup b { font: var(--head-font); color: var(--card-fg); margin: var(--head-margin, 0); }
+.popup .row { display: flex; gap: 6px; margin-top: 6px; }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; padding: 4px 9px; border-radius: 999px; background: var(--pill-bg); color: var(--card-fg); white-space: nowrap; }
+.pill.on { background: var(--pill-on-bg); color: var(--pill-on-fg); }
+.pill .icon { width: 13px; height: 13px; }
+
+/* The talk button, left of the strip, on its bottom edge. */
+.talk-button {
+  position: absolute; right: calc(100% + 8px); bottom: 1px; width: 36px; height: 36px; border-radius: var(--talk-radius); display: grid; place-items: center;
+  background: var(--talk-bg); border: var(--talk-border); color: var(--fg2); opacity: var(--talk-rest, 0.55);
+}
+.dock.pinned .talk-button { opacity: 1; color: var(--fg); }
+.talk-button > .icon { width: 20px; height: 20px; }
+
+/* Talking: Duet just above the subtitles, small subtitles of what it heard and said. */
+.talk-bubble {
+  position: absolute; z-index: 5; bottom: calc(100% + 18px); left: 50%; transform: translateX(-50%); width: min(420px, 100%);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; color: #fff; text-align: center;
+}
+.talk-lines, .talk-actions { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.6); }
+.talk-lines { display: flex; flex-direction: column; gap: 1px; font-size: 13px; line-height: 1.35; }
+.talk-lines p { margin: 0; }
+.talk-heard { color: rgba(255, 255, 255, 0.72); }
+.talk-said { font: var(--said-font); }
+.talk-actions { display: flex; gap: 14px; }
+.talk-link { padding: 2px 4px; font-size: 12.5px; color: rgba(255, 255, 255, 0.8); }
+
+/* A checkpoint offered: the flowing light behind the strip (overlay.css, as shipped). */
+@property --glow-turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --glow-reach { syntax: '<length>'; inherits: false; initial-value: 0px; }
+.strip-glow { position: absolute; inset: 0; pointer-events: none; }
+.strip-glow i {
+  --reach-from: 2px; --reach-to: 4px;
+  position: absolute; inset: calc(-1 * var(--glow-reach)); border-radius: calc(18px + var(--glow-reach));
+  background: conic-gradient(from var(--glow-turn), var(--glow-colours));
+  animation: glow-turn var(--turn-time) linear infinite var(--turn-way, normal), glow-reach var(--reach-time) ease-in-out infinite alternate;
+}
+.strip-glow i:nth-child(1) { --glow-colours: #bc82f3, #f5b9ea, #8d9fff, #ff6778, #ffba71, #c686ff, #bc82f3; --turn-time: 6s; --reach-from: 1.5px; --reach-to: 1.5px; --reach-time: 1s; filter: blur(0.5px); opacity: 0.68; }
+.strip-glow i:nth-child(2) { --glow-colours: #f5b9ea, #8d9fff 20%, #bc82f3 35%, #ffba71 55%, #ff6778 70%, #c686ff 85%, #f5b9ea; --turn-time: 8s; --turn-way: reverse; --reach-from: 2px; --reach-to: 5px; --reach-time: 2.7s; filter: blur(4px); opacity: 0.32; }
+.strip-glow i:nth-child(3) { --glow-colours: #8d9fff, #ff6778 25%, #ffba71 40%, #bc82f3 60%, #f5b9ea 80%, #8d9fff; --turn-time: 10s; --reach-from: 4px; --reach-to: 10px; --reach-time: 3.6s; filter: blur(12px); opacity: 0.28; }
+.strip-glow i:nth-child(4) { --glow-colours: #c686ff, #8d9fff 30%, #f5b9ea 50%, #ff6778 65%, #ffba71 85%, #c686ff; --turn-time: 14s; --turn-way: reverse; --reach-from: 8px; --reach-to: 16px; --reach-time: 4.7s; filter: blur(22px); opacity: 0.21; }
+@keyframes glow-turn { to { --glow-turn: 360deg; } }
+@keyframes glow-reach { from { --glow-reach: var(--reach-from); } to { --glow-reach: var(--reach-to); } }
+.dock.asking .actions { display: none; }
+
+/* ── Original: as shipped ─────────────────────────────────────────────────────────────────── */
+.orig {
+  --fg: #fff; --fg2: #d6d6d6; --plain: #b4b4b8; --sub: #a6a6a6;
+  --glass: rgba(30, 30, 32, 0.92); --edge: rgba(255, 255, 255, 0.1); --hover: rgba(58, 58, 62, 0.95);
+  --strip-bg: var(--glass);
+  --primary-bg: #fff; --primary-fg: #111;
+  --card-bg: #fff; --card-fg: #111; --card-sub: #555; --card-radius: 12px; --card-pad: 9px 12px;
+  --head-font: 600 17px/1.3 Inter, system-ui, sans-serif;
+  --pill-bg: #efeff2; --pill-on-bg: #111; --pill-on-fg: #fff;
+  --talk-radius: 50%; --talk-bg: rgba(30, 30, 32, 0.92); --talk-border: 0.5px solid rgba(255, 255, 255, 0.1);
+  --said-font: 400 14.5px/1.35 Inter, system-ui, sans-serif;
+}
+
+/* ── Updated: the current design scheme ──────────────────────────────────────────────────── */
+.new {
+  /* The home's ink, not Apple's grey: a green-tinted near-black and its whites. */
+  --fg: #eef3f1; --fg2: #c9d0ce; --plain: #c9d0ce; --sub: #9aa3a0;
+  --glass: rgba(20, 23, 22, 0.92); --edge: rgba(238, 243, 241, 0.1); --hover: rgba(44, 48, 47, 0.95);
+  /* Flat, translucent glass as before (no grain, no edge light), only in the ink's hue. */
+  --strip-bg: var(--glass);
+  --strip-shadow: none;
+  --primary-bg: #eef3f1; --primary-fg: #121313;
+  /* The card is the home's paper, the word in Duet's serif. */
+  --card-bg: url('../../src/renderer/src/assets/grain-light.svg') 0 0 / 160px 160px, #f7f8f7; --card-fg: #1b201f; --card-sub: #8a908e;
+  --card-radius: 14px; --card-pad: 10px 14px 12px; --card-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.6);
+  --head-font: 400 26px/1.1 'Source Serif 4', Georgia, serif; --head-margin: 2px 0 2px;
+  --pill-bg: #eceded; --pill-on-bg: #1b201f; --pill-on-fg: #fff;
+  /* The talk button is Duet's own face tile, as in the home bar. */
+  --talk-radius: 11px; --talk-bg: none; --talk-border: 0; --talk-rest: 0.85;
+  --said-font: 400 20px/1.3 'Source Serif 4', Georgia, serif;
+}
+.new .tile-face {
+  width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center;
+  background: #0e0f0f; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 10px -4px rgba(0, 0, 0, 0.6);
+}
+.new .tile-face .duet-alive { display: block; overflow: visible; }
+
+/* ── Settings (⚙): the popover above the strip on the right (overlay.css, settings.css) ─────── */
+.settings {
+  position: absolute; z-index: 4; bottom: calc(100% + 40px); right: 0; width: 330px; padding: 14px; border-radius: 16px;
+  display: flex; flex-direction: column; gap: 9px; text-align: left;
+  background: var(--glass); border: 0.5px solid var(--edge); color: var(--fg);
+}
+.settings .label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--label); }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; font-size: 13px; color: var(--fg); }
+.toggle small { display: block; font-size: 12px; color: var(--label); }
+.switch { flex: none; position: relative; width: 28px; height: 17px; border-radius: 9px; background: var(--switch-off); transition: background 0.2s; }
+.switch i { position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: var(--knob-off); transition: transform 0.28s cubic-bezier(0.05, 0.9, 0.1, 1.05); }
+.toggle.is-on .switch { background: var(--switch-on); }
+.toggle.is-on .switch i { background: var(--knob-on); transform: translateX(11px); }
+.quiet-row { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.quiet { font-size: 12px; color: var(--sub); }
+.quiet:hover { color: var(--fg); }
+.orig { --label: #8e8e93; --switch-off: rgba(118, 118, 128, 0.24); --knob-off: #fff; --switch-on: #fff; --knob-on: #121214; }
+.new { --label: #9aa3a0; --switch-off: #3a3e3d; --knob-off: #eef3f1; --switch-on: #eef3f1; --knob-on: #121313; }
+.new .quiet-row { flex-direction: row; gap: 14px; padding-top: 2px; border-top: 1px solid rgba(238, 243, 241, 0.08); padding-top: 9px; }
+.new .toggle { padding: 2px 0; }
+.talk-button.on { opacity: 1; }
+.new .talk-button:hover .tile-face { transform: translateY(-1px) scale(1.06) rotate(-2deg); }
+.new .tile-face { transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
+.row-settings .scene { height: 560px; }
+
+/* Duet's button, quieter: the original's flat round glass button and its resting dimness, with the
+   sleeping face inside instead of an icon. No dark tile, so it doesn't pull the eye from the line. */
+.new { --talk-radius: 50%; --talk-bg: var(--glass); --talk-border: 0.5px solid var(--edge); --talk-rest: 0.55; }
+.new .tile-face { width: 36px; height: 36px; border-radius: 50%; background: none; box-shadow: none; }
+.new .talk-button:hover, .new .talk-button.on { opacity: 1; }
+
+/* A checkpoint offered: the light in Duet's own colours — the word ladder (seen yellow, known orange,
+   sayable blue, usable green), since a checkpoint is a word climbing it — slower and softer than Siri's. */
+.new .strip-glow i:nth-child(1) { --glow-colours: #ffd60a, #ff9f0a, #4da3ff, #32d74b, #ffd60a; --turn-time: 12s; opacity: 0.55; }
+.new .strip-glow i:nth-child(2) { --glow-colours: #ff9f0a, #4da3ff 30%, #32d74b 60%, #ffd60a 85%, #ff9f0a; --turn-time: 16s; opacity: 0.22; }
+.new .strip-glow i:nth-child(3) { --glow-colours: #4da3ff, #32d74b 30%, #ffd60a 60%, #ff9f0a 85%, #4da3ff; --turn-time: 20s; opacity: 0.16; }
+.new .strip-glow i:nth-child(4) { display: none; }
+
+/* The checkpoint glow, decided (caption-glow, stage two: "Sea glass · soft"): light from below, inside
+   the glass, in the home's sea-glass colours fading in from clear at both ends; it breathes slowly.
+   Replaces the flowing light. Inside the glass, so it reads over dark and bright video alike. */
+.new .strip-glow { display: none; }
+.new .strip.glow { overflow: hidden; animation: sea-under 6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.new .strip.glow::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 32px; pointer-events: none;
+  background: linear-gradient(90deg, rgba(223, 232, 234, 0) 2%, #e9b872 18%, #9ad8c2 42%, #6cc9dc 64%, #b9a8e3 84%, rgba(223, 232, 234, 0) 98%);
+  -webkit-mask: linear-gradient(to top, #000 0 1.5px, rgba(0, 0, 0, 0.55) 2.5px, rgba(0, 0, 0, 0.22) 12px, transparent);
+  mask: linear-gradient(to top, #000 0 1.5px, rgba(0, 0, 0, 0.55) 2.5px, rgba(0, 0, 0, 0.22) 12px, transparent);
+  animation: sea-band 6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes sea-under { 0%, 100% { box-shadow: inset 0 -12px 20px -12px rgba(238, 243, 241, 0.14); } 50% { box-shadow: inset 0 -18px 26px -12px rgba(238, 243, 241, 0.3); } }
+@keyframes sea-band { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.85; } }

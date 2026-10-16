@@ -1,0 +1,137 @@
+/* Checkpoint glows on the refreshed strip. Builds on ../caption-refresh/refresh.css. Preview only.
+   One warm accent throughout — the yellow of a word you've seen — plus the word ladder where a glow
+   has room for more than one colour. Everything arrives with a short fade and moves slowly. */
+:root {
+  --warm: 255, 214, 10;
+  --ease-breath: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+/* ── The page ─────────────────────────────────────────────────────────────────────────────── */
+.controls { display: flex; gap: 6px; margin-top: 16px; }
+.controls button { height: 30px; padding: 0 12px; border-radius: 999px; font-size: 12.5px; font-weight: 500; background: rgba(238, 243, 241, 0.08); color: #c9d0ce; }
+.controls button.on { background: #eef3f1; color: #121313; }
+.glow-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 16px; }
+@media (max-width: 1300px) { .glow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .glow-grid { grid-template-columns: 1fr; } }
+.glow-card { margin: 0; }
+.glow-card .scene { height: 230px; }
+.glow-card figcaption { margin-top: 10px; }
+.family { font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #6f7775; }
+.glow-card h2 { margin: 2px 0 0; font: 400 22px/1.2 'Source Serif 4', Georgia, serif; }
+.glow-card p { margin: 6px 0 0; font-size: 12.5px; color: #9aa3a0; }
+.meters { display: flex; gap: 18px; margin-top: 8px; }
+.meter { display: inline-flex; align-items: center; gap: 3px; }
+.meter-label { font-size: 11px; color: #9aa3a0; margin-right: 5px; }
+.meter i { width: 7px; height: 7px; border-radius: 50%; background: rgba(238, 243, 241, 0.12); }
+.meter i.on { background: #eef3f1; }
+.glow-card .stage { padding: 0 20px 22px 64px; }
+.glow-card .mix { font-size: 20px; }
+.glow-card .strip { min-width: 0; }
+
+/* A bright scene, to see which glows hold up over a sunlit shot. */
+.bright-video .scene {
+  background:
+    radial-gradient(50% 60% at 30% 25%, rgba(255, 255, 255, 0.9), transparent 70%),
+    radial-gradient(40% 40% at 80% 30%, rgba(200, 230, 245, 0.9), transparent 70%),
+    linear-gradient(180deg, #e9e4dc 0%, #d8d0c4 60%, #b9ae9f 100%);
+}
+.bright-video .scene::before { background: rgba(120, 100, 85, 0.55); }
+
+/* Every glow arrives with a short fade, a touch brighter, then settles. */
+.strip-row[class*='g-']:not(.g-none) { animation: arrive 2.4s ease-out both; }
+@keyframes arrive { 0% { filter: brightness(1); } 20% { filter: brightness(1.25); } 100% { filter: brightness(1); } }
+.glow-parts { position: absolute; inset: 0; pointer-events: none; z-index: -1; animation: fade-in 0.9s ease-out both; }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes breathe { 0%, 100% { opacity: var(--lo, 0.35); } 50% { opacity: var(--hi, 1); } }
+
+/* ── Ladder flow: the word-ladder colours turning round the edge (round two) ─────────────── */
+@property --turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.g-flow .glow-parts i { position: absolute; inset: -1.5px; border-radius: 19.5px; background: conic-gradient(from var(--turn), #ffd60a, #ff9f0a, #4da3ff, #32d74b, #ffd60a); animation: turn 12s linear infinite; opacity: 0.55; }
+.g-flow .glow-parts i:nth-child(2) { inset: -5px; border-radius: 23px; filter: blur(6px); opacity: 0.22; animation-duration: 16s; animation-direction: reverse; }
+.g-flow .glow-parts i:nth-child(3) { inset: -12px; border-radius: 30px; filter: blur(16px); opacity: 0.14; animation-duration: 20s; }
+@keyframes turn { to { --turn: 360deg; } }
+
+/* ── Warm breath: one colour, a thin halo breathing ──────────────────────────────────────── */
+.g-breath::before {
+  content: ''; position: absolute; inset: -1px; border-radius: 19px; pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(var(--warm), 0.55), 0 0 16px 1px rgba(var(--warm), 0.3);
+  --lo: 0.25; --hi: 0.9; animation: fade-in 0.9s ease-out both, breathe 4.5s var(--ease-breath) 0.9s infinite;
+}
+
+/* ── Passing light: a short spark travelling round the edge now and then ─────────────────── */
+@property --spark { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.g-comet::before { content: ''; position: absolute; inset: -0.5px; border-radius: 18.5px; pointer-events: none; box-shadow: 0 0 0 0.5px rgba(var(--warm), 0.35); }
+.g-comet .glow-parts { z-index: 1; }
+.g-comet .glow-parts i {
+  position: absolute; inset: -1px; border-radius: 19px; padding: 1.5px;
+  background: conic-gradient(from var(--spark), transparent 0deg 300deg, rgba(var(--warm), 0.9) 345deg, #fff 355deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  filter: drop-shadow(0 0 4px rgba(var(--warm), 0.8));
+  animation: spark 8s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+}
+@keyframes spark { 0% { --spark: 0deg; opacity: 0; } 5% { opacity: 1; } 35% { --spark: 360deg; opacity: 1; } 40%, 100% { --spark: 360deg; opacity: 0; } }
+
+/* ── Warm rim: only the strip's own edge warms ───────────────────────────────────────────── */
+.g-tint .strip { animation: rim 5s var(--ease-breath) infinite; }
+@keyframes rim { 0%, 100% { border-color: rgba(238, 243, 241, 0.1); } 50% { border-color: rgba(var(--warm), 0.7); } }
+
+/* ── Ember line: a thin line of light along the bottom edge ──────────────────────────────── */
+.g-ember .glow-parts { z-index: 1; }
+.g-ember .glow-parts i {
+  position: absolute; left: 16px; right: 16px; bottom: -1px; height: 1.5px; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #ffd60a 20%, #ff9f0a 45%, #4da3ff 70%, #32d74b 85%, transparent);
+  box-shadow: 0 0 8px rgba(var(--warm), 0.5);
+  --lo: 0.35; --hi: 1; animation: breathe 4s var(--ease-breath) infinite;
+}
+
+/* ── Light from below: warm light inside the glass, rising from its bottom edge ─────────── */
+.g-inner .strip { animation: under 4.5s var(--ease-breath) infinite; }
+@keyframes under {
+  0%, 100% { box-shadow: inset 0 -10px 18px -12px rgba(var(--warm), 0.18); }
+  50% { box-shadow: inset 0 -14px 22px -12px rgba(var(--warm), 0.45); }
+}
+
+/* ── Corner bloom: a soft bloom at the strip's right end ─────────────────────────────────── */
+.g-corner::before {
+  content: ''; position: absolute; z-index: -1; right: -26px; bottom: -22px; width: 150px; height: 80px; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(var(--warm), 0.35), transparent);
+  filter: blur(6px); --lo: 0.3; --hi: 1; animation: fade-in 0.9s ease-out both, breathe 5s var(--ease-breath) 0.9s infinite;
+}
+
+/* ── Sheen: a faint sweep of light across the glass, now and then ────────────────────────── */
+.g-sheen .strip { overflow: hidden; }
+.g-sheen .strip::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 244, 200, 0.13) 50%, transparent 65%) no-repeat;
+  background-size: 300% 100%; animation: sheen 8s ease-in-out infinite;
+}
+@keyframes sheen { 0% { background-position: 120% 0; } 25%, 100% { background-position: -20% 0; } }
+
+/* ── Ladder dots: the status dot becomes four dots lighting in turn ──────────────────────── */
+.ladder-dots { position: absolute; top: 9px; right: 9px; display: flex; gap: 3px; }
+.ladder-dots i { width: 5px; height: 5px; border-radius: 50%; opacity: 0.25; animation: dot-turn 3.2s ease-in-out infinite; }
+.ladder-dots i:nth-child(1) { background: #ffd60a; }
+.ladder-dots i:nth-child(2) { background: #ff9f0a; animation-delay: 0.4s; }
+.ladder-dots i:nth-child(3) { background: #4da3ff; animation-delay: 0.8s; }
+.ladder-dots i:nth-child(4) { background: #32d74b; animation-delay: 1.2s; }
+@keyframes dot-turn { 0%, 60%, 100% { opacity: 0.25; box-shadow: none; } 20% { opacity: 1; box-shadow: 0 0 5px currentColor; } }
+.g-dots .strip { padding-right: 50px; }
+
+/* ── The word glows: the word the checkpoint is about warms ──────────────────────────────── */
+.g-word .w.asked { animation: word-warm 4s var(--ease-breath) infinite; border-radius: 5px; }
+@keyframes word-warm {
+  0%, 100% { text-shadow: 0 0 14px color-mix(in srgb, var(--c) 60%, transparent); background: transparent; }
+  50% { text-shadow: 0 0 18px color-mix(in srgb, var(--c) 95%, transparent); background: color-mix(in srgb, var(--c) 14%, transparent); }
+}
+
+/* ── Duet stirs: the strip stays still; Duet's button has a warm halo ────────────────────── */
+.g-duet .talk-button { opacity: 1; animation: stir 4s var(--ease-breath) infinite; }
+@keyframes stir {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(var(--warm), 0.3), 0 0 8px rgba(var(--warm), 0.15); }
+  50% { box-shadow: 0 0 0 1.5px rgba(var(--warm), 0.7), 0 0 16px rgba(var(--warm), 0.4); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-grid *, .glow-grid *::before, .glow-grid *::after { animation-duration: 0.01s !important; animation-iteration-count: 1 !important; }
+}

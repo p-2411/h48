@@ -1,0 +1,162 @@
+/* Round two of the caption window. Preview only, never loaded by the app. */
+@font-face { font-family: Inter; src: url('../../src/renderer/src/assets/fonts/Inter.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Source Serif 4'; src: url('../../src/renderer/src/assets/fonts/SourceSerif4-Variable.ttf') format('truetype'); font-weight: 200 900; font-display: swap; }
+
+:root {
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --settle: cubic-bezier(0.22, 1, 0.36, 1);
+  --move: cubic-bezier(0.05, 0.9, 0.1, 1.05);
+  --ink: #eef3f1; --ink2: #c9d0ce; --sub: #9aa3a0; --faint: #6f7775; --hover: rgba(44, 48, 47, 0.95);
+  --glass: rgba(16, 19, 18, 0.88); --edge: rgba(238, 243, 241, 0.12);
+  --grain-d: url('../../src/renderer/src/assets/grain-dark.svg');
+  --grain-l: url('../../src/renderer/src/assets/grain-light.svg');
+  /* The home's brush stroke (home/Brush.tsx), as a mask so it takes any colour. */
+  --brush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'%3E%3Cpath d='M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z'/%3E%3C/svg%3E");
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #121313 var(--grain-d); background-size: 160px; color: var(--ink); font: 14px/1.45 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.serif { font-family: 'Source Serif 4', Georgia, serif; font-weight: 400; letter-spacing: -0.01em; }
+[data-k='seen'] { --c: #ffd60a; }
+[data-k='known'] { --c: #ff9f0a; }
+[data-k='say'] { --c: #4da3ff; }
+[data-k='unknown'] { --c: #b9a6f7; }
+[data-k='use'] { --c: #32d74b; }
+[data-k='ignored'] { --c: #a8998a; }
+
+/* The page */
+header { padding: 48px 40px 8px; max-width: 1640px; margin: 0 auto; }
+header h1 { margin: 0; font-size: 50px; line-height: 1.08; font-weight: 500; letter-spacing: -0.015em; }
+header p { margin: 12px 0 0; color: var(--sub); max-width: 780px; }
+.brushed { position: relative; isolation: isolate; }
+.brushed::after { content: ''; position: absolute; z-index: -1; left: -2%; right: -2%; bottom: -0.02em; height: 0.26em; background: #ffd60a; opacity: 0.85; -webkit-mask: var(--brush) 0 0 / 100% 100% no-repeat; mask: var(--brush) 0 0 / 100% 100% no-repeat; }
+main { max-width: 1640px; margin: 0 auto; padding: 16px 40px 80px; display: flex; flex-direction: column; gap: 40px; }
+.version { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; padding-top: 28px; border-top: 1px solid rgba(238, 243, 241, 0.08); }
+.version h2 { margin: 0; font-size: 30px; line-height: 1.1; }
+.tag { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.why { margin: 10px 0 0; color: var(--sub); font-size: 13.5px; }
+.version > div:first-child { display: grid; grid-template-columns: 220px minmax(0, 560px) 1fr; column-gap: 28px; align-items: start; }
+.version > div:first-child .tag { grid-column: 1; }
+.version > div:first-child h2 { grid-column: 1; }
+.version > div:first-child .why { grid-column: 2; grid-row: 1 / span 2; margin: 0; }
+.version > div:first-child ul { grid-column: 3; grid-row: 1 / span 2; margin: 0; }
+.version ul { margin: 10px 0 0; padding-left: 16px; color: var(--ink2); font-size: 12.5px; }
+.version li { margin: 3px 0; }
+.scenes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.scenes.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 1400px) { .scenes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+figure { margin: 0; }
+figcaption { margin-top: 7px; font-size: 11.5px; color: var(--faint); }
+@media (max-width: 1100px) { .version { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { header, main { padding-left: 16px; padding-right: 16px; } .scenes { grid-template-columns: 1fr; } }
+
+/* A mock video frame: a dim kitchen at dusk. */
+.scene {
+  position: relative; height: 340px; border-radius: 14px; overflow: hidden;
+  background:
+    radial-gradient(40% 55% at 26% 30%, rgba(255, 186, 120, 0.35), transparent 70%),
+    radial-gradient(30% 40% at 80% 25%, rgba(110, 170, 200, 0.25), transparent 70%),
+    linear-gradient(180deg, #3b3029 0%, #2a2421 55%, #1a1715 100%);
+  display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 16px 24px;
+}
+.scene::before { content: ''; position: absolute; left: 20%; top: 12%; width: 17%; height: 58%; border-radius: 48% 48% 10% 10%; background: rgba(20, 16, 14, 0.9); }
+.scene::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, #ff3b30 38%, rgba(255, 255, 255, 0.25) 38%); }
+
+/* ── The strip: Ink + Brush ─────────────────────────────────────────────────────────────────── */
+.dock { position: relative; z-index: 1; max-width: 100%; display: flex; flex-direction: column; align-items: center; }
+.strip {
+  position: relative; display: flex; gap: 10px; align-items: flex-start; max-width: 100%; min-width: 260px; padding: 10px 20px 12px 18px; border-radius: 18px;
+  background: var(--grain-d) 0 0 / 160px 160px, var(--glass); border: 0.5px solid var(--edge); color: var(--ink);
+  box-shadow: inset 0 1px rgba(238, 243, 241, 0.06), 0 10px 26px -12px rgba(0, 0, 0, 0.55);
+}
+.perch-none .strip { padding-right: 36px; }
+.body { min-width: 0; }
+.mix { margin: 0; font-size: 20px; line-height: 1.32; letter-spacing: -0.012em; text-wrap: balance; }
+.mix .w { color: var(--ink2); }
+.mix .w.sw { position: relative; isolation: isolate; font-weight: 500; color: var(--ink); cursor: pointer; }
+.mix .w.sw::after {
+  content: ''; position: absolute; z-index: -1; left: -0.1em; right: -0.05em; bottom: 0.02em; height: 0.56em; pointer-events: none;
+  background: var(--c); opacity: 0.55; -webkit-mask: var(--brush) 0 0 / 100% 100% no-repeat; mask: var(--brush) 0 0 / 100% 100% no-repeat;
+  transition: opacity 0.2s var(--ease), height 0.25s var(--ease);
+}
+.mix .w.sw:hover::after, .card-open .mix .w.sw[data-k='seen']::after { opacity: 0.85; height: 0.8em; }
+.idle { margin: 2px 0; font-size: 13px; color: var(--sub); }
+.more { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 0.3s var(--settle), opacity 0.18s ease; }
+.more > div { overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
+.dock:hover .more, .dock.pinned .more { grid-template-rows: 1fr; opacity: 1; }
+.pad { height: 6px; flex: none; }
+.source { margin: 0; font-size: 14.5px; line-height: 1.4; }
+.english { margin: 0; font-size: 12.5px; color: var(--sub); filter: blur(5px); opacity: 0.7; transition: filter 0.2s, opacity 0.2s; cursor: help; }
+.english:hover { filter: none; opacity: 1; }
+.dot { position: absolute; top: 9px; right: 10px; width: 7px; height: 7px; border-radius: 50%; background: #32d74b; box-shadow: 0 0 6px #32d74b; }
+
+.actions {
+  position: absolute; bottom: 100%; left: 0; right: 0; padding: 0 8px 7px; display: flex; gap: 4px; align-items: center;
+  opacity: 0; transform: translateY(4px); transition: opacity 0.16s ease 0.2s, transform 0.3s var(--settle) 0.2s; pointer-events: none;
+}
+.dock:hover .actions, .dock.pinned .actions { opacity: 1; transform: none; transition-delay: 0s; pointer-events: auto; }
+.card-open .actions { opacity: 0 !important; }
+.perch-tile .actions, .perch-peek .actions { padding-left: 64px; }
+.spacer { flex: 1; }
+.act, .level { height: 28px; padding: 0 11px; border-radius: 999px; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; background: var(--glass); border: 0.5px solid var(--edge); color: var(--ink); }
+.act:hover { background: var(--hover); }
+.act.icon, .level { width: 28px; padding: 0; }
+.level { font-weight: 600; font-size: 13px; }
+.act svg { width: 14px; height: 14px; }
+.act.primary { background: var(--ink); color: #121313; border-color: var(--ink); }
+
+/* The word's card: a sheet of the home's paper, the word in its serif, brushed. */
+.card {
+  position: absolute; z-index: 3; bottom: calc(100% + 6px); left: 34%; transform: translateX(-50%); width: max-content; max-width: 250px;
+  display: none; flex-direction: column; gap: 2px; font-size: 13px;
+  background: var(--grain-l) 0 0 / 160px 160px, #f7f8f7; color: #1b201f; border-radius: 14px; padding: 10px 14px 12px; box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.6);
+}
+.card-open .card { display: flex; }
+.perch-inline .card { left: 44%; }
+.labels { display: flex; gap: 12px; align-items: baseline; }
+.job { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8a908e; }
+.rung { margin-left: auto; font-size: 11px; font-weight: 500; color: color-mix(in srgb, var(--c) 55%, #1b201f); }
+.head { position: relative; isolation: isolate; align-self: flex-start; margin: 3px 0; font-family: 'Source Serif 4', Georgia, serif; font-size: 30px; font-weight: 400; line-height: 1; }
+.head::after { content: ''; position: absolute; z-index: -1; left: -0.08em; right: -0.08em; bottom: -0.04em; height: 0.46em; background: var(--c); opacity: 0.7; -webkit-mask: var(--brush) 0 0 / 100% 100% no-repeat; mask: var(--brush) 0 0 / 100% 100% no-repeat; }
+.reading { font-size: 12px; font-style: italic; color: #666c6a; }
+.row { display: flex; gap: 6px; margin-top: 7px; }
+.pill { white-space: nowrap; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 999px; background: #eceded; color: #1b201f; }
+.pill.on { background: #1b201f; color: #fff; }
+
+/* ── Duet on the strip (the real mascot, components/duet) ─────────────────────────────────── */
+.perch { line-height: 0; flex: none; }
+.perch .duet-alive { display: block; overflow: visible; }
+
+/* C1: the home bar's face tile, half over the strip's top-left corner. */
+.perch.tile { position: absolute; z-index: 2; left: 14px; top: -22px; }
+.tile-face {
+  width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center;
+  background: #0e0f0f; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 10px -4px rgba(0, 0, 0, 0.6);
+  transition: transform 0.28s var(--settle);
+}
+.perch.tile:hover .tile-face { transform: translateY(-1px) scale(1.06) rotate(-2deg); }
+
+/* C2: no tile, only the top of Duet's face, peeking over the strip's top edge from behind it. */
+.perch.peek { position: absolute; z-index: -1; left: 18px; top: -20px; }
+.peek-clip { display: block; }
+.perch.peek:hover { top: -26px; }
+.perch.peek { transition: top 0.3s var(--move); }
+
+/* C3: inside the strip, at the line's start, like a speaker's name in a script. */
+.perch.inline { margin: 3px 0 0 -4px; padding: 4px 6px; border-radius: 10px; transition: background 0.2s; }
+.perch.inline:hover { background: rgba(238, 243, 241, 0.08); }
+.perch-inline .strip { padding-left: 14px; }
+
+/* C4: the face tile inside the strip, at its left end, centred on the line. */
+.perch-inside .strip { align-items: flex-start; padding-left: 10px; gap: 12px; }
+.perch.inside { margin-top: -2px; }
+.perch.inside .tile-face { width: 36px; height: 36px; }
+.perch.inside:hover .tile-face { transform: scale(1.06) rotate(-2deg); }
+.perch-inside .actions { padding-left: 8px; }
+
+/* C5: on its own, left of the strip with a gap, sat on the strip's bottom edge. */
+.perch.beside { position: absolute; right: calc(100% + 10px); bottom: 0; }
+.perch.beside .tile-face { width: 42px; height: 42px; border-radius: 13px; }
+.perch.beside:hover .tile-face { transform: translateY(-1px) scale(1.06) rotate(-2deg); }
+.perch-beside { margin-left: 52px; }

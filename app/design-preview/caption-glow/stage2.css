@@ -1,0 +1,121 @@
+/* Stage two: the kept glows in Duet's ink white. Builds on glow.css and the refresh. Preview only.
+   Light is ink white (#eef3f1). Under it, a faint ink shadow (#121313) — invisible on dark video,
+   it gives the light an edge to read against on bright video. */
+:root { --light: 238, 243, 241; --shade: 18, 19, 19; }
+
+.stage2 { display: flex; flex-direction: column; gap: 14px; }
+.s2-head, .s2-row { display: grid; grid-template-columns: 220px 1fr 1fr; gap: 16px; }
+.s2-head { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #6f7775; }
+.s2-row { padding-top: 14px; border-top: 1px solid rgba(238, 243, 241, 0.08); }
+.s2-row h2 { margin: 0; font: 400 22px/1.2 'Source Serif 4', Georgia, serif; }
+.s2-row p { margin: 6px 0 0; font-size: 12.5px; color: #9aa3a0; }
+.s2-row .scene { height: 200px; }
+.s2-row .stage { padding: 0 20px 20px 64px; }
+.s2-row .mix { font-size: 20px; }
+.s2-row .strip { min-width: 0; }
+.scene.bright {
+  background:
+    radial-gradient(50% 60% at 30% 25%, rgba(255, 255, 255, 0.9), transparent 70%),
+    radial-gradient(40% 40% at 80% 30%, rgba(200, 230, 245, 0.9), transparent 70%),
+    linear-gradient(180deg, #e9e4dc 0%, #d8d0c4 60%, #b9ae9f 100%);
+}
+.scene.bright::before { background: rgba(120, 100, 85, 0.55); }
+@media (max-width: 1100px) { .s2-head, .s2-row { grid-template-columns: 1fr; } .s2-head { display: none; } }
+
+.strip-row[class*='w-'] { animation: arrive 2.4s ease-out both; }
+
+/* Ember line: a thin white line just inside the glass's bottom edge, so it always has ink behind it. */
+.w-ember .glow-parts { z-index: 1; }
+.w-ember .glow-parts i {
+  position: absolute; left: 18px; right: 18px; bottom: 3px; height: 1.5px; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgba(var(--light), 0.95) 25%, rgba(var(--light), 0.95) 75%, transparent);
+  box-shadow: 0 0 8px rgba(var(--light), 0.55), 0 2px 6px rgba(var(--shade), 0.5);
+  --lo: 0.3; --hi: 1; animation: breathe 4s var(--ease-breath) infinite;
+}
+
+/* Light from below: white light inside the glass; the edge it rises from brightens too. */
+.w-inner .strip { animation: w-under 4.5s var(--ease-breath) infinite; }
+@keyframes w-under {
+  0%, 100% { box-shadow: inset 0 -10px 18px -12px rgba(var(--light), 0.12), inset 0 -1px rgba(var(--light), 0.15); }
+  50% { box-shadow: inset 0 -16px 24px -12px rgba(var(--light), 0.32), inset 0 -1px rgba(var(--light), 0.5); }
+}
+
+/* Corner bloom: a soft white bloom at the right end, ringed by a faint ink shade. */
+.w-corner::before {
+  content: ''; position: absolute; z-index: -1; right: -26px; bottom: -22px; width: 160px; height: 84px; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(var(--light), 0.42), rgba(var(--light), 0.12) 60%, rgba(var(--shade), 0.18) 85%, transparent);
+  filter: blur(6px); --lo: 0.3; --hi: 1; animation: fade-in 0.9s ease-out both, breathe 5s var(--ease-breath) 0.9s infinite;
+}
+
+/* Duet stirs: a white halo round Duet's button, over a faint ink ring. */
+.w-duet .talk-button { opacity: 1; animation: w-stir 4s var(--ease-breath) infinite; }
+@keyframes w-stir {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(var(--light), 0.35), 0 0 0 3px rgba(var(--shade), 0.25), 0 0 8px rgba(var(--light), 0.15); }
+  50% { box-shadow: 0 0 0 1.5px rgba(var(--light), 0.85), 0 0 0 4px rgba(var(--shade), 0.35), 0 0 16px rgba(var(--light), 0.4); }
+}
+
+/* Light flow: a white highlight travelling round the edge, fading to nothing, a soft halo behind. */
+@property --wturn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.w-flow .glow-parts i {
+  position: absolute; inset: -1.5px; border-radius: 19.5px;
+  background: conic-gradient(from var(--wturn), transparent 0deg 200deg, rgba(var(--light), 0.25) 280deg, rgba(var(--light), 0.95) 350deg, transparent 360deg);
+  animation: w-turn 9s linear infinite;
+}
+.w-flow .glow-parts i:nth-child(2) {
+  inset: -6px; border-radius: 24px; filter: blur(7px); opacity: 0.5;
+  background: conic-gradient(from var(--wturn), transparent 0deg 220deg, rgba(var(--light), 0.6) 340deg, transparent 360deg);
+}
+.w-flow .strip { box-shadow: 0 0 0 3px rgba(var(--shade), 0.18); }
+@keyframes w-turn { to { --wturn: 360deg; } }
+
+/* Light from below, brighter and in colour. Inside the glass, so the glass's own ink is always behind it. */
+.w-inner-strong .strip { animation: w-under-strong 4.5s var(--ease-breath) infinite; }
+@keyframes w-under-strong {
+  0%, 100% { box-shadow: inset 0 -12px 20px -12px rgba(var(--light), 0.25), inset 0 -1.5px rgba(var(--light), 0.35); }
+  50% { box-shadow: inset 0 -20px 28px -12px rgba(var(--light), 0.55), inset 0 -1.5px rgba(var(--light), 0.85); }
+}
+.w-inner-rung .strip { --rung: 255, 214, 10; animation: w-under-rung 4.5s var(--ease-breath) infinite; }
+@keyframes w-under-rung {
+  0%, 100% { box-shadow: inset 0 -12px 20px -12px rgba(var(--rung), 0.22), inset 0 -1.5px rgba(var(--rung), 0.35); }
+  50% { box-shadow: inset 0 -20px 28px -12px rgba(var(--rung), 0.5), inset 0 -1.5px rgba(var(--rung), 0.85); }
+}
+/* The ladder: a gradient band clipped inside the strip's bottom, rising and falling. */
+.w-inner-ladder .strip { overflow: hidden; }
+.w-inner-ladder .strip::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 26px; pointer-events: none;
+  background: linear-gradient(90deg, #ffd60a, #ff9f0a 35%, #4da3ff 70%, #32d74b);
+  -webkit-mask: linear-gradient(to top, #000 0 1.5px, rgba(0, 0, 0, 0.35) 2px, transparent);
+  mask: linear-gradient(to top, #000 0 1.5px, rgba(0, 0, 0, 0.35) 2px, transparent);
+  --lo: 0.35; --hi: 0.9; animation: breathe 4.5s var(--ease-breath) infinite;
+}
+
+/* Brighter, with a gradient from the home's sea-glass palette (design-preview/seaglass.css): frosted
+   honey, foam, aqua, lilac and clear. A band clipped inside the glass's bottom edge (so the glass's own
+   ink is always behind it), a bright hairline, and soft light rising above it; it breathes. */
+.strip-row[class*='w-grad'] .strip { overflow: hidden; }
+.strip-row[class*='w-grad'] .strip::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 30px; pointer-events: none;
+  background: var(--band);
+  -webkit-mask: linear-gradient(to top, #000 0 2px, rgba(0, 0, 0, 0.75) 3px, rgba(0, 0, 0, 0.35) 14px, transparent);
+  mask: linear-gradient(to top, #000 0 2px, rgba(0, 0, 0, 0.75) 3px, rgba(0, 0, 0, 0.35) 14px, transparent);
+  --lo: 0.45; --hi: 1; animation: breathe 4.5s var(--ease-breath) infinite;
+}
+.w-grad-seaglass { --band: linear-gradient(90deg, #e9b872, #9ad8c2 35%, #6cc9dc 65%, #b9a8e3); }
+.w-grad-dusk { --band: linear-gradient(90deg, #e9b872, #dfe8ea 50%, #b9a8e3); }
+.w-grad-shore { --band: linear-gradient(90deg, #dfe8ea, #9ad8c2 30%, #6cc9dc 70%, #dfe8ea); }
+.strip-row[class*='w-grad'] .strip { animation: w-under-strong 4.5s var(--ease-breath) infinite; }
+
+/* Sea glass · soft — the kept glow. The sea glass eased: the colours fade in from clear at both ends,
+   the band and the white light under it are about two thirds as strong, and it breathes slower. */
+.w-grad-soft { --band: linear-gradient(90deg, rgba(223, 232, 234, 0) 2%, #e9b872 18%, #9ad8c2 42%, #6cc9dc 64%, #b9a8e3 84%, rgba(223, 232, 234, 0) 98%); }
+.strip-row.w-grad-soft .strip { animation: w-under-soft 6s var(--ease-breath) infinite; }
+.strip-row.w-grad-soft .strip::after {
+  height: 32px;
+  -webkit-mask: linear-gradient(to top, #000 0 1.5px, rgba(0, 0, 0, 0.55) 2.5px, rgba(0, 0, 0, 0.22) 12px, transparent);
+  mask: linear-gradient(to top, #000 0 1.5px, rgba(0, 0, 0, 0.55) 2.5px, rgba(0, 0, 0, 0.22) 12px, transparent);
+  --lo: 0.4; --hi: 0.85; animation: breathe 6s var(--ease-breath) infinite;
+}
+@keyframes w-under-soft {
+  0%, 100% { box-shadow: inset 0 -12px 20px -12px rgba(var(--light), 0.14); }
+  50% { box-shadow: inset 0 -18px 26px -12px rgba(var(--light), 0.3); }
+}

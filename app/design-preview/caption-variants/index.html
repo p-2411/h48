@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caption window · versions</title>
+<!-- Design preview only, never loaded by the app. Each version of the caption strip, at rest and
+     pointed at with a word's card open, over a mock video frame. Hover any strip to try it live. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --move: cubic-bezier(0.05, 0.9, 0.1, 1.05);
+  --settle: cubic-bezier(0.22, 1, 0.36, 1);
+  --ink: #eef3f1; --ink2: #c9d0ce; --sub: #9aa3a0; --faint: #6f7775;
+  --k-new: #b9a6f7; --k-seen: #ffd60a; --k-known: #ff9f0a; --k-say: #4da3ff; --k-use: #32d74b; --k-ignored: #a8998a;
+  --grain-d: url(../snap/grain-dark.svg); --grain-l: url(../snap/grain-light.svg);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: #121313 var(--grain-d); background-size: 160px; color: var(--ink);
+  font: 14px/1.45 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; letter-spacing: -0.01em; }
+
+/* The page */
+header { padding: 48px 40px 8px; max-width: 1560px; margin: 0 auto; }
+header h1 { margin: 0; font-size: 52px; line-height: 1.05; }
+header p { margin: 12px 0 0; color: var(--sub); max-width: 720px; }
+.brushed { position: relative; display: inline-block; }
+.brushed svg { position: absolute; left: -2%; bottom: -0.06em; width: 104%; height: 0.24em; z-index: -1; color: #ffd60a; opacity: 0.85; }
+main { max-width: 1560px; margin: 0 auto; padding: 16px 40px 80px; display: flex; flex-direction: column; gap: 44px; }
+.version { display: grid; grid-template-columns: 220px 1fr; gap: 28px; align-items: start; padding-top: 28px; border-top: 1px solid rgba(238,243,241,0.08); }
+.version h2 { margin: 0; font-size: 30px; line-height: 1.1; }
+.version .tag { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.version .why { margin: 10px 0 0; color: var(--sub); font-size: 13.5px; }
+.version ul { margin: 10px 0 0; padding-left: 16px; color: var(--ink2); font-size: 12.5px; }
+.version li { margin: 3px 0; }
+.scenes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.scene-wrap figcaption { margin-top: 7px; font-size: 11.5px; color: var(--faint); }
+figure { margin: 0; }
+@media (max-width: 1100px) { .version { grid-template-columns: 1fr; } }
+@media (max-width: 1300px) { .scenes { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { header, main { padding-left: 16px; padding-right: 16px; } }
+
+/* A mock video frame: a dim kitchen at dusk. */
+.scene {
+  position: relative; height: 330px; border-radius: 14px; overflow: hidden; container-type: inline-size;
+  background:
+    radial-gradient(40% 55% at 26% 30%, rgba(255, 186, 120, 0.35), transparent 70%),
+    radial-gradient(30% 40% at 80% 25%, rgba(110, 170, 200, 0.25), transparent 70%),
+    radial-gradient(50% 30% at 70% 85%, rgba(60, 40, 30, 0.9), transparent 70%),
+    linear-gradient(180deg, #3b3029 0%, #2a2421 55%, #1a1715 100%);
+  display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 20px 26px 60px;
+}
+.scene::before { /* a figure */
+  content: ''; position: absolute; left: 22%; top: 18%; width: 18%; height: 58%; border-radius: 48% 48% 10% 10%;
+  background: linear-gradient(180deg, rgba(20, 16, 14, 0.75), rgba(20, 16, 14, 0.95)); filter: blur(1px);
+}
+.scene::after { /* the progress bar */
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, #ff3b30 38%, rgba(255,255,255,0.25) 38%);
+}
+.scene.bright {
+  background:
+    radial-gradient(50% 60% at 30% 25%, rgba(255, 255, 255, 0.9), transparent 70%),
+    radial-gradient(40% 40% at 80% 30%, rgba(200, 230, 245, 0.9), transparent 70%),
+    linear-gradient(180deg, #e9e4dc 0%, #d8d0c4 60%, #b9ae9f 100%);
+}
+.scene.bright::before { background: linear-gradient(180deg, rgba(120, 100, 85, 0.5), rgba(90, 75, 65, 0.7)); }
+
+/* ── The strip's parts, shared by every version ─────────────────────────────────────────────── */
+.dock { position: relative; display: flex; flex-direction: column; align-items: center; max-width: 100%; z-index: 1; }
+.strip { position: relative; max-width: 560px; min-width: 300px; padding: 10px 40px 12px 20px; border-radius: 18px; user-select: none; }
+.mix { margin: 0; font-size: 21px; line-height: 1.3; letter-spacing: -0.012em; text-wrap: balance; }
+.w { border-radius: 5px; transition: background 0.15s ease, color 0.15s ease; }
+.w.sw { position: relative; font-weight: 500; color: var(--c); cursor: pointer; }
+[data-k='new'] { --c: var(--k-new); --m: rgba(171, 149, 242, 0.26); }
+[data-k='seen'] { --c: var(--k-seen); --m: rgba(255, 214, 10, 0.30); }
+[data-k='known'] { --c: var(--k-known); --m: rgba(255, 159, 10, 0.28); }
+[data-k='say'] { --c: var(--k-say); --m: rgba(77, 163, 255, 0.30); }
+[data-k='use'] { --c: var(--k-use); --m: rgba(50, 215, 75, 0.22); }
+[data-k='ignored'] { --c: var(--k-ignored); --m: transparent; }
+.more { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 0.3s var(--settle), opacity 0.18s ease; }
+.more > div { overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
+.dock:hover .more, .dock.pinned .more { grid-template-rows: 1fr; opacity: 1; }
+.more .pad { height: 6px; flex: none; }
+.source { margin: 0; font-size: 15px; line-height: 1.4; }
+.english { margin: 0; font-size: 13px; line-height: 1.45; filter: blur(5px); opacity: 0.7; transition: filter 0.2s, opacity 0.2s; cursor: help; }
+.english:hover { filter: none; opacity: 1; }
+.dot { position: absolute; top: 9px; right: 10px; width: 7px; height: 7px; border-radius: 50%; background: #32d74b; box-shadow: 0 0 6px #32d74b; }
+
+.actions {
+  position: absolute; bottom: 100%; left: 0; right: 0; padding: 0 8px 7px; display: flex; justify-content: flex-end; gap: 4px;
+  opacity: 0; transform: translateY(4px); transition: opacity 0.16s ease 0.2s, transform 0.3s var(--settle) 0.2s; pointer-events: none;
+}
+.dock:hover .actions, .dock.pinned .actions { opacity: 1; transform: none; transition-delay: 0s; pointer-events: auto; }
+.dock.pinned.card-open .actions { opacity: 0; }
+.act { height: 28px; padding: 0 11px; border-radius: 999px; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; transition: background 0.15s, transform 0.18s var(--settle); }
+.act:active { transform: scale(0.95); }
+.act.icon { width: 28px; padding: 0; }
+.act svg { width: 14px; height: 14px; }
+.talk { position: absolute; right: calc(100% + 8px); bottom: 1px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; }
+
+.card { position: absolute; z-index: 3; bottom: calc(100% + 6px); left: var(--x, 30%); transform: translateX(-50%); width: max-content; max-width: 260px; display: none; flex-direction: column; gap: 2px; font-size: 13px; }
+.dock.card-open .card { display: flex; }
+.card .labels { display: flex; gap: 12px; align-items: baseline; }
+.card .job { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.card .rung { margin-left: auto; font-size: 11px; font-weight: 500; }
+.card .head { font-size: 17px; font-weight: 600; position: relative; width: max-content; }
+.card .row { display: flex; gap: 6px; margin-top: 7px; }
+.pill { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 999px; }
+.pill svg { width: 12px; height: 12px; }
+
+/* Duet's face, small (the mark): a dark rounded body, two light sockets, a pupil in each. */
+.face { position: relative; width: 30px; height: 24px; border-radius: 9px 9px 8px 8px; display: flex; gap: 3px; align-items: center; justify-content: center; }
+.face .socket { width: 9px; height: 7px; border-radius: 3.5px; display: grid; place-items: center; }
+.face .socket i { width: 3.5px; height: 2px; border-radius: 1px; transition: translate 0.3s var(--settle); animation: blink 6.2s ease-in-out infinite; }
+.face .socket + .socket i { animation-delay: 0.05s; }
+@keyframes blink { 0%, 44%, 49%, 100% { scale: 1 1; } 46.5% { scale: 1 0.12; } }
+
+/* ── 0 · Today ───────────────────────────────────────────────────────────────────────────────── */
+.v-now .strip { background: rgba(30, 30, 32, 0.92); border: 0.5px solid rgba(255, 255, 255, 0.1); color: #fff; }
+.v-now .w:not(.sw) { color: #b4b4b8; }
+.v-now .w.sw:hover { background: color-mix(in srgb, var(--c) 28%, transparent); }
+.v-now .english { color: rgba(235, 235, 245, 0.6); }
+.v-now .act, .v-now .talk { background: rgba(30, 30, 32, 0.92); border: 0.5px solid rgba(255, 255, 255, 0.1); color: #fff; }
+.v-now .act.on { background: #fff; color: #111; }
+.v-now .talk { color: rgba(255,255,255,0.7); }
+.v-now .card { background: #fff; color: #111; border-radius: 12px; padding: 9px 12px; }
+.v-now .card .job, .v-now .card .rung { color: #555; }
+.v-now .pill { background: #efeff2; color: #111; }
+.v-now .pill.on { background: #111; color: #fff; }
+
+/* ── A · Ink glass: the home's ink (green-tinted, not Apple grey), frosted with the same grain as the
+   mascot and the pages, lit from the top edge. Learned words are marked like the home's highlighter. ─ */
+.v-ink .strip, .v-ink .act, .v-ink .talk, .v-ink .card {
+  background: rgba(16, 19, 18, 0.8) var(--grain-d); background-size: 160px;
+ 
+  border: 0.5px solid rgba(238, 243, 241, 0.12); color: var(--ink);
+  box-shadow: inset 0 1px rgba(238, 243, 241, 0.06), 0 12px 32px -8px rgba(0, 0, 0, 0.45);
+}
+.v-ink .w:not(.sw) { color: var(--ink2); }
+.v-ink .w.sw { color: var(--ink); background: linear-gradient(180deg, transparent 48%, var(--m) 48%, var(--m) 92%, transparent 92%); border-radius: 2px 5px 3px 4px; }
+.v-ink .w.sw:hover { --m: color-mix(in srgb, var(--c) 45%, transparent); }
+.v-ink .source { color: var(--ink); }
+.v-ink .english { color: var(--sub); }
+.v-ink .act:hover { background-color: rgba(44, 48, 47, 0.95); }
+.v-ink .act.on { background: var(--ink); color: #121313; }
+.v-ink .talk { color: var(--ink2); }
+.v-ink .card { border-radius: 14px; padding: 10px 13px; background-color: rgba(26, 28, 28, 0.94); }
+.v-ink .card .job { color: var(--faint); }
+.v-ink .card .rung { color: var(--c); }
+.v-ink .card .head { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 26px; line-height: 1.05; margin: 2px 0 1px; }
+.v-ink .card .reading { color: var(--sub); font-size: 12px; font-style: italic; }
+.v-ink .pill { background: rgba(238, 243, 241, 0.08); }
+.v-ink .pill:hover { background: rgba(238, 243, 241, 0.13); }
+.v-ink .pill.on { background: var(--ink); color: #121313; }
+
+/* ── B · Brush: plain ink words, and under each learned word the home's brush stroke in its rung's
+   colour. The card is a sheet of the home's paper, the word set in Instrument Serif, brushed. ──────── */
+.v-brush .strip, .v-brush .act, .v-brush .talk {
+  background: rgba(18, 19, 19, 0.86) var(--grain-d); background-size: 160px;
+  border: 0.5px solid rgba(238, 243, 241, 0.1); color: var(--ink); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.v-brush .w:not(.sw) { color: var(--ink2); }
+.v-brush .w.sw { color: var(--ink); isolation: isolate; }
+.v-brush .w.sw .stroke { position: absolute; left: -4%; right: -4%; bottom: 0.02em; height: 0.46em; z-index: -1; color: var(--c); opacity: 0.5; transition: opacity 0.15s, height 0.2s var(--settle); }
+.v-brush .w.sw .stroke svg { display: block; width: 100%; height: 100%; }
+.v-brush .w.sw:hover .stroke { opacity: 0.8; height: 0.62em; }
+.v-brush .source { color: var(--ink); }
+.v-brush .english { color: var(--sub); }
+.v-brush .act.on { background: var(--ink); color: #121313; }
+.v-brush .talk { color: var(--ink2); }
+.v-brush .card { background: #f7f8f7 var(--grain-l); background-size: 160px; color: #1b201f; border-radius: 14px; padding: 11px 14px 12px; box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.55); }
+.v-brush .card .job { color: #8a908e; }
+.v-brush .card .rung { color: color-mix(in srgb, var(--c) 55%, #1b201f); }
+.v-brush .card .head { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 30px; line-height: 1; margin: 3px 0 4px; isolation: isolate; }
+.v-brush .card .head .stroke { position: absolute; left: -4%; right: -4%; bottom: -0.04em; height: 0.3em; z-index: -1; color: var(--c); opacity: 0.7; }
+.v-brush .card .head .stroke svg { display: block; width: 100%; height: 100%; }
+.v-brush .card .reading { color: #666c6a; font-size: 12px; font-style: italic; }
+.v-brush .pill { background: #eceded; color: #1b201f; }
+.v-brush .pill.on { background: #1b201f; color: #fff; }
+
+/* ── C · Duet on the strip: the glass is Duet's own (its dark body, frosted, milky), and Duet sits on
+   the strip's top-left corner in place of the round talk button and the status dot. Its eyes are the
+   status: open and still when lines come through, half-closed while one forms. Neutral until reached
+   for; when the pointer is near, it glances at the word under it. ───────────────────────────────── */
+.v-duet .strip, .v-duet .act, .v-duet .card {
+  background:
+    radial-gradient(80% 120% at 20% 0%, rgba(237, 246, 244, 0.06), transparent 60%),
+    rgba(8, 13, 13, 0.84) var(--grain-d);
+  background-size: auto, 160px;
+  border: 0.5px solid rgba(237, 246, 244, 0.13); color: #edf6f4;
+  box-shadow: 0 0 0 4px rgba(237, 246, 244, 0.025), 0 12px 32px -8px rgba(0, 0, 0, 0.5);
+}
+.v-duet .strip { border-radius: 20px; padding-right: 22px; }
+.v-duet .dot, .v-duet .talk { display: none; }
+.v-duet .w:not(.sw) { color: #c6ddd9; }
+.v-duet .w.sw:hover { background: color-mix(in srgb, var(--c) 24%, transparent); }
+.v-duet .source { color: #edf6f4; }
+.v-duet .english { color: #8fa29e; }
+.v-duet .act { border-radius: 10px; }
+.v-duet .act.on { background: #edf6f4; color: #080d0d; }
+.v-duet .perch { position: absolute; left: 18px; top: -22px; z-index: 2; cursor: pointer; transition: transform 0.3s var(--move); }
+.v-duet .perch:hover { transform: translateY(-2px) scale(1.06); }
+.v-duet .face { background: rgba(8, 13, 13, 0.92) var(--grain-d); background-size: 160px; border: 0.5px solid rgba(237, 246, 244, 0.16); box-shadow: 0 0 10px rgba(237, 246, 244, 0.08); }
+.v-duet .face .socket { background: #edf6f4; }
+.v-duet .face .socket i { background: #080d0d; }
+.v-duet .dock.card-open .face .socket i { translate: 1.5px -0.8px; }
+.v-duet .card { border-radius: 14px; padding: 10px 13px; bottom: calc(100% + 26px); }
+.v-duet .perch .face { width: 40px; height: 30px; border-radius: 12px 12px 10px 10px; gap: 4px; }
+.v-duet .perch .face .socket { width: 12px; height: 9px; border-radius: 4.5px; }
+.v-duet .perch .face .socket i { width: 4.5px; height: 2.5px; }
+.v-duet .card .job { color: #6f8a85; }
+.v-duet .card .rung { color: var(--c); }
+.v-duet .card .head { font-size: 19px; }
+.v-duet .card .reading { color: #8fa29e; font-size: 12px; font-style: italic; }
+.v-duet .pill { background: rgba(237, 246, 244, 0.09); }
+.v-duet .pill.on { background: #edf6f4; color: #080d0d; }
+.v-duet .card .ask { display: inline-flex; align-items: center; gap: 6px; }
+.v-duet .card .ask .face { width: 18px; height: 14px; border-radius: 5px; gap: 2px; background: #edf6f4; border: 0; box-shadow: none; }
+.v-duet .card .ask .face .socket { width: 5px; height: 4px; border-radius: 2px; background: #080d0d; }
+.v-duet .card .ask .face .socket i { display: none; }
+
+/* ── D · Cinema: at rest there is no box, only the line, as film subtitles are, with a soft shadow and a
+   thin underline in each learned word's colour. Pointed at, the ink glass gathers behind it. ─────── */
+.v-cine .strip { background: transparent; border: 0.5px solid transparent; color: #fff; transition: background 0.25s ease, border-color 0.25s ease, backdrop-filter 0.25s ease, box-shadow 0.25s ease; }
+.v-cine .mix { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85), 0 0 12px rgba(0, 0, 0, 0.55); font-size: 24px; text-align: center; }
+.v-cine .w:not(.sw) { color: #f2f2f2; }
+.v-cine .w.sw { color: #fff; text-decoration: underline 2.5px var(--c); text-underline-offset: 6px; }
+.v-cine .w.sw:hover { color: var(--c); }
+.v-cine .dot { opacity: 0; transition: opacity 0.2s; }
+.v-cine .more > div { text-align: center; }
+.v-cine .source { color: var(--ink); }
+.v-cine .english { color: var(--sub); }
+.v-cine .dock:hover .strip, .v-cine .dock.pinned .strip {
+  background: rgba(16, 19, 18, 0.78) var(--grain-d); background-size: 160px;
+  border-color: rgba(238, 243, 241, 0.12); box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.45);
+}
+.v-cine .dock:hover .mix, .v-cine .dock.pinned .mix { text-shadow: none; }
+.v-cine .dock:hover .dot, .v-cine .dock.pinned .dot { opacity: 1; }
+.v-cine .strip { padding: 10px 24px 12px; }
+.v-cine .act, .v-cine .talk { background: rgba(16, 19, 18, 0.8); border: 0.5px solid rgba(238, 243, 241, 0.12); color: var(--ink); }
+.v-cine .talk { opacity: 0; transition: opacity 0.2s; }
+.v-cine .dock:hover .talk, .v-cine .dock.pinned .talk { opacity: 1; }
+.v-cine .act.on { background: var(--ink); color: #121313; }
+.v-cine .card { background: rgba(26, 28, 28, 0.94); border: 0.5px solid rgba(238, 243, 241, 0.12); color: var(--ink); border-radius: 14px; padding: 10px 13px; }
+.v-cine .card .job { color: var(--faint); }
+.v-cine .card .rung { color: var(--c); }
+.v-cine .card .reading { color: var(--sub); font-size: 12px; font-style: italic; }
+.v-cine .pill { background: rgba(238, 243, 241, 0.08); }
+.v-cine .pill.on { background: var(--ink); color: #121313; }
+
+/* ── E · Paper: the home's day theme — light frosted paper, ink text, the light word colours. For
+   bright videos, or set to follow the system's light mode. ──────────────────────────────────────── */
+.v-paper .strip, .v-paper .act, .v-paper .talk {
+  background: rgba(247, 248, 247, 0.86) var(--grain-l); background-size: 160px;
+  border: 0.5px solid rgba(27, 32, 31, 0.1); color: #1b201f; box-shadow: inset 0 1px rgba(255, 255, 255, 0.7), 0 10px 30px -8px rgba(40, 30, 20, 0.35);
+}
+.v-paper [data-k='new'] { --c: #6b4fc8; --m: rgba(148, 120, 228, 0.24); }
+.v-paper [data-k='seen'] { --c: #8a6a00; --m: rgba(255, 205, 40, 0.5); }
+.v-paper [data-k='known'] { --c: #b35c00; --m: rgba(255, 160, 40, 0.38); }
+.v-paper [data-k='say'] { --c: #1f63b8; --m: rgba(77, 163, 255, 0.3); }
+.v-paper [data-k='use'] { --c: #1b7a3a; --m: rgba(63, 181, 121, 0.3); }
+.v-paper [data-k='ignored'] { --c: #7a6c5e; --m: transparent; }
+.v-paper .w:not(.sw) { color: #3a403e; }
+.v-paper .w.sw { color: #1b201f; background: linear-gradient(180deg, transparent 22%, var(--m) 22%, var(--m) 90%, transparent 90%); padding: 0 2px; margin: 0 -2px; border-radius: 3px 6px 4px 5px; }
+.v-paper .source { color: #1b201f; }
+.v-paper .english { color: #666c6a; }
+.v-paper .dot { background: #1b7a3a; box-shadow: none; }
+.v-paper .act.on { background: #1b201f; color: #fff; }
+.v-paper .talk { color: #3a403e; }
+.v-paper .card { background: #1b201f; color: #eef3f1; border-radius: 14px; padding: 10px 13px; box-shadow: 0 14px 34px -10px rgba(40, 30, 20, 0.5); }
+.v-paper .card [data-k='seen'], .v-paper .card[data-k='seen'] { --c: #ffd60a; }
+.v-paper .card .job { color: #8a908e; }
+.v-paper .card .rung { color: var(--c); }
+.v-paper .card .head { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 26px; line-height: 1.05; margin: 2px 0 1px; }
+.v-paper .card .reading { color: #9aa3a0; font-size: 12px; font-style: italic; }
+.v-paper .pill { background: rgba(238, 243, 241, 0.1); }
+.v-paper .pill.on { background: #eef3f1; color: #1b201f; }
+
+/* ── F · Serif line: the line itself in Instrument Serif, the voice of the home's headlines, larger
+   and quieter; the learned words in italic, in their colour. The rest stays Inter. ──────────────── */
+.v-serif .strip, .v-serif .act, .v-serif .talk, .v-serif .card {
+  background: rgba(16, 19, 18, 0.82) var(--grain-d); background-size: 160px;
+  border: 0.5px solid rgba(238, 243, 241, 0.11); color: var(--ink); box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.45);
+}
+.v-serif .strip { padding: 8px 40px 12px 22px; }
+.v-serif .mix { font-family: 'Instrument Serif', serif; font-size: 30px; line-height: 1.18; letter-spacing: -0.005em; }
+.v-serif .w:not(.sw) { color: var(--ink); }
+.v-serif .w.sw { font-style: italic; font-weight: 400; }
+.v-serif .w.sw:hover { background: color-mix(in srgb, var(--c) 22%, transparent); }
+.v-serif .source { color: var(--ink2); font-size: 14.5px; }
+.v-serif .english { color: var(--sub); }
+.v-serif .act.on { background: var(--ink); color: #121313; }
+.v-serif .talk { color: var(--ink2); }
+.v-serif .card { border-radius: 14px; padding: 10px 13px; background-color: rgba(26, 28, 28, 0.94); }
+.v-serif .card .job { color: var(--faint); }
+.v-serif .card .rung { color: var(--c); }
+.v-serif .card .head { font-family: 'Instrument Serif', serif; font-weight: 400; font-style: italic; font-size: 28px; line-height: 1.05; margin: 2px 0 1px; color: var(--c); }
+.v-serif .card .reading { color: var(--sub); font-size: 12px; font-style: italic; }
+.v-serif .pill { background: rgba(238, 243, 241, 0.08); }
+.v-serif .pill.on { background: var(--ink); color: #121313; }
+
+/* Light enough for the preview pane to draw: frost and grain only on the strip and the card. */
+.act, .talk, .face { background-image: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-duration: 0.01s !important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1 class="serif"><span class="brushed">Caption window<svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z"/></svg></span>, six ways</h1>
+  <p>The strip today, then five versions that bring in the home's ink, grain, brush stroke, serif and Duet. Left: at rest, as it sits over the video. Right: pointed at, with a word's card open. Hover any strip to try it.</p>
+</header>
+<main id="versions"></main>
+
+<template id="strip">
+  <div class="dock">
+    <div class="actions">
+      <button class="act">Explain</button>
+      <button class="act icon" title="Save line"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 1.8l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z"/></svg></button>
+      <button class="act icon" title="Replay"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 8a5 5 0 1 0 1.6-3.7M3 2.5v2.8h2.8"/></svg></button>
+      <button class="act icon on" title="Level">2</button>
+      <button class="act icon" title="Settings"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></svg></button>
+    </div>
+    <div class="card" data-k="seen">
+      <span class="labels"><span class="job">Verb</span><span class="rung">Heard 4 times</span></span>
+      <span class="head">madrugar<span class="stroke" data-brush></span></span>
+      <span class="reading">ma·dru·GAR</span>
+      <span>to get up early</span>
+      <span class="row">
+        <button class="pill on"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.8l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z"/></svg>Saved</button>
+        <button class="pill ask"><span class="face" data-mini></span>Explain line</button>
+        <button class="pill">Ignore</button>
+      </span>
+    </div>
+    <div class="strip-row" style="position:relative">
+      <button class="talk" title="Talk to Duet"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="3" y="5" width="18" height="14" rx="6"/><rect x="7" y="9.5" width="4" height="3.4" rx="1.5" fill="#000" opacity=".75"/><rect x="13" y="9.5" width="4" height="3.4" rx="1.5" fill="#000" opacity=".75"/></svg></button>
+      <div class="strip">
+        <span class="perch" data-perch hidden></span>
+        <p class="mix" lang="es"><span class="w">I have to</span> <span class="w sw" data-k="seen">madrugar<span class="stroke" data-brush></span></span> <span class="w sw" data-k="known">mañana<span class="stroke" data-brush></span></span><span class="w">, so</span> <span class="w sw" data-k="say">vámonos<span class="stroke" data-brush></span></span><span class="w">.</span></p>
+        <div class="more"><div><span class="pad"></span>
+          <p class="source" lang="es">Mañana tengo que madrugar, así que vámonos.</p>
+          <p class="english">I have to get up early tomorrow, so let's go.</p>
+        </div></div>
+        <span class="dot"></span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+const BRUSH = '<svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z"/></svg>'
+const FACE = '<span class="face"><span class="socket"><i></i></span><span class="socket"><i></i></span></span>'
+const VERSIONS = [
+  { cls: 'v-now', tag: 'Today', name: 'The strip now', why: 'What ships: Apple HUD grey glass, white word card, coloured words.',
+    notes: ['Grey (#1e1e20) is macOS’s, not Duet’s green-tinted ink', 'No grain, serif or brush — reads as a system panel', 'White card is the brightest thing on screen'] },
+  { cls: 'v-ink', tag: 'A', name: 'Ink glass', why: 'The same shape, rebuilt from the home’s ink and grain. Learned words are highlighted like a marker rather than recoloured.',
+    notes: ['Ink #121313 / #eef3f1 tokens, paper grain, top-edge light', 'Highlighter marks keep the line readable at a glance', 'Dark card with a serif headword, like the home'], brush: false },
+  { cls: 'v-brush', tag: 'B', name: 'Brush', why: 'The home’s brush stroke, painted under each learned word in its rung colour. The card is a sheet of the home’s paper.',
+    notes: ['Most recognisably “Duet” — the stroke is the brand', 'Words stay ink-white; colour lives in the stroke', 'Paper card echoes “Your word for today”'], brush: true },
+  { cls: 'v-duet', tag: 'C', name: 'Duet on the strip', why: 'Duet sits on the strip’s corner in place of the talk button and status dot. The glass is its own frosted body.',
+    notes: ['Its eyes are the status (still / half-closed / closed)', 'Neutral until reached for; glances at the hovered word', 'One less floating button beside the strip'], perch: true },
+  { cls: 'v-cine', tag: 'D', name: 'Cinema', why: 'At rest, no box at all — just the line, as film subtitles are, with a thin rung-coloured underline. The ink glass gathers only when pointed at.',
+    notes: ['Least in the way of the video', 'Needs the shadow to hold on bright scenes', 'Hover reveals the full strip from A'] },
+  { cls: 'v-paper', tag: 'E', name: 'Paper', why: 'The home’s day theme: light frosted paper, ink text, the light word colours with marker highlights.',
+    notes: ['For bright videos, or following system light mode', 'Pairs with A as its light twin', 'Card flips to ink so it stands off the strip'], bright: true },
+  { cls: 'v-serif', tag: 'F', name: 'Serif line', why: 'The line set in Instrument Serif, the voice of the home’s headlines; learned words in italic, in colour.',
+    notes: ['Most editorial and calm', 'Larger for the same width; less dense', 'Japanese/Korean would fall back to a sans'] }
+]
+const main = document.getElementById('versions')
+const tpl = document.getElementById('strip')
+const scene = (v, pinned) => {
+  const fig = document.createElement('figure')
+  fig.className = 'scene-wrap'
+  const s = document.createElement('div')
+  s.className = 'scene' + (v.bright ? ' bright' : '')
+  s.append(tpl.content.cloneNode(true))
+  const dock = s.querySelector('.dock')
+  if (pinned) dock.classList.add('pinned', 'card-open')
+  s.querySelectorAll('[data-brush]').forEach((el) => (v.brush ? (el.innerHTML = BRUSH) : el.remove()))
+  s.querySelectorAll('[data-mini]').forEach((el) => (v.perch ? (el.outerHTML = FACE) : el.remove()))
+  const perch = s.querySelector('[data-perch]')
+  if (v.perch) { perch.hidden = false; perch.innerHTML = FACE; perch.title = 'Talk to Duet' } else perch.remove()
+  fig.append(s)
+  const cap = document.createElement('figcaption')
+  cap.textContent = pinned ? 'Pointed at · word card open' : 'At rest'
+  fig.append(cap)
+  return fig
+}
+for (const v of VERSIONS) {
+  const sec = document.createElement('section')
+  sec.className = 'version ' + v.cls
+  sec.innerHTML = `<div><span class="tag">${v.tag}</span><h2 class="serif">${v.name}</h2><p class="why">${v.why}</p><ul>${v.notes.map((n) => `<li>${n}</li>`).join('')}</ul></div><div class="scenes"></div>`
+  sec.querySelector('.scenes').append(scene(v, false), scene(v, true))
+  main.append(sec)
+}
+// Centre each open card on "madrugar".
+requestAnimationFrame(() => {
+  document.querySelectorAll('.dock.card-open').forEach((dock) => {
+    const w = dock.querySelector('.w.sw').getBoundingClientRect()
+    const d = dock.getBoundingClientRect()
+    dock.style.setProperty('--x', `${Math.max(130, w.left - d.left + w.width / 2)}px`)
+  })
+})
+</script>
+</body>
+</html>

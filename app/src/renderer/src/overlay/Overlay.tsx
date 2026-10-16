@@ -1,8 +1,8 @@
 // The overlay: a strip the size of a subtitle at the bottom of the window, showing only the mixed
-// line. Everything else appears when reached for: hovering the strip shows the original, the
-// English and the actions above it (not while a checkpoint is offered or open: then the strip is
-// for that); hovering a word shows its popup; ⚙ opens the settings; two fingers swiped sideways on
-// the strip change the level. Words
+// line. Everything else appears when reached for: hovering the strip shows the actions above it;
+// clicking it opens it up to the original and the English (and clicking again closes it; not while a
+// checkpoint is offered or open: then a double-click opens the checkpoint); hovering a word shows its
+// popup; ⚙ opens the settings; two fingers swiped sideways on the strip change the level. Words
 // show on the strip itself only when the learner can act on them (see notice.ts). The strip sits on
 // the video, no wider than it (the main process moves the window; see placement.ts), and can be
 // dragged anywhere by its background. The mascot button left of it (or the talk keys) starts talking
@@ -14,6 +14,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { DURATION, EASE_IN, EASE_OUT, fadeUp, GLIDE, pop, SPRING } from '../components/motion'
 import { Icon } from '../components/Icon'
+import { DuetMascot } from '../components/duet/DuetMascot'
 import { say } from '../components/errors'
 import { LevelSlider } from './LevelSlider'
 import { useLevelStep } from './useLevelStep'
@@ -23,15 +24,14 @@ import { actionable, quiet, statusDot } from './notice'
 import type { CheckpointView, Offer } from '../../../shared/checkpoints'
 import { Checkpoint } from './Checkpoint'
 import { SettingsPopover } from './SettingsPopover'
-import { TalkBubble } from './TalkBubble'
+import { TalkBubble, type TalkLook } from './TalkBubble'
 import { useOverlay } from './useOverlay'
 import { useSolid } from './useSolid'
 import { useRoomAbove } from './useRoomAbove'
 import { useStripTalk } from './useStripTalk'
 
 const TOAST_MS = 5000
-// Pointing at a strip that offers a checkpoint opens it after this long (a pointer passing over doesn't).
-const POINTING_MS = 250
+const TALK_LOOK_KEY = 'duet.talkLook'
 // The checkpoint card's content fades this quickly (seconds), before it folds and after it opens.
 const QUICK_FADE = 0.08
 
@@ -70,13 +70,31 @@ export function Overlay(): React.JSX.Element {
   const level = useLevelStep(settings.level)
   const [stripSwipes] = useState(() => new WheelSteps({ sideways: true }))
   const [settingsOpen, setSettingsOpen] = useState(false)
-  // The pointer is on Duet: the strip shows more of the line (in React, so its size change glides).
-  const [hovered, setHovered] = useState(false)
+  // Clicked open: the strip shows more of the line, and its actions stay up (in React, so its size
+  // change glides). Another click, or Escape, closes it.
+  const [open, setOpen] = useState(false)
   const [toast, setToast] = useState<Toast>()
   const talk = useStripTalk(settings.language, useCallback((text: string) => setToast({ text }), []))
+  // Duet and its subtitles while talking: dark, or light over a bright picture (the learner's pick,
+  // remembered in this window; Duet can't see what's behind it, and guessing would cost a screen grab).
+  const [talkLook, setTalkLook] = useState<TalkLook>(() => {
+    try {
+      return localStorage.getItem(TALK_LOOK_KEY) === 'light' ? 'light' : 'dark'
+    } catch {
+      return 'dark'
+    }
+  })
+  const chooseTalkLook = useCallback((look: TalkLook) => {
+    setTalkLook(look)
+    try {
+      localStorage.setItem(TALK_LOOK_KEY, look)
+    } catch {
+      // Not remembered; it still applies now.
+    }
+  }, [])
   // Stars given in this run, by line and word ("12:3", or "12:line"), so they show as saved.
   const [stars, setStars] = useState<Record<string, string>>({})
-  // A checkpoint offered (the strip glows; pointing at it or a click opens it) and the one open.
+  // A checkpoint offered (the strip glows; a double-click on it opens it) and the one open.
   const [offer, setOffer] = useState<Offer | null>(null)
   const [checkpoint, setCheckpoint] = useState<CheckpointView>()
   // The checkpoint's card is still folding back into the strip (the strip's top corners stay square
@@ -96,18 +114,21 @@ export function Overlay(): React.JSX.Element {
       .then(setCheckpoint, (cause) => setToast({ text: say(cause, 'That checkpoint has gone.') }))
       .finally(() => (opening.current = false))
   }
-  // While one is offered, pointing at the glowing strip is opting in: after a moment (so a pointer
-  // only passing over doesn't), the question grows out of it, in place of the usual hover (no
-  // actions row, no longer line). A click opens it at once.
-  const pointing = useRef<number | undefined>(undefined)
-  // The offer going (or a checkpoint opening) ends the wait: it would ask for one that has gone.
-  useEffect(() => () => window.clearTimeout(pointing.current), [offer, checkpoint])
-  const openCheckpoint = (event: React.MouseEvent<HTMLElement>): void => {
+  /** A press on the strip's own background (not a word, a button or the card), without dragging it. */
+  const onBackground = (event: React.MouseEvent<HTMLElement>): boolean => {
     const pressed = pressedAt.current
     const moved = pressed ? Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) > 4 : true
-    if (moved || (event.target as Element).closest(NOT_FOR_DRAGGING)) return
-    window.clearTimeout(pointing.current)
-    askCheckpoint()
+    return !moved && !(event.target as Element).closest(NOT_FOR_DRAGGING)
+  }
+  // A click on the strip opens it up to the whole line and its English (and the actions row), and
+  // closes it again; pointing at it shows nothing more. While a checkpoint is offered the strip is
+  // for that instead: a double-click opens the question, so a stray click on a glowing strip doesn't.
+  const clickStrip = (event: React.MouseEvent<HTMLElement>): void => {
+    if (offer || checkpoint || !onBackground(event)) return
+    setOpen((now) => !now)
+  }
+  const doubleClickStrip = (event: React.MouseEvent<HTMLElement>): void => {
+    if (onBackground(event)) askCheckpoint()
   }
 
   useEffect(() => {
@@ -178,6 +199,9 @@ export function Overlay(): React.JSX.Element {
       .catch((error) => setToast({ text: say(error, 'Could not bring that card back.') }))
   }
 
+  // The whole line and its English show while the strip is clicked open or its settings are (never
+  // over a checkpoint: then the strip is for that).
+  const showMore = (open || settingsOpen) && !offer && !checkpoint
   const notice = loaded ? actionable(status, settings.language) : undefined
   const state = quiet(status, settings.language)
   const ready = current?.state === 'ready'
@@ -197,22 +221,16 @@ export function Overlay(): React.JSX.Element {
     >
       <div
         ref={dock}
-        className={`dock${settingsOpen ? ' pinned' : ''}${offer || checkpoint ? ' asking' : ''}`}
+        className={`dock${settingsOpen || showMore ? ' pinned' : ''}${offer || checkpoint ? ' asking' : ''}`}
         data-solid
-        onMouseEnter={() => {
-          setHovered(true)
-          if (offer && !checkpoint) pointing.current = window.setTimeout(askCheckpoint, POINTING_MS)
-        }}
-        onMouseLeave={() => {
-          setHovered(false)
-          window.clearTimeout(pointing.current)
-        }}
         onContextMenu={(event) => {
           event.preventDefault()
           window.duet.showMenu()
         }}
         onKeyDown={(event) => {
-          if (event.key === 'Escape' && settingsOpen) setSettingsOpen(false)
+          if (event.key !== 'Escape') return
+          if (settingsOpen) setSettingsOpen(false)
+          else setOpen(false)
         }}
       >
         <AnimatePresence>{settingsOpen && <SettingsPopover key="settings" settings={settings} />}</AnimatePresence>
@@ -263,9 +281,9 @@ export function Overlay(): React.JSX.Element {
             says so above the strip, which goes on. */}
         <AnimatePresence>
           {talk.talking && talk.about && (
-            <motion.div key="talk" className="talk-bubble" data-solid role="dialog" aria-label="Talking with Duet" style={{ x: '-50%' }} {...pop()}>
+            <motion.div key="talk" className={`talk-bubble ${talkLook}`} data-solid role="dialog" aria-label="Talking with Duet" style={{ x: '-50%' }} {...pop()}>
               <ErrorBoundary what="Talking with Duet" frame={popped}>
-                <TalkBubble live={talk.live} language={talk.about.language} onText={talk.toText} onEnd={talk.end} />
+                <TalkBubble live={talk.live} language={talk.about.language} look={talkLook} onLook={chooseTalkLook} onText={talk.toText} />
               </ErrorBoundary>
             </motion.div>
           )}
@@ -274,37 +292,40 @@ export function Overlay(): React.JSX.Element {
         <button
           type="button"
           className={`talk-button${talk.talking ? ' on' : ''}`}
-          title={talk.talking ? 'End talking with Duet' : 'Talk to Duet'}
-          aria-label={talk.talking ? 'End talking with Duet' : 'Talk to Duet'}
+          title={talk.talking ? 'Bring Duet back (end talking)' : 'Talk to Duet'}
+          aria-label={talk.talking ? 'Bring Duet back and end talking' : 'Talk to Duet'}
           aria-pressed={talk.talking}
           data-solid
           onClick={talk.talking ? talk.end : talk.begin}
         >
-          <Icon name="mascot" filled />
+          {/* Duet's seat. At rest, its own face, dozing: it peeks when the pointer comes near and stays
+              a moment (the engine's own sleep). Pressed, Duet leaves it, up into the bubble (only one
+              Duet on screen), and a back arrow slides in: pressing it brings Duet back down, to doze. */}
+          <AnimatePresence mode="popLayout" initial={false}>
+            {talk.talking ? (
+              <motion.span
+                key="back"
+                className="talk-face talk-back"
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0, transition: { duration: 0.28, ease: EASE_OUT, delay: 0.08 } }}
+                exit={{ opacity: 0, x: -8, transition: { duration: 0.16, ease: EASE_IN } }}
+              >
+                <Icon name="back" size={18} />
+              </motion.span>
+            ) : (
+              <motion.span
+                key="face"
+                className="talk-face"
+                initial={{ opacity: 0, y: -12, scale: 0.7 }}
+                animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.38, ease: [0.05, 0.9, 0.1, 1.05], delay: 0.1 } }}
+                exit={{ opacity: 0, y: -14, scale: 0.7, transition: { duration: 0.2, ease: EASE_IN } }}
+              >
+                <DuetMascot state="asleep" width={28} finish="flat" theme="dark" watch="near" label="Duet, asleep" />
+              </motion.span>
+            )}
+          </AnimatePresence>
         </button>
-        {/* Glowing behind the strip while a checkpoint is offered, and on while it's being done;
-            it glides with the strip. */}
-        <AnimatePresence>
-          {(offer || checkpoint) && (
-            <motion.div
-              key="glow"
-              className="strip-glow"
-              aria-hidden="true"
-              layout
-              transition={GLIDE}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, transition: { duration: 0.3, ease: EASE_OUT } }}
-              exit={{ opacity: 0, transition: { duration: 0.5, ease: EASE_IN } }}
-            >
-              {/* Its four layers: the stroke on the edge, then three glows, wider and softer (overlay.css). */}
-              <span className="glow-layer" />
-              <span className="glow-layer" />
-              <span className="glow-layer" />
-              <span className="glow-layer" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-        {/* An open checkpoint grows up out of the strip, the two one shape (the glow around both),
+        {/* An open checkpoint grows up out of the strip, the two one shape (the light below in both),
             and folds back into it when done; one that breaks says so above the strip. */}
         <AnimatePresence onExitComplete={() => setFolding(false)}>
           {checkpoint && (
@@ -347,14 +368,29 @@ export function Overlay(): React.JSX.Element {
             borderBottomRightRadius: 18
           }}
           className={`strip${offer || checkpoint ? ' glow' : ''}`}
-          title={offer && !checkpoint ? 'A quick checkpoint: point at the strip' : undefined}
+          title={offer && !checkpoint ? 'A quick checkpoint: double-click the strip' : undefined}
           onPointerDown={(event) => {
             pressedAt.current = { x: event.clientX, y: event.clientY }
             startDrag(event)
           }}
-          onClick={openCheckpoint}
+          onClick={clickStrip}
+          onDoubleClick={doubleClickStrip}
           onWheel={(event) => level.step(stripSwipes.step(event.deltaY, event.deltaX, event.timeStamp))}
         >
+          {/* Light from below, inside the glass, while a checkpoint is offered, and on while it's
+              being done (overlay.css). */}
+          <AnimatePresence>
+            {(offer || checkpoint) && (
+              <motion.span
+                key="glow"
+                className="sea-glow"
+                aria-hidden="true"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, transition: { duration: 0.6, ease: EASE_OUT } }}
+                exit={{ opacity: 0, transition: { duration: 0.5, ease: EASE_IN } }}
+              />
+            )}
+          </AnimatePresence>
           <i
             className={`dot ${dot.tone}`}
             title={dot.text}
@@ -372,7 +408,7 @@ export function Overlay(): React.JSX.Element {
                   starred={(pair) => !!stars[key(pair)]}
                   onStar={star}
                   onIgnore={ignore}
-                  expanded={(hovered || settingsOpen) && !offer && !checkpoint}
+                  expanded={showMore}
                 />
               ) : (
                 <p className="idle">
