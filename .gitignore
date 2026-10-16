@@ -1,0 +1,4 @@
+
+# Build caches
+.vite/
+output/
