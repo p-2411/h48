@@ -37,6 +37,11 @@ npx electron-vite build
 # A fresh dist/, so the checks below look at this build. Uploaded as a draft (electron-builder.yml ›
 # releaseType), which installed copies can't see yet.
 rm -rf dist
+# The draft is made first, so every file goes into it. Left to electron-builder, its uploads (the
+# dmg, the zip, their blockmaps) race to make the release and can make two with the same tag, one
+# holding a single file (v1.0.0 did).
+GH_TOKEN="$GH_TOKEN" gh release view "$TAG" --repo p-2411/duet-releases >/dev/null 2>&1 ||
+  GH_TOKEN="$GH_TOKEN" gh release create "$TAG" --repo p-2411/duet-releases --draft --title "$VERSION" --notes "Duet $VERSION"
 APPLE_KEYCHAIN_PROFILE="$PROFILE" GH_TOKEN="$GH_TOKEN" npx electron-builder --mac --publish always
 
 # The app must pass Gatekeeper as a notarised Developer ID app, or it won't open or update. Only then

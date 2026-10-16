@@ -30,7 +30,8 @@ win:
   # win.azureSignOptions block here (account and profile names) and AZURE_TENANT_ID, AZURE_CLIENT_ID
   # and AZURE_CLIENT_SECRET in the environment: not set up until one is chosen.
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
+  # ${productName}, not ${name}: the package is called "app".
+  artifactName: ${productName}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
@@ -54,7 +55,7 @@ mac:
   # (any other build) notarising is skipped with a warning. macOS installs updates only on a signed app.
   notarize: true
 dmg:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${productName}-${version}-arm64.${ext}
 npmRebuild: false
 # Releases, and the feed installed copies check for updates (src/main/updates): a public repo that
 # holds only the release files, so the app needs no token. The code stays private.
