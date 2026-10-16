@@ -15,6 +15,9 @@ const { build } = createRequire(resolve(here, '../../app/package.json'))('esbuil
 const out = await build({ entryPoints: [resolve(here, 'duet-engine-entry.ts')], bundle: true, format: 'iife', minify: true, target: 'es2020', write: false, outdir: here })
 const js = out.outputFiles.find((f) => f.path.endsWith('.js')).text.replace(/<\/script/g, '<\\/script')
 const css = out.outputFiles.find((f) => f.path.endsWith('.css')).text
+// Bundle Vercel Analytics
+const analyticsOut = await build({ entryPoints: [resolve(here, 'analytics-entry.ts')], bundle: true, format: 'iife', minify: true, target: 'es2020', write: false, outdir: here, external: [] })
+const analyticsJs = analyticsOut.outputFiles.find((f) => f.path.endsWith('.js')).text.replace(/<\/script/g, '<\\/script')
 // The app's own UI shown on the page (app-ui.json, copied from the app's design preview): only the
 // pieces the page names, each window's CSS once.
 const ui = JSON.parse(readFileSync(resolve(here, 'app-ui.json'), 'utf8'))
@@ -23,7 +26,7 @@ const named = [...source.matchAll(/data-ui="([\w-]+)"/g)].map((m) => m[1])
 const parts = Object.fromEntries(named.map((name) => [name, ui.parts[name]]))
 const groups = [...new Set(Object.values(parts).map((p) => p.group))]
 const uiJson = JSON.stringify({ css: Object.fromEntries(groups.map((g) => [g, ui.css[g]])), parts }).replace(/<\//g, '<\\/')
-const page = source.replace('/*ENGINE_CSS*/', () => css).replace('//ENGINE_JS', () => js).replace('/*APP_UI*/', () => uiJson)
+const page = source.replace('/*ENGINE_CSS*/', () => css).replace('//ENGINE_JS', () => js).replace('/*APP_UI*/', () => uiJson).replace('//ANALYTICS_JS', () => analyticsJs)
 
 const description = 'Learn a new language from the shows you already watch. Duet sits on your subtitles on YouTube, Netflix, Crunchyroll and Disney+. Join the waitlist.'
 const head = `<!doctype html>
