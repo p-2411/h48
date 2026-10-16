@@ -326,7 +326,7 @@ export class Flashcards {
     const id = `${card.language}|${said}`
     let clip = this.speech.get(id)
     if (!clip) {
-      const spoken = await tts.speak(said, card.language)
+      const spoken = await tts.speak(said, card.language, undefined, what)
       clip = { data: spoken.data, mimeType: spoken.mimeType }
       // A few clips are kept, so play and replay don't ask again.
       if (this.speech.size > 20) this.speech.delete(this.speech.keys().next().value!)

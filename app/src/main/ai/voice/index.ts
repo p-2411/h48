@@ -12,6 +12,7 @@
 //   OPENAI_API_KEY      a development key; without one, Duet's server with the learner's sign-in
 import { openAIAccess } from '../access'
 import { OpenAIDeliveryListener, OpenAIPronunciationCoach, OpenAISpeechToText, OpenAITextToSpeech } from './openai'
+import { SavedSpeech } from './saved'
 import type { DeliveryListener, PronunciationCoach, SpeechToText, TextToSpeech } from './types'
 
 export * from './types'
@@ -23,16 +24,23 @@ export type VoiceModels = {
   coach: PronunciationCoach
 }
 
-export function createVoiceModels(env: NodeJS.ProcessEnv = process.env): VoiceModels {
+/** `speechFolder`: where words and lines said are kept, to be played again with no request. */
+export function createVoiceModels(
+  env: NodeJS.ProcessEnv = process.env,
+  speechFolder?: string
+): VoiceModels {
   const provider = env.DUET_VOICE_PROVIDER?.toLowerCase() ?? 'openai'
   switch (provider) {
     case 'openai': {
       const access = openAIAccess(env)
       if (!access) throw new Error('Sign in to Duet to hear videos.')
+      const ttsModel = env.DUET_TTS_MODEL || 'gpt-4o-mini-tts'
+      const ttsVoice = env.DUET_LIVE_VOICE || 'marin'
+      const speech = new OpenAITextToSpeech(ttsModel, ttsVoice, access)
       return {
         speechToText: new OpenAISpeechToText(env.DUET_STT_MODEL || 'gpt-4o-mini-transcribe', access),
         listener: new OpenAIDeliveryListener(env.DUET_LISTEN_MODEL || 'gpt-audio-1.5', access),
-        tts: new OpenAITextToSpeech(env.DUET_TTS_MODEL || 'gpt-4o-mini-tts', env.DUET_LIVE_VOICE || 'marin', access),
+        tts: speechFolder ? new SavedSpeech(speech, speechFolder, `${ttsModel}|${ttsVoice}`) : speech,
         coach: new OpenAIPronunciationCoach(env.DUET_COACH_MODEL || 'gpt-audio-1.5', access)
       }
     }

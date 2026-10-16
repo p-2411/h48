@@ -9,6 +9,8 @@ export const explainApi = {
   onState: (listener: (state: ExplainState) => void) => subscribe('explain:state', listener),
   retry: () => ipcRenderer.send('explain:retry'),
   replay: () => ipcRenderer.send('explain:replay'),
+  /** The explained word said aloud by Duet's voice. */
+  sayWord: () => invoke<{ data: Uint8Array; mimeType: string }>('explain:say-word'),
   /** Turns of a voice conversation that just ended, to keep in the thread. */
   voiceTurns: (turns: { from: 'learner' | 'duet'; text: string }[]) => ipcRenderer.send('explain:voice-turns', turns),
   /** Voice is about to start: the conversation is this line's again (the strip may have taken it). */

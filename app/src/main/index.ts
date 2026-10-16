@@ -130,7 +130,8 @@ app.whenReady().then(() => {
 
   let voice: VoiceModels | undefined
   try {
-    voice = createVoiceModels()
+    // Words and lines said are kept on disk and played again from there.
+    voice = createVoiceModels(process.env, join(app.getPath('userData'), 'speech'))
   } catch {
     // No voice provider: Explain works from the words alone, and videos without captions go unheard.
   }
@@ -173,7 +174,8 @@ app.whenReady().then(() => {
     replay: replayMoment,
     panel,
     tutor,
-    hear
+    hear,
+    tts: voice?.tts
   })
   if (demo) cards.seedDemoFixtures(demoMoment())
   // Opens Explain on a line: the one on screen when no id is given (in demo mode, the demo line).

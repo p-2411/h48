@@ -180,14 +180,24 @@ export class OpenAITextToSpeech implements TextToSpeech {
     this.client = openAIClient(access)
   }
 
-  async speak(text: string, language: Language, signal?: AbortSignal): Promise<AudioClip> {
+  async speak(
+    text: string,
+    language: Language,
+    signal?: AbortSignal,
+    as: 'word' | 'line' = 'line'
+  ): Promise<AudioClip> {
     try {
       const response = await this.client.audio.speech.create(
         {
           model: this.model,
           voice: this.voice,
           input: text,
-          instructions: `Say this ${languageName(language)} line naturally, as a native speaker would in conversation, a little slower than usual so a learner can repeat it.`,
+          // A warm, natural voice, never a read-out: a word as a friendly teacher introduces it, a line
+          // as a native speaker says it.
+          instructions:
+            as === 'word'
+              ? `Say this ${languageName(language)} word on its own, warmly and clearly, with a native speaker's pronunciation and natural intonation, the way a friendly teacher introduces a new word. Not robotic, not exaggerated.`
+              : `Say this ${languageName(language)} line naturally and expressively, as a native speaker would in conversation, with real feeling, a little slower than usual so a learner can repeat it.`,
           response_format: 'mp3'
         },
         { signal, headers: { 'x-duet-feature': 'speech' } }
