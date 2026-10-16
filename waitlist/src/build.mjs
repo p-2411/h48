@@ -25,7 +25,7 @@ const groups = [...new Set(Object.values(parts).map((p) => p.group))]
 const uiJson = JSON.stringify({ css: Object.fromEntries(groups.map((g) => [g, ui.css[g]])), parts }).replace(/<\//g, '<\\/')
 const page = source.replace('/*ENGINE_CSS*/', () => css).replace('//ENGINE_JS', () => js).replace('/*APP_UI*/', () => uiJson)
 
-const description = 'Learn Japanese, Spanish or Korean from the shows you already watch. Duet sits on your subtitles on YouTube, Netflix, Crunchyroll and Disney+. Join the waitlist.'
+const description = 'Learn a new language from the shows you already watch. Duet sits on your subtitles on YouTube, Netflix, Crunchyroll and Disney+. Join the waitlist.'
 const head = `<!doctype html>
 <html lang="en">
 <head>
@@ -37,7 +37,7 @@ const head = `<!doctype html>
   <title>Duet, learn a language from what you watch</title>
   <meta name="description" content="${description}">
   <meta property="og:title" content="Duet">
-  <meta property="og:description" content="Your on-screen language teacher: learn Japanese, Spanish or Korean from the shows you already watch.">
+  <meta property="og:description" content="Your on-screen language teacher: learn a new language from the shows you already watch.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Duet">
   <meta property="og:url" content="https://useduet.io/">
