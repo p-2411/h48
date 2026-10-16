@@ -7,6 +7,7 @@ import type { WatchedVideoSummary } from '../../shared/home'
 import { pairKeys } from '../../shared/knowledge'
 import type { TalliedWord } from '../../shared/progress'
 import type { Language, OverlayLine, ProcessedLine, Site, WordJob } from '../../shared/types'
+import { shownTitle } from '../sources/title'
 import { database, readSetting, transaction, writeSetting } from '../store/db'
 import { studyDay } from '../study-day'
 import { streak, week, type DayRecord, type Streak, type WeekDay } from './streak'
@@ -63,7 +64,7 @@ function summary(row: VideoRow): WatchedVideoSummary {
     key: row.id,
     site: row.site,
     videoId: videoIdOf(row.id, row.site),
-    title: row.title ?? undefined,
+    title: shownTitle(row.site, row.title),
     position: row.position ?? undefined,
     lastWatched: row.last_watched,
     watchedMs: row.watched_ms

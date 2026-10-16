@@ -40,15 +40,17 @@ export function TodayTile({ onOpen }: { onOpen: (tile: HTMLElement) => void }): 
             </div>
           )}
           <ol className="hub-steps">
-            <li>
-              <b>1</b>Say a line back
-            </li>
-            <li>
-              <b>2</b>Review {today.due} cards
-            </li>
-            <li>
-              <b>3</b>One challenge
-            </li>
+            {[
+              'Say a line back',
+              // No review step when nothing is due.
+              ...(today.due > 0 ? [`Review ${today.due} ${today.due === 1 ? 'card' : 'cards'}`] : []),
+              'One challenge'
+            ].map((step, i) => (
+              <li key={step}>
+                <b>{i + 1}</b>
+                {step}
+              </li>
+            ))}
           </ol>
           <div className="hub-streak">
             <span className="hub-streak-days">

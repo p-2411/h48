@@ -1,8 +1,9 @@
 ﻿import type { HomeToday, WatchingVideo } from '../../shared/home'
 import { pairKeys } from '../../shared/knowledge'
 import { pairText } from '../../shared/levels'
-import type { Language, ProcessedLine } from '../../shared/types'
+import type { Language, ProcessedLine, Site } from '../../shared/types'
 import type { Knowledge } from '../knowledge'
+import { heardOn } from '../sources/title'
 import { database } from '../store/db'
 
 /** Derive the design's summaries from saved captions; no model call or fabricated data. */
@@ -55,9 +56,9 @@ export function todayWord(language: Language, knowledge: Knowledge): HomeToday['
   const found = new Map<string, { meaning: string; source?: string }>()
   const rows = database()
     .prepare(
-      'SELECT l.processed, v.title FROM lines l JOIN videos v ON v.id = l.video_id WHERE l.language = ? ORDER BY l.met_at DESC LIMIT 300'
+      'SELECT l.processed, v.title, v.site FROM lines l JOIN videos v ON v.id = l.video_id WHERE l.language = ? ORDER BY l.met_at DESC LIMIT 300'
     )
-    .all(language) as { processed: string; title: string | null }[]
+    .all(language) as { processed: string; title: string | null; site: Site }[]
   // Parse each saved caption once, even when many candidate words occur in it.
   for (const row of rows) {
     try {
@@ -65,7 +66,7 @@ export function todayWord(language: Language, knowledge: Knowledge): HomeToday['
       for (const word of pairKeys(language, line)) {
         if (!wanted.has(word.key) || found.has(word.key)) continue
         const meaning = pairText(line.english, word.pair)
-        if (meaning) found.set(word.key, { meaning, source: row.title ?? undefined })
+        if (meaning) found.set(word.key, { meaning, source: heardOn(row.site, row.title) })
       }
     } catch {
       /* Skip missing/damaged caption data. */
