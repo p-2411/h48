@@ -2,6 +2,7 @@
 // it is shown: a quote that is not in the line loses its highlight rather than pointing at words
 // that are not there.
 import type { Explanation } from '../../../shared/explain'
+import { languageModule } from '../../../shared/languages'
 import type { Moment } from '../../../shared/moment'
 import type { StructuredModel } from '../structured'
 import type { Delivery } from '../voice/types'
@@ -42,6 +43,16 @@ export class Explainer {
       why: output.why ?? undefined,
       alternative: output.alternative ?? undefined,
       limitation: output.limitation ?? undefined,
+      entry: output.entry
+        ? {
+            headword: output.entry.headword.trim(),
+            syllables: (languageModule(moment.language).syllables && output.entry.syllables?.trim()) || undefined,
+            ipa: output.entry.ipa?.trim().replace(/^[/[]|[/]]$/g, '') || undefined,
+            partOfSpeech: output.entry.partOfSpeech?.trim() || undefined,
+            usually: output.entry.usually?.trim() || undefined,
+            otherMeanings: output.entry.otherMeanings.map((meaning) => meaning.trim()).filter(Boolean).slice(0, 3)
+          }
+        : undefined,
       card: { ...output.card, situation: output.card.situation.trim() },
       model: this.model.name,
       version: EXPLAIN_VERSION

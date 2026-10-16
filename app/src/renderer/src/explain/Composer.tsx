@@ -7,11 +7,11 @@ import { focusMessageBox } from './focus'
 import { Icon } from '../components/Icon'
 
 // Common questions that fill in the message box (to send as is, or finish first): about a line, or
-// in a free conversation.
-const PILLS = {
+// in a free conversation. One that is already a whole request (send) goes to Duet at once.
+const PILLS: Record<'line' | 'free', { label: string; text: string; send?: boolean }[]> = {
   line: [
     { label: 'Explain more', text: 'Explain more' },
-    { label: 'Can I say this?', text: 'Can I say ' }
+    { label: 'Try saying it', text: 'Let me try saying this line.', send: true }
   ],
   free: [
     { label: 'How do I say…?', text: 'How do I say ' },
@@ -57,7 +57,7 @@ export function Composer({
     <>
       <div className="chips">
         {PILLS[free ? 'free' : 'line'].map((pill) => (
-          <button key={pill.label} type="button" className="pill" onClick={() => fill(pill.text)}>
+          <button key={pill.label} type="button" className="pill" onClick={() => (pill.send && !replying ? onSend(pill.text) : fill(pill.text))}>
             {pill.label}
           </button>
         ))}

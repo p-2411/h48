@@ -17,11 +17,30 @@ export type Explanation = {
   alternative?: { expression: string; changes: string }
   /** Missing context or doubt that affects the answer. */
   limitation?: string
+  /** The dictionary entry for the expression most worth learning in the line (card.expression), as
+   * the back of a card shows it; absent when the line has none (and in older explanations). */
+  entry?: DictionaryEntry
   /** A starting point for a card, edited before saving. */
   card: { expression: string; meaning: string; target: string; situation: string }
   /** Who wrote it: the model, and the version of the instructions it had. */
   model: string
   version: number
+}
+
+/** A word or phrase as a dictionary gives it. The meaning that matches the line is card.meaning. */
+export type DictionaryEntry = {
+  /** Its dictionary form (the infinitive, the singular), with its article for a noun ("la sartén"). */
+  headword: string
+  /** The headword split into syllables with middle dots ("ma·dru·gar"), when it is one word. */
+  syllables?: string
+  /** How it is said, in IPA, without slashes. */
+  ipa?: string
+  /** Part of speech, short ("verb", "noun, feminine", "phrase"). */
+  partOfSpeech?: string
+  /** What it usually means, when that differs from its meaning in this line. */
+  usually?: string
+  /** Its other common meanings, a few words each. */
+  otherMeanings: string[]
 }
 
 /** Whether Explain could hear the line: heard; asking for the permission (first time); not allowed;

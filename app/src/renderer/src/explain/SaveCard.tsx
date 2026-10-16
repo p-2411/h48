@@ -100,7 +100,7 @@ export function SaveCard({
     )
   return (
     <>
-      <button type="button" className="btn" disabled={step.name === 'saving'} onClick={save}>
+      <button type="button" className="btn primary" disabled={step.name === 'saving'} onClick={save}>
         Save
       </button>
       {error && (

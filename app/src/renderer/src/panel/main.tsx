@@ -2,6 +2,8 @@ import '../styles/base.css'
 import '../styles/ui.css'
 import '../explain/explain.css'
 import '../review/review.css'
+import '../home/workspace.css'
+import '../home/pages.css'
 import './panel.css'
 
 import { StrictMode } from 'react'

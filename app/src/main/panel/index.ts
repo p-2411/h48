@@ -8,6 +8,8 @@
 //   panel:tab / panel:script / panel:script-line / panel:current   ← updates
 //   panel:set-tab      the learner switched tabs
 //   panel:seek         goes back to a line
+//   panel:get-look     → { dark }: the home base's look, which the panel follows
+//   panel:look         ← the look changed
 import { EventEmitter } from 'events'
 import { ipcMain, type BrowserWindow } from 'electron'
 import type { Moment } from '../../shared/moment'
@@ -20,6 +22,7 @@ import { createPanelWindow } from '../windows/panel'
 export class Panel extends EventEmitter {
   private window?: BrowserWindow
   private tab: PanelTab = 'script'
+  private dark = false
 
   constructor(
     private readonly options: { watcher: Watcher; settings: Settings; replay: (moment: Moment) => void }
@@ -27,6 +30,7 @@ export class Panel extends EventEmitter {
     super()
     const { watcher, replay } = options
     ipcMain.handle('panel:get-state', () => ({ tab: this.tab, script: watcher.script, current: watcher.currentLine?.id ?? null }))
+    ipcMain.handle('panel:get-look', () => ({ dark: this.dark }))
     ipcMain.on('panel:set-tab', (_, tab: PanelTab) => (this.tab = tab))
     ipcMain.on('panel:seek', (_, lineId: number) => {
       const moment = watcher.moment(lineId)
@@ -42,6 +46,7 @@ export class Panel extends EventEmitter {
     this.tab = tab
     if (!this.window || this.window.isDestroyed()) {
       const window = (this.window = createPanelWindow(this.options.settings.current.panelBounds))
+      window.setBackgroundColor(ground(this.dark))
       // Saved once the learner stops moving or resizing it.
       let saving: NodeJS.Timeout | undefined
       const save = (): void => {
@@ -61,6 +66,14 @@ export class Panel extends EventEmitter {
     }
   }
 
+  /** Draws the panel light or dark, as the home base is. */
+  setDark(dark: boolean): void {
+    if (dark === this.dark) return
+    this.dark = dark
+    if (this.window && !this.window.isDestroyed()) this.window.setBackgroundColor(ground(dark))
+    this.send('panel:look', { dark })
+  }
+
   /** Whether a message came from the panel's page (the only page allowed to talk to the tutor). */
   owns(sender: Electron.WebContents): boolean {
     return isFrom(this.window, sender)
@@ -69,4 +82,9 @@ export class Panel extends EventEmitter {
   send(channel: string, payload: unknown): void {
     if (this.window && !this.window.isDestroyed()) this.window.webContents.send(channel, payload)
   }
+}
+
+/** The paper the panel is drawn on (home-tokens.css's --ground), shown before the page paints. */
+function ground(dark: boolean): string {
+  return dark ? '#121313' : '#f2f3f3'
 }

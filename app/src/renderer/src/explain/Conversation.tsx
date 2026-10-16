@@ -11,7 +11,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import { createPortal } from 'react-dom'
 import type { Language } from '../../../shared/languages'
 import { say } from '../components/errors'
-import { Mascot, type MascotState } from '../components/Mascot'
+import { DuetMascot } from '../components/duet/DuetMascot'
+import { useConversationAnimation } from '../components/duet/useConversationAnimation'
 import { pop } from '../components/motion'
 import { CardPreview, OpenedCard } from './CardPreview'
 import { Composer } from './Composer'
@@ -21,40 +22,7 @@ import { useCardActions } from './useCardActions'
 import { useTurnAids } from './useTurnAids'
 import { useEnglishHelp, useVoiceHandoff } from './useVoiceHandoff'
 import { VoiceBar } from './VoiceBar'
-import { voiceMascotState } from './voice/status'
-import { isVoiceOn, useLiveTutor, type TutorLiveStatus } from './voice/useLiveTutor'
-
-// How long the mascot gently corrects after a reply that corrects the learner: one cycle of its
-// correction animation (mascot.css).
-const CORRECTION_MS = 3_800
-
-/** What the mascot shows: pleased for a moment after a save, gently correcting for a moment after a
- * reply that corrects the learner, else what voice is doing (voice/status.ts), or thinking while a
- * typed reply is on its way. */
-function mascotState(
-  status: TutorLiveStatus,
-  replying: boolean,
-  cheering: boolean,
-  correcting: boolean
-): MascotState {
-  if (cheering) return 'success'
-  const voice = voiceMascotState(status)
-  if (voice !== 'idle') return voice
-  if (replying) return 'thinking'
-  return correcting ? 'correction' : 'idle'
-}
-
-/** Whether the turn `turnId` (Duet's newest reply, when it corrects the learner) is still being
- * shown as a correction: true from when it arrives until CORRECTION_MS later. */
-function useCorrection(turnId: string | undefined): boolean {
-  const [done, setDone] = useState<string>()
-  useEffect(() => {
-    if (!turnId || turnId === done) return
-    const timer = window.setTimeout(() => setDone(turnId), CORRECTION_MS)
-    return () => window.clearTimeout(timer)
-  }, [turnId, done])
-  return !!turnId && turnId !== done
-}
+import { isVoiceOn, useLiveTutor } from './voice/useLiveTutor'
 
 export function Conversation({
   state,
@@ -131,9 +99,16 @@ export function Conversation({
 
   // A failed text reply can be asked again: main sends the same message without adding it twice.
   const last = state.chat.at(-1)
-  const correcting = useCorrection(
-    last?.from === 'duet' && last.correction ? `c${state.chat.length - 1}` : undefined
-  )
+  const animation = useConversationAnimation({ live, chat: state.chat, replying: !!state.replying || !!state.loading, cheering: cards.cheering })
+  // While Duet answers (thinking, writing, speaking) it keeps to its own animation instead of
+  // following the cursor.
+  const answering =
+    !!state.replying ||
+    !!state.loading ||
+    animation.speaking ||
+    live.status === 'working' ||
+    animation.state === 'thinking' ||
+    animation.state === 'speaking'
   const unanswered =
     state.chatError &&
     !state.replying &&
@@ -255,11 +230,13 @@ export function Conversation({
 
       {mascotSlot &&
         createPortal(
-          <div className="head-mascot">
-            <Mascot
-              state={mascotState(live.status, !!state.replying || !!state.loading, cards.cheering, correcting)}
-              scale={mascotScale}
+          <div className="head-mascot" style={{ width: 420 * mascotScale, height: 190 * mascotScale }}>
+            <DuetMascot
+              {...animation}
+              width={420 * mascotScale}
+              wake
               speechAudio={live.playback}
+              watch={answering ? 'off' : 'window'}
             />
           </div>,
           mascotSlot

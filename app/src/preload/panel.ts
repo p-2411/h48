@@ -14,6 +14,9 @@ export const panelApi = {
   /** One line added or changed (translated, say). */
   onScriptLine: (listener: (line: OverlayLine) => void) => subscribe('panel:script-line', listener),
   onCurrent: (listener: (id: number | null) => void) => subscribe('panel:current', listener),
+  /** The home base's look, light or dark, which the panel follows. */
+  getLook: () => invoke<{ dark: boolean }>('panel:get-look'),
+  onLook: (listener: (look: { dark: boolean }) => void) => subscribe('panel:look', listener),
   /** Goes back to a line in the video. */
   seek: (lineId: number) => ipcRenderer.send('panel:seek', lineId)
 }

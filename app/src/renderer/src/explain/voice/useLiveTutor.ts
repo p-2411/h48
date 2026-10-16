@@ -93,6 +93,9 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
   usageSeconds: number
   /** Existing tutor playback, available to the optional visual mouth meter. */
   playback: RefObject<HTMLAudioElement | null>
+  /** Existing input stream for local visual listening reactions, never another capture. */
+  microphone: RefObject<MediaStream | null>
+  animationSession: number
   start: (preserveConversation?: boolean) => Promise<void>
   end: () => void
   toggleMicrophone: () => void
@@ -120,6 +123,7 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
   const [tutorMuted, setTutorMuted] = useState(false)
   const [speakerBlocked, setSpeakerBlocked] = useState(false)
   const [usageSeconds, setUsageSeconds] = useState(0)
+  const [animationSession, setAnimationSession] = useState(0)
   const connection = useRef<RTCPeerConnection | null>(null)
   const channel = useRef<RTCDataChannel | null>(null)
   const microphone = useRef<MediaStream | null>(null)
@@ -144,6 +148,7 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
 
   const release = useCallback((next: TutorLiveStatus = 'ended') => {
     generation.current += 1
+    setAnimationSession(generation.current)
     healthySince.current = undefined
     window.clearTimeout(closeTimer.current)
     window.clearTimeout(replyFallbackTimer.current)
@@ -575,6 +580,8 @@ export function useLiveTutor(language?: Language, topic: VoiceTopic = 'line'): {
     speakerBlocked,
     usageSeconds,
     playback: speaker,
+    microphone,
+    animationSession,
     start,
     end,
     toggleMicrophone,
