@@ -1,7 +1,8 @@
 // Builds the site's home page: bundles the app's mascot engine (app/src/renderer/src/components/duet)
 // and inlines it into page.html, under the head below, as app/index.html. Vercel serves app/ as it
 // is (no build step there), so run this after changing page.html or the engine, and commit the result.
-//   npm run build   (in waitlist/; needs npm install in app/ for esbuild and the engine)
+//   npm run build:page   (in waitlist/; needs npm install in app/ for esbuild and the engine). Not
+// named "build": Vercel runs a "build" script when there is one, and app/ is served as committed.
 // The page's pictures are in app/a/, its fonts in app/fonts/.
 import { createRequire } from 'module'
 import { readFileSync, writeFileSync } from 'fs'
