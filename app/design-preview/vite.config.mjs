@@ -21,7 +21,7 @@ export default defineConfig({
           .replace(/<meta\s+http-equiv="Content-Security-Policy"[\s\S]*?\/>/, '')
           .replace(
             '<head>',
-            `<head><script src="${fs('mock-duet.js')}"></script>`
+            `<head><script src="${fs('mock-duet.js')}"></script><script type="module" src="${fs('mock-flashcards.ts')}"></script>`
           )
     }
   ]

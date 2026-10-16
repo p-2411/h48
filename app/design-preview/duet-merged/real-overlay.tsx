@@ -119,7 +119,7 @@ export function mountOverlay(host: HTMLElement, css: string): OverlayDemo {
       end: async () => undefined,
       onKeys: nothing
     },
-    tutor: { onActionResult: nothing },
+    tutor: new Proxy({}, { get: (_t, k) => (String(k).startsWith('on') ? nothing : () => Promise.reject(new Error('Only in the app.'))) }),
     setReminder: async () => undefined,
     openSettings: () => undefined,
     showScript: () => undefined,
