@@ -93,7 +93,6 @@ export function Watching(): React.JSX.Element {
             >
               <span className="video-frame">
                 <Thumbnail video={video} />
-                {video.subtitle && <span className="video-subtitle">{video.subtitle}</span>}
               </span>
               <span className="home-video-title">{video.title ?? `${video.siteName} video`}</span>
               <span className="faint">
@@ -147,7 +146,7 @@ export function FloatingWatching(): React.JSX.Element {
       >
         <Thumbnail video={video} />
         <span className="floating-caption">
-          {video.subtitle ?? video.title ?? video.siteName}
+          {video.title ?? video.siteName}
           {video.position !== undefined && ` · ${clock(video.position)}`}
         </span>
       </button>

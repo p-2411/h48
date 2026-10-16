@@ -20,28 +20,7 @@
 .language-list button { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 10px; border-radius: 8px; font-size: 13px; text-align: left; }
 .language-list button:hover, .language-list button:focus-visible { background: var(--fill); outline: none; }
 
-/* The hub: Today down the left, Continue watching across the top right, Your words and Talk below. */
-.hub {
-  position: absolute;
-  inset: 52px 0 0 0;
-  padding: 0 20px 20px;
-  display: grid;
-  gap: 12px;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
-}
-.tile-today { grid-row: 1 / 3; }
-.tile-watching { grid-column: 2 / 4; }
-/* Narrower windows: two columns, Today across the top. */
-@media (max-width: 900px) {
-  .hub { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: auto; align-content: start; overflow-y: auto; }
-  /* Each tile as tall as what it shows (the hub scrolls instead); Your words and Talk a little
-     taller, for their message box and Review. */
-  .hub .tile { overflow: visible; min-height: auto; }
-  .hub .tile-words, .hub .tile-talk { min-height: 240px; }
-  .tile-today { grid-row: auto; grid-column: 1 / 3; }
-  .tile-watching { grid-column: 1 / 3; }
-}
+/* The hub's layout is the workspace's (workspace.css: .hub, .hub-slot). */
 
 /* A tile: its title (the button that opens it), then what it shows. It stays still under the
    pointer; the whole of it opens its page. */

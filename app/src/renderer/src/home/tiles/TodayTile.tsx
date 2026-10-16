@@ -1,6 +1,7 @@
 ﻿import type { HomeToday } from '../../../../shared/home'
 import { useLoaded } from '../useLoaded'
 import { Tile } from './Tile'
+import { TodayWord } from './TodayWord'
 const loadToday = (): Promise<HomeToday> => window.duet.home.getToday()
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 export function TodayTile({ onOpen }: { onOpen: (tile: HTMLElement) => void }): React.JSX.Element {
@@ -25,15 +26,7 @@ export function TodayTile({ onOpen }: { onOpen: (tile: HTMLElement) => void }): 
               : 'Watch something with Duet and today’s session builds itself from it.'}
           </p>
 
-          {today.word && (
-            <div className="today-word">
-              <span className="label">Your word for today</span>
-              <span className="word-large" data-k={today.word.state}>
-                {today.word.word}
-              </span>
-              <p>{today.word.meaning}</p>
-            </div>
-          )}
+          {today.word && <TodayWord word={today.word} />}
           <ol className="hub-steps">
             {[
               'Say a line back',

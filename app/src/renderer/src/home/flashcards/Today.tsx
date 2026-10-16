@@ -1,20 +1,18 @@
 // Review, before a session: the cards waiting today in one line with Start, the words up today, the
-// ladder as one bar (a step opens Words on it), and a quiet Make a card.
+// ladder as one bar (a step opens Words on it). Make a card is on Collections.
 import { STEP_LABELS, STEPS, type Step, type TodayView } from '../../../../shared/flashcards'
 
 export function Today({
   today,
   flash,
   onStart,
-  onStep,
-  onMake
+  onStep
 }: {
   today?: TodayView
   /** A word just kept with Make a card. */
   flash?: string
   onStart: () => void
   onStep: (step: Step) => void
-  onMake: () => void
 }): React.JSX.Element {
   if (!today) return <div className="fc-today" />
   const words = STEPS.reduce((sum, step) => sum + today.ladder[step], 0)
@@ -93,11 +91,6 @@ export function Today({
           </div>
         </div>
       )}
-      <div className="fc-today-foot">
-        <button type="button" className="quiet" style={{ paddingLeft: 0 }} onClick={onMake}>
-          Make a card
-        </button>
-      </div>
     </div>
   )
 }

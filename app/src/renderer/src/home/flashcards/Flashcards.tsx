@@ -36,7 +36,8 @@ import './flashcards.css'
 
 type View = 'review' | 'words' | 'collections'
 type Notice = { text: string; error?: boolean; undo?: () => void }
-/** What Review shows: today, a session (and where Back goes), or Make a card. */
+/** What the view shows: Review's today or a session (and where Back goes), or Make a card (on
+ * Collections). */
 type Mode =
   | { kind: 'today' }
   | { kind: 'make'; word?: string }
@@ -210,7 +211,7 @@ export function Flashcards({
 
   const switchTo = (next: View): void => {
     setView(next)
-    if (next !== 'review' && mode.kind === 'make') setMode({ kind: 'today' })
+    if (next !== 'collections' && mode.kind === 'make') setMode({ kind: 'today' })
     setNotice(undefined)
   }
 
@@ -239,7 +240,7 @@ export function Flashcards({
             ))}
           </div>
           <span className="grow" />
-          {view === 'review' && mode.kind === 'make' && (
+          {view === 'collections' && mode.kind === 'make' && (
             <button type="button" className="quiet" onClick={() => setMode({ kind: 'today' })}>
               Cancel
             </button>
@@ -296,12 +297,13 @@ export function Flashcards({
               api={sample}
             />
           )}
-          {view === 'review' && mode.kind === 'make' && language && (
+          {view === 'collections' && mode.kind === 'make' && language && (
             <MakeCard
               language={language}
               initial={mode.word}
               onKept={(word, another) => {
                 setFlash(word)
+                setNotice({ text: `${word} is in your reviews.` })
                 if (!another) setMode({ kind: 'today' })
               }}
             />
@@ -316,11 +318,6 @@ export function Flashcards({
                 setSelected(undefined)
                 switchTo('words')
               }}
-              onMake={() => {
-                if (touring) return notOnTour()
-                setFlash(undefined)
-                setMode({ kind: 'make' })
-              }}
             />
           )}
           {view === 'words' && (
@@ -334,7 +331,7 @@ export function Flashcards({
               onAsk={touring ? notOnTour : onPractise}
               onMake={(word) => {
                 if (touring) return notOnTour()
-                setView('review')
+                setView('collections')
                 setMode({ kind: 'make', word })
               }}
               onNotice={setNotice}
@@ -342,7 +339,7 @@ export function Flashcards({
               sample={touring}
             />
           )}
-          {view === 'collections' && (
+          {view === 'collections' && mode.kind !== 'make' && (
             <Collections
               piles={shownPiles}
               videos={shownVideos}
@@ -353,6 +350,11 @@ export function Flashcards({
                 startSession({ kind: 'video', video: id }, 'collections', 'Collections')
               }
               onAnki={() => setNotice({ text: 'Bringing in Anki decks is coming soon.' })}
+              onMake={() => {
+                if (touring) return notOnTour()
+                setFlash(undefined)
+                setMode({ kind: 'make' })
+              }}
             />
           )}
         </section>

@@ -1,7 +1,16 @@
 // The dictionary entry: a card's back, and the word in Words, look the same. Headword in syllables
 // with its step's highlighter, sound and part of speech, the meaning that fits, where it was last
 // heard (like a dictionary's quotation), and one folded row of tips.
-import { mmss, type DictEntry, type LastHeard, type SplitLine, type Step, type Tip } from '../../../../shared/flashcards'
+import {
+  mmss,
+  STEP_LABELS,
+  STEPS,
+  type DictEntry,
+  type LastHeard,
+  type SplitLine,
+  type Step,
+  type Tip
+} from '../../../../shared/flashcards'
 import { icons, times } from './bits'
 
 export type EntryData = {
@@ -30,6 +39,21 @@ export function ByDuet(): React.JSX.Element {
 /** The step a word is on, as a dot in its colour. */
 export function StepDot({ step }: { step: Step }): React.JSX.Element {
   return <span className="dot" data-step={step} aria-hidden="true" />
+}
+
+/** The four steps as bars, filled up to the word's, with its name under that bar. */
+export function StepBars({ step, ignored }: { step: Step; ignored?: boolean }): React.JSX.Element {
+  const at = STEPS.indexOf(step)
+  return (
+    <span className="fc-ladder-mini" data-step={step}>
+      {STEPS.map((each, index) => (
+        <span key={each} className={`fc-rung${index <= at ? ' on' : ''}`}>
+          <span className="fc-rung-bar" aria-hidden="true" />
+          {index === at && <span className="fc-rung-name">{ignored ? 'Ignored' : STEP_LABELS[step]}</span>}
+        </span>
+      ))}
+    </span>
+  )
 }
 
 /** A line with its word bold. */

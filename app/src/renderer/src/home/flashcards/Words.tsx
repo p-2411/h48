@@ -17,7 +17,7 @@ import { say } from '../../components/errors'
 import { filterWords, joinWords } from '../words/join'
 import type { WordsData } from '../words/useWordsData'
 import { icons } from './bits'
-import { ByDuet, Entry } from './Entry'
+import { ByDuet, Entry, StepBars } from './Entry'
 import type { WordApi } from './sample'
 
 type Notice = { text: string; error?: boolean; undo?: () => void }
@@ -87,7 +87,6 @@ function Detail({
   if (error) return <p className="fc-pick">{error}</p>
   if (!word || word.key !== wordKey) return <div className="fc-detail" />
   const card = word.cards[0]
-  const stepIndex = STEPS.indexOf(word.step)
   if (editing)
     return (
       <div className="fc-detail">
@@ -119,19 +118,7 @@ function Detail({
   return (
     <div className="fc-detail" data-tour="word">
       <div className="fc-step-row" data-step={word.step}>
-        {/* The four steps as bars, filled up to the word's, its name under that bar. */}
-        <span className="fc-ladder-mini">
-          {STEPS.map((step, index) => (
-            <span key={step} className={`fc-rung${index <= stepIndex ? ' on' : ''}`}>
-              <span className="fc-rung-bar" aria-hidden="true" />
-              {index === stepIndex && (
-                <span className="fc-rung-name">
-                  {word.ignored ? 'Ignored' : STEP_LABELS[word.step]}
-                </span>
-              )}
-            </span>
-          ))}
-        </span>
+        <StepBars step={word.step} ignored={word.ignored} />
         {word.nextReview !== undefined && (
           <span className="fc-next-due">
             {word.paused

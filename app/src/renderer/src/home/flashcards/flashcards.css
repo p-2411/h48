@@ -1201,6 +1201,48 @@
 }
 
 /* Collections: piles of index cards, and videos with their words. */
+/* Collections' Make a card: a round plus, top right, that slides out to its words when pointed at. */
+.fc-add-card {
+  align-self: flex-end;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 10px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  background: var(--ink);
+  color: var(--on-ink);
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    gap 0.25s var(--settle),
+    padding 0.25s var(--settle);
+}
+/* Outranks the page's plain buttons (no background). */
+.fc .fc-add-card {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.fc-add-card-label {
+  max-width: 0;
+  opacity: 0;
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    max-width 0.3s var(--settle),
+    opacity 0.2s ease;
+}
+.fc-add-card:hover,
+.fc-add-card:focus-visible {
+  gap: 6px;
+  padding: 0 14px 0 10px;
+}
+.fc-add-card:hover .fc-add-card-label,
+.fc-add-card:focus-visible .fc-add-card-label {
+  max-width: 120px;
+  opacity: 1;
+}
 .fc-cols {
   flex-grow: 1;
   min-height: 0;
@@ -1933,4 +1975,21 @@
   padding: 10px 14px 14px;
   gap: 0;
   overflow: hidden;
+}
+
+/* A word page's entry shown in the home's Today tile (tiles/TodayWord.tsx): no page around it. */
+.fc.fc-in-tile {
+  height: auto;
+  margin-top: 6px;
+}
+.fc-in-tile .fc-detail {
+  padding: 0;
+  gap: 8px;
+  overflow: visible;
+}
+.fc-in-tile .fc-entry {
+  gap: 8px;
+}
+.fc-in-tile .fc-hw {
+  font-size: 38px;
 }
