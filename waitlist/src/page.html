@@ -105,25 +105,11 @@ button { font: inherit }
 .meta.error { color: var(--ink); font-weight: 600 }
 .done { margin-top: 14px; font-size: 15px; font-weight: 600; color: var(--w-use) }
 
-/* The caption window over a scene, as you'd see it on a film. */
+/* The caption window over a scene, as you'd see it on a film: the app's own (below, "The app's UI"). */
 .video { padding-block: 24px 64px }
 .scene { position: relative; border-radius: 28px; overflow: hidden; aspect-ratio: 16 / 9; background: #080d0d }
 .scene > img { width: 100%; height: 100%; object-fit: cover; object-position: 30% 50%; display: block }
-.cap-wrap { position: absolute; left: 0; right: 0; bottom: 44px; display: flex; justify-content: center; padding: 0 64px; font-family: var(--ui); color: #f5f5f7 }
-.cap-box { position: relative; display: flex; flex-direction: column; align-items: stretch }
-.cap-box .anchor { position: absolute; left: 0; bottom: calc(100% + 14px); width: 140px; height: 92px }
-.cap-tools { display: flex; align-items: center; gap: 4px; padding: 0 8px 6px }
-.cap-tools span, .cap-face { width: 28px; height: 28px; border-radius: 50%; background: rgba(30,30,32,0.92); border: 0.5px solid rgba(255,255,255,0.1); display: grid; place-items: center; box-sizing: border-box }
-.cap-tools .lvl { font-size: 13px; font-weight: 600; color: #ffffff }
-.cap-tools .gap { flex: 1; width: auto; background: none; border: 0 }
-.cap-tools .explain { width: auto; height: 28px; padding: 0 11px; border-radius: 999px; background: #ffffff; color: #111111; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center }
-.cap-face { position: absolute; right: calc(100% + 8px); bottom: 1px; width: 36px; height: 36px }
-.cap-strip { position: relative; min-width: 320px; max-width: 860px; padding: 10px 46px 12px 20px; border-radius: 18px; background: rgba(30,30,32,0.92); border: 0.5px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; gap: 6px; text-align: left }
-.cap-strip .live { position: absolute; top: 9px; right: 10px; width: 7px; height: 7px; border-radius: 50%; background: #32d74b; box-shadow: 0 0 6px #32d74b }
-.cap-line { font-size: 24px; line-height: 1.3; letter-spacing: -0.012em; color: #b4b4b8 }
-.cap-orig { font-size: 16px; line-height: 1.4; color: #f5f5f7 }
-.cap-en { font-size: 13.5px; line-height: 1.45; color: rgba(235,235,245,0.6) }
-.c-heard { color: #ffd60a; font-weight: 500 } .c-known { color: #ff9f0a; font-weight: 500 } .c-say { color: #4da3ff; font-weight: 500 } .c-plain { color: #f5f5f7 }
+.scene .anchor { position: absolute; width: 140px; height: 92px }
 
 /* Between features: a short brush stroke at the headline's left edge, in the next feature's colour,
    with more air outside a feature than inside it. */
@@ -157,75 +143,32 @@ button { font: inherit }
 .vig { margin-left: 228px }
 .panel { border-radius: 28px; padding: 28px; background-color: var(--honey) }
 .panel.aqua { background-color: var(--aqua) } .panel.foam { background-color: var(--foam) } .panel.lilac { background-color: var(--lilac) } .panel.peach { background-color: var(--peach) }
-.card { background: var(--card); border-radius: 18px; box-shadow: 0 10px 26px -22px var(--shadow) }
 .duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: end }
-.duo.wide { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start }
-.hl-heard { background: linear-gradient(transparent 55%, var(--mark-heard) 55%, var(--mark-heard) 92%, transparent 92%); padding: 0 2px }
-.hl-known { background: linear-gradient(transparent 55%, var(--mark-known) 55%, var(--mark-known) 92%, transparent 92%); padding: 0 2px }
-.hl-say { background: linear-gradient(transparent 55%, var(--mark-say) 55%, var(--mark-say) 92%, transparent 92%); padding: 0 2px }
-/* Duet's caption strip, small, inside a feature. */
-.strip { margin: 0; flex: 1; background: rgba(30,30,32,0.92); border: 0.5px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 10px 18px; font: 19px/1.35 var(--ui); color: #b4b4b8 }
-/* Chat bubbles: Duet's on the card, yours in ink. */
-.from-duet { align-self: flex-start; background: var(--card); border-radius: 18px 18px 18px 6px; padding: 11px 14px; font-size: 15px; line-height: 1.5 }
-.from-you { align-self: flex-end; background: var(--ink); color: var(--on-ink); border-radius: 18px 18px 6px 18px; padding: 10px 14px; font-size: 15px }
-.pills { display: flex; flex-wrap: wrap; gap: 6px }
-.pills span { padding: 6px 12px; border-radius: 999px; background: var(--chip); font-size: 13px }
 
-/* Watch: the services, and where you left off. */
+/* Watch: the services Duet works on. */
 .plat { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px }
-.tile { padding: 16px 18px; min-height: 104px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between }
-.tile .logo { height: 28px; display: flex; align-items: center }
-.tile b { font-size: 16px } .tile small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--sub) }
-.resume { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 12px }
-.thumb { position: relative; width: 132px; height: 74px; border-radius: 12px; overflow: hidden; flex: none; background: #2a2622 }
-.thumb img { width: 100%; height: 100%; object-fit: cover; display: block }
-.thumb i { position: absolute; left: 0; bottom: 0; height: 3px; width: 30%; background: #e0583a }
-.resume-text { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
-.resume-text small { font-size: 12px; color: var(--sub) } .resume-text span { font-size: 13px; color: var(--sub) }
-.resume-words { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; font-size: 14px }
-
-/* Level: the same line at levels 1, 3 and 5. */
-.levels { display: flex; flex-direction: column; gap: 10px }
-.lv { display: flex; align-items: center; gap: 14px }
-.lv b { width: 28px; height: 28px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 13px; font-weight: 600; background: var(--card); color: var(--ink) }
-.lv b.on { background: var(--ink); color: var(--on-ink) }
-.legend { margin: 8px 0 0 42px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink2) }
+.ptile { background: var(--card); border-radius: 18px; box-shadow: 0 10px 26px -22px var(--shadow); padding: 16px 18px; min-height: 104px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between }
+.ptile .logo { height: 28px; display: flex; align-items: center }
+.ptile b { font-size: 16px } .ptile small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--sub) }
+.ui-gap { margin-top: 12px }
+.legend { margin: 14px 0 0 4px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink2) }
 .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px }
 
-/* Ask: the word card over the line, and a question about it. */
-.wordcard { background: #ffffff; color: #111111; border-radius: 12px; padding: 10px 13px; display: flex; flex-direction: column; gap: 2px; width: 236px; max-width: 100%; box-sizing: border-box; box-shadow: 0 14px 30px -20px rgba(0,0,0,0.5); font-family: var(--ui) }
-.wordcard .top { display: flex; align-items: baseline; gap: 12px; font-size: 11px }
-.wordcard .kind { font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #555555 }
-.wordcard .seen { margin-left: auto; font-weight: 500; color: #7a5e00 }
-.wordcard b { font-size: 18px; font-weight: 600 } .wordcard > span:not(.top):not(.acts) { font-size: 13px }
-.wordcard .acts { display: flex; gap: 6px; margin-top: 6px }
-.wordcard .acts span { white-space: nowrap; padding: 4px 9px; border-radius: 999px; background: #efeff2; font-size: 12px; font-weight: 500 }
+/* A screen: the caption window's pieces over a dimmed scene, as they'd sit on a video. */
+.screen { position: relative; border-radius: 20px; padding: 24px; background: linear-gradient(rgba(10,12,12,0.72), rgba(10,12,12,0.82)), url(./a/scene.jpg) 30% 50% / cover; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px; color: #f5f5f7 }
+.screen.tall { min-height: 300px; padding-top: 170px }
+.levels .lv, .steps .step { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100% }
+.levels .lv span, .steps .step span { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: rgba(235,235,245,0.6) }
+.steps { gap: 22px }
+.duo.cards { align-items: start }
+.duo.grow { align-items: stretch }
 
-/* Speak: a voice message, and Duet's note on how it sounded. */
-.voice { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 18px 18px 6px 18px; background: var(--ink); color: var(--on-ink) }
-.voice .bars { display: flex; align-items: center; gap: 2px; height: 18px }
-.voice .bars i { width: 2px; border-radius: 1px; background: currentColor }
-.tip { align-self: flex-start; max-width: 82%; background: var(--card); border: 1px solid var(--line2); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px }
-
-/* Remember: a review card, and the quick question at a pause. */
-.review { padding: 20px 22px; border-radius: 20px }
-.review .bar { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--sub) }
-.track { flex: 1; height: 4px; border-radius: 2px; background: var(--track); overflow: hidden }
-.track i { display: block; height: 100%; background: #3fb579 }
-.grades { margin-top: 16px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; text-align: center }
-.grades span { padding: 8px 0; border-radius: 12px; background: var(--soft); font-size: 13px; font-weight: 600; display: flex; flex-direction: column; gap: 1px }
-.grades i { font-style: normal; font-size: 11px; font-weight: 500; color: var(--sub) }
-.grades .good { background: #3fb579; color: #0f2a19 } .grades .good i { color: inherit }
-.glow { position: relative; font-family: var(--ui) }
-.glow::before { content: ""; position: absolute; inset: -6px; border-radius: 22px; background: conic-gradient(from 40deg, #bc82f3, #f5b9ea, #8d9fff, #ff6778, #ffba71, #c686ff, #bc82f3); filter: blur(10px); opacity: 0.55 }
-.glow div { position: relative; background: rgba(30,30,32,0.95); border-radius: 18px; padding: 12px 16px; color: #f5f5f7; display: flex; flex-direction: column; gap: 6px }
-
-/* Grow: today's session, and your words by rung. */
-.ring { width: 20px; height: 20px; border-radius: 50%; flex: none; box-sizing: border-box }
-.counts { margin-top: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px }
-.counts p { display: flex; flex-direction: column }
-.counts b { font-family: var(--serif); font-size: 36px; font-weight: 400; line-height: 1 }
-.counts span { font-size: 12px; color: var(--sub) }
+/* The app's UI: each piece is the app's own markup and CSS (src/app-ui.json), in a shadow root of
+   its own so the two can't touch, kept still (inert) and labelled for screen readers. */
+/* The window's root rules (:host here) fill and clip the window; a piece's host only holds it. */
+[data-ui] { display: block; width: 100%; max-width: 100%; min-width: 0; height: auto; margin: 0; overflow: visible; background: none }
+.scene .over { position: absolute; left: 16px; right: 16px; bottom: 5%; width: auto }
+.duo > *, .screen > * { min-width: 0 }
 
 /* The closing call: Duet on top, the words and the form under it. */
 .closing { padding-bottom: 96px }
@@ -266,16 +209,15 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   .hero h1 { font-size: 46px } .lede { font-size: 18px }
   .g3, .g4 { display: none !important } .hi { font-size: 15px; padding: 8px 13px }
   .g1 { right: auto; left: -4px; top: -26px } .g2 { left: auto; right: -4px; top: 166px }
-  .cap-box .anchor { width: 96px; height: 63px }
+  .scene .anchor { width: 96px; height: 63px }
   .click-me { left: -10px; top: -34px; font-size: 24px }
-  .scene { aspect-ratio: 4 / 5 } .cap-wrap { padding: 0 12px 0 56px; bottom: 16px } .cap-strip { min-width: 0; padding: 8px 30px 9px 14px } .cap-line { font-size: 17px }
+  .scene { aspect-ratio: 4 / 5 } .screen { padding: 16px } .screen.tall { padding-top: 150px }
   .divider { margin: 64px 0; padding-left: 0 } .divider-top { margin: 0 0 48px }
   .how-h { margin: 0 0 56px; font-size: 40px }
   .say { grid-template-columns: 1fr; row-gap: 12px } .spot { width: 120px; height: 79px; margin-top: 0 }
   .say-h { font-size: 32px } .mark { white-space: nowrap } .speech { font-size: 19px }
   .waves { display: none } .vig { margin-left: 0 } .panel { padding: 16px; border-radius: 24px }
-  .duo, .duo.wide { grid-template-columns: 1fr } .plat { grid-template-columns: repeat(2, minmax(0, 1fr)) }
-  .resume-words { margin-left: 0 } .legend { margin-left: 0 } .strip { font-size: 16px }
+  .duo { grid-template-columns: 1fr } .plat { grid-template-columns: repeat(2, minmax(0, 1fr)) }
   .closing h2 { font-size: 40px } .closing-panel { padding: 40px 20px 44px; border-radius: 32px }
   footer { width: calc(100% - 32px) }
   .said { font-size: 15px; padding: 10px 14px }
@@ -331,32 +273,10 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
 </section>
 
 <section class="sec video" data-sec="video" aria-label="Duet’s caption window over a scene">
-  <div class="scene">
-    <img src="./a/scene.jpg" alt="A scene from the film Sintel, with Duet’s subtitles: I’m 探している 人, the Japanese words coloured by how well you know them" width="1280" height="546">
-    <div class="cap-wrap" aria-hidden="true">
-      <div class="cap-box">
-        <div class="anchor" data-anchor="video"></div>
-        <div class="cap-tools">
-          <span class="lvl">2</span>
-          <span class="gap"></span>
-          <span class="explain">Explain</span>
-          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5f5f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"></path></svg></span>
-          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5f5f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg></span>
-          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5f5f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
-        </div>
-        <div style="position: relative">
-          <span class="cap-face"><svg width="20" height="20" viewBox="0 0 24 24"><g fill="#f5f5f7" fill-rule="evenodd"><path d="M5.4 7h3a2.8 2.8 0 0 1 2.8 2.8v1.4a2.8 2.8 0 0 1-2.8 2.8h-3a2.8 2.8 0 0 1-2.8-2.8V9.8A2.8 2.8 0 0 1 5.4 7ZM5.5 11h1.3a.8.8 0 0 1 0 1.6H5.5a.8.8 0 0 1 0-1.6Z"></path><path d="M15.6 7h3a2.8 2.8 0 0 1 2.8 2.8v1.4a2.8 2.8 0 0 1-2.8 2.8h-3a2.8 2.8 0 0 1-2.8-2.8V9.8A2.8 2.8 0 0 1 15.6 7ZM15.7 11h1.3a.8.8 0 0 1 0 1.6h-1.3a.8.8 0 0 1 0-1.6Z"></path><path d="M9.6 16.1Q11.3 18.4 13.1 15.9Q11.3 16.8 9.6 16.1Z"></path></g></svg></span>
-          <div class="cap-strip">
-            <i class="live"></i>
-            <p class="cap-line">I’m <span lang="ja" class="c-known">探している</span> <span lang="ja" class="c-say">人</span>.</p>
-            <div>
-              <p lang="ja" class="cap-orig">人を探しているの。</p>
-              <p class="cap-en">I’m searching for someone.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="scene" id="scene">
+    <img src="./a/scene.jpg" alt="" width="1280" height="546">
+    <div class="over" data-ui="dock-l3" role="img" aria-label="Duet’s subtitles over a scene from the film Sintel: My hermana compró a nuevo coche, each Spanish word in the colour of how well you know it"></div>
+    <div class="anchor" data-anchor="video"></div>
   </div>
 </section>
 
@@ -375,21 +295,16 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     </div>
     <div class="vig">
       <div class="panel grain">
-        <div class="plat">
-          <div class="card tile"><span class="logo"><svg width="34" height="24" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5.5" fill="#FF0033"></rect><path d="M11.2 5.8 L19 10 L11.2 14.2 Z" fill="#ffffff"></path></svg></span><span><b>YouTube</b><small>Videos, any channel</small></span></div>
-          <div class="card tile"><span class="logo"><svg width="17" height="28" viewBox="0 0 16 28" aria-hidden="true"><path d="M0 0 H4.4 L11.6 19 V0 H16 V28 H11.7 L4.4 9 V28 H0 Z" fill="#E50914"></path></svg></span><span><b>Netflix</b><small>Shows and films</small></span></div>
-          <div class="card tile"><span class="logo"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.933 13.467a10.55 10.55 0 1 1 21.067-.8V12c0-6.627-5.373-12-12-12S0 5.373 0 12s5.373 12 12 12h.8a10.617 10.617 0 0 1-9.867-10.533zM19.2 14a3.85 3.85 0 0 1-1.333-7.467A7.89 7.89 0 0 0 14 5.6a8.4 8.4 0 1 0 8.4 8.4 6.492 6.492 0 0 0-.133-1.6A3.415 3.415 0 0 1 19.2 14z" fill="#F47521"></path></svg></span><span><b>Crunchyroll</b><small>Anime</small></span></div>
-          <div class="card tile"><span class="logo"><svg width="46" height="28" viewBox="0 0 46 28" aria-hidden="true"><path d="M4 21 Q 23 -2 42 15" fill="none" stroke="var(--disney)" stroke-width="2" stroke-linecap="round"></path><text x="23" y="26" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-weight="700" font-size="11.5" fill="var(--disney)">Disney+</text></svg></span><span><b>Disney+</b><small>Films and series</small></span></div>
-        </div>
-        <div class="card resume">
-          <span class="thumb"><img src="./a/scene.jpg" alt="" width="1280" height="546" loading="lazy"><i></i></span>
-          <span class="resume-text"><small>Continue watching</small><b>Un día en Madrid</b><span>YouTube · left off at 1:25 · 2 days ago</span></span>
-          <span class="resume-words"><span lang="es" class="hl-heard">madrugar</span><span lang="es" class="hl-known">vámonos</span><span lang="es" class="hl-say">despacito</span></span>
-        </div>
+          <div class="plat">
+            <div class="ptile"><span class="logo"><svg width="34" height="24" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5.5" fill="#FF0033"></rect><path d="M11.2 5.8 L19 10 L11.2 14.2 Z" fill="#ffffff"></path></svg></span><span><b>YouTube</b><small>Videos, any channel</small></span></div>
+            <div class="ptile"><span class="logo"><svg width="17" height="28" viewBox="0 0 16 28" aria-hidden="true"><path d="M0 0 H4.4 L11.6 19 V0 H16 V28 H11.7 L4.4 9 V28 H0 Z" fill="#E50914"></path></svg></span><span><b>Netflix</b><small>Shows and films</small></span></div>
+            <div class="ptile"><span class="logo"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.933 13.467a10.55 10.55 0 1 1 21.067-.8V12c0-6.627-5.373-12-12-12S0 5.373 0 12s5.373 12 12 12h.8a10.617 10.617 0 0 1-9.867-10.533zM19.2 14a3.85 3.85 0 0 1-1.333-7.467A7.89 7.89 0 0 0 14 5.6a8.4 8.4 0 1 0 8.4 8.4 6.492 6.492 0 0 0-.133-1.6A3.415 3.415 0 0 1 19.2 14z" fill="#F47521"></path></svg></span><span><b>Crunchyroll</b><small>Anime</small></span></div>
+            <div class="ptile"><span class="logo"><svg width="46" height="28" viewBox="0 0 46 28" aria-hidden="true"><path d="M4 21 Q 23 -2 42 15" fill="none" stroke="var(--disney)" stroke-width="2" stroke-linecap="round"></path><text x="23" y="26" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-weight="700" font-size="11.5" fill="var(--disney)">Disney+</text></svg></span><span><b>Disney+</b><small>Films and series</small></span></div>
+          </div>
+        <div class="ui-gap" data-ui="tile-watching" data-fit="flex" role="img" aria-label="Duet’s Watching tile: the videos you were watching, where you left off and the words you met"></div>
       </div>
     </div>
   </article>
-
   <div class="divider" aria-hidden="true"><svg style="fill: #e8b923" viewBox="0 0 100 8" preserveAspectRatio="none"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z"></path></svg></div>
   <article class="feat" data-sec="level">
     <div class="say">
@@ -402,16 +317,15 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     </div>
     <div class="vig">
       <div class="panel grain">
-        <div class="levels">
-          <div class="lv"><b>1</b><p class="strip">I have to <span lang="es" class="c-heard">madrugar</span> tomorrow, so let’s go.</p></div>
-          <div class="lv"><b class="on">3</b><p class="strip">I have to <span lang="es" class="c-heard">madrugar</span> tomorrow, so <span lang="es" class="c-known">vámonos</span>.</p></div>
-          <div class="lv"><b>5</b><p class="strip"><span lang="es" class="c-plain">Mañana tengo que </span><span lang="es" class="c-heard">madrugar</span><span lang="es" class="c-plain">, así que </span><span lang="es" class="c-known">vámonos</span><span class="c-plain">.</span></p></div>
-          <p class="legend"><span><i style="background: #e8b923"></i>Heard</span><span><i style="background: #f2952e"></i>Known</span><span><i style="background: #4d93e6"></i>Can say</span><span><i style="background: #3fb579"></i>Can use</span></p>
+        <div class="screen levels" role="img" aria-label="The same line at levels 1, 3 and 5: My hermana bought a new coche, then My hermana compró a nuevo coche, then Mi hermana compró un coche nuevo">
+          <div class="lv"><span>Level 1</span><div data-ui="strip-l1"></div></div>
+          <div class="lv"><span>Level 3</span><div data-ui="strip-l3"></div></div>
+          <div class="lv"><span>Level 5</span><div data-ui="strip-l5"></div></div>
         </div>
+        <p class="legend"><span><i style="background: #b9a6f7"></i>New</span><span><i style="background: #e8b923"></i>Heard</span><span><i style="background: #f2952e"></i>Known</span><span><i style="background: #4d93e6"></i>You can say it</span><span><i style="background: #3fb579"></i>You can use it</span></p>
       </div>
     </div>
   </article>
-
   <div class="divider" aria-hidden="true"><svg style="fill: #3fa6dc" viewBox="0 0 100 8" preserveAspectRatio="none"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z"></path></svg></div>
   <article class="feat" data-sec="ask">
     <div class="say">
@@ -425,25 +339,12 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     <div class="vig">
       <div class="panel aqua grain">
         <div class="duo">
-          <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px">
-            <div class="wordcard">
-              <span class="top"><span class="kind">Verb</span><span class="seen">Heard 4 times</span></span>
-              <b lang="es">madrugar</b>
-              <span>to get up early</span>
-              <span class="acts"><span>Save card</span><span>Hear it</span><span>Ask Duet</span></span>
-            </div>
-            <p class="strip" style="flex: none; align-self: stretch; font-size: 17px">I have to <span lang="es" class="c-heard">madrugar</span> tomorrow, so <span lang="es" class="c-known">vámonos</span>.</p>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 10px">
-            <p class="from-you">Why “<span lang="es">tengo que</span>”?</p>
-            <p class="from-duet"><span lang="es">Tengo que</span> is “I have to”: <i lang="es">tener que</i> plus a verb. So <span lang="es">tengo que madrugar</span> is “I have to get up early”.</p>
-            <div class="pills"><span>Explain more</span><span>Another word from the video</span></div>
-          </div>
+          <div class="screen tall" role="img" aria-label="Pointing at compró on the subtitles: its card says action word, known, bought, with Save, Explain line and Ignore"><div data-ui="dock-card"></div></div>
+          <div data-ui="explain" data-fit="flex" role="img" aria-label="Duet’s side panel explaining a line: a·pa·ñár·se·las, to manage on your own, and what it means in this scene"></div>
         </div>
       </div>
     </div>
   </article>
-
   <div class="divider" aria-hidden="true"><svg style="fill: #9478e4" viewBox="0 0 100 8" preserveAspectRatio="none"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z"></path></svg></div>
   <article class="feat" data-sec="speak">
     <div class="say">
@@ -456,59 +357,48 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     </div>
     <div class="vig">
       <div class="panel lilac grain">
-        <div style="display: flex; flex-direction: column; gap: 10px; max-width: 620px">
-          <p class="from-duet" style="max-width: 82%">Yesterday you heard <span lang="es" style="color: var(--w-heard); font-weight: 500">madrugar</span> four times. Want to try it in a sentence?</p>
-          <div style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; gap: 5px">
-            <div class="voice" role="img" aria-label="Your voice message, 3 seconds">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4 L20 12 L7 20 Z"></path></svg>
-              <span class="bars" aria-hidden="true"><i style="height: 6px"></i><i style="height: 12px"></i><i style="height: 16px"></i><i style="height: 9px"></i><i style="height: 14px"></i><i style="height: 7px; opacity: 0.7"></i><i style="height: 12px; opacity: 0.7"></i><i style="height: 5px; opacity: 0.5"></i><i style="height: 10px; opacity: 0.5"></i></span>
-              <span style="font-size: 12px; opacity: 0.7">0:03</span>
-            </div>
-            <span lang="es" style="font-size: 13px; color: var(--sub)">“Mañana tengo que madrugar.”</span>
-          </div>
-          <p class="from-duet"><span lang="es">¡Perfecto!</span> That sentence is exactly right.</p>
-          <div class="tip">
-            <span style="font-size: 12px; font-weight: 600; color: var(--sub)">On your pronunciation</span>
-            <span style="font-size: 15px; line-height: 1.5"><span class="serif" style="font-size: 22px"><span lang="es" class="hl-heard">madrugar</span></span> — the r between vowels is one quick tap, like the tt in “butter”. Yours was a little long.</span>
-            <span style="align-self: flex-start; padding: 6px 12px; border-radius: 999px; background: var(--soft); font-size: 13px">Hear Duet say it</span>
-          </div>
-        </div>
+        <div data-ui="talk" data-fit="flex" data-min="340" role="img" aria-label="Talking to Duet: you say Mañana tengo que madrugar, Duet says it’s right and how to say the r, then explains how to say I overslept"></div>
       </div>
     </div>
   </article>
-
   <div class="divider" aria-hidden="true"><svg style="fill: #3fb579" viewBox="0 0 100 8" preserveAspectRatio="none"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z"></path></svg></div>
-  <article class="feat" data-sec="remember">
+  <article class="feat" data-sec="cards">
     <div class="say">
-      <div class="spot" data-anchor="remember"></div>
+      <div class="spot" data-anchor="cards"></div>
       <div class="say-text">
         <svg class="waves" viewBox="0 0 24 40" aria-hidden="true"><path d="M5 12 Q 9 20 5 28"></path><path d="M11 7 Q 18 20 11 33"></path><path d="M17 2 Q 27 20 17 38"></path></svg>
-        <h3 class="say-h">Anki-style flashcards, <span class="mark">made from your shows.<svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#3fb579"></path></svg></span></h3>
-        <p class="speech">Save a line and I’ll make it a card, with the scene it came from. I bring it back right before you’d forget, and ask one quick question when a scene ends.</p>
+        <h3 class="say-h">Flashcards, <span class="mark">made from your shows.<svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#3fb579"></path></svg></span></h3>
+        <p class="speech">Save a word and I’ll make it a card, with the line and the scene it came from. I bring it back right before you’d forget.</p>
       </div>
     </div>
     <div class="vig">
       <div class="panel foam grain">
-        <div class="duo wide">
-          <div class="card review">
-            <div class="bar"><span>Review 14 cards</span><span class="track"><i style="width: 22%"></i></span><span>3 / 14</span></div>
-            <p lang="es" class="serif" style="margin-top: 18px; font-size: 34px; line-height: 1.1">Mañana tengo que <span class="hl-heard">madrugar</span>.</p>
-            <p style="margin-top: 8px; font-size: 13px; color: var(--sub)">From <b style="color: var(--ink); font-weight: 600">Un día en Madrid</b> · 1:25 · Replay</p>
-            <p style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 16px">I have to get up early tomorrow.</p>
-            <div class="grades"><span>Again<i>10 min</i></span><span>Hard<i>15 min</i></span><span class="good">Good<i>1 day</i></span><span>Easy<i>4 days</i></span></div>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 10px">
-            <span style="font-size: 12px; font-weight: 600; color: var(--w-use)">And at a pause in the video</span>
-            <div class="glow"><div>
-              <span style="font-size: 14px">Quick one? Say <span lang="es" class="c-heard">madrugar</span> before the next line.</span>
-              <span style="font-size: 16px; color: #b4b4b8">I have to <span lang="es" class="c-heard">madrugar</span> tomorrow, so <span lang="es" class="c-known">vámonos</span>.</span>
-            </div></div>
-          </div>
+        <div class="duo cards">
+          <div data-ui="card-front" data-fit="flex" data-min="320" role="img" aria-label="The front of a card: madrugar, heard in Un día en Madrid at 1:25, with its line"></div>
+          <div data-ui="card-back" data-fit="flex" data-min="320" role="img" aria-label="The back: ma·dru·gar, a verb, to get up early, the line it came from, and Forgot or Got it"></div>
         </div>
       </div>
     </div>
   </article>
-
+  <div class="divider" aria-hidden="true"><svg style="fill: #d36ba6" viewBox="0 0 100 8" preserveAspectRatio="none"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z"></path></svg></div>
+  <article class="feat" data-sec="check">
+    <div class="say">
+      <div class="spot" data-anchor="check"></div>
+      <div class="say-text">
+        <svg class="waves" viewBox="0 0 24 40" aria-hidden="true"><path d="M5 12 Q 9 20 5 28"></path><path d="M11 7 Q 18 20 11 33"></path><path d="M17 2 Q 27 20 17 38"></path></svg>
+        <h3 class="say-h">A quick question <span class="mark">when a scene ends.<svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#d36ba6"></path></svg></span></h3>
+        <p class="speech">When a scene ends, the subtitles glow. Double-click them for one quick question about what you just watched. Answer it to keep your streak, or skip it.</p>
+      </div>
+    </div>
+    <div class="vig">
+      <div class="panel aqua grain">
+        <div class="screen steps" role="img" aria-label="At the end of a scene the subtitles glow. Double-clicked, they ask what the speaker meant, and you answer in your own words: Yes, My sister bought a new car, you got it">
+          <div class="step"><span>The scene ends</span><div data-ui="dock-glow"></div></div>
+          <div class="step"><span>One question</span><div data-ui="dock-done"></div></div>
+        </div>
+      </div>
+    </div>
+  </article>
   <div class="divider" aria-hidden="true"><svg style="fill: #e0583a" viewBox="0 0 100 8" preserveAspectRatio="none"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z"></path></svg></div>
   <article class="feat" data-sec="grow">
     <div class="say">
@@ -516,31 +406,14 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
       <div class="say-text">
         <svg class="waves" viewBox="0 0 24 40" aria-hidden="true"><path d="M5 12 Q 9 20 5 28"></path><path d="M11 7 Q 18 20 11 33"></path><path d="M17 2 Q 27 20 17 38"></path></svg>
         <h3 class="say-h"><span class="mark">Five minutes a day.<svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#e0583a"></path></svg></span> Watch yourself improve.</h3>
-        <p class="speech">A short session made from what you watched: your cards, a line to say back, one challenge. Your words climb, and your streak keeps you going.</p>
+        <p class="speech">A short session made from what you watched: a line to say back, your cards, one challenge. Your words climb, and your streak keeps you going.</p>
       </div>
     </div>
     <div class="vig">
       <div class="panel peach grain">
-        <div class="duo" style="gap: 12px; align-items: stretch">
-          <div class="card review" style="display: flex; flex-direction: column">
-            <div style="display: flex; align-items: center; justify-content: space-between"><span style="font-size: 13px; color: var(--sub)">Today</span><span style="padding: 4px 10px; border-radius: 999px; background: rgba(240,110,50,0.09); font-size: 13px; color: var(--sub)"><b style="color: var(--ink)">12</b> days</span></div>
-            <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 9px; font-size: 15px">
-              <span style="display: flex; align-items: center; gap: 10px"><i class="ring" style="background: #3fb579"></i>Say a line back</span>
-              <span style="display: flex; align-items: center; gap: 10px"><i class="ring" style="border: 2px solid var(--ink)"></i><b style="font-weight: 600">Review 14 cards</b></span>
-              <span style="display: flex; align-items: center; gap: 10px; color: var(--sub)"><i class="ring" style="border: 2px solid var(--line2)"></i>One challenge</span>
-            </div>
-            <span style="margin-top: 16px; align-self: flex-start; display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border-radius: 999px; background: var(--ink); color: var(--on-ink); font-size: 14px; font-weight: 600">Keep going</span>
-          </div>
-          <div class="card review">
-            <span style="font-size: 13px; color: var(--sub)">Your words</span>
-            <div class="counts">
-              <p><b style="color: var(--w-heard)">63</b><span>heard</span></p>
-              <p><b style="color: var(--w-known)">88</b><span>known</span></p>
-              <p><b style="color: var(--w-say)">27</b><span>you can say</span></p>
-              <p><b style="color: var(--w-use)">19</b><span>you can use</span></p>
-            </div>
-            <div style="margin-top: 14px; display: flex; gap: 3px; height: 8px" aria-hidden="true"><i style="flex: 63; border-radius: 4px; background: #e8b923"></i><i style="flex: 88; border-radius: 4px; background: #f2952e"></i><i style="flex: 27; border-radius: 4px; background: #4d93e6"></i><i style="flex: 19; border-radius: 4px; background: #3fb579"></i></div>
-          </div>
+        <div class="duo grow">
+          <div data-ui="tile-today" data-fit="flex" role="img" aria-label="Duet’s Today tile: your word for today, madrugar, then say a line back, review 14 cards and one challenge"></div>
+          <div data-ui="tile-words" data-fit="flex" role="img" aria-label="Duet’s Your words tile: 14 cards to review, 88 known, 27 you can say, 19 you can use, and recent words"></div>
         </div>
       </div>
     </div>
@@ -610,6 +483,83 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   });
   if (dark) dark.addEventListener('change', paint);
   paint();
+
+  // The app's own UI (src/app-ui.json, copied from the app as it renders): each piece in a shadow
+  // root with its window's CSS, so the page and the app can't touch each other, its light or dark
+  // following the page's. It's there to look at: kept still (inert) and labelled on its host.
+  var UI = /*APP_UI*/;
+  // The window's own root fills the window and clips it; a piece's root only holds the piece.
+  var BASE = '.ui-root { margin-inline: auto; height: auto; overflow: visible; background: transparent; font-family: Inter, -apple-system, system-ui, sans-serif; line-height: normal; letter-spacing: normal; text-align: left; -webkit-font-smoothing: antialiased }';
+  var css = {};
+  function cssOf(group) {
+    // The window's :root, html and body are the piece's own root here.
+    if (!css[group]) css[group] = UI.css[group].replace(/:root\b/g, ':host').replace(/(^|[\s,>+~(}])(html|body)(?=[\s,.:#[>+~{)])/g, '$1.ui-root') + '\n' + BASE;
+    return css[group];
+  }
+  var sheets = {};
+  function sheetOf(group) {
+    if (!sheets[group]) { sheets[group] = new CSSStyleSheet(); sheets[group].replaceSync(cssOf(group)); }
+    return sheets[group];
+  }
+  var pieces = [];
+  document.querySelectorAll('[data-ui]').forEach(function (host) {
+    var part = UI.parts[host.getAttribute('data-ui')];
+    if (!part) return;
+    var shadow = host.attachShadow({ mode: 'open' });
+    try { shadow.adoptedStyleSheets = [sheetOf(part.group)]; } catch (e) { var style = document.createElement('style'); style.textContent = cssOf(part.group); shadow.appendChild(style); }
+    var top = document.createElement('div');
+    top.className = 'ui-root';
+    top.inert = true;
+    top.setAttribute('aria-hidden', 'true');
+    shadow.appendChild(top);
+    // Its place in its window: the classes around it, without their boxes.
+    var parent = top, themed = false;
+    part.chain.forEach(function (c) {
+      if (c.tag === 'html') { if (c.cls) { top.className += ' ' + c.cls; themed = /theme-/.test(c.cls); } return; }
+      if (c.tag === 'body') return;
+      var el = document.createElement(c.tag);
+      if (c.id) el.id = c.id;
+      if (c.cls) el.className = c.cls;
+      for (var k in c.data) el.setAttribute(k, c.data[k]);
+      el.style.display = 'contents';
+      parent.appendChild(el);
+      parent = el;
+    });
+    var t = document.createElement('template');
+    t.innerHTML = part.html;
+    parent.appendChild(t.content);
+    pieces.push({ host: host, top: top, part: part, themed: themed, fit: host.getAttribute('data-fit') || 'zoom', min: Number(host.getAttribute('data-min')) || 360 });
+  });
+  onTheme.push(function (t) {
+    pieces.forEach(function (p) { if (p.themed) { p.top.classList.toggle('theme-dark', t === 'dark'); p.top.classList.toggle('theme-light', t !== 'dark'); } });
+  });
+  paint();
+  // Sizes: a piece keeps its own width and shrinks (zoom) where there's less room; a flexible one
+  // (data-fit="flex") takes the room it's given, down to data-min.
+  function fit() {
+    pieces.forEach(function (p) {
+      var room = p.host.clientWidth;
+      // A little room to spare: this site's copy of Inter sets a hair wider than the app's.
+      var width = p.part.width + (p.part.group === 'overlay' ? 32 : 0);
+      var z;
+      if (p.fit === 'flex') { z = Math.min(1, room / p.min); p.top.style.width = room / z + 'px'; }
+      else { z = Math.min(1, room / width); p.top.style.width = width + 'px'; }
+      p.top.style.zoom = z;
+    });
+    // Duet's spot over the video: just above the strip's left end.
+    var scene = document.getElementById('scene');
+    var spot = scene.querySelector('.anchor');
+    var over = pieces.filter(function (p) { return p.host.classList.contains('over'); })[0];
+    var row = over && over.top.querySelector('.strip-row');
+    if (row) {
+      var s = scene.getBoundingClientRect(), r = row.getBoundingClientRect();
+      spot.style.left = Math.max(8, r.left - s.left) + 'px';
+      spot.style.top = r.top - s.top - spot.offsetHeight - 10 + 'px';
+    }
+  }
+  fit();
+  window.addEventListener('resize', fit);
+  if (document.fonts) document.fonts.ready.then(fit);
 
   // The waitlist forms. Each sends its email to /api/join (api/join.js). Once one lands, both say
   // you're on the list, and the browser remembers it so they stay that way on your next visit.
@@ -699,7 +649,8 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     level: ['curious', null, 'correct', 'wink', 'excited'],
     ask: ['thinking', null, 'curious', 'nod', 'warm'],
     speak: ['listening', null, 'listening', 'mmhm', 'gentle'],
-    remember: ['idle', null, 'encourage', 'yes', 'warm'],
+    cards: ['idle', null, 'encourage', 'yes', 'warm'],
+    check: ['curious', null, 'correct', 'nod', 'excited'],
     grow: ['idle', null, 'proud', null, 'excited'],
     closing: ['adoring', 'Join the waitlist and I’ll see you soon.', 'adoring', 'wave', 'warm']
   };
