@@ -785,6 +785,9 @@
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
+  /* The group's first row: no line above it, as in the other groups. */
+  border-top: 0;
+  padding-top: 0;
 }
 .workspace .settings-panel .settings-group .glass > .field.feedback-field > span {
   max-width: none;
