@@ -1,10 +1,10 @@
-// One word, open on Your words' right: the word large in its rung colour, its reading and meaning
+﻿// One word, open on Your words' right: the word large in its rung colour, its reading and meaning
 // (from its card), the ladder with its rung lit and what moves it up next, where it was met, its
 // card or cards (CardView: edit, pause, delete, history), Ignore or Bring back, and Practise with
 // Duet. A card whose word is not on the ladder shows just its card.
 import { motion } from 'motion/react'
 import type { CardDetail } from '../../../../shared/cards'
-import { STATE_LABELS, type WordState } from '../../../../shared/knowledge'
+import { type WordState } from '../../../../shared/knowledge'
 import { languageName } from '../../../../shared/languages'
 import type { Language } from '../../../../shared/types'
 import { CardView } from '../../cards/CardView'
@@ -13,7 +13,8 @@ import { fadeUp } from '../../components/motion'
 import { clock } from '../../components/time'
 import type { WordItem } from './join'
 
-const CLIMB: WordState[] = ['encountered', 'known', 'speakable', 'usable']
+const CLIMB: WordState[] = ['unknown', 'encountered', 'known', 'speakable', 'usable']
+const RUNG_NAMES = ['New', 'Heard', 'Known', 'Can say', 'Can use']
 
 // What moves a word up from its rung.
 const NEXT: Partial<Record<WordState, string>> = {
@@ -25,11 +26,26 @@ const NEXT: Partial<Record<WordState, string>> = {
   ignored: 'Left out of colours and practice. Bring it back to climb again.'
 }
 
-/** Seen before › Known › You can say it › You can use it, with the word's rung lit. */
+// The colour a word's ladder is drawn in, up to where it is.
+const RUNG_MARK: Record<WordState, string> = {
+  unknown: 'var(--w-new)',
+  encountered: 'var(--w-seen)',
+  known: 'var(--w-known)',
+  speakable: 'var(--w-say)',
+  usable: 'var(--w-use)',
+  ignored: 'var(--w-ignored)'
+}
+
+/** New › Heard › Known › Can say › Can use, with the word's rung lit. */
+
 function Climb({ state }: { state: WordState }): React.JSX.Element {
   const at = CLIMB.indexOf(state)
   return (
-    <ol className="yw-climb" aria-label="The ladder">
+    <ol
+      className="yw-climb"
+      aria-label="The ladder"
+      style={{ '--c-at': RUNG_MARK[state] } as React.CSSProperties}
+    >
       {CLIMB.map((step, index) => (
         <li
           key={step}
@@ -37,7 +53,7 @@ function Climb({ state }: { state: WordState }): React.JSX.Element {
           className={index === at ? 'is-at' : index < at ? 'is-past' : undefined}
           aria-current={index === at ? 'step' : undefined}
         >
-          <span>{STATE_LABELS[step]}</span>
+          <span>{RUNG_NAMES[index]}</span>
         </li>
       ))}
     </ol>
@@ -96,7 +112,7 @@ export function WordDetail({
           {first && (first.reading || first.meaning) && (
             <p className="muted">
               {first.reading && <span lang={row.language ?? language}>{first.reading}</span>}
-              {first.reading && first.meaning && ' · '}
+              {first.reading && first.meaning && ' Â· '}
               {first.meaning}
             </p>
           )}
@@ -108,12 +124,12 @@ export function WordDetail({
           </>
         ) : row.language ? (
           <p className="faint yw-next">
-            A {languageName(row.language)} card. You’re learning {languageName(language)} now, so it isn’t on
-            this ladder; it still comes up in Review.
+            A {languageName(row.language)} card. Youâ€™re learning {languageName(language)} now, so
+            it isnâ€™t on this ladder; it still comes up in Review.
           </p>
         ) : (
           <p className="faint yw-next">
-            A card of your own. It isn’t a word on the ladder, so it has no rung.
+            A card of your own. It isnâ€™t a word on the ladder, so it has no rung.
           </p>
         )}
         {(seenAs || places.length > 0) && (
@@ -156,13 +172,13 @@ export function WordDetail({
             </h2>
             {cardsError && (
               <p className="notice error" role="alert">
-                {cards ? `${cardsError} What’s shown may be out of date.` : cardsError}
+                {cards ? `${cardsError} Whatâ€™s shown may be out of date.` : cardsError}
               </p>
             )}
             {!cards
               ? !cardsError && (
                   <p className="faint" role="status">
-                    Loading…
+                    Loadingâ€¦
                   </p>
                 )
               : cards.map((card) => (

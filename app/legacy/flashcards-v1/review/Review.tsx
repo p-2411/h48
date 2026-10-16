@@ -9,6 +9,7 @@ import { useRung } from '../components/useRung'
 import { clock, when } from '../components/time'
 import { ReviewSettings } from './ReviewSettings'
 import { useReviewSession } from './useReviewSession'
+import { duetReact } from '../components/duet/react'
 
 // What each rating means, beside its button.
 const MEANINGS: Record<Rating, string> = {
@@ -51,7 +52,7 @@ function CardStage({
       <span className="label">{label}</span>
       {use && card.situation && <p className="muted">{card.situation}</p>}
       <p className="stage-front" lang={use ? undefined : card.language}>
-        <span className="w" data-k={use ? undefined : rung}>
+        <span className="w" data-k={use ? undefined : (rung ?? 'unknown')}>
           {use ? card.meaning : card.expression}
         </span>
       </p>
@@ -61,7 +62,7 @@ function CardStage({
       {/* The answer, blurred until shown; hidden from screen readers until then too. */}
       <p className={revealed ? 'stage-back' : 'stage-back is-hidden'} lang={use ? card.language : undefined} aria-hidden={!revealed}>
         {use ? (
-          <span className="w" data-k={rung}>
+          <span className="w" data-k={rung ?? 'unknown'}>
             {card.expression}
           </span>
         ) : (
@@ -140,6 +141,7 @@ export function Review({ onEnd, limit }: { onEnd: () => void; limit?: number }):
     let count = rated
     await act(async () => {
       const next = await window.duet.cards.rate(card.id, card.revision, rating)
+      duetReact(rating === 'good' || rating === 'easy' ? 'right' : 'not-yet')
       count = rated + 1
       setRated(count)
       return next

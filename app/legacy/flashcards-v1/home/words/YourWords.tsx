@@ -17,7 +17,7 @@ import { WordList } from './WordList'
 import { useCardDetails, useWordsData } from './useWordsData'
 
 // The rungs counted at the top.
-const COUNTED: WordState[] = ['known', 'speakable', 'usable']
+const COUNTED: WordState[] = ['unknown', 'encountered', 'known', 'speakable', 'usable', 'ignored']
 const UNDO_MS = 8000
 
 const loadToday = (): Promise<HomeToday> => window.duet.home.getToday()
@@ -66,10 +66,12 @@ function useUndoDelete(
  * `onReviewEnd`. `onPractise` opens Talk about a word. */
 export function YourWords({
   review,
+  requestedCard,
   onReviewEnd,
   onPractise
 }: {
   review?: boolean
+  requestedCard?: { id: string }
   onReviewEnd?: () => void
   onPractise: (word: string) => void
 }): React.JSX.Element {
@@ -77,12 +79,16 @@ export function YourWords({
   const language = settings?.language
   const words = useWordsData(language)
   // Settings that can't be read (so no language) say so, rather than leaving the page loading.
-  const { data, error, reload } = settings ? words : { data: undefined, error: settingsError, reload: reloadSettings }
+  const { data, error, reload } = settings
+    ? words
+    : { data: undefined, error: settingsError, reload: reloadSettings }
   const due = useLoaded(loadToday, 'Could not count the cards to review.').value?.due
   const [reviewing, setReviewing] = useState(false)
   const [filter, setFilter] = useState<WordFilter>({ show: 'all' })
   // The row picked, or the card main asked to show (its row is picked once it's in the list).
-  const [picked, setPicked] = useState<{ key: string } | { card: string }>()
+  const [picked, setPicked] = useState<{ key: string } | { card: string } | undefined>(
+    requestedCard ? { card: requestedCard.id } : undefined
+  )
   const [notice, setNotice] = useState<Notice>()
   const [actionError, setActionError] = useState<string>()
   const pickCard = (id: string): void => setPicked({ card: id })
@@ -99,16 +105,26 @@ export function YourWords({
     []
   )
 
+  const [lastRequest, setLastRequest] = useState(requestedCard)
+  if (requestedCard !== lastRequest) {
+    setLastRequest(requestedCard)
+    if (requestedCard) {
+      setFilter({ show: 'all' })
+      setReviewing(false)
+      setPicked({ card: requestedCard.id })
+    }
+  }
+
   const rows = useMemo(
     () => (data ? joinWords(data.summary.words, data.cards, data.language, data.at) : []),
     [data]
   )
   const shown = useMemo(() => filterWords(rows, filter), [rows, filter])
-  const selected =
-    picked &&
-    rows.find((row) =>
-      'key' in picked ? row.key === picked.key : row.cards.some((card) => card.id === picked.card)
-    )
+  const selected = picked
+    ? rows.find((row) =>
+        'key' in picked ? row.key === picked.key : row.cards.some((card) => card.id === picked.card)
+      )
+    : shown[0]
   const details = useCardDetails(selected?.cards.map((card) => card.id) ?? [], data)
 
   const endReview = (): void => {

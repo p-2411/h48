@@ -15,7 +15,7 @@ const SHOW: { value: WordFilter['show']; label: string }[] = [
   { value: 'card', label: 'Has a card' },
   { value: 'paused', label: 'Paused' }
 ]
-const RUNGS: WordState[] = ['encountered', 'known', 'speakable', 'usable', 'ignored']
+const RUNGS: WordState[] = ['unknown', 'encountered', 'known', 'speakable', 'usable', 'ignored']
 
 /** The row's second line: its card's meaning, or the form it was seen as when that differs. */
 function subline(row: WordItem): string | undefined {

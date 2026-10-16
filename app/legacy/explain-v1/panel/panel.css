@@ -1,0 +1,31 @@
+/* The side panel: a fixed header with tabs, and the tab below it scrolling on its own, on the
+   surface the home base uses (ui.css). The header sits below the window buttons and drags the window. */
+html, body, #root { height: 100%; overflow: hidden; background: transparent; }
+.window {
+  height: 100%; display: flex; flex-direction: column; gap: 14px; padding: 40px 16px 0;
+  background: var(--surface);
+}
+.window-head { -webkit-app-region: drag; margin-top: -40px; padding-top: 40px; }
+.window-head button { -webkit-app-region: no-drag; }
+.window > :last-child { flex: 1; min-height: 0; overflow: auto; padding-bottom: 20px; }
+/* A tab that broke (ErrorBoundary): its message keeps its own height. */
+.window > .notice { flex: none; }
+/* Explain scrolls inside itself, above the dock with its composer. */
+.window > .explain-tab { overflow: hidden; padding-bottom: 0; }
+.window-head { display: flex; align-items: center; justify-content: space-between; }
+.script { position: relative; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.script-row { width: 100%; min-width: 0; display: grid; grid-template-columns: 40px 1fr; gap: 10px; padding: 9px 10px; text-align: left; }
+.script-row .time { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; padding-top: 3px; }
+.script-row .original { display: block; font-size: 15px; line-height: 1.4; }
+.script-row .english { display: block; margin-top: 2px; font-size: 13px; line-height: 1.4; color: var(--text-2); }
+/* A row: the line, then its actions in a column of their own, so they never cover the words. The
+   column keeps its width when hidden, so hovering doesn't reflow the line. */
+.script-item { position: relative; isolation: isolate; display: grid; grid-template-columns: 1fr auto; align-items: start; border-radius: 10px; }
+.script-item:hover { background: rgba(255, 255, 255, 0.04); }
+/* The highlight behind the line being spoken (it glides from row to row: Script.tsx). */
+.script-now { position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--fill); }
+.script-item.is-past { opacity: 0.6; }
+.script-item.is-now .time { color: #fff; font-weight: 600; }
+.row-actions { display: flex; flex-direction: column; align-items: stretch; gap: 2px; padding: 6px 6px 6px 0; visibility: hidden; }
+.script-item:hover .row-actions, .script-item:focus-within .row-actions { visibility: visible; }
+.row-actions .btn { padding: 4px 8px; font-size: 12px; }

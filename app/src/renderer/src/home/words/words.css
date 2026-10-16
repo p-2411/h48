@@ -164,27 +164,16 @@
   color: var(--text-3);
   text-align: right;
 }
-.yw-row-rung[data-k='encountered'] {
-  color: var(--k-encountered);
-}
-.yw-row-rung[data-k='known'] {
-  color: var(--k-known);
-}
-.yw-row-rung[data-k='speakable'] {
-  color: var(--k-speakable);
-}
-.yw-row-rung[data-k='usable'] {
-  color: var(--k-usable);
-}
-.yw-row-rung[data-k='ignored'] {
-  color: var(--k-ignored);
+/* A word's rung in its colour (--c from data-k); a card with no word stays faint. */
+.yw-row-rung[data-k] {
+  color: var(--c);
 }
 /* A card due: orange, as everything that needs the learner. */
 .yw-due {
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, #ff9f0a 18%, transparent);
-  color: #ff9f0a;
+  background: color-mix(in srgb, var(--due, #ff9f0a) 18%, transparent);
+  color: var(--due, #ff9f0a);
   font-weight: 600;
 }
 
@@ -231,24 +220,11 @@
   font-size: 12px;
 }
 .yw-climb li {
-  --c: var(--fg);
   display: flex;
   align-items: center;
   gap: 6px;
   color: var(--text-3);
   white-space: nowrap;
-}
-.yw-climb li[data-k='encountered'] {
-  --c: var(--k-encountered);
-}
-.yw-climb li[data-k='known'] {
-  --c: var(--k-known);
-}
-.yw-climb li[data-k='speakable'] {
-  --c: var(--k-speakable);
-}
-.yw-climb li[data-k='usable'] {
-  --c: var(--k-usable);
 }
 /* The steps: pills joined by ›; the word's rung lit in its colour. */
 .yw-climb li + li::before {
