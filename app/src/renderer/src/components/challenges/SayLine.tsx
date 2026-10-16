@@ -68,12 +68,13 @@ export function SayLine({
   const recorder = useRecorder(coach)
 
   const coaching = busy === 'coaching'
+  // After a try, the mic says nothing: what Duet heard is shown below it.
   const micLabel = recorder.recording
     ? 'Listening… tap to stop'
     : coaching
       ? 'Checking…'
       : attempt
-        ? 'Tap to try again'
+        ? undefined
         : 'Tap, then say it'
   return (
     <section className="challenge say-practice" aria-label="Say the line">

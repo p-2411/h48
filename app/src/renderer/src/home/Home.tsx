@@ -10,6 +10,7 @@ import {
   defaultLayout,
   fitTiles,
   openTile,
+  switchTile,
   TILES,
   type TileId,
   type WorkspaceLayout
@@ -187,10 +188,11 @@ export function Home(): React.JSX.Element {
     }
   }, [])
 
+  // A place opens in place of the one shown; `alongside` (Shift-click) opens it beside them.
   const openPlace = useCallback(
-    (id: TileId) => {
+    (id: TileId, alongside = false) => {
       setInteracted(true)
-      setLayout((current) => openTile(current, id, size.width + 16))
+      setLayout((current) => (alongside ? openTile : switchTile)(current, id, size.width + 16))
       setFocused(id)
       setMenu(undefined)
       if (id === 'talk') setSays(false)
@@ -515,9 +517,11 @@ export function Home(): React.JSX.Element {
               type="button"
               key={id}
               aria-label={NAMES[id]}
-              title={`${NAMES[id]}  Ctrl+${i + 1}`}
+              title={`${NAMES[id]}  Ctrl+${i + 1}  (Shift-click to open beside)`}
               aria-pressed={layout.open.includes(id)}
-              onClick={() => (layout.open.includes(id) ? close(id) : openPlace(id))}
+              onClick={(event) =>
+                layout.open.includes(id) ? close(id) : openPlace(id, event.shiftKey)
+              }
             >
               <Icon name={ICONS[id]} size={16} />
             </button>

@@ -22,6 +22,10 @@
     transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
     background 0.2s ease;
 }
+/* Outranks the home workspace's `button { color: inherit }`, which drew the icon in ink on ink. */
+.mic-wrap .mic {
+  color: var(--on-ink);
+}
 .mic:hover:not(:disabled) {
   transform: scale(1.04);
 }

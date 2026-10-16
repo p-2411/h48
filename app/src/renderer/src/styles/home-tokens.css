@@ -17,7 +17,7 @@
 /* Colours, by day and by night. The pages only ever use these, so they follow the theme. */
 :root, .theme-light {
   --ground: #f2f3f3; --card: #ffffff; --ink: #1b201f; --ink2: #3a403e; --sub: #666c6a; --faint: #8a908e;
-  --on-ink: #ffffff; --soft: #f2f1ed; --soft-hover: #ecebe7; --soft2: #f4f4f2; --soft3: #f6f5f2;
+  --on-ink: #ffffff; --cream: #f6f1e7; --soft: #f2f1ed; --soft-hover: #ecebe7; --soft2: #f4f4f2; --soft3: #f6f5f2;
   --seg: #eceded; --seg-on: #ffffff; --track: #e7e8e7; --switch-off: #dcdedd;
   --line: rgba(27,32,31,0.07); --line2: rgba(27,32,31,0.14);
   --face: #f7f8f7; --eye: #18211f; --mouth: #3a4644;
@@ -26,7 +26,7 @@
 }
 .theme-dark {
   --ground: #121313; --card: #1a1c1c; --ink: #eef3f1; --ink2: #c9d0ce; --sub: #9aa3a0; --faint: #6f7775;
-  --on-ink: #121313; --soft: rgba(238,243,241,0.08); --soft-hover: rgba(238,243,241,0.13); --soft2: rgba(238,243,241,0.06); --soft3: rgba(238,243,241,0.05);
+  --on-ink: #121313; --cream: rgba(255,236,204,0.06); --soft: rgba(238,243,241,0.08); --soft-hover: rgba(238,243,241,0.13); --soft2: rgba(238,243,241,0.06); --soft3: rgba(238,243,241,0.05);
   --seg: rgba(238,243,241,0.07); --seg-on: #2c2f2f; --track: rgba(238,243,241,0.10); --switch-off: #3a3e3d;
   --line: rgba(238,243,241,0.08); --line2: rgba(238,243,241,0.16);
   --face: #0e0f0f; --eye: #eef5f3; --mouth: #c6ddd9;

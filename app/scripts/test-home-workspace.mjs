@@ -1,7 +1,7 @@
 ﻿import assert from 'node:assert/strict'
 import { createJiti } from 'jiti'
 const jiti = createJiti(import.meta.url)
-const { defaultLayout, cleanLayout, openTile, fitTiles, DEFAULT_SPLIT } = await jiti.import(
+const { defaultLayout, cleanLayout, openTile, switchTile, fitTiles, DEFAULT_SPLIT } = await jiti.import(
   '../src/shared/workspace.ts'
 )
 const { tileRects, toRect } = await jiti.import('../src/renderer/src/home/layout.ts')
@@ -16,6 +16,11 @@ assert.deepEqual(narrow.open, ['today', 'watching', 'talk'])
 narrow = openTile(narrow, 'words', 900)
 assert.deepEqual(narrow.open, ['today', 'words', 'talk'])
 assert.deepEqual(openTile(narrow, 'words', 900).open, ['words', 'today', 'talk'])
+// A click switches: the place takes the place of the open ones, and Talk's chat stays.
+assert.deepEqual(switchTile(narrow, 'watching', 900).open, ['watching', 'talk'])
+assert.deepEqual(switchTile(defaultLayout(), 'today', 1120).open, ['today'])
+assert.deepEqual(switchTile(switchTile(defaultLayout(), 'today', 1120), 'words', 1120).open, ['words'])
+assert.deepEqual(switchTile({ ...defaultLayout(), open: ['today'] }, 'talk', 1120).open, ['today', 'talk'])
 assert.deepEqual(
   cleanLayout({
     open: ['talk', 'bogus', 'words', 'words', 'today'],

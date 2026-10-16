@@ -50,31 +50,25 @@ export function TodayTile({ onOpen }: { onOpen: (tile: HTMLElement) => void }): 
               <b>3</b>One challenge
             </li>
           </ol>
-          <details className="hub-streak-details">
-            <summary>{today.streak.days} days in a row · This week</summary>{' '}
-            <div className="today-streak">
-              <span className="label">
-                {today.streak.days} {today.streak.days === 1 ? 'day' : 'days'} in a row
-              </span>
-              <ol className="week" aria-label="This week">
-                {today.week.map((day, i) => (
-                  <li
-                    key={day.day}
-                    className={`week-day ${day.state}`}
-                    aria-label={`${DAYS[i]}: ${day.state}`}
-                  >
-                    <span aria-hidden="true">{DAYS[i][0]}</span>
-                  </li>
-                ))}
-              </ol>
-              <p className="faint">{streakNote(today.streak)}</p>
-            </div>
-          </details>
+          <div className="hub-streak">
+            <span className="hub-streak-days">
+              {today.streak.days} {today.streak.days === 1 ? 'day' : 'days'} in a row
+            </span>
+            <ol className="week" aria-label="This week">
+              {today.week.map((day, i) => (
+                <li
+                  key={day.day}
+                  className={`week-day ${day.state}`}
+                  aria-label={`${DAYS[i]}: ${day.state}`}
+                >
+                  <span aria-hidden="true">{DAYS[i][0]}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="faint hub-streak-note">{streakNote(today.streak)}</p>
+          </div>
           {(today.hasWatched || today.due > 0) && (
             <div className="today-start">
-              <span className="faint">
-                {today.due > 0 ? `${today.due} cards · ` : ''}A line to say · A challenge
-              </span>
               <button
                 className="btn primary"
                 onClick={(e) => onOpen(e.currentTarget.closest<HTMLElement>('.tile')!)}

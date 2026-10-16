@@ -74,5 +74,12 @@ export function openTile(layout: WorkspaceLayout, id: TileId, width: number): Wo
     open: fitTiles(talk ? [...others, 'talk'] : others, width)
   }
 }
+/** Shows `id` in place of the open places (Talk's chat stays beside it, as it is). openTile puts
+ * it beside them instead. */
+export function switchTile(layout: WorkspaceLayout, id: TileId, width: number): WorkspaceLayout {
+  if (id === 'talk') return openTile(layout, id, width)
+  const talk = layout.open.includes('talk')
+  return openTile({ ...layout, open: talk ? ['talk'] : [] }, id, width)
+}
 export type HomePreferences = { appearance: Appearance; layout: WorkspaceLayout }
 export type HomeView = HomePreferences & { dark: boolean; platform: string }
