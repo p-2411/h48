@@ -10,7 +10,8 @@
     "dashboard": "node --env-file=.env.local scripts/dashboard.js"
   },
   "dependencies": {
-    "@neondatabase/serverless": "1.1.0"
+    "@neondatabase/serverless": "1.1.0",
+    "@vercel/analytics": "^2.0.1"
   },
   "engines": {
     "node": ">=20"
