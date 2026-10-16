@@ -213,6 +213,10 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   .g1 { right: auto; left: -4px; top: -26px } .g2 { left: auto; right: -4px; top: 166px }
   .click-me { left: -10px; top: -34px; font-size: 24px }
   .screen { padding: 16px }
+  /* On a phone the Ask frame is a taller screen: the side panel over the video, the strip under it. */
+  .frame { aspect-ratio: auto; display: flex; flex-direction: column; gap: 14px; padding: 14px 12px }
+  .frame .frame-panel, .frame .frame-strip { position: static; width: auto; transform: none }
+  .frame .frame-strip { order: 2; padding-top: 72px }
   .divider { margin: 64px 0; padding-left: 0 } .divider-top { margin: 0 0 48px }
   .how-h { margin: 0 0 56px; font-size: 40px }
   .say { grid-template-columns: 1fr; row-gap: 12px } .spot { width: 120px; height: 79px; margin-top: 0 }
@@ -540,6 +544,7 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   // (data-fit="flex") takes the room it's given, down to data-min; the strip over the video
   // (data-fit="video") is drawn to the video's scale.
   function fit() {
+    var phone = window.innerWidth <= 760;
     pieces.forEach(function (p) {
       var room = p.host.clientWidth;
       // A little room to spare: this site's copy of Inter sets a hair wider than the app's.
@@ -548,6 +553,10 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
       if (p.fit === 'flex') { z = Math.min(1, room / p.min); p.top.style.width = room / z + 'px'; }
       // Over the video, to scale: the strip takes the share of the frame it takes of a full-screen
       // video on a screen 1440 points wide.
+      // On a phone that would be too small to read: the strip fills the frame's width instead, and the
+      // side panel takes the frame's width, reflowing like the panel window does.
+      else if (p.fit === 'video' && phone && p.part.group === 'panel') { z = Math.min(1, room / 300); p.top.style.width = room / z + 'px'; }
+      else if (p.fit === 'video' && phone) { z = Math.min(1, room / width); p.top.style.width = width + 'px'; }
       else if (p.fit === 'video') { z = p.host.parentElement.clientWidth / 1440; p.top.style.width = width + 'px'; }
       else { z = Math.min(1, room / width); p.top.style.width = width + 'px'; }
       p.top.style.zoom = z;
