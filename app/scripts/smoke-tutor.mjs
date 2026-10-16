@@ -124,5 +124,12 @@ if (
   !liveHook.includes('new MediaStream([track])')
 )
   throw new Error('Voice reconnection or remote-audio fallback is missing.')
+// Speech either way (the learner's words, Duet's) is what keeps a session open; a minute without
+// any ends it through the same path as End.
+if (
+  !liveHook.includes('lastSpeech.current = Date.now()') ||
+  !liveHook.includes('silentTooLong(lastSpeech.current, Date.now())')
+)
+  throw new Error('Voice no longer ends itself after a minute with nobody speaking.')
 
 console.log('Tutor prompt and shared FSRS smoke test passed.')

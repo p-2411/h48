@@ -32,6 +32,15 @@ export function useVoiceHandoff(
     window.duet.tutor.voiceEnded()
     focusMessageBox(box)
   }, [voiceOn, transcripts, box, onTurns])
+  // Leaving the conversation with voice on (another panel tab, another place in the home base) drops
+  // the call with no render to see it end: voice ends here too, so its minutes on Duet's server stop
+  // and the video may play.
+  useEffect(
+    () => () => {
+      if (wasOn.current) window.duet.tutor.voiceEnded()
+    },
+    []
+  )
   return endButton
 }
 

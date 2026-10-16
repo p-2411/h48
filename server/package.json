@@ -1,0 +1,22 @@
+{
+  "name": "duet-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-concurrency=1 \"test/*.test.js\"",
+    "dev": "node --env-file-if-exists=.env.local dev.js",
+    "migrate": "node --env-file-if-exists=.env.local scripts/migrate.js",
+    "plan": "node --env-file-if-exists=.env.local scripts/plan.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "1.1.0",
+    "jose": "6.2.12",
+    "stripe": "23.0.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.9"
+  }
+}

@@ -6,7 +6,7 @@
 // word's popup and the settings. Clicks pass through the empty part to the video; the page says
 // when the pointer is over something of Duet's (duet:solid), and only then does the window take
 // clicks.
-import { BrowserWindow, screen, type Rectangle } from 'electron'
+import { app, BrowserWindow, screen, type Rectangle } from 'electron'
 import type { Settings } from '../settings'
 import { loadPage, webPreferences } from './load'
 import { OVERLAY, overlayBounds, stripOnScreen } from './overlay-size'
@@ -48,6 +48,8 @@ export function createOverlay(settings: Settings): BrowserWindow {
     // On macOS, a panel: Duet has a Dock icon (it is a normal app), and a normal app's window can't
     // join another app's full-screen space; a panel floats over it, on every desktop.
     ...(process.platform === 'darwin' && { type: 'panel' }),
+    // On Windows, a tool window: kept out of Alt+Tab, as it is out of the taskbar.
+    ...(process.platform === 'win32' && { type: 'toolbar' }),
     show: false,
     // Its animations (Motion, on requestAnimationFrame) must run on time: macOS can take this
     // see-through window for covered, and the throttling would stall them half-way.
@@ -62,10 +64,24 @@ export function createOverlay(settings: Settings): BrowserWindow {
   loadPage(overlay, 'index')
 
   overlay.once('ready-to-show', () => overlay.showInactive())
+  // The strip can have the focus (a click on it), so Alt+F4 would close it, and the show/hide key
+  // and the tray would have no strip left. It only hides; it closes when Duet quits.
+  let quitting = false
+  app.once('before-quit', () => (quitting = true))
+  overlay.on('close', (event) => {
+    if (quitting) return
+    event.preventDefault()
+    overlay.hide()
+  })
   return overlay
 }
 
 export function toggleOverlay(overlay: BrowserWindow): void {
+  if (overlay.isDestroyed()) return
   if (overlay.isVisible()) overlay.hide()
-  else overlay.showInactive()
+  else {
+    overlay.showInactive()
+    // Windows can drop a window from the top after a video goes full screen: put it back on top.
+    overlay.setAlwaysOnTop(true, 'screen-saver')
+  }
 }

@@ -1,10 +1,17 @@
 appId: io.useduet.app
 productName: Duet
+copyright: Copyright © 2026 Duet
+# Sign-in comes back to Duet from the browser by a duet:// link (src/main/account).
+protocols:
+  - name: Duet
+    schemes:
+      - duet
 directories:
   buildResources: build
 files:
   - '!**/.vscode/*'
   - '!src/*'
+  - '!{dev,native,scripts}/**'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
@@ -13,30 +20,48 @@ asarUnpack:
   - resources/**
 win:
   executableName: Duet
+  # The Mac's readers aren't needed on Windows (resources/bin has every OS's).
+  files:
+    - '!resources/bin/*-macos'
+  # Signing (so SmartScreen and Defender trust the installer) reads its secrets from the environment
+  # only, never from this file. With a certificate file (OV), set CSC_LINK (its path or base64) and
+  # CSC_KEY_PASSWORD; electron-builder then signs the app, the readers in resources/bin and the
+  # installer. Without them the build is unsigned. Azure Artifact Signing would instead need a
+  # win.azureSignOptions block here (account and profile names) and AZURE_TENANT_ID, AZURE_CLIENT_ID
+  # and AZURE_CLIENT_SECRET in the environment: not set up until one is chosen.
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  category: public.app-category.education
+  # Apple silicon only, like the native helpers in resources/bin, whatever Node the build runs under.
+  target:
+    - target: dmg
+      arch: arm64
+    - target: zip
+      arch: arm64
   entitlementsInherit: build/entitlements.mac.plist
-  # The microphone is Duet's only prompt here: Accessibility (reading the captions) has none, and
-  # system audio is asked for by the audio reader, with its own wording (native/macos/AudioReader).
+  # Two prompts: the microphone (talking to Duet) and system audio (hearing the lines on sites with no
+  # captions to read). Accessibility, for reading captions, has none. The audio reader embeds the same
+  # system-audio wording in its own Info.plist (native/macos/AudioReader): keep the two the same.
   extendInfo:
     NSMicrophoneUsageDescription: Duet listens when you talk to it or say a line back, and only then.
-  notarize: false
+    NSAudioCaptureUsageDescription: Duet listens to the sound of the video you are watching to get its lines, and never keeps it.
+  # Signed with the Developer ID certificate in the keychain (the helpers in resources/bin too) and
+  # notarised with the notarytool keychain profile scripts/release-mac.sh names. Without that profile
+  # (any other build) notarising is skipped with a warning. macOS installs updates only on a signed app.
+  notarize: true
 dmg:
   artifactName: ${name}-${version}.${ext}
-linux:
-  target:
-    - AppImage
-    - snap
-    - deb
-  maintainer: electronjs.org
-  category: Utility
-appImage:
-  artifactName: ${name}-${version}.${ext}
 npmRebuild: false
+# Releases, and the feed installed copies check for updates (src/main/updates): a public repo that
+# holds only the release files, so the app needs no token. The code stays private.
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: p-2411
+  repo: duet-releases
+  # Uploaded as a draft, which installed copies can't see; scripts/release-mac.sh publishes it once
+  # the app passes Gatekeeper.
+  releaseType: draft

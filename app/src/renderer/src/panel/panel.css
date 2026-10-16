@@ -7,6 +7,9 @@ html, body, #root { height: 100%; overflow: hidden; background: transparent; }
 }
 .window-head { -webkit-app-region: drag; margin-top: -40px; padding-top: 40px; }
 .window-head button { -webkit-app-region: no-drag; }
+/* Windows draws its own title bar above the page: no room to leave for the window buttons. */
+[data-platform='win32'] .window { padding-top: 12px; }
+[data-platform='win32'] .window-head { margin-top: 0; padding-top: 0; }
 .window > :last-child { flex: 1; min-height: 0; overflow: auto; padding-bottom: 20px; }
 /* A tab that broke (ErrorBoundary): its message keeps its own height. */
 .window > .notice { flex: none; }

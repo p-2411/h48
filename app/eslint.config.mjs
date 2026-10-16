@@ -6,7 +6,8 @@ import eslintPluginReactHooks from 'eslint-plugin-react-hooks'
 import eslintPluginReactRefresh from 'eslint-plugin-react-refresh'
 
 export default defineConfig(
-  { ignores: ['**/node_modules', '**/dist', '**/out'] },
+  // design-preview: design studies (not part of the app); legacy: old screens kept for reference, not built.
+  { ignores: ['**/node_modules', '**/dist', '**/out', 'design-preview/**', 'legacy/**'] },
   tseslint.configs.recommended,
   eslintPluginReact.configs.flat.recommended,
   eslintPluginReact.configs.flat['jsx-runtime'],
@@ -29,8 +30,8 @@ export default defineConfig(
     }
   },
   {
-    // Plain JavaScript scripts (tests, build helpers) can't annotate return types.
-    files: ['scripts/**/*.mjs'],
+    // Plain JavaScript scripts (tests, build helpers, dev tools) can't annotate return types.
+    files: ['scripts/**/*.mjs', 'dev/**/*.mjs'],
     rules: { '@typescript-eslint/explicit-function-return-type': 'off' }
   },
   eslintConfigPrettier

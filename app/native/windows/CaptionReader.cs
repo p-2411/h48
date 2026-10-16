@@ -3,9 +3,12 @@
 // Uses Windows UI Automation, the same accessibility surface used by screen readers, to find the
 // active Chromium video page, its seek slider and visible subtitle text. It speaks the same JSON
 // lines protocol as native/macos/CaptionReader.swift, so the Electron app remains platform-neutral.
+// Two differences: the status's "bundle" is the browser's process id (what the audio reader,
+// AudioReader.cs, listens to), and a frame is in physical pixels, not points.
 //
 // Build with scripts/build-native.mjs on Windows. Run with --self-test to verify the executable and
-// JSON protocol without requiring a browser.
+// JSON protocol without requiring a browser, and with --source-hash for the hash of the source it was
+// built from (scripts/check-native-readers.mjs).
 
 using System;
 using System.Collections.Concurrent;
@@ -15,6 +18,7 @@ using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Web.Script.Serialization;
 using System.Windows.Automation;
@@ -63,16 +67,45 @@ internal static class CaptionReader
     private static string _lastStatus = "";
     private static string _lastCaption = null;
     private static string _lastTime = "";
+    private static string _lastFrame = "";
     private static Target _current;
+    // Duet's own process (its windows are its main process's): pressing the strip brings Duet to the
+    // front, and that mustn't count as leaving the video. Given by the app (--duet-pid).
+    private static uint _duetPid;
+    // The browser window last in front on a supported page, kept while Duet's own window is in front.
+    private static IntPtr _watched = IntPtr.Zero;
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindow(IntPtr window);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr window);
 
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr window);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetProcessDpiAwarenessContext(IntPtr context);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetProcessDPIAware();
+
+    private delegate bool WindowVisitor(IntPtr window, IntPtr data);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumWindows(WindowVisitor visitor, IntPtr data);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr window);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetWindowText(IntPtr window, StringBuilder text, int length);
 
     [DllImport("user32.dll")]
     private static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra);
@@ -101,13 +134,20 @@ internal static class CaptionReader
         Console.Out.Flush();
     }
 
+    // The supported sites, as in the macOS reader's `sites` table and src/main/sources.
+    private static readonly string[] Sites = { "youtube.com", "netflix.com", "disneyplus.com", "crunchyroll.com" };
+
+    private static bool IsOn(Uri uri, string site)
+    {
+        string host = uri.Host.ToLowerInvariant();
+        return host == site || host.EndsWith("." + site);
+    }
+
     private static bool SupportedAddress(string address)
     {
         Uri uri;
         if (!Uri.TryCreate(address, UriKind.Absolute, out uri)) return false;
-        string host = uri.Host.ToLowerInvariant();
-        return host == "youtube.com" || host.EndsWith(".youtube.com") ||
-               host == "netflix.com" || host.EndsWith(".netflix.com");
+        return Sites.Any(site => IsOn(uri, site));
     }
 
     private static string ValueOf(AutomationElement element)
@@ -135,7 +175,7 @@ internal static class CaptionReader
                 string candidate = ValueOf(edit);
                 if (SupportedAddress(candidate)) return candidate;
                 if (!String.IsNullOrWhiteSpace(candidate) &&
-                    (candidate.Contains("youtube.com") || candidate.Contains("netflix.com")))
+                    Sites.Any(site => candidate.Contains(site)))
                 {
                     candidate = "https://" + candidate.TrimStart('/');
                     if (SupportedAddress(candidate)) return candidate;
@@ -162,10 +202,23 @@ internal static class CaptionReader
     {
         Uri uri;
         if (!Uri.TryCreate(address, UriKind.Absolute, out uri)) return false;
-        string host = uri.Host.ToLowerInvariant();
-        if (host.EndsWith("youtube.com"))
+        // After an optional locale ("/en-gb/play/…"), as in src/main/sources/address.ts.
+        string path = Regex.Replace(uri.AbsolutePath, "^/[a-z]{2}(?:-[a-z]{2})?(?=/)", "", RegexOptions.IgnoreCase);
+        if (IsOn(uri, "youtube.com"))
             return uri.AbsolutePath == "/watch" || uri.AbsolutePath.StartsWith("/shorts/", StringComparison.Ordinal);
-        return host.EndsWith("netflix.com") && uri.AbsolutePath.StartsWith("/watch/", StringComparison.Ordinal);
+        if (IsOn(uri, "netflix.com")) return uri.AbsolutePath.StartsWith("/watch/", StringComparison.Ordinal);
+        if (IsOn(uri, "disneyplus.com"))
+            return path.StartsWith("/play/", StringComparison.Ordinal) || path.StartsWith("/video/", StringComparison.Ordinal);
+        return IsOn(uri, "crunchyroll.com") && path.StartsWith("/watch/", StringComparison.Ordinal);
+    }
+
+    // Captions and the player are read on YouTube and Netflix only. Disney+ and Crunchyroll are heard
+    // from the start and never read (their captions are images or hidden), as on macOS.
+    private static bool ReadsPlayer(string address)
+    {
+        Uri uri;
+        return IsVideoAddress(address) && Uri.TryCreate(address, UriKind.Absolute, out uri) &&
+               (IsOn(uri, "youtube.com") || IsOn(uri, "netflix.com"));
     }
 
     private static AutomationElement FindProgress(AutomationElement document)
@@ -331,23 +384,90 @@ internal static class CaptionReader
         }
     }
 
-    // Duet's own process (its windows are its main process's): pressing the strip brings Duet to the
-    // front, and that mustn't count as leaving the video. Given by the app (--duet-pid).
-    private static uint _duetPid;
-    // The browser window last in front on a video page, kept while Duet's own window is in front.
-    private static IntPtr _watched = IntPtr.Zero;
+    // Where the video is on screen, in physical pixels (the app turns them into its own units): on
+    // YouTube the player around the seek bar, elsewhere the page itself (Netflix's, Disney+'s and
+    // Crunchyroll's watch pages are all video), as the macOS reader does. Chromium gives each page
+    // element its HTML classes as its UI Automation class name.
+    private static System.Windows.Rect? VideoRect(Target target)
+    {
+        try
+        {
+            if (!IsVideoAddress(target.Url)) return null;
+            Uri uri;
+            if (!Uri.TryCreate(target.Url, UriKind.Absolute, out uri) || !IsOn(uri, "youtube.com"))
+                return target.Document.Current.BoundingRectangle;
+            AutomationElement element = target.Progress;
+            for (int level = 0; element != null && level < 20; level++)
+            {
+                if ((element.Current.ClassName ?? "").Split(' ').Contains("html5-video-player"))
+                    return element.Current.BoundingRectangle;
+                element = TreeWalker.RawViewWalker.GetParent(element);
+            }
+        }
+        catch (ElementNotAvailableException)
+        {
+        }
+        return null;
+    }
 
-    [DllImport("user32.dll")]
-    private static extern bool IsWindow(IntPtr window);
+    // Sends where the video is, when that changed: no place when there is none, or most of it is
+    // scrolled out of the page.
+    private static void ReportFrame(Target target)
+    {
+        Dictionary<string, object> fields = new Dictionary<string, object> { { "type", "frame" } };
+        System.Windows.Rect? video = target == null ? null : VideoRect(target);
+        if (video.HasValue && !video.Value.IsEmpty)
+        {
+            System.Windows.Rect page = target.Document.Current.BoundingRectangle;
+            System.Windows.Rect seen = System.Windows.Rect.Intersect(video.Value, page);
+            if (!seen.IsEmpty && seen.Height >= video.Value.Height * 0.5 && video.Value.Width >= 200 && video.Value.Height >= 120)
+            {
+                fields.Add("x", (int)Math.Round(video.Value.X));
+                fields.Add("y", (int)Math.Round(video.Value.Y));
+                fields.Add("width", (int)Math.Round(video.Value.Width));
+                fields.Add("height", (int)Math.Round(video.Value.Height));
+            }
+        }
+        string serialized = Json.Serialize(fields);
+        if (serialized == _lastFrame) return;
+        _lastFrame = serialized;
+        Emit(fields);
+    }
 
-    [DllImport("user32.dll")]
-    private static extern bool IsIconic(IntPtr window);
+    // The browsers' visible windows, front to back (EnumWindows goes in z-order), so the foreground
+    // one comes first. Every window counts, not only each browser's main one: the video may be in any.
+    private static List<Tuple<BrowserDefinition, Process, IntPtr>> BrowserWindows()
+    {
+        Dictionary<int, Tuple<BrowserDefinition, Process>> owners = new Dictionary<int, Tuple<BrowserDefinition, Process>>();
+        foreach (BrowserDefinition browser in Browsers)
+        {
+            foreach (Process process in Process.GetProcessesByName(browser.ProcessName))
+                owners[process.Id] = Tuple.Create(browser, process);
+        }
+        List<Tuple<BrowserDefinition, Process, IntPtr>> windows = new List<Tuple<BrowserDefinition, Process, IntPtr>>();
+        EnumWindows((window, data) =>
+        {
+            uint processId;
+            GetWindowThreadProcessId(window, out processId);
+            Tuple<BrowserDefinition, Process> owner;
+            if (IsWindowVisible(window) && owners.TryGetValue((int)processId, out owner) && TitleOf(window) != "")
+                windows.Add(Tuple.Create(owner.Item1, owner.Item2, window));
+            return true;
+        }, IntPtr.Zero);
+        return windows;
+    }
 
-    // Only the video the learner is watching: the browser window in front (any of a browser's windows,
-    // not only its first), or the one that was in front just before Duet's own strip or window was
-    // clicked. A video left playing in a window behind another app, or minimized, isn't read, nor is
-    // another browser's (a tab in the background isn't either: a window only shows its active tab).
-    private static Target FindTarget()
+    private static string TitleOf(IntPtr window)
+    {
+        StringBuilder title = new StringBuilder(512);
+        GetWindowText(window, title, title.Capacity);
+        return title.ToString();
+    }
+
+    // The window the learner is watching: the browser window in front, or the one that was in front just
+    // before Duet's own strip or window was clicked. A video left playing in a window behind another
+    // app, or minimized, isn't read, nor is another browser's (a window only shows its active tab).
+    private static IntPtr WatchedWindow()
     {
         IntPtr window = GetForegroundWindow();
         uint processId;
@@ -355,55 +475,95 @@ internal static class CaptionReader
         if (_duetPid != 0 && processId == _duetPid)
         {
             window = _watched;
-            if (window == IntPtr.Zero || !IsWindow(window) || IsIconic(window)) return null;
-            GetWindowThreadProcessId(window, out processId);
+            if (window == IntPtr.Zero || !IsWindow(window) || IsIconic(window)) return IntPtr.Zero;
         }
+        return window;
+    }
 
-        Process process;
-        try
+    // The watched browser window when it shows a supported site (with the player read on a video page).
+    private static Target FindTarget()
+    {
+        IntPtr watched = WatchedWindow();
+        if (watched == IntPtr.Zero) return null;
+        foreach (Tuple<BrowserDefinition, Process, IntPtr> candidate in BrowserWindows())
         {
-            process = Process.GetProcessById((int)processId);
-        }
-        catch (ArgumentException)
-        {
-            return null;
-        }
-        BrowserDefinition browser = Browsers.FirstOrDefault(
-            item => String.Equals(item.ProcessName, process.ProcessName, StringComparison.OrdinalIgnoreCase));
-        if (browser == null) return null;
-
-        try
-        {
-            AutomationElement root = AutomationElement.FromHandle(window);
-            AutomationElement document = FindDocument(root);
-            if (document == null) return null;
-            string address = AddressFrom(root, document);
-            if (!IsVideoAddress(address)) return null;
-            _watched = window;
-            AutomationElement progress = FindProgress(document);
-            AutomationElement play = FindPlayButton(document);
-            return new Target
+            if (candidate.Item3 != watched) continue;
+            try
             {
-                Process = process,
-                Window = window,
-                Root = root,
-                Document = document,
-                Progress = progress,
-                PlayButton = play,
-                Browser = browser.DisplayName,
-                Url = address,
-                Title = root.Current.Name ?? "",
-                Position = PositionOf(progress),
-                Playing = PlayingFrom(play),
-                Caption = CaptionFrom(document)
-            };
+                AutomationElement root = AutomationElement.FromHandle(candidate.Item3);
+                AutomationElement document = FindDocument(root);
+                if (document == null) continue;
+                string address = AddressFrom(root, document);
+                if (!SupportedAddress(address)) continue;
+                Target target = new Target
+                {
+                    Process = candidate.Item2,
+                    Window = candidate.Item3,
+                    Root = root,
+                    Document = document,
+                    Browser = candidate.Item1.DisplayName,
+                    Url = address,
+                    Title = TitleOf(candidate.Item3),
+                    Caption = ""
+                };
+                if (ReadsPlayer(address))
+                {
+                    target.Progress = FindProgress(document);
+                    target.PlayButton = FindPlayButton(document);
+                    target.Position = PositionOf(target.Progress);
+                    target.Playing = PlayingFrom(target.PlayButton);
+                    target.Caption = CaptionFrom(document, target.Progress);
+                }
+                _watched = candidate.Item3;
+                return target;
+            }
+            catch (Exception error)
+            {
+                if (!(error is ElementNotAvailableException) && !(error is InvalidOperationException))
+                    Debug.WriteLine(error);
+            }
         }
-        catch (Exception error)
+        return null;
+    }
+
+    private static string RectText(AutomationElement element)
+    {
+        if (element == null) return null;
+        System.Windows.Rect rect = element.Current.BoundingRectangle;
+        return rect.IsEmpty ? "empty" : String.Format(CultureInfo.InvariantCulture, "{0:0},{1:0} {2:0}x{3:0}", rect.Left, rect.Top, rect.Width, rect.Height);
+    }
+
+    // For --probe, run from a terminal: what the reader takes as the caption on the browser window in
+    // front, and every short piece of text on the page with whether it looks like caption text.
+    private static void Probe()
+    {
+        Target target = FindTarget();
+        if (target == null)
         {
-            if (!(error is ElementNotAvailableException) && !(error is InvalidOperationException))
-                Debug.WriteLine(error);
-            return null;
+            Emit(new Dictionary<string, object> { { "type", "probe" }, { "found", false } });
+            return;
         }
+        List<Dictionary<string, object>> texts = new List<Dictionary<string, object>>();
+        foreach (AutomationElement element in target.Document.FindAll(
+            TreeScope.Descendants,
+            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text)))
+        {
+            if (element.Current.IsOffscreen) continue;
+            string text = (element.Current.Name ?? "").Trim();
+            if (text.Length == 0 || text.Length > 80) continue;
+            System.Windows.Rect rect = element.Current.BoundingRectangle;
+            texts.Add(new Dictionary<string, object>
+            {
+                { "text", text }, { "top", Math.Round(rect.Top) }, { "useful", UsefulCaptionText(text) }
+            });
+        }
+        Emit(new Dictionary<string, object>
+        {
+            { "type", "probe" }, { "found", true }, { "url", target.Url }, { "caption", target.Caption },
+            { "document", RectText(target.Document) }, { "progress", RectText(target.Progress) },
+            { "progressName", target.Progress == null ? null : target.Progress.Current.Name },
+            { "texts", texts }
+        });
     }
 
     private static void HandleCommands(Target target)
@@ -522,6 +682,8 @@ internal static class CaptionReader
                 // Ignore malformed input; the app sends one isolated JSON command per line.
             }
         }
+        // stdin closed: the app went away, so stop rather than keep reading the browser on our own.
+        Environment.Exit(0);
     }
 
     private static void SelfTest()
@@ -545,49 +707,87 @@ internal static class CaptionReader
         });
     }
 
-    private static string RectText(AutomationElement element)
-    {
-        if (element == null) return null;
-        System.Windows.Rect rect = element.Current.BoundingRectangle;
-        return rect.IsEmpty ? "empty" : String.Format(CultureInfo.InvariantCulture, "{0:0},{1:0} {2:0}x{3:0}", rect.Left, rect.Top, rect.Width, rect.Height);
-    }
-
-    private static void Probe()
+    // One look at the browser: what it shows, the captions, the time and where the video is.
+    private static void Poll()
     {
         Target target = FindTarget();
+        _current = target;
         if (target == null)
         {
-            Emit(new Dictionary<string, object> { { "type", "probe" }, { "found", false } });
-            return;
-        }
-        List<Dictionary<string, object>> texts = new List<Dictionary<string, object>>();
-        foreach (AutomationElement element in target.Document.FindAll(
-            TreeScope.Descendants,
-            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text)))
-        {
-            if (element.Current.IsOffscreen) continue;
-            string text = (element.Current.Name ?? "").Trim();
-            if (text.Length == 0 || text.Length > 80) continue;
-            System.Windows.Rect rect = element.Current.BoundingRectangle;
-            texts.Add(new Dictionary<string, object>
+            EmitStatus(new Dictionary<string, object>
             {
-                { "text", text }, { "top", Math.Round(rect.Top) }, { "useful", UsefulCaptionText(text) },
-                { "inCaption", InCaption(element) }
+                { "type", "status" }, { "trusted", true }, { "captions", false }
             });
+            if (_lastCaption != null && _lastCaption != "")
+            {
+                _lastCaption = "";
+                Emit(new Dictionary<string, object>
+                {
+                    { "type", "caption" }, { "text", "" }, { "at", NowMilliseconds() }
+                });
+            }
         }
-        Emit(new Dictionary<string, object>
+        else
         {
-            { "type", "probe" }, { "found", true }, { "url", target.Url }, { "caption", target.Caption },
-            { "document", RectText(target.Document) }, { "progress", RectText(target.Progress) },
-            { "progressName", target.Progress == null ? null : target.Progress.Current.Name },
-            { "texts", texts }
-        });
+            EmitStatus(new Dictionary<string, object>
+            {
+                { "type", "status" }, { "trusted", true }, { "browser", target.Browser },
+                // On Windows the browser's process id, which the audio reader listens to.
+                { "bundle", target.Process.Id.ToString(CultureInfo.InvariantCulture) },
+                { "url", target.Url }, { "title", target.Title },
+                { "captions", !String.IsNullOrWhiteSpace(target.Caption) }, { "available", true }
+            });
+
+            if (target.Caption != _lastCaption)
+            {
+                _lastCaption = target.Caption;
+                Emit(new Dictionary<string, object>
+                {
+                    { "type", "caption" }, { "text", target.Caption }, { "url", target.Url },
+                    { "browser", target.Browser }, { "at", NowMilliseconds() }
+                });
+            }
+
+            if (target.Position.HasValue)
+            {
+                Dictionary<string, object> time = new Dictionary<string, object>
+                {
+                    { "type", "time" }, { "t", target.Position.Value },
+                    { "playing", target.Playing }, { "ad", false }, { "url", target.Url }
+                };
+                string serialized = Json.Serialize(time);
+                if (serialized != _lastTime)
+                {
+                    _lastTime = serialized;
+                    time.Add("at", NowMilliseconds());
+                    Emit(time);
+                }
+            }
+        }
+
+        ReportFrame(target);
+        HandleCommands(_current);
     }
 
     [STAThread]
     private static int Main(string[] args)
     {
         Console.OutputEncoding = new UTF8Encoding(false);
+        // Physical pixels everywhere, whatever each display's scaling (per-monitor v2, Windows 10
+        // 1703+; else the system scaling), so the video's place is the same on every display.
+        try
+        {
+            if (!SetProcessDpiAwarenessContext(new IntPtr(-4))) SetProcessDPIAware();
+        }
+        catch (EntryPointNotFoundException)
+        {
+            SetProcessDPIAware();
+        }
+        if (args.Contains("--source-hash"))
+        {
+            Console.Out.Write(BuildInfo.SourceHash + "\n");
+            return 0;
+        }
         if (args.Contains("--self-test"))
         {
             SelfTest();
@@ -610,60 +810,17 @@ internal static class CaptionReader
 
         while (true)
         {
-            Target target = FindTarget();
-            _current = target;
-            if (target == null)
+            // A tab closing or moving on mid-look makes UI Automation throw; the reader must outlive that
+            // (the app doesn't restart it), so the next look starts afresh.
+            try
             {
-                EmitStatus(new Dictionary<string, object>
-                {
-                    { "type", "status" }, { "trusted", true }, { "captions", false }
-                });
-                if (_lastCaption != null && _lastCaption != "")
-                {
-                    _lastCaption = "";
-                    Emit(new Dictionary<string, object>
-                    {
-                        { "type", "caption" }, { "text", "" }, { "at", NowMilliseconds() }
-                    });
-                }
+                Poll();
             }
-            else
+            catch (Exception error)
             {
-                EmitStatus(new Dictionary<string, object>
-                {
-                    { "type", "status" }, { "trusted", true }, { "browser", target.Browser },
-                    { "url", target.Url }, { "title", target.Title },
-                    { "captions", !String.IsNullOrWhiteSpace(target.Caption) }, { "available", true }
-                });
-
-                if (target.Caption != _lastCaption)
-                {
-                    _lastCaption = target.Caption;
-                    Emit(new Dictionary<string, object>
-                    {
-                        { "type", "caption" }, { "text", target.Caption }, { "url", target.Url },
-                        { "browser", target.Browser }, { "at", NowMilliseconds() }
-                    });
-                }
-
-                if (target.Position.HasValue)
-                {
-                    Dictionary<string, object> time = new Dictionary<string, object>
-                    {
-                        { "type", "time" }, { "t", target.Position.Value },
-                        { "playing", target.Playing }, { "ad", false }, { "url", target.Url }
-                    };
-                    string serialized = Json.Serialize(time);
-                    if (serialized != _lastTime)
-                    {
-                        _lastTime = serialized;
-                        time.Add("at", NowMilliseconds());
-                        Emit(time);
-                    }
-                }
+                _current = null;
+                Console.Error.WriteLine("Look at the browser failed: " + error.Message);
             }
-
-            HandleCommands(_current);
             Thread.Sleep(250);
         }
     }

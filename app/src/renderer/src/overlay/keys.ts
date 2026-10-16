@@ -1,5 +1,8 @@
 // Duet's global keys (show or hide, talk): turning a key press into an Electron accelerator ("Alt+Shift+D"), and an
-// accelerator into the symbols a Mac shows (⌥⇧D).
+// accelerator into the symbols a Mac shows (⌥⇧D), or the words Windows shows (Alt+Shift+D).
+
+// Off the Mac, the ⊞ Windows key (metaKey) is kept for Windows' own shortcuts, so it can't be one of Duet's.
+const MAC = (globalThis as { duet?: { platform?: string } }).duet?.platform !== 'win32'
 
 const MODIFIERS: [keyof KeyboardEvent, string][] = [
   ['metaKey', 'Command'],
@@ -30,13 +33,15 @@ function keyName(code: string): string | undefined {
 export function accelerator(event: KeyboardEvent): string | undefined {
   const key = keyName(event.code)
   if (!key) return undefined
+  if (!MAC && event.metaKey) return undefined
   const modifiers = MODIFIERS.filter(([flag]) => event[flag]).map(([, name]) => name)
   if (!modifiers.some((name) => name !== 'Shift')) return undefined
   return [...modifiers, key].join('+')
 }
 
-/** "Alt+Shift+D" → "⌥⇧D". */
+/** "Alt+Shift+D" → "⌥⇧D" on the Mac; on Windows, "Ctrl+Alt+D" as Windows writes it. */
 export function symbols(accelerator: string): string {
+  if (!MAC) return accelerator.replace(/\bControl\b/g, 'Ctrl').replace(/\bReturn\b/g, 'Enter')
   return accelerator
     .split('+')
     .map((part) => SYMBOLS[part] ?? part)

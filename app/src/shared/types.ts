@@ -5,7 +5,21 @@ export type { Language } from './languages'
 import type { Language } from './languages'
 
 /** Video sites Duet supports; each is one file in src/main/sources. */
-export type Site = 'youtube' | 'netflix'
+export type Site = 'youtube' | 'netflix' | 'disneyplus' | 'crunchyroll'
+
+/** Each site's name as the learner knows it, in the order Duet lists them. */
+export const SITE_NAMES: Record<Site, string> = {
+  youtube: 'YouTube',
+  netflix: 'Netflix',
+  disneyplus: 'Disney+',
+  crunchyroll: 'Crunchyroll'
+}
+
+/** "YouTube, Netflix, Disney+ or Crunchyroll" (with `and` instead, if asked). */
+export function siteList(join: 'or' | 'and' = 'or'): string {
+  const names = Object.values(SITE_NAMES)
+  return `${names.slice(0, -1).join(', ')} ${join} ${names.at(-1)}`
+}
 
 /** A word's job in its sentence: it chooses which words a level swaps in, and names and grammar
  * words start ignored on the knowledge ladder (the colour is the word's rung). */
@@ -75,7 +89,7 @@ export type OverlayStatus = {
   /** The caption reader is running with the permission it needs. */
   trusted: boolean
   browser?: string
-  /** The browser's app id (macOS bundle id), for listening to its sound. */
+  /** The browser's app id (macOS bundle id; on Windows its process id), for listening to its sound. */
   bundle?: string
   url?: string
   captions?: boolean
@@ -137,6 +151,8 @@ export type OverlaySettings = {
   checkpoints?: boolean
   /** The daily reminder's time ("19:30", local); none means no reminder. */
   reminder?: string
+  /** Send crash reports and a few anonymous usage events (src/main/reports). On unless turned off. */
+  shareDiagnostics: boolean
   /** Which defaults saved settings have been brought up to (see SETTINGS_VERSION in main/settings.ts). */
   version?: number
 }
@@ -153,6 +169,7 @@ export const DEFAULT_SETTINGS: OverlaySettings = {
   talkShortcut: 'Alt+Shift+T',
   wordScript: 'native',
   showFullLine: true,
+  shareDiagnostics: true,
   version: 2
 }
 

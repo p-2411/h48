@@ -23,6 +23,7 @@ import { DUET_REACT, type DuetReaction } from '../components/duet/react'
 import { Icon } from '../components/Icon'
 import { useSettings } from '../components/useSettings'
 import { Brush } from './Brush'
+import { AccountBanner } from './AccountBanner'
 import { LanguageMenu } from './LanguageMenu'
 import { css, tileRects, type Box, type Divider, type Len } from './layout'
 import { SettingsPage } from './SettingsPage'
@@ -592,6 +593,10 @@ export function Home(): React.JSX.Element {
           {error}
         </p>
       )}
+      {/* Signed out, or a cap reached: one line above the workspace, which moves down for it. */}
+      <div className="home-banner-wrap">
+        <AccountBanner />
+      </div>
       <main className="work-area" ref={area}>
         <div className="work-content" inert={settings}>
           <div

@@ -1,7 +1,7 @@
 // What the strip says about the state of things. Normal running says nothing (a coloured dot, with
 // its words on hover); words show on the strip only when the learner can do something about it.
 import { languageName } from '../../../shared/languages'
-import { type Language, type OverlayStatus } from '../../../shared/types'
+import { siteList, type Language, type OverlayStatus } from '../../../shared/types'
 
 export type Notice = {
   text: string
@@ -14,6 +14,10 @@ export function actionable(status: OverlayStatus, language: Language): Notice | 
   const name = languageName(language)
   if (status.error) return { text: status.error }
   if (status.modelError) return { text: status.modelError }
+  // Windows asks for no permission: until its caption reader reports, Duet is only starting.
+  // (Outside a window, in the tests, as on macOS.)
+  const asksPermissions = typeof window === 'undefined' || window.duet.welcome.asksPermissions
+  if (!status.trusted && !asksPermissions) return { text: 'Duet is starting…' }
   if (!status.trusted)
     return {
       text: 'Duet needs Accessibility permission to see the video',
@@ -55,7 +59,7 @@ export function actionable(status: OverlayStatus, language: Language): Notice | 
 export function quiet(status: OverlayStatus, language: Language): { text: string; on: boolean } {
   const browser = status.browser ?? 'your browser'
   if (!status.url)
-    return { text: `Open a ${languageName(language)} video on YouTube or Netflix`, on: false }
+    return { text: `Open a ${languageName(language)} video on ${siteList()}`, on: false }
   if (status.source === 'transcript')
     return { text: `Following the transcript in ${browser}`, on: true }
   if (status.source === 'audio') return { text: `Listening to the video in ${browser}`, on: true }

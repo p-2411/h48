@@ -9,7 +9,7 @@ import {
   type NativeImage
 } from 'electron'
 import { readFile } from 'fs/promises'
-import { openai } from '../tutor/live'
+import { openAIAccess, openAIClient } from '../ai/access'
 
 // Pictures are kept at most this wide.
 const WIDTH = 640
@@ -58,9 +58,12 @@ export async function generatePicture(
   meaning: string,
   env: NodeJS.ProcessEnv = process.env
 ): Promise<string> {
-  const key = env.OPENAI_API_KEY
-  if (!key) throw new Error('Making a picture needs an OpenAI API key.')
-  const result = await openai(key).images.generate({
+  // Duet's server has no picture route yet (it meters only text, voice and transcription), so
+  // pictures are made only with a development key; signed-in builds offer a still or the learner's own.
+  const access = openAIAccess(env)
+  if (!access || access.baseURL)
+    throw new Error('Duet can’t make pictures yet. Use a still from the video, or a picture of your own.')
+  const result = await openAIClient(access).images.generate({
     model: env.DUET_IMAGE_MODEL || 'gpt-image-1',
     prompt: `A clear, simple illustration of "${meaning}" for a language flashcard. One subject, plain light background, no text, no letters, no words.`,
     size: '1024x1024',

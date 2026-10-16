@@ -147,12 +147,19 @@ no box { align-items: center; text-align: center; gap: 12px; padding: 26px 0 6px
 .home-videos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
 .home-video { width: 100%; padding: 10px; gap: 6px; text-align: left; }
 .home-video-title { font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+/* Above the videos: each reading level watched, easiest first. */
+.home-levels { display: flex; flex-direction: column; gap: 6px; }
+.home-levels > .label { padding-left: 4px; }
+.home-levels ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.home-levels li { padding: 10px 12px; gap: 2px; }
+.home-level-name { font-weight: 500; }
 
 /* Settings: grouped lists, each group's name above it, like System Settings. */
 .home-settings { align-items: center; }
 .home-settings > * { width: 100%; max-width: 600px; }
 .settings-group { display: flex; flex-direction: column; gap: 6px; }
 .settings-group > .label { padding-left: 16px; }
+.settings-credit { padding-left: 16px; }
 .settings-group .glass { align-items: stretch; gap: 12px; }
 .settings-group .btn { align-self: flex-start; }
 
@@ -165,3 +172,18 @@ no box { align-items: center; text-align: center; gap: 12px; padding: 26px 0 6px
 .home-talk-head .head-slot { grid-column: 2; display: flex; justify-content: center; }
 .home-talk-head .btn { grid-column: 3; justify-self: end; }
 /* No line above the message box here: the page has room enough to set it apart. */
+
+/* A line above the hub when Duet can't help right now: signed out, or a cap reached
+   (AccountBanner.tsx). The hub moves down to make room. */
+.home-banner-wrap { position: absolute; top: 48px; left: 8px; right: 8px; z-index: 30; }
+.home-banner { flex-direction: row; align-items: center; gap: 12px; padding: 10px 14px; font-size: 13px; }
+.home-banner > span { flex: 1; }
+.home-banner-wrap:not(:empty) ~ .work-area { top: 104px; }
+
+/* Settings › Your plan: the plan, a bar for each meter, and what to do (AccountSection.tsx). */
+.plan-meter { display: flex; flex-direction: column; gap: 6px; }
+.plan-meter-text { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.plan-meter-track { height: 6px; border-radius: 3px; background: var(--fill); overflow: hidden; }
+.plan-meter-fill { height: 100%; border-radius: 3px; background: var(--fg); }
+.plan-meter-fill.full { background: var(--k-known); }
+.plan-actions { display: flex; flex-wrap: wrap; gap: 8px; }

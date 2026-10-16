@@ -144,7 +144,22 @@ const MIGRATIONS: string[] = [
   `
   CREATE INDEX words_recent ON words (language, last_seen);
   `,
-  // 6: the flashcards page (src/main/flashcards): each word's dictionary entry, looked up once; and
+  // 6: progress (src/main/progress): each video's words, from the lines met, never pruned (so a video
+  // keeps its % and reading level after its lines go), with how well each was known when first met
+  // there (the video's "then").
+  `
+  CREATE TABLE video_words (
+    video_id     TEXT NOT NULL REFERENCES videos (id) ON DELETE CASCADE,
+    language     TEXT NOT NULL,
+    key          TEXT NOT NULL,     -- shared/knowledge.ts wordKey
+    text         TEXT NOT NULL,     -- as it was last on screen
+    job          TEXT NOT NULL,     -- its job there: a word met in two jobs is counted in each
+    count        INTEGER NOT NULL,  -- times met in the video's lines in this job
+    first_credit REAL,              -- its rung's credit (shared/progress.ts) when first met here
+    PRIMARY KEY (video_id, language, key, job)
+  );
+  `,
+  // 7: the flashcards page (src/main/flashcards): each word's dictionary entry, looked up once; and
   // two things a card can have, Recall sooner and a picture.
   `
   CREATE TABLE dictionary (
@@ -168,8 +183,20 @@ export function database(): DatabaseSync {
   // Wait up to 2 s if another connection is writing, instead of failing at once.
   db = new DatabaseSync(join(app.getPath('userData'), 'duet.db'), { timeout: 2000 })
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;')
-  const { user_version: version } = db.prepare('PRAGMA user_version').get() as {
+  let { user_version: version } = db.prepare('PRAGMA user_version').get() as {
     user_version: number
+  }
+  // Before the v3 design and the launch work were merged, each added its own migration 6: flashcards
+  // on v3, progress on main. A database from a v3 build already has the flashcards one as its 6, so
+  // it gets progress's table here and carries on after 7.
+  const hasTable = (name: string): boolean =>
+    db!.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name) !== undefined
+  if (version === 6 && hasTable('dictionary') && !hasTable('video_words')) {
+    transaction(() => {
+      db!.exec(MIGRATIONS[5])
+      db!.exec('PRAGMA user_version = 7')
+    })
+    version = 7
   }
   for (let index = version; index < MIGRATIONS.length; index++) {
     transaction(() => {

@@ -7,16 +7,17 @@ import { spawn, type ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
 import { existsSync } from 'fs'
 import { join } from 'path'
-import { app } from 'electron'
+import { app, screen } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import type { PlayerTime } from './clock'
+import { reportHelperExit } from './reports'
 
 export type CaptionStatus = {
   /** The reader is running and has the OS permission it needs. */
   trusted: boolean
   /** Which browser and page the reader is looking at, when it has found one. */
   browser?: string
-  /** The browser's app id (macOS bundle id), for listening to its sound. */
+  /** The browser's app id (macOS bundle id; on Windows its process id), for listening to its sound. */
   bundle?: string
   url?: string
   /** The browser window's title (on YouTube, the video's title and the site's name). */
@@ -71,7 +72,8 @@ export class CaptionSource extends EventEmitter {
     // The reader reads only the browser window in front; Duet's own windows (its main process's)
     // coming to the front, as when the strip is pressed, keep the video it was reading.
     const args = standIn ? [] : ['--duet-pid', String(process.pid)]
-    this.child = spawn(path, args, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
+    const child = spawn(path, args, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
+    this.child = child
     this.child.stdout?.setEncoding('utf8')
     this.child.stdout?.on('data', (chunk: string) => {
       this.buffer += chunk
@@ -85,10 +87,20 @@ export class CaptionSource extends EventEmitter {
     this.child.stderr?.on('data', (chunk) =>
       console.error('[caption reader]', String(chunk).trim())
     )
-    this.child.on('exit', (code) => {
+    this.child.on('exit', (code, signal) => {
+      // Stopped by stop() when Duet quits; any other stop is reported (code and signal only).
+      if (this.child === child) reportHelperExit('caption-reader', { code, signal })
       this.emit('status', {
         trusted: false,
         error: `Caption reader stopped (code ${code}).`
+      } satisfies CaptionStatus)
+    })
+    // It could not start at all (missing, not allowed to run).
+    this.child.on('error', (error: NodeJS.ErrnoException) => {
+      reportHelperExit('caption-reader', { error: error.code ?? error.name })
+      this.emit('status', {
+        trusted: false,
+        error: 'Caption reader could not start.'
       } satisfies CaptionStatus)
     })
   }
@@ -129,7 +141,9 @@ export class CaptionSource extends EventEmitter {
     if (message.type === 'frame') {
       const { x, y, width, height } = message as Partial<VideoFrame>
       const known = [x, y, width, height].every((side) => typeof side === 'number')
-      this.emit('frame', known ? ({ x, y, width, height } as VideoFrame) : undefined)
+      const frame = known ? ({ x, y, width, height } as VideoFrame) : undefined
+      // The Windows reader gives physical pixels; the app places windows in points (DIPs).
+      this.emit('frame', frame && process.platform === 'win32' ? screen.screenToDipRect(null, frame) : frame)
       return
     }
     if (message.type === 'time') {

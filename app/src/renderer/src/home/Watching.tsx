@@ -1,10 +1,17 @@
-﻿import { useState } from 'react'
+// Watching: the videos watched with Duet, the last first, each reopened in the browser where the
+// learner left off, with its reading level and how much of it the learner understands (and, above
+// them, each reading level watched).
+import { useState } from 'react'
 import type { WatchingVideo } from '../../../shared/home'
+import { levelText } from '../../../shared/progress'
 import { say } from '../components/errors'
 import { ago, clock } from '../components/time'
 import { LoadState } from '../components/LoadState'
+import { levelLine, videoLine } from './progress'
 import { Thumbnail } from './Thumbnail'
 import { useLoaded } from './useLoaded'
+import { useProgress } from './useProgress'
+
 const loadWatching = (): Promise<WatchingVideo[]> => window.duet.home.getWatching()
 export function Watching(): React.JSX.Element {
   const {
@@ -12,6 +19,8 @@ export function Watching(): React.JSX.Element {
     error,
     reload
   } = useLoaded(loadWatching, 'Could not load the videos you watched.')
+  const progress = useProgress()
+  // Continue that couldn't open the video, and why; and which videos are listed.
   const [openError, setOpenError] = useState<string>(),
     [filter, setFilter] = useState('all')
   const open = (key: string): void => {
@@ -44,6 +53,21 @@ export function Watching(): React.JSX.Element {
         </div>
       </div>
       <LoadState loaded={!!videos} error={error} reload={reload} />
+      {!!progress?.levels.length && (
+        <section className="home-levels" aria-labelledby="home-levels-title">
+          <h2 className="label" id="home-levels-title">
+            Your reading levels
+          </h2>
+          <ul>
+            {progress.levels.map((level) => (
+              <li key={level.level} className="glass" title={levelText(level.level)}>
+                <span className="home-level-name">Reading level {level.level}</span>
+                <span className="faint">{levelLine(level)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {openError && (
         <p className="notice error" role="alert">
           {openError}
@@ -57,7 +81,10 @@ export function Watching(): React.JSX.Element {
         </p>
       )}
       <ul className="home-videos">
-        {shown?.map((video) => (
+        {shown?.map((video) => {
+          const understood = progress?.videos[video.key]
+          const line = videoLine(understood)
+          return (
           <li key={video.key}>
             <button
               className="home-video glass"
@@ -74,6 +101,11 @@ export function Watching(): React.JSX.Element {
                 {video.position !== undefined && ` · left off at ${clock(video.position)}`} ·{' '}
                 {ago(video.lastWatched)}
               </span>
+              {line && (
+                <span className="faint" title={understood?.level ? levelText(understood.level) : undefined}>
+                  {line}
+                </span>
+              )}
               {!!video.words?.length && (
                 <span className="video-words">
                   {video.words.slice(0, 6).map((word) => (
@@ -85,7 +117,8 @@ export function Watching(): React.JSX.Element {
               )}
             </button>
           </li>
-        ))}
+          )
+        })}
       </ul>
     </main>
   )

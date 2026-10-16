@@ -7,6 +7,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod'
 import { ModelError } from '../errors'
+import { reportModelFailure } from '../report'
 import type { StructuredModel, StructuredRequest } from '../structured'
 
 // Quick work (a subtitle line) needs little thought, and the learner is waiting.
@@ -50,6 +51,7 @@ export class AnthropicStructuredModel implements StructuredModel {
       if (!response.parsed_output) throw new ModelError('The model returned no usable result.', 'invalid_output')
       return response.parsed_output as T
     } catch (error) {
+      reportModelFailure({ provider: 'anthropic', model: this.model, task: request.name }, error)
       if (error instanceof ModelError) throw error
       if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError)
         throw new ModelError('The Anthropic API key was rejected.', 'auth')

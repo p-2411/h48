@@ -69,19 +69,23 @@ export class Home {
         symbolColor: dark ? '#eef3f1' : '#1b201f'
       })
   }
+  private readonly closed?: () => void
 
   constructor({
     log,
     cards,
     settings,
     knowledge,
-    openWelcome
+    openWelcome,
+    closed
   }: {
     log: WatchLog
     cards: EventEmitter & { counts(): DueCounts }
     settings: EventEmitter & { current?: OverlaySettings }
     knowledge?: Knowledge
     openWelcome: () => void
+    /** The window closed (Talk's conversation, and any voice in it, is over). */
+    closed?: () => void
   }) {
     const saved = readSetting<Partial<HomePreferences>>('home-v2')
     this.preferences = {
@@ -90,6 +94,7 @@ export class Home {
         : 'light',
       layout: cleanLayout(saved?.layout)
     }
+    this.closed = closed
     const handle = (channel: string, work: (...args: unknown[]) => unknown): void => {
       ipcMain.handle(channel, (event, ...args) => {
         if (!this.owns(event.sender)) throw new Error('Not allowed: this is the home page’s.')
@@ -162,6 +167,7 @@ export class Home {
       window.on('closed', () => {
         this.window = undefined
         this.pending = undefined
+        this.closed?.()
       })
       window.webContents.once('did-finish-load', () => {
         const pending = this.pending

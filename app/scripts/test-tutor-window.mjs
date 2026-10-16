@@ -5,7 +5,11 @@ import {
   nextReconnectAttempt,
   RECONNECT_LIMIT
 } from '../src/renderer/src/explain/voice/reconnect.ts'
-import { TURN_SETTLE_MS } from '../src/renderer/src/explain/voice/timing.ts'
+import {
+  SILENT_END_MS,
+  silentTooLong,
+  TURN_SETTLE_MS
+} from '../src/renderer/src/explain/voice/timing.ts'
 
 const now = 1_000_000
 
@@ -37,5 +41,10 @@ assert.equal(
 
 // Romanisation and late meanings wait longer than the 1 s gap that still joins words to a turn.
 assert.ok(TURN_SETTLE_MS > 1_000, 'TURN_SETTLE_MS must exceed the 1 s turn merge window.')
+
+// Voice is billed for every minute it is open: a minute with nobody speaking ends it, quietly.
+assert.equal(SILENT_END_MS, 60_000, 'a minute of silence ends voice')
+assert.equal(silentTooLong(now - 59_000, now), false, 'a long pause to think keeps voice on')
+assert.equal(silentTooLong(now - SILENT_END_MS, now), true, 'a full minute with no speech ends it')
 
 console.log('Tutor window checks passed.')

@@ -16,6 +16,7 @@ import { CardEditor } from '../../cards/CardEditor'
 import { say } from '../../components/errors'
 import { filterWords, joinWords } from '../words/join'
 import type { WordsData } from '../words/useWordsData'
+import { metAndKnownLine } from '../progress'
 import { icons } from './bits'
 import { ByDuet, Entry } from './Entry'
 import type { WordApi } from './sample'
@@ -452,6 +453,7 @@ export function Words({
                 : 'Words you meet while watching land here.'}
             </p>
           )}
+          {total > 0 && <p className="fc-list-more">{metAndKnownLine(data.summary.counts)}</p>}
           {total > data.summary.words.length && (
             <p className="fc-list-more">
               Showing the {data.summary.words.length} words you met most recently.

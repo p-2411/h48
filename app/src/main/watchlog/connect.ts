@@ -1,8 +1,8 @@
 // Feeds the watch log: the video on screen and where it is, time spent watching with Duet (only
 // while the video plays and Duet is shown), lines as they come on screen translated, cards saved,
 // lines explained and words hovered on the strip; each new line's words are also seen once more on
-// the knowledge ladder. index.ts calls tick() from its main loop and
-// finish() when Duet quits.
+// the knowledge ladder, and its words new to the video are credited as known right then (progress).
+// index.ts calls tick() from its main loop and finish() when Duet quits.
 //
 // The log is a record, not a feature: every write here runs inside another feature's event or
 // loop, so a failing write (disk full, a locked database) is reported and dropped, never thrown
@@ -13,6 +13,7 @@ import { pairText } from '../../shared/levels'
 import type { Moment } from '../../shared/moment'
 import type { Language, OverlayLine } from '../../shared/types'
 import type { Knowledge } from '../knowledge'
+import type { Progress } from '../progress'
 import { videoKey, type WatchedVideo, type WatchLog } from '.'
 
 // A gap between ticks longer than this (the Mac slept, the loop stalled) counts as this much.
@@ -59,6 +60,7 @@ export function connectWatchLog(
     settings,
     cards,
     knowledge,
+    progress,
     shown
   }: {
     watcher: WatchSource
@@ -67,6 +69,8 @@ export function connectWatchLog(
     cards: EventEmitter
     /** The knowledge ladder: each word of a line met is seen once more (src/main/knowledge). */
     knowledge?: Pick<Knowledge, 'noteSeen'>
+    /** Progress: each line's words new to its video credited as known when met (src/main/progress). */
+    progress?: Pick<Progress, 'noteMet'>
     /** Duet is on screen (the strip is shown): only then is watching "with Duet", and a line met. */
     shown: () => boolean
   }
@@ -95,7 +99,10 @@ export function connectWatchLog(
     const key = onScreen()
     if (!key || !line || line.id !== watcher.currentLine?.id || !shown()) return
     if (watchedKey !== key) noteVideo(Date.now())
-    if (log.noteLine(key, language(), line) && line.processed) knowledge?.noteSeen(language(), line.processed)
+    if (log.noteLine(key, language(), line) && line.processed) {
+      knowledge?.noteSeen(language(), line.processed)
+      progress?.noteMet(key, language())
+    }
   }
   watcher.on('current', () => record(() => meet(watcher.currentLine)))
   watcher.on('line', (line: OverlayLine) => record(() => meet(line)))

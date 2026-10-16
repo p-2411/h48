@@ -1,6 +1,8 @@
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
+import { sourceHash } from './native-source.mjs'
 
 const root = resolve(import.meta.dirname, '..')
 const output = resolve(root, 'resources', 'bin')
@@ -43,6 +45,15 @@ if (process.platform === 'darwin') {
     'resources/bin/audio-reader-macos'
   ])
 } else if (process.platform === 'win32') {
+  // The hash of a reader's source, compiled into it (see native-source.mjs).
+  const buildInfo = (source) => {
+    const file = resolve(tmpdir(), `duet-${source.split('/').pop()}.BuildInfo.cs`)
+    writeFileSync(
+      file,
+      `internal static class BuildInfo { public const string SourceHash = "${sourceHash(source)}"; }\n`
+    )
+    return file
+  }
   const compilers = [
     'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe',
     'C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\csc.exe'
@@ -60,7 +71,17 @@ if (process.platform === 'darwin') {
     `/reference:${resolve(wpf, 'UIAutomationTypes.dll')}`,
     `/reference:${resolve(wpf, 'WindowsBase.dll')}`,
     `/reference:${resolve(framework, 'System.Web.Extensions.dll')}`,
-    'native\\windows\\CaptionReader.cs'
+    'native\\windows\\CaptionReader.cs',
+    buildInfo('native/windows/CaptionReader.cs')
+  ])
+  run(compiler, [
+    '/nologo',
+    '/optimize+',
+    '/target:exe',
+    '/out:resources\\bin\\audio-reader-windows.exe',
+    `/reference:${resolve(framework, 'System.Web.Extensions.dll')}`,
+    'native\\windows\\AudioReader.cs',
+    buildInfo('native/windows/AudioReader.cs')
   ])
 } else {
   console.log(`No native Duet readers are built for ${process.platform}.`)

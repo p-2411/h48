@@ -1,5 +1,5 @@
 // The contract for a video site. Everything Duet knows about a site lives in one file here
-// (youtube.ts, netflix.ts), plus that site's entry in the caption reader's `sites` table
+// (youtube.ts, netflix.ts, …), plus that site's entry in the caption reader's `sites` table
 // (native/macos/CaptionReader.swift): which page elements hold the captions, the player state and
 // its buttons. Nothing else in the app checks which site it is on.
 import type { Language, Site } from '../../shared/types'
@@ -19,6 +19,10 @@ export interface Source {
    * need not be on and lines are processed before they are spoken. Without it, lines come from the
    * captions on screen. */
   fetchTranscript?(videoId: string, language: Language, signal?: AbortSignal): Promise<TranscriptLine[] | undefined>
+  /** Duet hears this site's videos from the start, instead of waiting for captions to appear (on
+   * macOS, where it can hear the browser). Captions in the language being learnt still take over
+   * whenever they are on screen. */
+  readonly listensFirst?: boolean
   /** What the caption reader can do with this site's player. */
   readonly controls: { playPause: boolean; seek: boolean }
   /** The video's title from the browser window's title, or undefined when it doesn't show one. */

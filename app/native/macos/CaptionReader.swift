@@ -25,7 +25,7 @@
 //                                        through the seek bar, landing on or just before it; "from" is
 //                                        where the app's clock says the video is (the bar's own value
 //                                        can be stale while controls hide); "play" plays it once there
-// Only on sites whose entry below names the elements needed (YouTube so far).
+// Only on sites whose entry below names the elements needed (YouTube, and Netflix by label).
 //
 // Build: swiftc -O native/macos/CaptionReader.swift -o resources/bin/caption-reader-macos
 
@@ -46,6 +46,8 @@ let browsers: [String: String] = [
 // inside those counts, so nothing else the player puts in the caption area is taken for a line. On
 // YouTube that is each caption window (Chrome exposes the text directly inside it, without the
 // inner spans' classes).
+// A nil `container` means captions aren't read on that site at all (Disney+, Crunchyroll): the app
+// hears it instead, and the reader only says which page it is and where.
 // `captionsButton` is the player's CC button, whose label says when the video has no captions.
 // `video` is the class of the element that frames the video; nil means the page itself (Netflix's
 // watch page is all video).
@@ -64,7 +66,7 @@ struct LabelControls {
   let step: Double
 }
 struct Site {
-  let host: String; let container: String; let segment: String?; let captionsButton: String?
+  let host: String; let container: String?; let segment: String?; let captionsButton: String?
   var video: String? = nil
   var player: String? = nil; var progress: String? = nil; var playButton: String? = nil
   var labels: LabelControls? = nil
@@ -75,10 +77,26 @@ let sites = [
   Site(host: "netflix.com", container: "player-timedtext", segment: nil, captionsButton: nil,
        labels: LabelControls(slider: "Seek time scrubber", play: "Play", pause: "Pause", back: "Seek back", forward: "Seek forward",
                              scale: 0.001, step: 10)),
+  Site(host: "disneyplus.com", container: nil, segment: nil, captionsButton: nil),
+  Site(host: "crunchyroll.com", container: nil, segment: nil, captionsButton: nil),
 ]
+
+/** Whether a page address is on a site: its host is the site's domain or one of its subdomains, so
+ * an address that only mentions it (a search for "netflix.com") isn't taken for the site. */
+func isOn(_ address: String, _ site: Site) -> Bool {
+  guard let host = URL(string: address)?.host?.lowercased() else { return false }
+  return host == site.host || host.hasSuffix("." + site.host)
+}
 
 let pollInterval = 0.15
 let searchBudget = 20000  // most nodes visited when looking for the caption container
+
+// Whether to look for the caption box (and the player's parts) again on this poll: when none is
+// held, the one held has gone from the page (Netflix removes its box between lines and draws the
+// next line in a new one), the page has changed, or every 20 polls (3 s) anyway.
+func searchAgain(holding: Bool, gone: Bool, samePage: Bool, tick: Int) -> Bool {
+  !holding || gone || !samePage || tick % 20 == 0
+}
 
 func emit(_ object: [String: Any]) {
   guard let data = try? JSONSerialization.data(withJSONObject: object),
@@ -94,6 +112,8 @@ func value(_ element: AXUIElement, _ name: String) -> AnyObject? {
 func children(_ element: AXUIElement) -> [AXUIElement] { (value(element, kAXChildrenAttribute) as? [AXUIElement]) ?? [] }
 func role(_ element: AXUIElement) -> String { (value(element, kAXRoleAttribute) as? String) ?? "" }
 func classes(_ element: AXUIElement) -> [String] { (value(element, "AXDOMClassList") as? [String]) ?? [] }
+/** Whether the page has removed an element: it no longer answers for its role or its parent. */
+func isGone(_ element: AXUIElement) -> Bool { value(element, kAXRoleAttribute) == nil || value(element, kAXParentAttribute) == nil }
 /** What a control is called: its accessibility description, or its title. */
 func label(_ element: AXUIElement) -> String {
   (value(element, kAXDescriptionAttribute) as? String).flatMap { $0.isEmpty ? nil : $0 } ?? (value(element, kAXTitleAttribute) as? String) ?? ""
@@ -178,7 +198,7 @@ func browserElement(_ app: NSRunningApplication) -> AXUIElement {
 func videoPage(in window: AXUIElement, of app: NSRunningApplication, element: AXUIElement) -> Target? {
   guard let page = find(window, budget: 600, where: { role($0) == "AXWebArea" }),
         let address = url(page),
-        let site = sites.first(where: { address.contains($0.host) }) else { return nil }
+        let site = sites.first(where: { isOn(address, $0) }) else { return nil }
   return Target(app: element, browser: browsers[app.bundleIdentifier ?? ""] ?? "Browser", bundle: app.bundleIdentifier ?? "", page: page, url: address,
                 title: (value(window, kAXTitleAttribute) as? String) ?? "", site: site)
 }
@@ -233,6 +253,28 @@ func status(_ fields: [String: AnyHashable]) {
   emit(fields)
 }
 
+// --self-test: checks which page addresses count as a site's, with no browser and no permission
+// (so before asking for it), then exits 0 if all is well (see scripts/smoke-native-reader.mjs).
+if CommandLine.arguments.contains("--self-test") {
+  func site(_ host: String) -> Site { sites.first { $0.host == host }! }
+  let cases: [(String, String, Bool)] = [
+    ("https://www.netflix.com/watch/81234567", "netflix.com", true),
+    ("https://netflix.com/watch/1", "netflix.com", true),
+    ("https://www.google.com/search?q=netflix.com", "netflix.com", false),
+    ("https://notnetflix.com/watch/1", "netflix.com", false),
+    ("https://www.disneyplus.com/play/abc", "disneyplus.com", true),
+    ("https://www.crunchyroll.com/watch/GRDV0019R/x", "crunchyroll.com", true),
+    ("https://m.youtube.com/watch?v=a", "youtube.com", true),
+  ]
+  var wrong = cases.filter { isOn($0.0, site($0.1)) != $0.2 }.map { $0.0 }
+  // Netflix removes its caption box between lines and draws the next line in a new one: a held box
+  // that has gone is looked for again at once, not up to 3 s later.
+  if !searchAgain(holding: true, gone: true, samePage: true, tick: 1) { wrong.append("a gone caption box waits to be found again") }
+  if searchAgain(holding: true, gone: false, samePage: true, tick: 1) { wrong.append("a live caption box is searched for on every poll") }
+  emit(["type": "self-test", "ok": wrong.isEmpty, "wrong": wrong])
+  exit(wrong.isEmpty ? 0 : 1)
+}
+
 let trusted = AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary)
 if !trusted {
   status(["type": "status", "trusted": false])
@@ -254,7 +296,7 @@ func dump(_ element: AXUIElement, depth: Int = 0) {
 if CommandLine.arguments.contains("--dump") {
   guard AXIsProcessTrusted(), let current = anyVideoPage() else { print("No trusted target page found."); exit(1) }
   let arguments = CommandLine.arguments
-  let wanted = arguments.firstIndex(of: "--dump").flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil } ?? current.site.container
+  let wanted = arguments.firstIndex(of: "--dump").flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil } ?? current.site.container ?? ""
   guard let area = find(current.page, budget: searchBudget, where: { classes($0).contains(wanted) }) else {
     print("No \(wanted) on \(current.url)"); exit(1)
   }
@@ -354,10 +396,10 @@ Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
   currentSite = current.site
   // Labelled controls come and go with the mouse, so look for them more often (the page is small).
   if let labels = current.site.labels, slider == nil || ticks % 4 == 0 { findLabelled(current.page, labels) }
-  if container == nil || containerURL != current.url || ticks % 20 == 0 {
+  if searchAgain(holding: container != nil, gone: container.map(isGone) ?? false, samePage: containerURL == current.url, tick: ticks) {
     let site = current.site
     let found = findAll(current.page, budget: searchBudget, classNames: [site.container, site.video, site.player, site.progress, site.playButton].compactMap { $0 })
-    container = found[site.container]
+    container = site.container.flatMap { found[$0] }
     videoElement = site.video.map { found[$0] } ?? current.page
     player = site.player.flatMap { found[$0] }
     progress = site.progress.flatMap { found[$0] }
@@ -440,7 +482,8 @@ func seek(to seconds: Double, from position: Double?, thenPlay play: Bool) {
 // already in the state asked for.
 FileHandle.standardInput.readabilityHandler = { handle in
   let data = handle.availableData
-  guard !data.isEmpty, let text = String(data: data, encoding: .utf8) else { return }
+  if data.isEmpty { exit(0) }  // the app went away: don't keep reading the browser on our own
+  guard let text = String(data: data, encoding: .utf8) else { return }
   for line in text.split(separator: "\n") {
     guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
           let type = object["type"] as? String else { continue }

@@ -6,6 +6,7 @@ import { mixedLine } from '../../../shared/levels'
 import { Words } from '../components/Words'
 import type { OverlaySettings } from '../../../shared/types'
 import type { Appearance } from '../../../shared/workspace'
+import { updateLine, type UpdateStatus } from '../../../shared/updates'
 import { say } from '../components/errors'
 import {
   LanguagePicker,
@@ -15,6 +16,7 @@ import {
   Toggle
 } from '../components/SettingControls'
 import { LoadState } from '../components/LoadState'
+import { AccountSection } from './AccountSection'
 
 // The reminder's time when it is first turned on.
 const DEFAULT_REMINDER = '19:00'
@@ -56,6 +58,45 @@ function ReminderSetting({ time }: { time?: string }): React.JSX.Element {
   )
 }
 
+/** Duet's version, and its updates: found and downloaded on their own, installed on quit or at once. */
+function UpdatesSetting(): React.JSX.Element | null {
+  const [status, setStatus] = useState<UpdateStatus>()
+  useEffect(() => {
+    // Without an answer the version is unknown, and the section isn't shown.
+    window.duet.updates.get().then(setStatus, () => {})
+    return window.duet.updates.onChanged(setStatus)
+  }, [])
+  if (!status) return null
+  const { state } = status
+  return (
+    <section className="settings-group" aria-labelledby="settings-updates">
+      <h2 className="label" id="settings-updates">
+        Updates
+      </h2>
+      <div className="glass">
+        <p className="muted">
+          {/* Only a change of state is read aloud, not each percent of a download. */}
+          <span role="status">
+            Duet {status.version}. {updateLine(state)}
+          </span>
+          {state.kind === 'downloading' && ` ${Math.floor(state.percent)}%`}
+        </p>
+        {state.kind === 'ready' ? (
+          <button type="button" className="btn" onClick={() => window.duet.updates.restart()}>
+            Restart to update
+          </button>
+        ) : (
+          (state.kind === 'idle' || state.kind === 'failed') && (
+            <button type="button" className="btn" onClick={() => window.duet.updates.check()}>
+              Check for updates
+            </button>
+          )
+        )}
+      </div>
+    </section>
+  )
+}
+
 export function SettingsPage({
   appearance = 'light',
   onAppearance
@@ -86,6 +127,7 @@ export function SettingsPage({
         <LoadState loaded={false} error={error} reload={load} />
       ) : (
         <>
+          <AccountSection />
           <section className="settings-group" aria-labelledby="settings-learning">
             <h2 className="label" id="settings-learning">
               Learning
@@ -150,6 +192,7 @@ export function SettingsPage({
               <ShortcutRecorder keys={settings.talkShortcut} kind="talk" />
             </div>
           </section>
+          {/* Only macOS asks for permissions; Windows needs none. */}
           {window.duet.welcome.asksPermissions && (
             <section className="settings-group" aria-labelledby="settings-permissions">
               <h2 className="label" id="settings-permissions">
@@ -192,6 +235,23 @@ export function SettingsPage({
               </button>
             </div>
           </section>
+          <section className="settings-group" aria-labelledby="settings-privacy">
+            <h2 className="label" id="settings-privacy">
+              Privacy
+            </h2>
+            <div className="glass">
+              <Toggle
+                on={settings.shareDiagnostics}
+                label="Share crash reports and usage"
+                hint="What broke, and a few anonymous counts. Never what you watch, hear or say"
+                onChange={window.duet.setShareDiagnostics}
+              />
+            </div>
+          </section>
+          <UpdatesSetting />
+          <p className="faint settings-credit">
+            Reading levels use word frequencies from wordfreq by Robyn Speer, under CC BY-SA 4.0.
+          </p>
         </>
       )}
     </main>

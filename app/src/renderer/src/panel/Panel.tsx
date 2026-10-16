@@ -4,7 +4,7 @@
 // in Talk, and pressing it again closes it; while it is open, the face in the bar turns into a speech
 // bubble, as in the home base. It is drawn
 // as the home base is (workspace.css, pages.css), light or dark as the home base is.
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { DuetMascot } from '../components/duet/DuetMascot'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { LoadState } from '../components/LoadState'
@@ -21,7 +21,11 @@ export function Panel(): React.JSX.Element {
   const dark = useLook()
   // Another line explained: its entry first, the chat closed.
   const takenAt = explain?.moment?.takenAt
-  useEffect(() => setChatOpen(false), [takenAt])
+  const [chatFor, setChatFor] = useState(takenAt)
+  if (chatFor !== takenAt) {
+    setChatFor(takenAt)
+    setChatOpen(false)
+  }
   const canChat = !!explain?.moment
   const chatting = chatOpen && tab === 'explain' && canChat
   const toggleChat = (): void => {

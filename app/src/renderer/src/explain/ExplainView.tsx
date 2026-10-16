@@ -26,7 +26,9 @@ import { Icon } from '../components/Icon'
 // the permission, nothing is said: macOS's own prompt says it).
 const HEARING: Partial<Record<HearingNote, string>> = {
   'not-allowed':
-    'Duet can’t hear the video. Allow it in System Settings › Privacy & Security › Screen & System Audio Recording.',
+    window.duet.platform === 'win32'
+      ? 'Duet can’t hear the video: Windows refused it the sound. Check Settings › Privacy & security › Microphone.'
+      : 'Duet can’t hear the video. Allow it in System Settings › Privacy & Security › Screen & System Audio Recording.',
   'not-kept':
     'This line played too long ago for Duet to hear it, so the explanation goes by the words.',
   unclear: 'Duet couldn’t make out the speech in this line, so the explanation goes by the words.'

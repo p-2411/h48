@@ -25,7 +25,7 @@ addEventListener('message', (event) => {
 
 /** window.duet, as a path of names: calling `on…` subscribes, anything else asks the page. */
 function api(path: string[]): unknown {
-  return new Proxy(function () {}, {
+  return new Proxy(() => undefined, {
     get: (_, key) => {
       if (typeof key === 'symbol' || key === 'then') return undefined
       // Values, not calls: the demo asks for no permissions.

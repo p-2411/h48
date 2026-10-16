@@ -38,6 +38,8 @@ module.exports = {
   app: { getPath: () => ${JSON.stringify(folder)} },
   ipcMain: { handle: (channel, work) => handlers.set(channel, work), on: (channel, work) => listeners.set(channel, work) },
   shell: { openExternal: (url) => { opened.push(url); return Promise.resolve() } },
+  systemPreferences: { getUserDefault: () => '' },
+  nativeTheme: Object.assign(new EventEmitter(), { shouldUseDarkColorsForSystemIntegratedUI: false }),
   BrowserWindow,
   is: { dev: false },
   handlers, listeners, windows, opened, loading: { slow: false }
