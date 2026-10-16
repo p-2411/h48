@@ -92,7 +92,8 @@ export async function forwardFeedback(deps, now) {
     let ok = false;
     try {
       ok = await deps.postDiscord(discordMessage(row));
-    } catch {
+    } catch (error) {
+      console.error(`[duet-api] Discord unreachable for feedback: ${error?.message ?? error}`);
       ok = false;
     }
     if (ok) {

@@ -38,6 +38,8 @@ export function productionDeps(env = process.env) {
             body: JSON.stringify(message),
             signal: AbortSignal.timeout(5000)
           });
+          // In the logs, so a refused forward (a deleted webhook, a bad message) shows somewhere.
+          if (!response.ok) console.error(`[duet-api] Discord refused feedback: ${response.status}`);
           return response.ok;
         }
       : null,
