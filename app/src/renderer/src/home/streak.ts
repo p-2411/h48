@@ -8,6 +8,6 @@ export function streakNote({ days, keptToday, freezesLeft }: Streak): string {
       ? `${freezesLeft} ${freezesLeft === 1 ? 'freeze' : 'freezes'} left this week, so a missed day is covered.`
       : 'No freezes left this week, so a missed day ends the streak.'
   if (keptToday) return `Kept for today. ${freezes}`
-  if (days === 0) return 'Watch 10 minutes with Duet to start one.'
-  return `Watch 10 minutes with Duet today to keep it. ${freezes}`
+  if (days === 0) return 'Finish today’s session to start one.'
+  return `Finish today’s session to keep it. ${freezes}`
 }

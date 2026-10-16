@@ -44,6 +44,9 @@ export function WordsTile({
       )}
       {summary && met > 0 && (
         <>
+          <p className="hub-review-count">
+            <span>{due}</span> ready to review
+          </p>
           <dl className="rungs">
             {RUNGS.map((rung) => (
               <div key={rung} className="rung">
@@ -62,6 +65,7 @@ export function WordsTile({
             </div>
           )}
           {counted === 0 && <p className="faint">{met} met so far. Review them and they climb.</p>}
+          <span className="faint">Met lately</span>
           <p className="tile-recent" aria-label="Met most recently">
             {summary.words
               .filter((word) => word.state !== 'ignored')

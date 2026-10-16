@@ -10,6 +10,7 @@ export const ja: LanguageModule = {
     instructions:
       'Convert the Japanese text into readable Modified Hepburn romanisation for an English-speaking learner. Infer kanji readings from context. Use ordinary Latin letters, spaces and punctuation; write long vowels plainly (ou, uu) and doubled consonants accurately. Return only the romanisation. Do not translate, label, explain or add quotation marks.'
   },
+  syllables: false,
   sample: {
     translation: 'My sister bought a new car.',
     source: [t('妹', 'n', 2, false), t('は', 'g', null, false), t('新しい', 'a', 6, false), t('車', 'n', 5, false), t('を', 'g', null, false), t('買った', 'v', 3, false), t('。', 'g', null)],

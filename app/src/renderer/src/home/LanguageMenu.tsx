@@ -49,12 +49,12 @@ export function LanguageMenu({ language }: { language: Language }): React.JSX.El
         onClick={() => setOpen((now) => !now)}
       >
         {languageName(language)}
-        <svg viewBox="0 0 10 6" width="9" height="6" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
           <path
-            d="M1 1l4 4 4-4"
+            d="M6 9l6 6 6-6"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="2.2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />

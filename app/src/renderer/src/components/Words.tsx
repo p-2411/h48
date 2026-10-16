@@ -1,6 +1,6 @@
 // Tokens written out as a line, each word coloured by its rung on the knowledge ladder (`state`;
-// without it, new: white, and glue grey). Swapped words (in the other language) get a tint as well,
-// and are written in their own script or their reading (`script`, a setting). With `onEnter`, words
+// without it, new: lilac). Glue (punctuation and other unpaired bits) is never a word state: always
+// plain grey. Swapped words (in the other language) get a tint as well, and are written in their own script or their reading (`script`, a setting). With `onEnter`, words
 // with a pair answer the pointer (the strip's word card).
 import type { WordState } from '../../../shared/knowledge'
 import { written } from '../../../shared/levels'
@@ -33,7 +33,7 @@ export function Words({
           <span key={index}>
             <span
               className={`w${token.swapped ? ' sw' : ''}${live ? ' live' : ''}`}
-              data-k={state ? state(token.pair, token) : token.pair === null ? 'ignored' : 'unknown'}
+              data-k={token.pair === null ? 'glue' : state ? state(token.pair, token) : 'unknown'}
               onMouseEnter={live ? (event) => onEnter({ ...token, pair: token.pair! }, event.currentTarget) : undefined}
               onMouseLeave={live ? onLeave : undefined}
             >

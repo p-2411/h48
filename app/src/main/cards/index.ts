@@ -33,6 +33,8 @@ import { CardStore, readBackup, UNDO_DELETE_MS } from './store'
 
 const SETTINGS_KEY = 'review'
 const DEFAULT_SETTINGS: ReviewSettings = { desiredRetention: 0.9, newPerDay: 10 }
+// Recall sooner aims this much higher than the collection's recall.
+const SOONER_RETENTION = 0.05
 
 function loadSettings(): ReviewSettings {
   return { ...DEFAULT_SETTINGS, ...readSetting<Partial<ReviewSettings>>(SETTINGS_KEY) }
@@ -180,6 +182,42 @@ export class Cards extends EventEmitter {
       const moment = momentOf(id)
       if (moment) practise(moment)
     })
+  }
+
+  /** A review session of its own on the same cards, scheduler and settings, for the flashcards page
+   * (src/main/flashcards). A card with Recall sooner on is scheduled for a higher recall, so it
+   * comes back sooner. */
+  newSession(): ReviewSession {
+    return new ReviewSession(
+      this.store,
+      () => this.scheduler,
+      () => this.settings,
+      (row) => (row.sooner ? this.soonerScheduler() : this.scheduler)
+    )
+  }
+
+  private sooner?: { base: Scheduler; scheduler: Scheduler }
+  /** The scheduler for Recall sooner: the collection's, aiming for a higher recall. */
+  private soonerScheduler(): Scheduler {
+    if (this.sooner?.base !== this.scheduler) {
+      const desiredRetention = Math.min(0.97, this.settings.desiredRetention + SOONER_RETENTION)
+      this.sooner = { base: this.scheduler, scheduler: new Scheduler({ ...this.settings, desiredRetention }) }
+    }
+    return this.sooner.scheduler
+  }
+
+  /** The cards themselves, for the flashcards page. */
+  get collection(): CardStore {
+    return this.store
+  }
+
+  get reviewSettings(): ReviewSettings {
+    return this.settings
+  }
+
+  /** Something on the flashcards page changed the cards: pages reload, counts update. */
+  notifyChanged(): void {
+    this.changed()
   }
 
   /** Cards ready to review now. */

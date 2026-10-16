@@ -22,7 +22,7 @@
 //   settings.ts, shortcut.ts, welcome.ts, demo.ts   settings, the show/hide keys, first run, demos
 // First: where the data lives, before any other module can read it.
 import './pin-data-folder'
-import { app, globalShortcut, nativeTheme, Notification, type Tray } from 'electron'
+import { app, BrowserWindow, globalShortcut, nativeTheme, Notification, type Tray } from 'electron'
 import { join } from 'path'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import type { Moment } from '../shared/moment'
@@ -58,12 +58,14 @@ import { Talk } from './talk'
 import { StripTalk } from './talk/strip'
 import { DailySession } from './daily'
 import { openAIQuiz } from './challenges/quiz'
+import { Flashcards } from './flashcards'
+import { Dictionary } from './dictionary'
 import { Reminder } from './daily/reminder'
 import { Checkpoints } from './checkpoints'
 import { openAISceneJudge } from './checkpoints/scenes'
 import { isFrom } from './windows/from'
 import { createOverlay, toggleOverlay } from './windows/overlay'
-import appIcon from '../../resources/icon.png?asset'
+import { installAppIcons } from './icons'
 
 // In development, settings such as OPENAI_API_KEY can live in app/.env.local (git-ignored).
 if (is.dev) {
@@ -89,9 +91,7 @@ app.whenReady().then(() => {
   nativeTheme.themeSource = 'dark'
   if (!primary) return
   electronApp.setAppUserModelId('io.useduet.app')
-  // Run from source, the app is Electron's own binary: give its Dock icon Duet's (a built app has it
-  // in its bundle, build/icon.icns).
-  if (is.dev && process.platform === 'darwin') app.dock?.setIcon(appIcon)
+  installAppIcons()
   app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 
   let models: Models | undefined
@@ -176,7 +176,10 @@ app.whenReady().then(() => {
   })
   app.on('before-quit', () => logLink.finish())
   // The home base: opened from the Dock, the menu bar, the strip's ⚙ and when Duet starts.
-  const home = new Home({ log: watchLog, cards, settings, openWelcome: () => welcome.open(true) })
+  const home = new Home({ log: watchLog, cards, settings, knowledge, openWelcome: () => welcome.open(true) })
+  // The side panel is drawn as the home base is, light or dark.
+  panel.setDark(home.dark)
+  home.onLook((dark) => panel.setDark(dark))
   // Talk in the home base: a free conversation with Duet, in the language being learnt.
   const talk = new Talk({ tutor, settings, window: home })
   // The text model's quiz (what did they mean?), for the daily session and checkpoints.
@@ -189,6 +192,19 @@ app.whenReady().then(() => {
     quiz,
     owns: (sender) => home.owns(sender),
     knowledge
+  })
+  // The flashcards page in Your words: Review, Words and Collections (src/main/flashcards).
+  new Flashcards({
+    cards,
+    knowledge,
+    owns: (sender) => home.owns(sender),
+    window: () => BrowserWindow.getFocusedWindow(),
+    replay: replayMoment,
+    currentVideo: () => watcher.currentVideo,
+    voice: voice && { tts: voice.tts, coach: voice.coach, stt: voice.speechToText },
+    quiz,
+    // Card backs' dictionary entries, from the same AI as the lines.
+    dictionary: new Dictionary(models?.entries)
   })
   // The strip's window, for the features that talk to its page.
   const strip = {

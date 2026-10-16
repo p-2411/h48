@@ -1,0 +1,1074 @@
+﻿@import '../styles/home-tokens.css';
+@font-face {
+  font-family: Inter;
+  src: url('../assets/fonts/Inter.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Source Serif 4';
+  src: url('../assets/fonts/SourceSerif4-Variable.ttf') format('truetype');
+  font-weight: 200 900;
+  font-display: swap;
+}
+
+:root {
+  font-family: Inter, sans-serif;
+  color-scheme: light;
+}
+:root.theme-dark {
+  color-scheme: dark;
+}
+.workspace {
+  --surface: var(--ground);
+  --fg: var(--ink);
+  --fg-2: var(--ink2);
+  --fg-3: var(--sub);
+  --text: var(--ink);
+  --text-2: var(--sub);
+  --text-3: var(--faint);
+  --fill: var(--soft);
+  --k-unknown: var(--w-new);
+  --k-encountered: var(--w-seen);
+  --k-known: var(--w-known);
+  --k-speakable: var(--w-say);
+  --k-usable: var(--w-use);
+  --k-ignored: var(--w-ignored);
+  color: var(--ink);
+  background: var(--ground) url('../assets/grain-light.svg') repeat;
+  background-size: 160px;
+  font:
+    13px/1.5 Inter,
+    sans-serif;
+}
+.theme-dark .workspace {
+  background-image: url('../assets/grain-dark.svg');
+}
+.workspace button {
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+}
+.workspace button:disabled {
+  cursor: default;
+}
+.workspace button:focus-visible,
+.workspace input:focus-visible,
+.workspace select:focus-visible {
+  outline: 2px solid var(--sub);
+  outline-offset: 2px;
+}
+.workspace .muted {
+  color: var(--sub);
+}
+.workspace .faint {
+  color: var(--faint);
+}
+.workspace .label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+.workspace .glass {
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.workspace .btn {
+  background: var(--soft);
+  color: var(--ink);
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  box-shadow: none;
+  transition: background 0.18s;
+}
+.workspace .btn:hover {
+  background: var(--soft-hover);
+}
+.workspace .btn.primary {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.workspace .btn.quiet {
+  background: transparent;
+  color: var(--sub);
+}
+/* Words wear their state's colour (--c from data-k, through the --k-* mapped above), flat. */
+.workspace .w {
+  text-shadow: none;
+}
+.workspace input,
+.workspace textarea,
+.workspace select {
+  color: var(--ink);
+  background: var(--soft2);
+  border-color: var(--line2);
+  font-family: inherit;
+}
+
+/* ── The window, as designed (canvas board E) ─────────────────────────────────────────────────
+   Everything that moves, moves on one curve and one time, the way Hyprland moves windows: off
+   quickly, a hair past, settled. Home.tsx only says where things are; CSS moves them. */
+/* Clipped, not scrollable: a page bringing something into view (scrollIntoView) must never shift
+   the window or a tile. */
+.workspace,
+.pane,
+.workspace .pane-body {
+  overflow: clip !important;
+}
+.workspace {
+  --glide: 0.38s;
+  --fade-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --accent: #e0583a;
+  --flame-a: #f0582c;
+  --flame-b: #f8a43c;
+  --flame-core: #ffe0a0;
+  --flame-bg: rgba(240, 110, 50, 0.09);
+}
+.theme-dark .workspace {
+  --accent: #f08a68;
+  --flame-a: #ff6b3d;
+  --flame-b: #ffc15e;
+  --flame-core: #ffe3a3;
+  --flame-bg: rgba(255, 140, 70, 0.12);
+}
+/* Scrollbars: thin, quiet, in the theme (never the system's grey bars with arrows). */
+.workspace *,
+.workspace {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
+}
+/* Until the saved layout is in place, nothing glides. */
+.workspace.is-still .pane,
+.workspace.is-still .hub,
+.workspace.is-still .split-handle,
+.workspace.is-still .settings-panel {
+  transition: none;
+}
+
+/* The top bar: places on the left, Duet in the middle, the rest on the right. It drags the window;
+   everything you can press in it doesn't. */
+.workspace-bar {
+  position: relative;
+  z-index: 30;
+  height: 48px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 0 14px;
+  -webkit-app-region: drag;
+}
+[data-platform='win32'] .workspace-bar {
+  padding-right: 140px;
+}
+[data-platform='darwin'] .workspace-bar {
+  padding-left: 84px;
+}
+.workspace-bar button,
+.workspace-bar nav,
+.workspace-bar .language-menu,
+.workspace-bar .bar-duet * {
+  -webkit-app-region: no-drag;
+}
+.workspace-bar button {
+  border: 0;
+  background: none;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: var(--sub);
+}
+.places {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  width: fit-content;
+  border-radius: 999px;
+  background: var(--seg);
+}
+.places button {
+  width: 36px;
+  height: 28px;
+  border-radius: 999px;
+  transition:
+    background 0.18s var(--fade-out),
+    color 0.18s var(--fade-out);
+}
+.places button:hover {
+  color: var(--ink);
+}
+.places button[aria-pressed='true'] {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow:
+    0 1px 2px rgba(27, 32, 31, 0.1),
+    inset 0 0 0 1px rgba(27, 32, 31, 0.06);
+}
+.theme-dark .places button[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px rgba(238, 243, 241, 0.1);
+}
+.bar-rule {
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
+  background: var(--line2);
+}
+.places .bar-rule {
+  height: 18px;
+  margin: 0 3px;
+}
+.bar-right {
+  justify-self: end;
+  width: max-content;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bar-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  transition:
+    background 0.18s var(--fade-out),
+    color 0.18s var(--fade-out);
+}
+.workspace-bar .bar-icon:hover {
+  color: var(--ink);
+  background: var(--soft);
+}
+.workspace-bar .bar-icon[aria-expanded='true'] {
+  color: var(--ink);
+  background: var(--card);
+}
+.workspace-bar .streak {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px 0 7px;
+  border-radius: 999px;
+  background: var(--flame-bg);
+  font-size: 13px;
+  color: var(--sub);
+  font-variant-numeric: tabular-nums;
+}
+.streak b {
+  color: var(--ink);
+  font-weight: 600;
+}
+/* In a narrow window the bar keeps Duet clear: the streak shows just its number. */
+@media (max-width: 900px) {
+  .streak-unit,
+  .bar-right .bar-rule {
+    display: none;
+  }
+}
+.streak .flame {
+  transform-origin: 50% 90%;
+}
+.streak.is-lit:hover .flame {
+  animation: flicker 0.9s ease-in-out infinite;
+}
+/* Not kept today yet: the flame goes grey and the chip quiet, until the session is done. */
+.workspace-bar .streak:not(.is-lit) {
+  --flame-a: var(--faint);
+  --flame-b: var(--line2);
+  --flame-core: var(--card);
+  background: var(--soft);
+}
+.workspace-bar .streak:hover,
+.workspace-bar .streak[aria-expanded='true'] {
+  box-shadow: inset 0 0 0 1px var(--line2);
+}
+
+/* The week, in a pill under the chip: a small flame for each day kept. */
+.streak-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.workspace .streak-pop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  transform-origin: top right;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: max-content;
+  padding: 12px 14px;
+  border: 1px solid var(--line2);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow:
+    0 12px 32px #0000001f,
+    0 2px 6px #0000000d;
+}
+.theme-dark .workspace .streak-pop {
+  box-shadow:
+    0 12px 32px #0008,
+    0 2px 6px #0005;
+}
+.streak-pop p {
+  margin: 0;
+}
+.streak-head {
+  font-size: 13px;
+  color: var(--sub);
+}
+.streak-head b {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.streak-week {
+  list-style: none;
+  margin: 0;
+  padding: 6px 8px;
+  display: flex;
+  gap: 6px;
+  border-radius: 999px;
+  background: var(--soft);
+}
+.streak-week li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 24px;
+}
+.streak-dot {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+}
+.streak-week .kept .streak-dot {
+  background: var(--flame-bg);
+}
+.streak-week .missed .streak-dot::after,
+.streak-week .ahead .streak-dot::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line2);
+}
+.streak-week .ahead .streak-dot::after {
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--line2);
+}
+/* A miss a freeze covered: a cool dot, so it reads as saved, not lost. */
+.streak-week .frozen .streak-dot::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--k-speakable, #4d93e6) 55%, transparent);
+}
+.streak-week .today .streak-dot {
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+.streak-day {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--faint);
+}
+.streak-week .today .streak-day {
+  color: var(--ink);
+  font-weight: 600;
+}
+.streak-note {
+  max-width: 240px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--sub);
+}
+@keyframes flicker {
+  0%,
+  100% {
+    transform: scale(1) rotate(0);
+  }
+  30% {
+    transform: scale(1.08, 0.96) rotate(-3deg);
+  }
+  60% {
+    transform: scale(0.97, 1.06) rotate(2deg);
+  }
+}
+
+/* The language: its name and a chevron; the menu opens under it, lined up on the right. */
+.workspace-bar .language-menu {
+  display: flex;
+  align-items: center;
+}
+.workspace-bar .language-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--sub);
+  background: none;
+}
+.workspace-bar .language-name:hover,
+.workspace-bar .language-name[aria-expanded='true'] {
+  color: var(--ink);
+  background: var(--soft);
+}
+.workspace .language-list {
+  left: auto;
+  right: 0;
+  top: calc(100% + 6px);
+  transform-origin: top right;
+  min-width: 168px;
+  padding: 4px;
+  gap: 1px;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow:
+    0 12px 32px #0000001f,
+    0 2px 6px #0000000d;
+}
+.theme-dark .workspace .language-list {
+  box-shadow:
+    0 12px 32px #0008,
+    0 2px 6px #0005;
+}
+.workspace .language-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.workspace .language-list button:hover,
+.workspace .language-list button:focus-visible {
+  background: var(--soft);
+}
+.workspace .language-list button[aria-checked='true'] span {
+  color: var(--accent);
+}
+
+/* Duet: at the true centre of the window, whatever the window buttons take on either side. Its
+   face is the mascot; open, the face turns into a speech bubble and a short line shows under it. */
+.workspace-bar .bar-duet {
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  margin-left: -22px;
+  border-radius: 14px;
+}
+.duet-swap {
+  display: grid;
+  place-items: center;
+}
+.duet-swap > * {
+  grid-area: 1 / 1;
+}
+.bar-face {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: var(--face);
+  box-shadow:
+    inset 0 0 0 1px rgba(27, 32, 31, 0.12),
+    0 1px 2px rgba(27, 32, 31, 0.06);
+  transition:
+    transform 0.28s var(--settle),
+    opacity 0.35s ease;
+}
+.theme-dark .bar-face {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+.bar-face .duet-alive {
+  display: block;
+  overflow: visible;
+}
+.bar-duet:hover .bar-face {
+  transform: translateY(-1px) scale(1.06) rotate(-2deg);
+}
+.bar-duet:active .bar-face {
+  transform: scale(0.95);
+}
+.bar-duet.is-open .bar-face {
+  opacity: 0;
+  transform: scale(0.6) rotate(-12deg);
+}
+.bar-chat path {
+  fill: var(--face);
+  stroke: rgba(27, 32, 31, 0.16);
+  stroke-width: 1;
+}
+.theme-dark .bar-chat path {
+  stroke: rgba(255, 255, 255, 0.16);
+}
+.bar-chat circle {
+  fill: var(--eye);
+  animation: typing 1.2s ease-in-out 0.2s 2;
+}
+.bar-chat circle:nth-child(3) {
+  animation-delay: 0.35s;
+}
+.bar-chat circle:nth-child(4) {
+  animation-delay: 0.5s;
+}
+@keyframes typing {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(-1.2px);
+  }
+}
+.bar-line {
+  position: absolute;
+  left: 50%;
+  bottom: -3px;
+  width: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: translateX(-50%);
+  transition: width 0.3s var(--settle);
+}
+.bar-duet.is-open .bar-line {
+  width: 14px;
+}
+.bar-dot {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--ground);
+  transform: scale(0);
+  transition: transform 0.28s var(--settle);
+}
+.bar-dot.is-on {
+  transform: scale(1);
+}
+
+/* The work area: the hub, the tiles over it, and the lines between them. Its size is what the
+   tiles' shares and their pages' sizes are measured in. */
+.work-area {
+  position: absolute;
+  top: 48px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+}
+.work-content {
+  position: absolute;
+  inset: 0;
+  container-type: size;
+}
+.workspace-error {
+  position: absolute;
+  top: 48px;
+  left: 8px;
+  z-index: 40;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--due);
+}
+
+/* The hub: fades out (and sinks a hair) as the tile you clicked grows out of it, and back in as the
+   tiles shrink into it. */
+.hub {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(0.985);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.24s var(--fade-out),
+    transform var(--glide) var(--move),
+    visibility 0s linear 0.3s;
+}
+.hub.is-shown {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity 0.24s var(--fade-out) 0.08s,
+    transform var(--glide) var(--move),
+    visibility 0s;
+}
+.hub-slot {
+  position: absolute;
+  left: var(--l);
+  top: var(--t);
+  width: var(--w);
+  height: var(--h);
+  min-width: 0;
+  min-height: 0;
+  container-type: inline-size;
+}
+.hub-slot > .tile {
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px #00000005;
+  transition: transform 0.28s var(--settle);
+}
+.hub-slot > .tile:hover {
+  transform: translateY(-2px);
+}
+
+/* A tile. It moves and resizes as a box on the curve; it opens with a short fade and a small grow
+   (Duet's out of its icon in the bar) and closes the same way back. Its page is laid out at the
+   tile's final size at once (--bw, --bh), so it never reflows while the box glides. */
+.pane {
+  --fade: 0.2s;
+  --fade-delay: 0s;
+  --grow: 0.32s;
+  --hide-after: 0.34s;
+  position: absolute;
+  left: var(--l);
+  top: var(--t);
+  width: var(--w);
+  height: var(--h);
+  z-index: 1;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  contain: layout paint;
+  isolation: isolate;
+  background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px #00000005;
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  opacity: 0;
+  transform: scale(0.93);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    left var(--glide) var(--move),
+    top var(--glide) var(--move),
+    width var(--glide) var(--move),
+    height var(--glide) var(--move),
+    opacity var(--fade) var(--fade-out) var(--fade-delay),
+    transform var(--grow) var(--move),
+    outline-color 0.2s,
+    box-shadow 0.3s ease,
+    visibility 0s linear var(--hide-after);
+}
+.pane.is-shown {
+  --fade: 0.18s;
+  --hide-after: 0s;
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+}
+.pane.is-talk {
+  --grow: 0.42s;
+  --fade-delay: 0.08s;
+  transform: scale(0.06);
+  transform-origin: var(--origin);
+}
+.pane.is-talk.is-shown {
+  --fade-delay: 0s;
+  transform: none;
+}
+.pane.is-floating {
+  z-index: 4;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.28),
+    0 2px 8px rgba(0, 0, 0, 0.12);
+}
+.pane.is-dragged {
+  opacity: 0.45;
+}
+.pane.is-target {
+  outline: 2px dashed var(--ink);
+}
+.pane.is-carried,
+.workspace.is-resizing .pane {
+  transition: none;
+}
+.workspace.is-resizing {
+  user-select: none;
+}
+.workspace.is-resizing .pane {
+  pointer-events: none;
+}
+.pane-head {
+  flex: none;
+  height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 12px;
+}
+.pane-head[draggable='true'],
+.pane.is-floating .pane-head {
+  cursor: grab;
+}
+.pane.is-carried .pane-head {
+  cursor: grabbing;
+}
+.pane-head .grip {
+  flex: none;
+  fill: var(--faint);
+}
+.pane-head h1 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+.pane-head .spacer {
+  flex: 1;
+}
+.pane-head button {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 9px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: none;
+  color: var(--sub);
+  transition:
+    background 0.18s var(--fade-out),
+    color 0.18s var(--fade-out);
+}
+.pane-head button:hover {
+  color: var(--ink);
+  background: var(--soft);
+}
+.workspace .pane-body {
+  flex: none;
+  width: var(--bw);
+  height: var(--bh);
+  min-height: 0;
+  overflow: hidden;
+}
+.pane-page {
+  display: contents;
+}
+.pane-page[hidden] {
+  display: none;
+}
+
+/* A place's name, with a brush stroke in its colour under it. */
+.place-name {
+  position: relative;
+  display: inline-block;
+  z-index: 0;
+  white-space: nowrap;
+}
+.place-name .brush {
+  position: absolute;
+  left: -3px;
+  bottom: -5px;
+  width: calc(100% + 6px);
+  height: 8px;
+  z-index: -1;
+  color: var(--place, #a8adab);
+  opacity: 0.65;
+}
+[data-place='today'],
+.tile-today {
+  --place: #eda82c;
+}
+[data-place='watching'],
+.tile-watching {
+  --place: #3fa6dc;
+}
+[data-place='words'],
+.tile-words {
+  --place: #3fb579;
+}
+[data-place='talk'] {
+  --place: #9478e4;
+}
+.theme-dark [data-place='today'],
+.theme-dark .tile-today {
+  --place: #f2b84b;
+}
+.theme-dark [data-place='watching'],
+.theme-dark .tile-watching {
+  --place: #6cbde8;
+}
+.theme-dark [data-place='words'],
+.theme-dark .tile-words {
+  --place: #62c793;
+}
+.theme-dark [data-place='talk'] {
+  --place: #ab95f2;
+}
+
+/* Watching, floating: the last video, to pick up where you left off. */
+.floating-video {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  margin: 0 8px 8px;
+  border: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--soft);
+  padding: 0;
+}
+.floating-video .thumb {
+  position: absolute;
+  inset: 0;
+  aspect-ratio: auto;
+  border-radius: 0;
+}
+.floating-caption {
+  position: absolute;
+  inset: auto 8px 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: white;
+  background: #111c;
+  font-size: 11px;
+}
+.workspace .floating-empty {
+  padding: 14px;
+}
+
+/* The lines between tiles: a handle shows when you come close; where three tiles meet, one handle
+   moves both lines at once. Double-click puts a line back. */
+.split-handle {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  transition:
+    left var(--glide) var(--move),
+    top var(--glide) var(--move),
+    right var(--glide) var(--move);
+}
+.workspace.is-resizing .split-handle {
+  transition: none;
+}
+.split-handle.axis-x {
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+}
+.split-handle.axis-y {
+  height: 8px;
+  cursor: row-resize;
+}
+.split-handle.axis-xy {
+  z-index: 3;
+  width: 22px;
+  height: 22px;
+  cursor: move;
+}
+.split-handle .grip {
+  display: block;
+  border-radius: 999px;
+  background: var(--faint);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.split-handle.axis-x .grip {
+  width: 4px;
+  height: 44px;
+}
+.split-handle.axis-y .grip {
+  width: 44px;
+  height: 4px;
+}
+.split-handle.axis-xy .grip {
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 0 0 3px var(--ground);
+}
+.split-handle:hover .grip,
+.split-handle:focus-visible .grip,
+.split-handle:active .grip {
+  opacity: 1;
+}
+.split-handle:active .grip {
+  background: var(--ink);
+}
+.split-handle:focus-visible {
+  outline: none;
+}
+
+/* A tile's menu (right-click its header): the layout, main, floating, close. */
+.tile-menu {
+  position: absolute;
+  z-index: 10;
+  width: 228px;
+  box-sizing: border-box;
+  padding: 5px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.08);
+  transform-origin: top left;
+  animation: menu-in 0.18s var(--settle) both;
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-4px);
+  }
+}
+.tile-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  font-size: 13px;
+  text-align: left;
+}
+.tile-menu button:hover,
+.tile-menu button:focus-visible {
+  background: rgba(127, 127, 127, 0.12);
+  outline: none;
+}
+.tile-menu svg {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tile-menu span {
+  flex: 1;
+}
+.tile-menu kbd {
+  font:
+    11px Inter,
+    sans-serif;
+  color: var(--sub);
+}
+.tile-menu-rule {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--line);
+}
+
+/* Settings: a panel the height of the work area, sliding in from the right edge over a faint
+   scrim, and back out the same way. */
+.settings-scrim {
+  position: absolute;
+  inset: 48px 0 0;
+  z-index: 20;
+  background: rgba(27, 32, 31, 0);
+  pointer-events: none;
+  transition: background 0.22s ease;
+}
+.settings-scrim.is-shown {
+  background: rgba(27, 32, 31, 0.06);
+  pointer-events: auto;
+}
+.settings-panel {
+  position: absolute;
+  top: 48px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 21;
+  width: min(500px, calc(100% - 16px));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid rgba(27, 32, 31, 0.09);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.16),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateX(calc(100% + 24px));
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform var(--glide) var(--move),
+    opacity 0.2s ease,
+    visibility 0s linear var(--glide);
+}
+.settings-panel.is-shown {
+  transform: none;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    transform var(--glide) var(--move),
+    opacity 0.2s ease,
+    visibility 0s;
+}
+.theme-dark .settings-panel {
+  border-color: rgba(238, 243, 241, 0.08);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.settings-panel > .pane-head {
+  height: 46px;
+  padding: 0 10px 0 18px;
+}
+.settings-panel > .body {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace *,
+  .workspace *::before,
+  .workspace *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

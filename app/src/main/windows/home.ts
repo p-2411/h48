@@ -4,24 +4,31 @@
 import { BrowserWindow } from 'electron'
 import { loadPage, webPreferences } from './load'
 
-export function createHomeWindow(): BrowserWindow {
+export function createHomeWindow(dark = false): BrowserWindow {
   const glass = process.platform === 'darwin'
   const window = new BrowserWindow({
     width: 1040,
     height: 720,
-    minWidth: 760,
-    minHeight: 520,
+    minWidth: 820,
+    minHeight: 560,
     title: 'Duet',
+    backgroundColor: dark ? '#121313' : '#f2f3f3',
     ...(glass
       ? {
-          vibrancy: 'sidebar' as const,
-          visualEffectState: 'active' as const,
-          backgroundColor: '#00000000',
           titleBarStyle: 'hiddenInset' as const,
           // The window buttons' middle on the top bar's (52px tall, home.css), level with Duet.
-          trafficLightPosition: { x: 20, y: 20 }
+          trafficLightPosition: { x: 18, y: 16 }
         }
-      : { backgroundColor: '#101013' }),
+      : process.platform === 'win32'
+        ? {
+            titleBarStyle: 'hidden' as const,
+            titleBarOverlay: {
+              height: 48,
+              color: dark ? '#121313' : '#f2f3f3',
+              symbolColor: dark ? '#eef3f1' : '#1b201f'
+            }
+          }
+        : {}),
     show: false,
     webPreferences
   })

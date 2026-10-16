@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings, the controls</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="duet.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="body" style="font-family: Inter, system-ui, sans-serif; color: var(--ink); background: var(--card); overflow: auto;">
+<div class="arrive" style="width: 100%; max-width: 660px; margin: 0 auto; padding: 4px 20px 36px; box-sizing: border-box; display: flex; flex-direction: column; gap: 28px;">
+
+<p class="serif set-lede" style="margin: 0; font-size: 32px; line-height: 1.05;">Make Duet yours.</p>
+
+<section aria-label="Learning" style="display: flex; flex-direction: column;">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub);">Learning</h2>
+<div class="set-row" style="display: flex; align-items: center; gap: 10px 16px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; font-size: 14px; font-weight: 500;">Language</span>
+<div class="seg" role="group" aria-label="Language" style="display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--seg);">
+<sc-for list="{{languages}}" as="o" hint-placeholder-count="4"><button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" style="{{o.style}}">{{o.name}}</button></sc-for>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 12px 0 14px; border-top: 1px solid var(--line);">
+<div class="set-row" style="display: flex; align-items: center; gap: 10px 16px;">
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">How much Spanish in each line</span><span style="font-size: 12px; color: var(--sub);">Auto grows with you, one word at a time</span></span>
+<div class="seg" role="group" aria-label="Level" style="display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--seg);">
+<sc-for list="{{levels}}" as="o" hint-placeholder-count="6"><button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" style="{{o.style}}">{{o.name}}</button></sc-for>
+</div>
+</div>
+<div aria-label="Preview" style="padding: 13px 16px; border-radius: 12px; background: #2b302f; color: var(--soft2); font-size: 15px; text-align: center;">
+<sc-for list="{{preview}}" as="w" hint-placeholder-count="6"><span style="color: {{w.color}}; font-weight: {{w.weight}}; transition: color 0.4s ease;">{{w.text}}</span></sc-for>
+</div>
+</div>
+</section>
+
+<section aria-label="While watching" style="display: flex; flex-direction: column;">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub);">While watching</h2>
+<sc-for list="{{toggles}}" as="o" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">{{o.label}}</span><span style="font-size: 12px; color: var(--sub);">{{o.hint}}</span></span>
+<button type="button" class="switch" role="switch" aria-checked="{{o.checked}}" aria-label="{{o.label}}" onClick="{{o.flip}}" style="{{o.track}}"><i style="{{o.knob}}"></i></button>
+</div>
+</sc-for>
+</section>
+
+<section aria-label="Look" style="display: flex; flex-direction: column;">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub);">Look</h2>
+<div class="set-row" style="display: flex; align-items: center; gap: 10px 16px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; font-size: 14px; font-weight: 500;">Appearance</span>
+<div class="seg" role="group" aria-label="Appearance" style="display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--seg);">
+<sc-for list="{{looks}}" as="o" hint-placeholder-count="3"><button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" style="{{o.style}}">{{o.name}}</button></sc-for>
+</div>
+</div>
+</section>
+
+<section aria-label="Daily reminder" style="display: flex; flex-direction: column;">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub);">Daily reminder</h2>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Remind me to keep my streak</span><span style="font-size: 12px; color: var(--sub);">Only on days you haven’t practised yet</span></span>
+<span style="font-size: 13px; padding: 6px 10px; border-radius: 8px; background: var(--soft2); white-space: nowrap;">7:30 pm</span>
+<button type="button" class="switch" role="switch" aria-checked="{{reminder.checked}}" aria-label="Daily reminder" onClick="{{reminder.flip}}" style="{{reminder.track}}"><i style="{{reminder.knob}}"></i></button>
+</div>
+</section>
+
+<section aria-label="Keys" style="display: flex; flex-direction: column;">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub);">Keys</h2>
+<sc-for list="{{keys}}" as="k" hint-placeholder-count="2">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; font-size: 14px; font-weight: 500;">{{k.label}}</span>
+<span style="display: flex; gap: 4px;"><sc-for list="{{k.keys}}" as="c" hint-placeholder-count="3"><kbd style="font: inherit; font-size: 12px; min-width: 14px; text-align: center; padding: 4px 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--line2); box-shadow: 0 1px 0 rgba(27,32,31,0.10);">{{c}}</kbd></sc-for></span>
+<button type="button" class="soft-btn" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 7px 12px; border-radius: 999px; background: var(--soft); color: var(--ink);">Change</button>
+</div>
+</sc-for>
+</section>
+
+<section aria-label="Permissions" style="display: flex; flex-direction: column;">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub);">Permissions</h2>
+<div class="set-row" style="display: flex; align-items: center; gap: 10px 16px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex: 1 1 240px; font-size: 13px; color: var(--ink2); line-height: 1.5;">Duet reads the captions on your screen and listens to the video’s sound, so it can teach from what you watch.</span>
+<button type="button" class="soft-btn" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 8px 14px; border-radius: 999px; background: var(--soft); color: var(--ink); white-space: nowrap;">Check permissions</button>
+</div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":700,"height":700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const seg = (on) => `font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: ${on ? 'var(--seg-on)' : 'transparent'}; box-shadow: ${on ? '0 1px 2px rgba(27,32,31,0.10)' : 'none'}; color: ${on ? 'var(--ink)' : 'var(--sub)'};`;
+    const options = (key, list, fallback) => list.map(([id, name]) => {
+      const on = (st[key] ?? fallback) === id;
+      return { name, pressed: on ? 'true' : 'false', style: seg(on), pick: () => this.setState({ [key]: id }) };
+    });
+    const sw = (on) => ({
+      checked: on ? 'true' : 'false',
+      track: `border: 0; cursor: pointer; padding: 0; width: 40px; height: 24px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; background: ${on ? 'var(--ink)' : 'var(--switch-off)'};`,
+      knob: `display: block; width: 18px; height: 18px; border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transform: translateX(${on ? 19 : 3}px);`
+    });
+    const toggleDefs = [
+      ['full', 'Show the whole Spanish line', 'Under the mixed line, when you hover the strip', true],
+      ['hide', 'Hide English until I look', 'Hover the English to see it', false],
+      ['slow', 'Pause for slow translations', 'Only on videos with a transcript', true],
+      ['explain', 'Pause while explaining', 'While the Explain panel is open', true],
+      ['check', 'Checkpoints', 'At a pause or a break, a glow on the strip offers one quick challenge', true]
+    ];
+    const lines = {
+      auto: [['I have to ', 0], ['madrugar', 1], [' tomorrow, so ', 0], ['vámonos', 1], ['.', 0]],
+      '1': [['I have to ', 0], ['madrugar', 1], [' tomorrow, so let’s go.', 0]],
+      '2': [['I have to ', 0], ['madrugar', 1], [' tomorrow, so ', 0], ['vámonos', 1], ['.', 0]],
+      '3': [['Tengo que', 1], [' get up early ', 0], ['mañana', 1], [', so ', 0], ['vámonos', 1], ['.', 0]],
+      '4': [['Mañana tengo que madrugar', 1], [', so ', 0], ['vámonos', 1], ['.', 0]],
+      '5': [['Mañana tengo que madrugar, así que vámonos.', 1]]
+    };
+    const remind = st.remind ?? true;
+    return {
+      languages: options('lang', [['es', 'Spanish'], ['ja', 'Japanese'], ['ko', 'Korean'], ['fr', 'French']], 'es'),
+      levels: options('level', [['auto', 'Auto'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4'], ['5', '5']], 'auto'),
+      looks: options('look', [['light', 'Light'], ['dark', 'Dark'], ['system', 'Match Windows']], 'system'),
+      preview: (lines[st.level ?? 'auto'] || lines.auto).map(([text, es]) => ({ text, color: es ? '#ffd60a' : 'var(--soft2)', weight: es ? 600 : 400 })),
+      toggles: toggleDefs.map(([id, label, hint, def]) => { const on = st[id] ?? def; return { label, hint, ...sw(on), flip: () => this.setState({ [id]: !on }) }; }),
+      reminder: { ...sw(remind), flip: () => this.setState({ remind: !remind }) },
+      keys: [{ label: 'Show or hide Duet', keys: ['Alt', 'Shift', 'D'] }, { label: 'Talk to Duet', keys: ['Alt', 'Shift', 'T'] }]
+    };
+  }
+}
+</script>
+</body>
+</html>

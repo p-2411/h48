@@ -1,0 +1,808 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="duet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+.duet-peek{transition:transform .28s cubic-bezier(.22,1,.36,1)}
+.duet-peek:hover{transform:translateY(-14px)}
+.duet-peek .duet-say{opacity:0;transform:translateY(6px);transition:opacity .25s,transform .22s cubic-bezier(.22,1,.36,1)}
+.duet-peek:hover .duet-say{opacity:1;transform:none}
+.split-handle .grip{opacity:0;transition:opacity .3s ease}
+.menu-in{animation:menu-in .18s cubic-bezier(.22,1,.36,1) both;transform-origin:top left}
+@keyframes menu-in{from{opacity:0;transform:scale(.97) translateY(-4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){*{transition-duration:.01s!important;animation-duration:.01s!important}}
+.split-handle:hover .grip,.split-handle.active .grip{opacity:1}
+[role=menuitem]:hover{background:rgba(127,127,127,.12)!important}
+.serif{font-family:'Instrument Serif',Georgia,serif;font-weight:400;letter-spacing:-.01em}
+.hand{font-family:Caveat,'Segoe Print',cursive;font-weight:600;line-height:1}
+.scribble path{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.1s cubic-bezier(.22,1,.36,1) .4s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.grain-light{background-image:url(grain-light.svg)!important;background-size:160px 160px!important}
+.grain-dark{background-image:url(grain-dark.svg)!important;background-size:160px 160px!important}
+
+.duet-swap{display:grid;place-items:center}
+.duet-swap>*{grid-area:1/1;transition:opacity .35s ease,transform .32s cubic-bezier(.22,1,.36,1)}
+.duet-chat .dot{animation:typing 1.2s ease-in-out .2s 2}
+.duet-chat .dot:nth-child(3){animation-delay:.35s}
+.duet-chat .dot:nth-child(4){animation-delay:.5s}
+@keyframes typing{0%,100%{transform:translateY(0)}35%{transform:translateY(-1.2px)}}
+.duet-face{transition:transform .28s cubic-bezier(.22,1,.36,1)}
+.duet-call:hover .duet-face{transform:translateY(-1px) scale(1.06) rotate(-2deg)}
+.duet-call:active .duet-face{transform:scale(.95)}
+.duet-face .pupil{display:block;transform:translate(var(--px,0px),var(--py,0px));transition:transform .22s cubic-bezier(.22,1,.36,1)}
+.duet-face .socket{display:grid;place-items:center}
+.duet-face .socket i{animation:blink 6.2s ease-in-out infinite}
+.duet-face.react-open,.duet-face.react-duet,.duet-face.react-happy{animation:face-hop .48s cubic-bezier(.22,1,.36,1)}
+.duet-face.react-swap{animation:face-tilt .28s cubic-bezier(.22,1,.36,1)}
+.duet-face.react-close .socket i{animation:blink-now .26s ease}
+.duet-face.react-duet .socket{animation:widen .32s cubic-bezier(.22,1,.36,1)}
+.duet-face.react-happy .socket i{animation:none;width:6px;height:3.5px;background:transparent!important;border:1.6px solid currentColor;border-bottom:0;border-radius:4px 4px 0 0;transform:translateY(.5px)}
+.duet-face.react-happy .smile{transform:scaleX(1.5)}
+@keyframes face-hop{0%{transform:none}32%{transform:translateY(-3px) scale(1.07)}62%{transform:translateY(.5px) scale(.98)}100%{transform:none}}
+@keyframes face-tilt{0%,100%{transform:none}45%{transform:rotate(-7deg)}}
+@keyframes blink-now{0%,100%{scale:1 1}45%{scale:1 .1}}
+@keyframes widen{0%,100%{transform:none}35%{transform:scale(1.12,1.28)}}
+.duet-face .socket-r i{animation-delay:.05s}
+.duet-call:hover .smile{transform:scaleX(1.25)}
+.duet-face .smile{transition:transform .25s cubic-bezier(.22,1,.36,1)}
+@keyframes sock-l{0%,100%{border-radius:5px 6px 5px 6px;transform:translateY(0) rotate(0)}50%{border-radius:6px 5px 6px 5px;transform:translateY(-.4px) rotate(-1.5deg) scaleX(1.03)}}
+@keyframes sock-r{0%,100%{border-radius:6px 5px 6px 5px;transform:translateY(-.3px) rotate(1deg)}50%{border-radius:5px 6px 5px 6px;transform:translateY(.4px) rotate(0) scaleX(.98)}}
+@keyframes blink{0%,44%,49%,100%{scale:1 1}46.5%{scale:1 .15}}
+.lift{transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .45s ease}
+.lift:hover{transform:translateY(-2px)}
+.chip{transition:transform .32s cubic-bezier(.22,1,.36,1)}
+.lift:hover .chip,section:hover .chip{transform:rotate(-8deg) scale(1.08)}
+.flame{transform-origin:50% 90%}
+.streak:hover .flame{animation:flicker .9s ease-in-out infinite}
+@keyframes flicker{0%,100%{transform:scale(1) rotate(0)}30%{transform:scale(1.08,.96) rotate(-3deg)}60%{transform:scale(.97,1.06) rotate(2deg)}}
+.duet-eye i{transition:transform .32s cubic-bezier(.22,1,.36,1),height .25s ease,border-radius .25s ease,background .25s ease,border-color .25s ease}
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</head><body style="margin:0">
+<div class="grain-light theme-light" style="width: 1120px; height: 720px; box-sizing: border-box; position: relative; overflow: hidden; background: #f2f3f3; color: #1b201f; transition: background-color 0.5s ease, color 0.5s ease; font-family: Inter, system-ui, sans-serif; display: flex;">
+
+
+
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;">
+
+
+<header style="height: 48px; flex-shrink: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 0 12px 0 14px;">
+<div style="display: flex; align-items: center;">
+
+<nav aria-label="Tiles" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: #f2f1ed;">
+<button type="button" aria-pressed="false" aria-label="Home" title="Home  Ctrl+0" style="border: 0; cursor: pointer; width: 36px; height: 28px; border-radius: 999px; display: grid; place-items: center; background: transparent; box-shadow: none; color: #666c6a; transition: background 0.18s cubic-bezier(0.4, 0, 0.2, 1), color 0.18s cubic-bezier(0.4, 0, 0.2, 1);">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7M6 9.5V19a1 1 0 0 0 1 1h3.5v-5h3v5H17a1 1 0 0 0 1-1V9.5"></path></svg>
+</button>
+<span style="width: 1px; height: 18px; align-self: center; margin: 0 3px; background: rgba(27,32,31,0.16);" aria-hidden="true"></span>
+
+<button type="button" aria-pressed="true" aria-label="Today" title="Today  Ctrl+1" style="border: 0; cursor: pointer; width: 36px; height: 28px; border-radius: 999px; display: grid; place-items: center; background: #ffffff; box-shadow: 0 1px 2px rgba(27,32,31,0.10), inset 0 0 0 1px rgba(27,32,31,0.06); color: #1b201f; transition: background 0.18s cubic-bezier(0.4, 0, 0.2, 1), color 0.18s cubic-bezier(0.4, 0, 0.2, 1);">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8z"></path></svg>
+</button>
+
+<button type="button" aria-pressed="false" aria-label="Watching" title="Watching  Ctrl+2" style="border: 0; cursor: pointer; width: 36px; height: 28px; border-radius: 999px; display: grid; place-items: center; background: transparent; box-shadow: none; color: #666c6a; transition: background 0.18s cubic-bezier(0.4, 0, 0.2, 1), color 0.18s cubic-bezier(0.4, 0, 0.2, 1);">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM10 9v6l5-3z"></path></svg>
+</button>
+
+<button type="button" aria-pressed="true" aria-label="Your words" title="Your words  Ctrl+3" style="border: 0; cursor: pointer; width: 36px; height: 28px; border-radius: 999px; display: grid; place-items: center; background: #ffffff; box-shadow: 0 1px 2px rgba(27,32,31,0.10), inset 0 0 0 1px rgba(27,32,31,0.06); color: #1b201f; transition: background 0.18s cubic-bezier(0.4, 0, 0.2, 1), color 0.18s cubic-bezier(0.4, 0, 0.2, 1);">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h11a2 2 0 0 1 2 2v9M5 8h11a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z"></path></svg>
+</button>
+
+</nav>
+
+</div>
+<button type="button" class="duet-call" aria-pressed="false" aria-label="Talk to Duet" title="Talk to Duet  Ctrl+4" style="position: relative; border: 0; cursor: pointer; padding: 0; width: 44px; height: 44px; border-radius: 14px; background: none; display: grid; place-items: center;">
+<span class="duet-swap">
+<span style="display: grid; place-items: center; opacity: 1; transform: none;"><span class="duet-face " style="width: 36px; height: 36px; border-radius: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: #f7f8f7; box-shadow: inset 0 0 0 1px rgba(27,32,31,0.12), 0 1px 2px rgba(27,32,31,0.06);">
+<span style="display: flex; gap: 3px; margin-top: 2px;">
+<span class="socket socket-l" style="width: 13px; height: 10px; border-radius: 5px; background: #18211f;"><i class="pupil" style="width: 5px; height: 2.5px; border-radius: 2px; color: #f7f8f7; background: currentColor;"></i></span>
+<span class="socket socket-r" style="width: 13px; height: 10px; border-radius: 5px; background: #18211f;"><i class="pupil" style="width: 5px; height: 2.5px; border-radius: 2px; color: #f7f8f7; background: currentColor;"></i></span>
+</span>
+<span class="smile" style="display: block; width: 6px; height: 2.5px; border-radius: 0 0 4px 4px; background: #3a4644;"></span>
+</span></span>
+
+</span>
+<span style="position: absolute; left: 50%; bottom: -3px; width: 0px; height: 3px; border-radius: 2px; background: #e0583a; transform: translateX(-50%); transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);" aria-hidden="true"></span>
+<span style="position: absolute; right: 0px; top: 0px; width: 8px; height: 8px; border-radius: 4px; background: #e0583a; box-shadow: 0 0 0 2px #f2f3f3; transform: scale(1); transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);" aria-hidden="true"></span>
+</button>
+<div style="justify-self: end; display: flex; align-items: center; gap: 6px;">
+<button type="button" title="Change language" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; background: none; color: #666c6a; display: flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; border-radius: 8px;">Spanish<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<span style="width: 1px; height: 16px; margin: 0 4px; background: rgba(27,32,31,0.16);" aria-hidden="true"></span>
+<span class="streak" title="12 days in a row" style="display: flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px 0 7px; border-radius: 999px; background: rgba(240,110,50,0.09); font-size: 13px; color: #666c6a;">
+<svg class="flame" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="duet-flame" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#f0582c"></stop><stop offset="1" stop-color="#f8a43c"></stop></linearGradient></defs><path fill="url(#duet-flame)" d="M12 2.5c.6 3.1-1.1 4.9-2.7 6.6C7.7 10.8 6 12.6 6 15.3A6 6 0 0 0 12 21.5a6 6 0 0 0 6-6.2c0-2.4-1.1-4.3-2.6-5.7.1 1.6-.5 2.9-1.6 3.4.4-3.9-.6-7.4-1.8-10.5z"></path><path fill="#ffe0a0" d="M12.2 13.2c1.6 1.3 2.4 2.6 2.4 3.9A2.6 2.6 0 0 1 12 19.8a2.6 2.6 0 0 1-2.6-2.7c0-1.5 1.1-2.4 2.8-3.9z"></path></svg>
+<b style="color: #1b201f;">12</b> days
+</span>
+<button type="button" aria-label="Dark mode" title="Dark mode" style="border: 0; cursor: pointer; width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; background: none; color: #666c6a;">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg>
+</button>
+<button type="button" aria-label="Settings" aria-expanded="true" title="Settings" style="border: 0; cursor: pointer; padding: 0; width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; background: #ffffff; color: #666c6a;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></button>
+</div>
+</header>
+
+
+
+<main style="position: relative; flex-grow: 1; min-height: 0; padding: 0 8px 8px 0; padding-left: 8px; padding-bottom: 8px; transition: padding-bottom 0.38s cubic-bezier(0.22, 1, 0.36, 1);">
+
+<div aria-hidden="true" style="height: 100%; display: grid; gap: 8px; grid-template-columns: 53fr 47fr; grid-template-rows: minmax(0, 50fr) minmax(0, 50fr); opacity: 0; transform: scale(0.985); pointer-events: none; visibility: hidden; transition: opacity 0.24s cubic-bezier(0.4, 0, 0.2, 1) 0s, transform 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), visibility 0s linear 0.3s;">
+<button type="button" class="lift" style="grid-row: 1 / 3; font: inherit; text-align: left; border: 0; cursor: pointer; border-radius: 16px; background: #ffffff; border: 1px solid rgba(27,32,31,0.09); box-shadow: 0 1px 0 rgba(27,32,31,0.03);  color: #1b201f; padding: 28px; display: flex; flex-direction: column; gap: 14px;">
+<span style="font-size: 13px; font-weight: 600; color: #1b201f;"><span style="position: relative; display: inline-block; padding-bottom: 4px;">Today<svg class="brush" viewBox="0 0 100 8" preserveAspectRatio="none" style="display: block; position: absolute; left: -1px; bottom: -2px; width: calc(100% + 3px); height: 6px;" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#eda82c"></path></svg></span></span>
+<span class="serif" style="font-size: 38px; line-height: 1.05; margin-top: 2px;">Good afternoon.</span>
+<span style="display: flex; flex-direction: column; gap: 6px; margin-top: 20px;">
+<span style="font-size: 12px; color: #666c6a;">Your word for today</span>
+<span class="serif" style="align-self: flex-start; font-size: 64px; line-height: 0.95; color: #1b201f; background: linear-gradient(transparent 58%, rgba(255,205,40,0.55) 58%, rgba(255,205,40,0.55) 92%, transparent 92%); padding: 0 4px; margin-left: -4px;">madrugar</span>
+<span style="font-size: 14px; color: #666c6a;">to get up early · heard 4 times in <i>Un día en Madrid</i></span>
+</span>
+<span style="display: flex; flex-direction: column; gap: 6px; margin-top: 24px; width: 100%; max-width: 420px;">
+<span style="display: flex; gap: 12px; align-items: center; padding: 11px 14px; border-radius: 12px; background: #f2f1ed;"><span style="width: 24px; height: 24px; border-radius: 8px; background: #1b201f; color: #f2f3f3; display: grid; place-items: center; font-size: 12px; font-weight: 600; flex-shrink: 0;">1</span><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-size: 14px; font-weight: 600;">Say a line back</span><span style="font-size: 12px; color: #666c6a;">“I have to madrugar tomorrow”</span></span></span>
+<span style="display: flex; gap: 12px; align-items: center; padding: 11px 14px; border-radius: 12px; background: #f2f1ed;"><span style="width: 24px; height: 24px; border-radius: 8px; background: #ffffff; color: #1b201f; display: grid; place-items: center; font-size: 12px; font-weight: 600; flex-shrink: 0;">2</span><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-size: 14px; font-weight: 600;">Review 14 cards</span><span style="font-size: 12px; color: #666c6a;">About three minutes</span></span></span>
+<span style="display: flex; gap: 12px; align-items: center; padding: 11px 14px; border-radius: 12px; background: #f2f1ed;"><span style="width: 24px; height: 24px; border-radius: 8px; background: #ffffff; color: #1b201f; display: grid; place-items: center; font-size: 12px; font-weight: 600; flex-shrink: 0;">3</span><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-size: 14px; font-weight: 600;">One challenge</span><span style="font-size: 12px; color: #666c6a;">Use cocina in a sentence with Duet</span></span></span>
+</span>
+<span style="margin-top: auto; display: flex; align-items: center; gap: 12px;">
+<span style="font-size: 14px; font-weight: 600; padding: 12px 20px; border-radius: 999px; background: #1b201f; color: #f2f3f3;">Start</span>
+<span style="font-size: 13px; color: #666c6a;">About five minutes</span>
+</span>
+</button>
+<button type="button" class="lift" style="font: inherit; text-align: left; border: 0; cursor: pointer; border-radius: 16px; background: #ffffff; border: 1px solid rgba(27,32,31,0.09); box-shadow: 0 1px 0 rgba(27,32,31,0.03);  color: #1b201f; padding: 22px; display: flex; flex-direction: column; gap: 12px;">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #666c6a;"><span style="position: relative; display: inline-block; padding-bottom: 4px;">Watching<svg class="brush" viewBox="0 0 100 8" preserveAspectRatio="none" style="display: block; position: absolute; left: -1px; bottom: -2px; width: calc(100% + 3px); height: 6px;" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#3fa6dc"></path></svg></span></span>
+<span style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%;">
+<span style="display: flex; flex-direction: column; gap: 6px;"><span style="position: relative; display: block; height: 96px; border-radius: 12px; background: #2b302f; overflow: hidden; flex-shrink: 0;"><span style="position: absolute; left: 0; right: 0; bottom: 15px; display: flex; justify-content: center;"><span style="font-size: 11px; line-height: 1.3; color: #f4f4f2; background: rgba(0,0,0,0.55); padding: 2px 6px; border-radius: 4px; white-space: nowrap;">heat the <b style="color: #ff9f0a; font-weight: 600;">sartén</b> first</span></span><span style="position: absolute; left: 0; bottom: 0; height: 2px; width: 41%; background: rgba(255,255,255,0.75);"></span></span><span style="font-size: 13px; font-weight: 600;">Cómo hacer tortilla española</span><span style="font-size: 12px; color: #666c6a;">Left off at 5:12 · 4 new words</span></span>
+<span style="display: flex; flex-direction: column; gap: 6px;"><span style="position: relative; display: block; height: 96px; border-radius: 12px; background: #33302a; overflow: hidden; flex-shrink: 0;"><span style="position: absolute; left: 0; right: 0; bottom: 15px; display: flex; justify-content: center;"><span style="font-size: 11px; line-height: 1.3; color: #f4f4f2; background: rgba(0,0,0,0.55); padding: 2px 6px; border-radius: 4px; white-space: nowrap;">I have to <b style="color: #ffd60a; font-weight: 600;">madrugar</b></span></span><span style="position: absolute; left: 0; bottom: 0; height: 2px; width: 18%; background: rgba(255,255,255,0.75);"></span></span><span style="font-size: 13px; font-weight: 600;">Un día en Madrid</span><span style="font-size: 12px; color: #666c6a;">Left off at 1:25 · 2 new words</span></span>
+</span>
+</button>
+<button type="button" class="lift" style="font: inherit; text-align: left; border: 0; cursor: pointer; border-radius: 16px; background: #ffffff; border: 1px solid rgba(27,32,31,0.09); box-shadow: 0 1px 0 rgba(27,32,31,0.03);  color: #1b201f; padding: 22px; display: flex; flex-direction: column; gap: 12px;">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #666c6a;"><span style="position: relative; display: inline-block; padding-bottom: 4px;">Your words<svg class="brush" viewBox="0 0 100 8" preserveAspectRatio="none" style="display: block; position: absolute; left: -1px; bottom: -2px; width: calc(100% + 3px); height: 6px;" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#3fb579"></path></svg></span></span>
+<span style="display: flex; align-items: baseline; gap: 8px;"><span class="serif" style="font-size: 52px; line-height: 1;">14</span><span style="font-size: 15px; color: #666c6a;">ready to review</span></span>
+<span style="display: flex; gap: 14px; font-size: 13px; color: #666c6a;"><span><b style="color: #b35c00;">88</b> known</span><span><b style="color: #1f63b8;">27</b> you can say</span><span><b style="color: #1b7a3a;">19</b> you can use</span></span>
+<span style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;"><span style="font-size: 12px; color: #666c6a;">Met lately</span><span style="display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 17px;"><span style="color: #1b7a3a;">gracias</span><span style="color: #1f63b8;">cocina</span><span style="color: #1f63b8;">huevo</span><span style="color: #b35c00;">sartén</span><span style="color: #b35c00;">cebolla</span><span style="color: #8a6a00;">madrugar</span><span style="color: #666c6a;">aprovechar</span></span></span>
+</button>
+</div>
+
+<div style="position: absolute; top: 0; right: 8px; bottom: 8px; left: 8px; pointer-events: none; transition: bottom 0.38s cubic-bezier(0.22, 1, 0.36, 1);">
+
+<section aria-label="Today" aria-hidden="false" style="position: absolute; left: 0px; top: 0px; width: calc(50.00% - 4px); height: 100%; box-sizing: border-box; border-radius: 16px; background: #ffffff; border: 1px solid rgba(27,32,31,0.09); box-shadow: 0 1px 0 rgba(27,32,31,0.03);  z-index: 1; display: flex; flex-direction: column; overflow: hidden; contain: layout paint; outline: 2px solid transparent; outline-offset: 3px; opacity: 1; transform: scale(1); pointer-events: auto; visibility: visible; transition: left 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), top 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), width 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), height 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1) 0s, transform 0.32s cubic-bezier(0.05, 0.9, 0.1, 1.05), outline-color 0.2s, visibility 0s linear 0s;">
+<div draggable="true" title="Drag to swap places" style="height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 12px; cursor: grab;">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color: #a6aaa8;" aria-hidden="true"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+
+<span style="font-size: 13px; font-weight: 600; color: #1b201f;"><span style="position: relative; display: inline-block; padding-bottom: 4px;">Today<svg class="brush" viewBox="0 0 100 8" preserveAspectRatio="none" style="display: block; position: absolute; left: -1px; bottom: -2px; width: calc(100% + 3px); height: 6px;" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#eda82c"></path></svg></span></span>
+<div style="flex-grow: 1;"></div>
+
+
+<button type="button" aria-label="Close" title="Close" style="border: 0; cursor: pointer; width: 30px; height: 30px; border-radius: 9px; background: none; color: #666c6a; display: grid; place-items: center;">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column;">
+
+
+<div class="body" style="font-family: Inter, system-ui, sans-serif; color: var(--ink); background: var(--card);">
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 4px 16px 0;">
+<ol class="today-steps" aria-label="Steps" style="list-style: none; margin: 0 auto; padding: 0; display: flex; gap: 6px; flex: 1; justify-content: center; max-width: 420px;">
+
+<li style="display: flex; flex-direction: column; gap: 6px; width: 120px;">
+<span style="display: block; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--ink) 40%, var(--track) 40%);"></span>
+<span style="font-size: 11px; color: var(--ink); white-space: nowrap;">Say a line back</span>
+</li>
+
+<li style="display: flex; flex-direction: column; gap: 6px; width: 120px;">
+<span style="display: block; height: 4px; border-radius: 2px; background: var(--track);"></span>
+<span style="font-size: 11px; color: var(--faint); white-space: nowrap;">Review 14 cards</span>
+</li>
+
+<li style="display: flex; flex-direction: column; gap: 6px; width: 120px;">
+<span style="display: block; height: 4px; border-radius: 2px; background: var(--track);"></span>
+<span style="font-size: 11px; color: var(--faint); white-space: nowrap;">One challenge</span>
+</li>
+
+</ol>
+
+<button type="button" class="soft-btn" style="font: inherit; font-size: 12px; border: 0; cursor: pointer; background: transparent; color: var(--sub); padding: 6px 10px; border-radius: 999px; white-space: nowrap;">Skip</button>
+
+</div>
+
+<div style="flex-grow: 1; min-height: 0; overflow: auto; display: flex; justify-content: center; align-items: center; padding: 12px 24px 24px;">
+
+
+<div class="step-in" style="width: 100%; max-width: 640px; display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center;">
+<span style="font-size: 12px; color: var(--sub);">From <i>Un día en Madrid</i> · 1:25</span>
+<p class="serif today-line" style="margin: 0; font-size: 42px; line-height: 1.2;">I have to <span style="background: linear-gradient(transparent 58%, var(--mark-seen) 58%, var(--mark-seen) 92%, transparent 92%); padding: 0 3px;">madrugar</span> tomorrow.</p>
+<p style="margin: -8px 0 0; font-size: 15px; color: var(--sub);">Mañana tengo que madrugar.</p>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 6px;">
+<button type="button" class="press" aria-label="Say it back" style="border: 0; cursor: pointer; width: 68px; height: 68px; border-radius: 34px; background: var(--ink); color: var(--on-ink); display: grid; place-items: center; box-shadow: 0 8px 20px rgba(27,32,31,0.18);">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>
+</button>
+<span style="font-size: 13px; color: var(--sub);">Say the Spanish line back</span>
+</div>
+<button type="button" class="soft-btn" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; background: var(--soft); color: var(--ink); padding: 8px 14px; border-radius: 999px; display: flex; align-items: center; gap: 8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"></path></svg>Hear it again</button>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+<div style="padding: 2px 14px 14px;">
+
+</div>
+</div>
+</section>
+
+<section aria-label="Watching" aria-hidden="true" style="position: absolute; left: calc(53.00% + 4px); top: 0px; width: calc(47.00% - 4px); height: calc(50.00% - 4px); box-sizing: border-box; border-radius: 16px; background: #ffffff; border: 1px solid rgba(27,32,31,0.09); box-shadow: 0 1px 0 rgba(27,32,31,0.03);  z-index: 1; display: flex; flex-direction: column; overflow: hidden; contain: layout paint; outline: 2px solid transparent; outline-offset: 3px; opacity: 0; transform: scale(0.93); pointer-events: none; visibility: hidden; transition: left 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), top 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), width 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), height 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0s, transform 0.32s cubic-bezier(0.05, 0.9, 0.1, 1.05), outline-color 0.2s, visibility 0s linear 0.34s;">
+<div draggable="false" title="" style="height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 12px; cursor: default;">
+
+<span style="font-size: 13px; font-weight: 600; color: #666c6a;"><span style="position: relative; display: inline-block; padding-bottom: 4px;">Watching<svg class="brush" viewBox="0 0 100 8" preserveAspectRatio="none" style="display: block; position: absolute; left: -1px; bottom: -2px; width: calc(100% + 3px); height: 6px;" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#3fa6dc"></path></svg></span></span>
+<div style="flex-grow: 1;"></div>
+
+
+<button type="button" aria-label="Close" title="Close" style="border: 0; cursor: pointer; width: 30px; height: 30px; border-radius: 9px; background: none; color: #666c6a; display: grid; place-items: center;">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column;">
+
+
+
+<div class="body" style="font-family: Inter, system-ui, sans-serif; color: var(--ink); background: var(--card);">
+<div style="display: flex; align-items: center; gap: 12px; padding: 2px 16px 14px;">
+<p class="serif watch-lede" style="margin: 0; font-size: 28px; line-height: 1.1;">Pick up where you left off.</p>
+<div style="flex-grow: 1;"></div>
+<div class="seg" role="group" aria-label="Show" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--seg);">
+
+<button type="button" aria-pressed="true" style="font: inherit; font-size: 12px; border: 0; cursor: pointer; padding: 6px 12px; border-radius: 999px; white-space: nowrap; background: var(--seg-on); box-shadow: 0 1px 2px rgba(27,32,31,0.10); color: var(--ink);">All</button>
+
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 12px; border: 0; cursor: pointer; padding: 6px 12px; border-radius: 999px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">Still watching</button>
+
+</div>
+</div>
+<div style="flex-grow: 1; min-height: 0; overflow: auto; padding: 0 16px 18px;">
+<ul class="arrive" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 20px 16px;">
+
+<li>
+<a href="#" class="video lift" aria-label="Continue Cómo hacer tortilla española" style="display: flex; flex-direction: column; gap: 7px; color: inherit; text-decoration: none;">
+<span style="position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; background: #2b302f; overflow: hidden;">
+<span style="position: absolute; left: 0; right: 0; bottom: 18%; display: flex; justify-content: center;"><span style="font-size: 12px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 5px; white-space: nowrap;">heat the <b style="color: #ff9f0a; font-weight: 600;">sartén</b> first</span></span>
+<span class="play" style="position: absolute; inset: 0; display: grid; place-items: center;"><span style="width: 42px; height: 42px; border-radius: 21px; background: rgba(255,255,255,0.92); color: var(--ink); display: grid; place-items: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span></span>
+<span style="position: absolute; left: 0; bottom: 0; height: 3px; width: 41%; background: var(--soft2);"></span>
+<span style="position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--soft2); background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 4px;">12:40</span>
+</span>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.3;">Cómo hacer tortilla española</span>
+<span style="font-size: 12px; color: var(--sub);">YouTube · left off at 5:12 · yesterday</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px;">
+<span style="color: var(--w-known);">sartén</span><span style="color: var(--w-known);">cebolla</span><span style="color: var(--w-say);">huevo</span>
+<span style="color: var(--faint);">+1 new</span>
+</span>
+</a>
+</li>
+
+<li>
+<a href="#" class="video lift" aria-label="Continue Un día en Madrid" style="display: flex; flex-direction: column; gap: 7px; color: inherit; text-decoration: none;">
+<span style="position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; background: #33302a; overflow: hidden;">
+<span style="position: absolute; left: 0; right: 0; bottom: 18%; display: flex; justify-content: center;"><span style="font-size: 12px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 5px; white-space: nowrap;">I have to <b style="color: #ffd60a; font-weight: 600;">madrugar</b></span></span>
+<span class="play" style="position: absolute; inset: 0; display: grid; place-items: center;"><span style="width: 42px; height: 42px; border-radius: 21px; background: rgba(255,255,255,0.92); color: var(--ink); display: grid; place-items: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span></span>
+<span style="position: absolute; left: 0; bottom: 0; height: 3px; width: 18%; background: var(--soft2);"></span>
+<span style="position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--soft2); background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 4px;">8:05</span>
+</span>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.3;">Un día en Madrid</span>
+<span style="font-size: 12px; color: var(--sub);">YouTube · left off at 1:25 · 2 days ago</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px;">
+<span style="color: var(--w-seen);">madrugar</span><span style="color: var(--w-seen);">vámonos</span>
+
+</span>
+</a>
+</li>
+
+<li>
+<a href="#" class="video lift" aria-label="Continue Despacito (en vivo)" style="display: flex; flex-direction: column; gap: 7px; color: inherit; text-decoration: none;">
+<span style="position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; background: #2b2a33; overflow: hidden;">
+<span style="position: absolute; left: 0; right: 0; bottom: 18%; display: flex; justify-content: center;"><span style="font-size: 12px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 5px; white-space: nowrap;"><b style="color: #4da3ff; font-weight: 600;">despacito</b>, slowly</span></span>
+<span class="play" style="position: absolute; inset: 0; display: grid; place-items: center;"><span style="width: 42px; height: 42px; border-radius: 21px; background: rgba(255,255,255,0.92); color: var(--ink); display: grid; place-items: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span></span>
+<span style="position: absolute; left: 0; bottom: 0; height: 3px; width: 14%; background: var(--soft2);"></span>
+<span style="position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--soft2); background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 4px;">4:41</span>
+</span>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.3;">Despacito (en vivo)</span>
+<span style="font-size: 12px; color: var(--sub);">YouTube · left off at 0:40 · 3 days ago</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px;">
+<span style="color: var(--w-say);">despacito</span>
+
+</span>
+</a>
+</li>
+
+<li>
+<a href="#" class="video lift" aria-label="Continue Mercado de San Miguel, a walk" style="display: flex; flex-direction: column; gap: 7px; color: inherit; text-decoration: none;">
+<span style="position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; background: #2f2a2a; overflow: hidden;">
+<span style="position: absolute; left: 0; right: 0; bottom: 18%; display: flex; justify-content: center;"><span style="font-size: 12px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 5px; white-space: nowrap;">everything is so <b style="color: #ff9f0a; font-weight: 600;">rico</b></span></span>
+<span class="play" style="position: absolute; inset: 0; display: grid; place-items: center;"><span style="width: 42px; height: 42px; border-radius: 21px; background: rgba(255,255,255,0.92); color: var(--ink); display: grid; place-items: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span></span>
+<span style="position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--soft2);"></span>
+<span style="position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--soft2); background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 4px;">15:02</span>
+</span>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.3;">Mercado de San Miguel, a walk</span>
+<span style="font-size: 12px; color: var(--sub);">YouTube · watched · last week</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px;">
+<span style="color: var(--w-known);">rico</span><span style="color: var(--w-say);">probar</span><span style="color: var(--w-seen);">puesto</span>
+<span style="color: var(--faint);">+3</span>
+</span>
+</a>
+</li>
+
+<li>
+<a href="#" class="video lift" aria-label="Continue Spanish slang you hear on the street" style="display: flex; flex-direction: column; gap: 7px; color: inherit; text-decoration: none;">
+<span style="position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; background: #2a3030; overflow: hidden;">
+<span style="position: absolute; left: 0; right: 0; bottom: 18%; display: flex; justify-content: center;"><span style="font-size: 12px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 5px; white-space: nowrap;">that is so <b style="color: #ffd60a; font-weight: 600;">guay</b></span></span>
+<span class="play" style="position: absolute; inset: 0; display: grid; place-items: center;"><span style="width: 42px; height: 42px; border-radius: 21px; background: rgba(255,255,255,0.92); color: var(--ink); display: grid; place-items: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span></span>
+<span style="position: absolute; left: 0; bottom: 0; height: 3px; width: 80%; background: var(--soft2);"></span>
+<span style="position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--soft2); background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 4px;">11:28</span>
+</span>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.3;">Spanish slang you hear on the street</span>
+<span style="font-size: 12px; color: var(--sub);">YouTube · left off at 9:10 · last week</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px;">
+<span style="color: var(--w-seen);">guay</span><span style="color: var(--w-use);">vale</span>
+
+</span>
+</a>
+</li>
+
+<li>
+<a href="#" class="video lift" aria-label="Continue Paella, the real way" style="display: flex; flex-direction: column; gap: 7px; color: inherit; text-decoration: none;">
+<span style="position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; background: #33302c; overflow: hidden;">
+<span style="position: absolute; left: 0; right: 0; bottom: 18%; display: flex; justify-content: center;"><span style="font-size: 12px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 5px; white-space: nowrap;">add the <b style="color: #ff9f0a; font-weight: 600;">arroz</b> now</span></span>
+<span class="play" style="position: absolute; inset: 0; display: grid; place-items: center;"><span style="width: 42px; height: 42px; border-radius: 21px; background: rgba(255,255,255,0.92); color: var(--ink); display: grid; place-items: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span></span>
+<span style="position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--soft2);"></span>
+<span style="position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--soft2); background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 4px;">18:44</span>
+</span>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.3;">Paella, the real way</span>
+<span style="font-size: 12px; color: var(--sub);">YouTube · watched · 2 weeks ago</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px;">
+<span style="color: var(--w-use);">arroz</span><span style="color: var(--w-seen);">sofrito</span>
+<span style="color: var(--faint);">+5</span>
+</span>
+</a>
+</li>
+
+</ul>
+</div>
+</div>
+
+
+
+
+<div style="padding: 2px 14px 14px;">
+
+</div>
+</div>
+</section>
+
+<section aria-label="Your words" aria-hidden="false" style="position: absolute; left: calc(50.00% + 4px); top: 0px; width: calc(50.00% - 4px); height: 100%; box-sizing: border-box; border-radius: 16px; background: #ffffff; border: 1px solid rgba(27,32,31,0.09); box-shadow: 0 1px 0 rgba(27,32,31,0.03);  z-index: 1; display: flex; flex-direction: column; overflow: hidden; contain: layout paint; outline: 2px solid transparent; outline-offset: 3px; opacity: 1; transform: scale(1); pointer-events: auto; visibility: visible; transition: left 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), top 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), width 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), height 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1) 0s, transform 0.32s cubic-bezier(0.05, 0.9, 0.1, 1.05), outline-color 0.2s, visibility 0s linear 0s;">
+<div draggable="true" title="Drag to swap places" style="height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 12px; cursor: grab;">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color: #a6aaa8;" aria-hidden="true"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+
+<span style="font-size: 13px; font-weight: 600; color: #666c6a;"><span style="position: relative; display: inline-block; padding-bottom: 4px;">Your words<svg class="brush" viewBox="0 0 100 8" preserveAspectRatio="none" style="display: block; position: absolute; left: -1px; bottom: -2px; width: calc(100% + 3px); height: 6px;" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#3fb579"></path></svg></span></span>
+<div style="flex-grow: 1;"></div>
+
+
+<button type="button" aria-label="Make this the main pane" title="Make main" style="border: 0; cursor: pointer; width: 30px; height: 30px; border-radius: 9px; background: none; color: #666c6a; display: grid; place-items: center;">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"></rect><path d="M10 4v16"></path></svg></button>
+
+<button type="button" aria-label="Close" title="Close" style="border: 0; cursor: pointer; width: 30px; height: 30px; border-radius: 9px; background: none; color: #666c6a; display: grid; place-items: center;">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column;">
+
+
+
+
+<div class="body" style="font-family: Inter, system-ui, sans-serif; color: var(--ink); background: var(--card);">
+
+<div style="display: flex; align-items: center; gap: 16px; padding: 0 16px 12px; border-bottom: 1px solid var(--line);">
+<ul class="words-ladder-counts" aria-label="On the ladder" style="list-style: none; margin: 0; padding: 0; display: flex; gap: 16px; font-size: 13px; color: var(--sub); white-space: nowrap;">
+<li><b style="color: var(--w-seen);">63</b> heard</li>
+<li><b style="color: var(--w-known);">88</b> known</li>
+<li><b style="color: var(--w-say);">27</b> you can say</li>
+<li><b style="color: var(--w-use);">19</b> you can use</li>
+</ul>
+<div style="flex-grow: 1;"></div>
+<button type="button" class="press" style="font: inherit; font-size: 13px; font-weight: 600; border: 0; cursor: pointer; padding: 9px 16px; border-radius: 999px; background: var(--ink); color: var(--on-ink); white-space: nowrap;">Review 14</button>
+</div>
+
+<div class="words-split" style="flex-grow: 1; min-height: 0; display: flex;">
+<aside class="words-list" aria-label="Words" style="width: 320px; flex-shrink: 0; border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0;">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 12px 8px;">
+<label style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 10px; background: var(--soft2);">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span class="sr-only">Search your words</span>
+<input type="search" placeholder="Search" style="flex-grow: 1; min-width: 0; border: 0; outline: none; background: none; font: inherit; font-size: 13px; color: var(--ink);">
+</label>
+<div class="seg" role="group" aria-label="Show" style="display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--seg);">
+
+<button type="button" aria-pressed="true" style="font: inherit; font-size: 12px; flex: 1; border: 0; cursor: pointer; padding: 6px 0; border-radius: 8px; white-space: nowrap; background: var(--seg-on); box-shadow: 0 1px 2px rgba(27,32,31,0.10); color: var(--ink);">All</button>
+
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 12px; flex: 1; border: 0; cursor: pointer; padding: 6px 0; border-radius: 8px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">Due</button>
+
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 12px; flex: 1; border: 0; cursor: pointer; padding: 6px 0; border-radius: 8px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">Has a card</button>
+
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 12px; flex: 1; border: 0; cursor: pointer; padding: 6px 0; border-radius: 8px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">Paused</button>
+
+</div>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0 6px 8px; overflow: auto; flex-grow: 1; min-height: 0;">
+
+<li>
+<button type="button" class="row-hover" aria-pressed="true" style="font: inherit; text-align: left; width: 100%; border: 0; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: var(--soft); color: inherit;">
+<span style="width: 7px; height: 7px; border-radius: 4px; background: #e8b923; flex-shrink: 0;"></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; flex-grow: 1;"><span style="font-size: 15px; font-weight: 500; color: var(--w-seen);">madrugar</span><span style="font-size: 12px; color: var(--faint);">to get up early</span></span>
+<span style="font-size: 11px; color: var(--due); white-space: nowrap;">Due</span>
+</button>
+</li>
+
+<li>
+<button type="button" class="row-hover" aria-pressed="false" style="font: inherit; text-align: left; width: 100%; border: 0; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: transparent; color: inherit;">
+<span style="width: 7px; height: 7px; border-radius: 4px; background: #f2952e; flex-shrink: 0;"></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; flex-grow: 1;"><span style="font-size: 15px; font-weight: 500; color: var(--w-known);">sartén</span><span style="font-size: 12px; color: var(--faint);">frying pan</span></span>
+<span style="font-size: 11px; color: var(--due); white-space: nowrap;">Due</span>
+</button>
+</li>
+
+<li>
+<button type="button" class="row-hover" aria-pressed="false" style="font: inherit; text-align: left; width: 100%; border: 0; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: transparent; color: inherit;">
+<span style="width: 7px; height: 7px; border-radius: 4px; background: #4d93e6; flex-shrink: 0;"></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; flex-grow: 1;"><span style="font-size: 15px; font-weight: 500; color: var(--w-say);">cocina</span><span style="font-size: 12px; color: var(--faint);">kitchen; cooks</span></span>
+<span style="font-size: 11px; color: var(--faint); white-space: nowrap;">In 3 days</span>
+</button>
+</li>
+
+<li>
+<button type="button" class="row-hover" aria-pressed="false" style="font: inherit; text-align: left; width: 100%; border: 0; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: transparent; color: inherit;">
+<span style="width: 7px; height: 7px; border-radius: 4px; background: #3fb579; flex-shrink: 0;"></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; flex-grow: 1;"><span style="font-size: 15px; font-weight: 500; color: var(--w-use);">gracias</span><span style="font-size: 12px; color: var(--faint);">thank you</span></span>
+<span style="font-size: 11px; color: var(--faint); white-space: nowrap;"></span>
+</button>
+</li>
+
+<li>
+<button type="button" class="row-hover" aria-pressed="false" style="font: inherit; text-align: left; width: 100%; border: 0; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: transparent; color: inherit;">
+<span style="width: 7px; height: 7px; border-radius: 4px; background: #f2952e; flex-shrink: 0;"></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; flex-grow: 1;"><span style="font-size: 15px; font-weight: 500; color: var(--w-known);">cebolla</span><span style="font-size: 12px; color: var(--faint);">onion</span></span>
+<span style="font-size: 11px; color: var(--due); white-space: nowrap;">Due</span>
+</button>
+</li>
+
+<li>
+<button type="button" class="row-hover" aria-pressed="false" style="font: inherit; text-align: left; width: 100%; border: 0; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: transparent; color: inherit;">
+<span style="width: 7px; height: 7px; border-radius: 4px; background: #4d93e6; flex-shrink: 0;"></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; flex-grow: 1;"><span style="font-size: 15px; font-weight: 500; color: var(--w-say);">huevo</span><span style="font-size: 12px; color: var(--faint);">egg</span></span>
+<span style="font-size: 11px; color: var(--faint); white-space: nowrap;">In 5 days</span>
+</button>
+</li>
+
+<li>
+<button type="button" class="row-hover" aria-pressed="false" style="font: inherit; text-align: left; width: 100%; border: 0; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: transparent; color: inherit;">
+<span style="width: 7px; height: 7px; border-radius: 4px; background: #e8b923; flex-shrink: 0;"></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; flex-grow: 1;"><span style="font-size: 15px; font-weight: 500; color: var(--w-seen);">aprovechar</span><span style="font-size: 12px; color: var(--faint);">to make the most of</span></span>
+<span style="font-size: 11px; color: var(--faint); white-space: nowrap;">Paused</span>
+</button>
+</li>
+
+<li>
+<button type="button" class="row-hover" aria-pressed="false" style="font: inherit; text-align: left; width: 100%; border: 0; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: transparent; color: inherit;">
+<span style="width: 7px; height: 7px; border-radius: 4px; background: #3fb579; flex-shrink: 0;"></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; flex-grow: 1;"><span style="font-size: 15px; font-weight: 500; color: var(--w-use);">vale</span><span style="font-size: 12px; color: var(--faint);">okay</span></span>
+<span style="font-size: 11px; color: var(--faint); white-space: nowrap;"></span>
+</button>
+</li>
+
+<li>
+<button type="button" class="row-hover" aria-pressed="false" style="font: inherit; text-align: left; width: 100%; border: 0; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: transparent; color: inherit;">
+<span style="width: 7px; height: 7px; border-radius: 4px; background: #4d93e6; flex-shrink: 0;"></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; flex-grow: 1;"><span style="font-size: 15px; font-weight: 500; color: var(--w-say);">despacito</span><span style="font-size: 12px; color: var(--faint);">slowly</span></span>
+<span style="font-size: 11px; color: var(--faint); white-space: nowrap;">In 1 week</span>
+</button>
+</li>
+
+</ul>
+</aside>
+
+<div class="words-detail" style="flex-grow: 1; min-width: 0; overflow: auto; padding: 24px 30px;">
+<div class="arrive" style="display: flex; flex-direction: column; gap: 20px; max-width: 560px;">
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 12px; color: var(--sub);">Heard</span>
+<span class="serif words-big" style="align-self: flex-start; font-size: 60px; line-height: 0.95; background: linear-gradient(transparent 58%, var(--mark-seen) 58%, var(--mark-seen) 92%, transparent 92%); padding: 0 4px; margin-left: -4px;">madrugar</span>
+<span style="font-size: 16px; color: var(--ink2); margin-top: 4px;">to get up early</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<span style="font-size: 12px; color: var(--sub);">How well you know it</span>
+<ol aria-label="Ladder" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;">
+
+<li style="display: flex; flex-direction: column; gap: 6px;"><span style="display: block; height: 6px; border-radius: 3px; background: #e8b923; transition: background 0.5s ease;"></span><span style="font-size: 11px; color: var(--faint);">New</span></li>
+
+<li style="display: flex; flex-direction: column; gap: 6px;"><span style="display: block; height: 6px; border-radius: 3px; background: #e8b923; transition: background 0.5s ease;"></span><span style="font-size: 11px; color: var(--ink);">Heard</span></li>
+
+<li style="display: flex; flex-direction: column; gap: 6px;"><span style="display: block; height: 6px; border-radius: 3px; background: var(--track); transition: background 0.5s ease;"></span><span style="font-size: 11px; color: var(--faint);">Known</span></li>
+
+<li style="display: flex; flex-direction: column; gap: 6px;"><span style="display: block; height: 6px; border-radius: 3px; background: var(--track); transition: background 0.5s ease;"></span><span style="font-size: 11px; color: var(--faint);">Can say</span></li>
+
+<li style="display: flex; flex-direction: column; gap: 6px;"><span style="display: block; height: 6px; border-radius: 3px; background: var(--track); transition: background 0.5s ease;"></span><span style="font-size: 11px; color: var(--faint);">Can use</span></li>
+
+</ol>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<span style="font-size: 12px; color: var(--sub);">Where you heard it</span>
+<div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+<span style="position: relative; display: block; width: 160px; aspect-ratio: 16 / 9; border-radius: 10px; background: #33302a; overflow: hidden; flex-shrink: 0;"><span style="position: absolute; left: 0; right: 0; bottom: 16%; display: flex; justify-content: center;"><span style="font-size: 10px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 2px 6px; border-radius: 4px; white-space: nowrap;">I have to madrugar</span></span></span>
+<span style="display: flex; flex-direction: column; gap: 4px; min-width: 0;"><span style="font-size: 14px; font-weight: 600;">Un día en Madrid · 1:25</span><span style="font-size: 13px; color: var(--sub);">Mañana tengo que madrugar.</span><a href="#" style="font-size: 13px; color: var(--ink);">Replay the line</a></span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px; padding-top: 16px; border-top: 1px solid var(--line);">
+<div style="display: flex; justify-content: space-between; font-size: 13px;"><span style="font-weight: 600;">Card</span><span style="color: var(--sub);">Next review today</span></div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap;">
+<button type="button" class="press" style="font: inherit; font-size: 13px; font-weight: 600; border: 0; cursor: pointer; padding: 9px 15px; border-radius: 999px; background: var(--ink); color: var(--on-ink);">Practise with Duet</button>
+<button type="button" class="soft-btn" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 9px 15px; border-radius: 999px; background: var(--soft); color: var(--ink);">Edit card</button>
+<button type="button" class="soft-btn" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 9px 15px; border-radius: 999px; background: var(--soft); color: var(--ink);">Pause</button>
+<button type="button" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 9px 10px; border-radius: 999px; background: none; color: var(--sub);">Stop colouring this word</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+
+<div style="padding: 2px 14px 14px;">
+
+</div>
+</div>
+</section>
+
+<section aria-label="Duet" aria-hidden="true" style="position: absolute; left: calc(64.00% + 4px); top: 0px; width: calc(36.00% - 4px); height: 100%; box-sizing: border-box; border-radius: 16px; background: #ffffff; border: 1px solid rgba(27,32,31,0.09); box-shadow: 0 1px 0 rgba(27,32,31,0.03);  z-index: 1; display: flex; flex-direction: column; overflow: hidden; contain: layout paint; outline: 2px solid transparent; outline-offset: 3px; opacity: 0; transform: scale(0.06); transform-origin: -159px -24px; pointer-events: none; visibility: hidden; transition: left 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), top 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), width 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), height 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.08s, transform 0.42s cubic-bezier(0.05, 0.9, 0.1, 1.05), outline-color 0.2s, visibility 0s linear 0.34s;">
+<div draggable="false" title="" style="height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 12px; cursor: default;">
+
+<span style="font-size: 13px; font-weight: 600; color: #666c6a;"><span style="position: relative; display: inline-block; padding-bottom: 4px;">Duet<svg class="brush" viewBox="0 0 100 8" preserveAspectRatio="none" style="display: block; position: absolute; left: -1px; bottom: -2px; width: calc(100% + 3px); height: 6px;" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#9478e4"></path></svg></span></span>
+<div style="flex-grow: 1;"></div>
+
+
+<button type="button" aria-label="Close" title="Close" style="border: 0; cursor: pointer; width: 30px; height: 30px; border-radius: 9px; background: none; color: #666c6a; display: grid; place-items: center;">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column;">
+
+
+
+
+
+<div class="body" style="font-family: Inter, system-ui, sans-serif; color: var(--ink); background: var(--card);">
+
+<div style="flex-grow: 1; min-height: 0; overflow: auto; display: flex; justify-content: center; padding: 0 16px;">
+<div class="arrive" style="width: 100%; max-width: 660px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 14px;">
+
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 2px 0 4px;">
+<span class="blink-eyes" style="width: 64px; height: 64px; border-radius: 19px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: var(--face); box-shadow: inset 0 0 0 1px var(--line2), 0 2px 6px var(--line);" aria-hidden="true">
+<span style="display: flex; gap: 5px; margin-top: 3px;">
+<span class="socket" style="width: 23px; height: 18px; border-radius: 8px; background: var(--eye); display: grid; place-items: center;"><i style="display: block; width: 9px; height: 4.5px; border-radius: 3px; background: var(--face); transform: translateY(1px);"></i></span>
+<span class="socket" style="width: 23px; height: 18px; border-radius: 8px; background: var(--eye); display: grid; place-items: center;"><i style="display: block; width: 9px; height: 4.5px; border-radius: 3px; background: var(--face); transform: translateY(1px);"></i></span>
+</span>
+<span style="display: block; width: 10px; height: 4px; border-radius: 0 0 6px 6px; background: var(--mouth);"></span>
+</span>
+<span style="font-size: 12px; color: var(--faint);">About what you watched this week</span>
+</div>
+
+<div style="align-self: flex-start; max-width: 82%; padding: 11px 14px; border-radius: 18px 18px 18px 6px; background: var(--soft2); font-size: 15px; line-height: 1.5;">Say anything in Spanish, or in English if you get stuck. Yesterday you heard <span style="color: var(--w-seen); font-weight: 500;">madrugar</span> four times. Want to try it in a sentence?</div>
+
+<div style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; max-width: 82%;">
+<div style="display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 18px 18px 6px 18px; background: var(--ink); color: var(--on-ink);">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+<span style="display: flex; align-items: center; gap: 2px; height: 18px;" aria-hidden="true"><i style="width: 2px; height: 6px; border-radius: 1px; background: #fff;"></i><i style="width: 2px; height: 12px; border-radius: 1px; background: #fff;"></i><i style="width: 2px; height: 16px; border-radius: 1px; background: #fff;"></i><i style="width: 2px; height: 9px; border-radius: 1px; background: #fff;"></i><i style="width: 2px; height: 14px; border-radius: 1px; background: #fff;"></i><i style="width: 2px; height: 7px; border-radius: 1px; background: #fff; opacity: .7;"></i><i style="width: 2px; height: 12px; border-radius: 1px; background: #fff; opacity: .7;"></i><i style="width: 2px; height: 5px; border-radius: 1px; background: #fff; opacity: .5;"></i><i style="width: 2px; height: 10px; border-radius: 1px; background: #fff; opacity: .5;"></i></span>
+<span style="font-size: 12px; opacity: .7;">0:03</span>
+</div>
+<span style="font-size: 13px; color: var(--sub);">“Mañana tengo que madrugar.”</span>
+</div>
+
+<div style="align-self: flex-start; max-width: 82%; display: flex; flex-direction: column; gap: 8px;">
+<div style="padding: 11px 14px; border-radius: 18px 18px 18px 6px; background: var(--soft2); font-size: 15px; line-height: 1.5;">¡Perfecto! That sentence is exactly right.</div>
+<div style="padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line2); display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 12px; font-weight: 600; color: var(--sub);">On your pronunciation</span>
+<span style="font-size: 15px; line-height: 1.5;"><span class="serif" style="font-size: 22px; background: linear-gradient(transparent 58%, var(--mark-seen) 58%, var(--mark-seen) 92%, transparent 92%); padding: 0 2px;">madrugar</span> — the r between vowels is one quick tap, like the tt in “butter”. Yours was a little long.</span>
+<button type="button" class="soft-btn" style="align-self: flex-start; font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 12px; border-radius: 999px; background: var(--soft); color: var(--ink); display: flex; align-items: center; gap: 6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"></path></svg>Hear Duet say it</button>
+</div>
+</div>
+
+
+
+
+<div style="align-self: flex-start; display: flex; gap: 6px; flex-wrap: wrap;">
+
+<button type="button" class="soft-btn" style="font: inherit; font-size: 13px; border: 1px solid var(--line2); cursor: pointer; padding: 7px 13px; border-radius: 999px; background: var(--card); color: var(--ink);">Try it once more</button>
+
+<button type="button" class="soft-btn" style="font: inherit; font-size: 13px; border: 1px solid var(--line2); cursor: pointer; padding: 7px 13px; border-radius: 999px; background: var(--card); color: var(--ink);">Another word from the video</button>
+
+<button type="button" class="soft-btn" style="font: inherit; font-size: 13px; border: 1px solid var(--line2); cursor: pointer; padding: 7px 13px; border-radius: 999px; background: var(--card); color: var(--ink);">Why “tengo que”?</button>
+
+</div>
+
+</div>
+</div>
+
+<div style="display: flex; justify-content: center; padding: 8px 16px 16px;">
+<label style="width: 100%; max-width: 660px; display: flex; align-items: center; gap: 6px; padding: 5px 5px 5px 16px; border-radius: 999px; border: 1px solid var(--line2); background: var(--card); box-shadow: 0 2px 8px rgba(27,32,31,0.05);">
+<span class="sr-only">Message Duet</span>
+<input type="text" placeholder="Say something, in Spanish or English…" value="" style="flex-grow: 1; min-width: 0; border: 0; outline: none; background: none; font: inherit; font-size: 15px; color: var(--ink);">
+<button type="button" aria-label="Talk" style="border: 0; cursor: pointer; width: 38px; height: 38px; border-radius: 19px; background: var(--soft); color: var(--ink); display: grid; place-items: center; flex-shrink: 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg></button>
+<button type="button" class="press" style="font: inherit; font-size: 14px; font-weight: 600; border: 0; cursor: pointer; padding: 10px 16px; border-radius: 999px; background: var(--ink); color: var(--on-ink); flex-shrink: 0;">Send</button>
+</label>
+</div>
+</div>
+
+
+<div style="padding: 2px 14px 14px;">
+
+</div>
+</div>
+</section>
+
+<div aria-hidden="true" style="display: none;">
+<span class="duet-eye" style="width: 24px; height: 17px; border-radius: 7px; background: #1b201f; display: grid; place-items: center;"><i style="display: block; width: 8px; height: 4px; border-radius: 3px; background: #f2f3f3; border: 0 solid transparent; transform: translate(0px, 2px);"></i></span>
+<span class="duet-eye" style="width: 24px; height: 17px; border-radius: 7px; background: #1b201f; display: grid; place-items: center;"><i style="display: block; width: 8px; height: 4px; border-radius: 3px; background: #f2f3f3; border: 0 solid transparent; transform: translate(0px, 2px);"></i></span>
+</div>
+
+<div class="split-handle" role="separator" aria-orientation="vertical" aria-label="Drag to resize" title="Drag to resize" style="position: absolute; left: calc(50.00% - 4px); top: 0px; width: 8px; height: 100%; cursor: col-resize; display: grid; place-items: center; pointer-events: auto; touch-action: none; z-index: 2; transition: left 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), top 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05);">
+<span class="grip" style="display: block; border-radius: 999px; background: #a6aaa8; width: 4px; height: 44px;"></span>
+</div>
+
+</div>
+</main>
+
+
+</div>
+
+
+
+<div aria-hidden="true" style="position: absolute; inset: 48px 0 0 0; z-index: 7; background: rgba(27,32,31,0.06); pointer-events: auto; transition: background 0.22s ease;"></div>
+<aside aria-label="Settings" aria-hidden="false" style="position: absolute; top: 48px; right: 8px; bottom: 8px; width: 500px; z-index: 8; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; border-radius: 16px; background: #ffffff; border: 1px solid rgba(27,32,31,0.09); box-shadow: 0 24px 60px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.06); transform: translateX(0); opacity: 1; visibility: visible; transition: transform 0.38s cubic-bezier(0.05, 0.9, 0.1, 1.05), opacity 0.2s ease, visibility 0s linear 0s;">
+<header style="flex-shrink: 0; display: flex; align-items: center; height: 46px; padding: 0 10px 0 18px;">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600;"><span style="position: relative; display: inline-block; padding-bottom: 4px;">Settings<svg viewBox="0 0 100 8" preserveAspectRatio="none" style="position: absolute; left: -1px; bottom: -2px; width: calc(100% + 3px); height: 6px;" aria-hidden="true"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#a8adab"></path></svg></span></h2>
+<div style="flex-grow: 1;"></div>
+<button type="button" aria-label="Close settings" title="Close" style="border: 0; cursor: pointer; width: 30px; height: 30px; border-radius: 9px; background: none; color: #666c6a; display: grid; place-items: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</header>
+<div style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column;">
+
+<div class="body" style="font-family: Inter, system-ui, sans-serif; color: var(--ink); background: var(--card); overflow: auto;">
+<div class="arrive" style="width: 100%; max-width: 660px; margin: 0 auto; padding: 4px 20px 36px; box-sizing: border-box; display: flex; flex-direction: column; gap: 28px;">
+
+<p class="serif set-lede" style="margin: 0; font-size: 32px; line-height: 1.05;">Make Duet yours.</p>
+
+<section aria-label="Learning" style="display: flex; flex-direction: column;">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub);">Learning</h2>
+<div class="set-row" style="display: flex; align-items: center; gap: 10px 16px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; font-size: 14px; font-weight: 500;">Language</span>
+<div class="seg" role="group" aria-label="Language" style="display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--seg);">
+<button type="button" aria-pressed="true" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: var(--seg-on); box-shadow: 0 1px 2px rgba(27,32,31,0.10); color: var(--ink);">Spanish</button><button type="button" aria-pressed="false" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">Japanese</button><button type="button" aria-pressed="false" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">Korean</button><button type="button" aria-pressed="false" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">French</button>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 12px 0 14px; border-top: 1px solid var(--line);">
+<div class="set-row" style="display: flex; align-items: center; gap: 10px 16px;">
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">How much Spanish in each line</span><span style="font-size: 12px; color: var(--sub);">Auto grows with you, one word at a time</span></span>
+<div class="seg" role="group" aria-label="Level" style="display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--seg);">
+<button type="button" aria-pressed="true" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: var(--seg-on); box-shadow: 0 1px 2px rgba(27,32,31,0.10); color: var(--ink);">Auto</button><button type="button" aria-pressed="false" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">1</button><button type="button" aria-pressed="false" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">2</button><button type="button" aria-pressed="false" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">3</button><button type="button" aria-pressed="false" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">4</button><button type="button" aria-pressed="false" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">5</button>
+</div>
+</div>
+<div aria-label="Preview" style="padding: 13px 16px; border-radius: 12px; background: #2b302f; color: var(--soft2); font-size: 15px; text-align: center;">
+<span style="color: var(--soft2); font-weight: 400; transition: color 0.4s ease;">I have to </span><span style="color: #ffd60a; font-weight: 600; transition: color 0.4s ease;">madrugar</span><span style="color: var(--soft2); font-weight: 400; transition: color 0.4s ease;"> tomorrow, so </span><span style="color: #ffd60a; font-weight: 600; transition: color 0.4s ease;">vámonos</span><span style="color: var(--soft2); font-weight: 400; transition: color 0.4s ease;">.</span>
+</div>
+</div>
+</section>
+
+<section aria-label="While watching" style="display: flex; flex-direction: column;">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub);">While watching</h2>
+
+<div style="display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Show the whole Spanish line</span><span style="font-size: 12px; color: var(--sub);">Under the mixed line, when you hover the strip</span></span>
+<button type="button" class="switch" role="switch" aria-checked="true" aria-label="Show the whole Spanish line" style="border: 0; cursor: pointer; padding: 0; width: 40px; height: 24px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; background: var(--ink);"><i style="display: block; width: 18px; height: 18px; border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transform: translateX(19px);"></i></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Hide English until I look</span><span style="font-size: 12px; color: var(--sub);">Hover the English to see it</span></span>
+<button type="button" class="switch" role="switch" aria-checked="false" aria-label="Hide English until I look" style="border: 0; cursor: pointer; padding: 0; width: 40px; height: 24px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; background: var(--switch-off);"><i style="display: block; width: 18px; height: 18px; border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transform: translateX(3px);"></i></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Pause for slow translations</span><span style="font-size: 12px; color: var(--sub);">Only on videos with a transcript</span></span>
+<button type="button" class="switch" role="switch" aria-checked="true" aria-label="Pause for slow translations" style="border: 0; cursor: pointer; padding: 0; width: 40px; height: 24px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; background: var(--ink);"><i style="display: block; width: 18px; height: 18px; border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transform: translateX(19px);"></i></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Pause while explaining</span><span style="font-size: 12px; color: var(--sub);">While the Explain panel is open</span></span>
+<button type="button" class="switch" role="switch" aria-checked="true" aria-label="Pause while explaining" style="border: 0; cursor: pointer; padding: 0; width: 40px; height: 24px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; background: var(--ink);"><i style="display: block; width: 18px; height: 18px; border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transform: translateX(19px);"></i></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Checkpoints</span><span style="font-size: 12px; color: var(--sub);">At a pause or a break, a glow on the strip offers one quick challenge</span></span>
+<button type="button" class="switch" role="switch" aria-checked="true" aria-label="Checkpoints" style="border: 0; cursor: pointer; padding: 0; width: 40px; height: 24px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; background: var(--ink);"><i style="display: block; width: 18px; height: 18px; border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transform: translateX(19px);"></i></button>
+</div>
+
+</section>
+
+<section aria-label="Look" style="display: flex; flex-direction: column;">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub);">Look</h2>
+<div class="set-row" style="display: flex; align-items: center; gap: 10px 16px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; font-size: 14px; font-weight: 500;">Appearance</span>
+<div class="seg" role="group" aria-label="Appearance" style="display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--seg);">
+<button type="button" aria-pressed="false" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">Light</button><button type="button" aria-pressed="false" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: transparent; box-shadow: none; color: var(--sub);">Dark</button><button type="button" aria-pressed="true" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 11px; border-radius: 8px; white-space: nowrap; background: var(--seg-on); box-shadow: 0 1px 2px rgba(27,32,31,0.10); color: var(--ink);">Match Windows</button>
+</div>
+</div>
+</section>
+
+<section aria-label="Daily reminder" style="display: flex; flex-direction: column;">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub);">Daily reminder</h2>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Remind me to keep my streak</span><span style="font-size: 12px; color: var(--sub);">Only on days you haven’t practised yet</span></span>
+<span style="font-size: 13px; padding: 6px 10px; border-radius: 8px; background: var(--soft2); white-space: nowrap;">7:30 pm</span>
+<button type="button" class="switch" role="switch" aria-checked="true" aria-label="Daily reminder" style="border: 0; cursor: pointer; padding: 0; width: 40px; height: 24px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; background: var(--ink);"><i style="display: block; width: 18px; height: 18px; border-radius: 9px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transform: translateX(19px);"></i></button>
+</div>
+</section>
+
+<section aria-label="Keys" style="display: flex; flex-direction: column;">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub);">Keys</h2>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; font-size: 14px; font-weight: 500;">Show or hide Duet</span>
+<span style="display: flex; gap: 4px;"><kbd style="font: inherit; font-size: 12px; min-width: 14px; text-align: center; padding: 4px 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--line2); box-shadow: 0 1px 0 rgba(27,32,31,0.10);">Alt</kbd><kbd style="font: inherit; font-size: 12px; min-width: 14px; text-align: center; padding: 4px 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--line2); box-shadow: 0 1px 0 rgba(27,32,31,0.10);">Shift</kbd><kbd style="font: inherit; font-size: 12px; min-width: 14px; text-align: center; padding: 4px 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--line2); box-shadow: 0 1px 0 rgba(27,32,31,0.10);">D</kbd></span>
+<button type="button" class="soft-btn" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 7px 12px; border-radius: 999px; background: var(--soft); color: var(--ink);">Change</button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex-grow: 1; font-size: 14px; font-weight: 500;">Talk to Duet</span>
+<span style="display: flex; gap: 4px;"><kbd style="font: inherit; font-size: 12px; min-width: 14px; text-align: center; padding: 4px 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--line2); box-shadow: 0 1px 0 rgba(27,32,31,0.10);">Alt</kbd><kbd style="font: inherit; font-size: 12px; min-width: 14px; text-align: center; padding: 4px 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--line2); box-shadow: 0 1px 0 rgba(27,32,31,0.10);">Shift</kbd><kbd style="font: inherit; font-size: 12px; min-width: 14px; text-align: center; padding: 4px 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--line2); box-shadow: 0 1px 0 rgba(27,32,31,0.10);">T</kbd></span>
+<button type="button" class="soft-btn" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 7px 12px; border-radius: 999px; background: var(--soft); color: var(--ink);">Change</button>
+</div>
+
+</section>
+
+<section aria-label="Permissions" style="display: flex; flex-direction: column;">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--sub);">Permissions</h2>
+<div class="set-row" style="display: flex; align-items: center; gap: 10px 16px; padding: 12px 0; border-top: 1px solid var(--line);">
+<span style="flex: 1 1 240px; font-size: 13px; color: var(--ink2); line-height: 1.5;">Duet reads the captions on your screen and listens to the video’s sound, so it can teach from what you watch.</span>
+<button type="button" class="soft-btn" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 8px 14px; border-radius: 999px; background: var(--soft); color: var(--ink); white-space: nowrap;">Check permissions</button>
+</div>
+</section>
+
+</div>
+</div>
+
+</div>
+</aside>
+
+
+
+</div>
+</body></html>

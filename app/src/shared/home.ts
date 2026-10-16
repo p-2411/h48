@@ -1,5 +1,6 @@
 // What the home base (src/main/home) and its page share.
 import type { Site } from './types'
+import type { WordState } from './knowledge'
 
 /** The places in the home base's sidebar; Review is shown inside Cards. */
 export type HomePlace = 'today' | 'talk' | 'watching' | 'words' | 'cards' | 'review' | 'settings'
@@ -19,6 +20,14 @@ export type HomeToday = {
   hasWatched: boolean
   /** Cards due now, plus new ones still allowed today. */
   due: number
+  word?: {
+    key: string
+    word: string
+    meaning: string
+    seen: number
+    state: WordState
+    source?: string
+  }
 }
 
 /** A video watched with Duet, for Watching. */
@@ -35,4 +44,8 @@ export type WatchedVideoSummary = {
 }
 
 /** A video in Watching: as watched, with its site's name ("YouTube"). */
-export type WatchingVideo = WatchedVideoSummary & { siteName: string }
+export type WatchingVideo = WatchedVideoSummary & {
+  siteName: string
+  subtitle?: string
+  words?: { key: string; word: string; state: WordState }[]
+}

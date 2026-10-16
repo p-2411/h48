@@ -74,7 +74,7 @@ card's "Open in Your words", the daily reminder) grows out of its tile. A page t
 - **Watching:** a grid of videos (thumbnail, title, site, where you left off, when). A click reopens
   the video at that point, as today.
 - **Your words:** one list of every word met in the language learnt, and the cards.
-  - Filters: the rungs (Seen before, Known, You can say it, You can use it, Ignored), **Has a card**,
+  - Filters: the rungs (Heard, Known, You can say it, You can use it, Ignored), **Has a card**,
     **Due**, **Paused**; search across words, readings, meanings and card text.
   - Each row: the word in its rung colour, its meaning, its rung (orange "due" when its card is).
   - A word's detail: the word large, its reading and meaning, the ladder with its rung lit and what

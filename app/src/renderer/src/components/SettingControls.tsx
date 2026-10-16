@@ -101,7 +101,7 @@ export function LanguagePicker({ settings }: { settings: OverlaySettings }): Rea
   )
 }
 
-export function LevelPicker({ settings }: { settings: OverlaySettings }): React.JSX.Element {
+export function LevelPicker({ settings, numbered = false }: { settings: OverlaySettings; numbered?: boolean }): React.JSX.Element {
   return (
     <div className="segment" role="group" aria-label="Level">
       {LEVELS.map((item) => (
@@ -111,7 +111,7 @@ export function LevelPicker({ settings }: { settings: OverlaySettings }): React.
           aria-pressed={settings.level === item.level}
           onClick={() => window.duet.setLevel(item.level)}
         >
-          {item.name}
+          {numbered && item.level > 0 ? item.level : item.name}
         </button>
       ))}
     </div>

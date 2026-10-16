@@ -30,7 +30,7 @@ export function WatchingTile({
   return (
     <Tile
       id="watching"
-      title="Continue watching"
+      title="Watching"
       aside={videos && videos.length > 3 && <span className="faint">All {videos.length}</span>}
       loaded={!!videos}
       error={error}
@@ -44,7 +44,7 @@ export function WatchingTile({
       )}
       {videos && videos.length > 0 && (
         <ul className="tile-videos">
-          {videos.slice(0, 3).map((video) => {
+          {videos.slice(0, 2).map((video) => {
             const title = video.title ?? `${video.siteName} video`
             return (
               <li key={video.key}>
@@ -54,10 +54,16 @@ export function WatchingTile({
                   aria-label={`Continue ${title}`}
                   onClick={() => open(video.key)}
                 >
-                  <Thumbnail video={video} />
+                  <span className="video-frame">
+                    <Thumbnail video={video} />
+                    {video.subtitle && <span className="video-subtitle">{video.subtitle}</span>}
+                  </span>
                   <span className="tile-video-title">{title}</span>
                   {video.position !== undefined && (
-                    <span className="faint">Left off at {clock(video.position)}</span>
+                    <span className="faint">
+                      Left off at {clock(video.position)}
+                      {video.words?.length ? ` · ${video.words.length} words met` : ''}
+                    </span>
                   )}
                 </button>
               </li>

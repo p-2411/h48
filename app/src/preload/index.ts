@@ -4,6 +4,7 @@ import { contextBridge } from 'electron'
 import { cardsApi } from './cards'
 import { checkpointApi } from './checkpoint'
 import { explainApi } from './explain'
+import { flashcardsApi } from './flashcards'
 import { homeApi } from './home'
 import { knowledgeApi } from './knowledge'
 import { dailyApi } from './daily'
@@ -13,7 +14,7 @@ import { talkApi } from './talk'
 import { tutorApi } from './tutor'
 import { welcomeApi } from './welcome'
 
-const duet = { ...overlayApi, tutor: tutorApi, panel: panelApi, explain: explainApi, cards: cardsApi, checkpoint: checkpointApi, home: homeApi, daily: dailyApi, knowledge: knowledgeApi, talk: talkApi, welcome: welcomeApi }
+const duet = { ...overlayApi, tutor: tutorApi, panel: panelApi, explain: explainApi, cards: cardsApi, flashcards: flashcardsApi, checkpoint: checkpointApi, home: homeApi, daily: dailyApi, knowledge: knowledgeApi, talk: talkApi, welcome: welcomeApi }
 
 export type DuetApi = typeof duet
 

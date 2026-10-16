@@ -6,10 +6,11 @@ import { is } from '@electron-toolkit/utils'
 
 export type Page = 'index' | 'panel' | 'home' | 'welcome'
 
-export function loadPage(window: BrowserWindow, page: Page): void {
+export function loadPage(window: BrowserWindow, page: Page, query?: Record<string, string>): void {
   const devServer = process.env['ELECTRON_RENDERER_URL']
-  if (is.dev && devServer) window.loadURL(`${devServer}/${page}.html`)
-  else window.loadFile(join(__dirname, `../renderer/${page}.html`))
+  const search = query ? `?${new URLSearchParams(query)}` : ''
+  if (is.dev && devServer) window.loadURL(`${devServer}/${page}.html${search}`)
+  else window.loadFile(join(__dirname, `../renderer/${page}.html`), { query })
 }
 
 /** Options every Duet window shares. */

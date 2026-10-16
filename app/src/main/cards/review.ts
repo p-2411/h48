@@ -83,7 +83,10 @@ export class ReviewSession {
   constructor(
     private store: CardStore,
     private scheduler: () => Scheduler,
-    private settings: () => ReviewSettings
+    private settings: () => ReviewSettings,
+    /** A card's own scheduler, when it differs from the collection's (Recall sooner, on the
+     * flashcards page); by default every card has the collection's. */
+    private schedulerFor: (row: CardRow) => Scheduler = () => this.scheduler()
   ) {}
 
   /** Starts over: forgets skips and what can be undone. */
@@ -96,7 +99,7 @@ export class ReviewSession {
 
   private show(row: CardRow, now: number): NonNullable<ReviewQueue['next']> {
     const card = this.store.get(row.id)!
-    const scheduler = this.scheduler()
+    const scheduler = this.schedulerFor(row)
     const outcomes = scheduler.outcomes(revive(row.fsrs), now)
     this.shown = { card, fsrs: row.fsrs, outcomes, at: now, scheduler }
     return {
@@ -125,7 +128,9 @@ export class ReviewSession {
     return this.show(row, now)
   }
 
-  queue(now = Date.now()): ReviewQueue {
+  /** The next card, and the counts. `only`: the session reviews just these cards (one video's, on the
+   * flashcards page); the counts are still the whole collection's. */
+  queue(now = Date.now(), only?: ReadonlySet<string>): ReviewQueue {
     const db = database()
     const { due, laterToday, newAvailable } = reviewCounts(this.settings().newPerDay, now)
 
@@ -145,6 +150,7 @@ export class ReviewSession {
     const nextRow = candidates.find(
       (row) =>
         !this.skipped.has(row.id) &&
+        (!only || only.has(row.id)) &&
         !(row.state === 0 && this.introduced.has(rowSourceKey(row)))
     )
     this.shown = undefined
@@ -201,7 +207,7 @@ export class ReviewSession {
     if (
       now - shown.at > SHOWN_FOR_MS ||
       studyDay(now) !== studyDay(shown.at) ||
-      shown.scheduler !== this.scheduler()
+      shown.scheduler !== this.schedulerFor(row)
     )
       throw new StaleReviewError(
         'That card was on screen a while. Here it is again, up to date.',

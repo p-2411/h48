@@ -18,6 +18,9 @@ export interface LanguageModule {
   recognise: Recognition
   /** How to write it in Latin letters for an English speaker; undefined when it already is. */
   reading?: { name: string; instructions: string }
+  /** Whether a dictionary headword is shown split into syllables ("ma·dru·gar"); not for a script
+   * whose characters already are the syllables (kana, hangul). */
+  syllables: boolean
   /** "My sister bought a new car." in the language, word by word, for the welcome window. */
   sample: ProcessedLine
   /** Extra guidance for splitting its lines into phrases (ai/lines/prompt.ts); may be empty. */

@@ -1,0 +1,83 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="duet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+/* The strip: Duet's ink as dark glass over the video. */
+.cap-dock{position:relative;display:flex;flex-direction:column;align-items:center}
+.cap-strip{position:relative;min-width:360px;max-width:760px;padding:11px 46px 12px 20px;border-radius:18px;background:rgba(17,20,19,.88);border:.5px solid rgba(238,243,241,.12);backdrop-filter:blur(18px) saturate(120%);color:#eef3f1;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.cap-mix{font-size:24px;line-height:1.3;letter-spacing:-.012em;margin:0;text-wrap:balance}
+.cap-mix .w{color:#b9bfbd;border-radius:5px;padding:0 1px;transition:background .15s ease}
+.cap-mix .w.sw{font-weight:500;cursor:pointer}
+.cap-mix .w.sw:hover{background:color-mix(in srgb,var(--c) 26%,transparent)}
+/* The full line and the English open under it while the strip is pointed at. */
+.cap-more{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .3s var(--settle),opacity .18s ease}
+.cap-more>div{overflow:hidden}
+.cap-dock:hover .cap-more,.cap-dock.pinned .cap-more{grid-template-rows:1fr;opacity:1}
+.cap-en{filter:blur(5px);opacity:.7;transition:filter .2s ease,opacity .2s ease;cursor:help}
+.cap-en:hover{filter:none;opacity:1}
+/* Actions: above the strip's right end while it's pointed at. */
+.cap-actions{position:absolute;bottom:100%;left:0;right:0;padding:0 8px 7px;display:flex;justify-content:flex-end;gap:5px;opacity:0;transform:translateY(4px);transition:opacity .16s ease .2s,transform .3s var(--settle) .2s;pointer-events:none}
+.cap-dock:not(.asking):hover .cap-actions,.cap-dock.pinned .cap-actions{opacity:1;transform:none;transition-delay:0s;pointer-events:auto}
+.cap-act{font:inherit;font-size:12px;font-weight:500;height:28px;padding:0 11px;border-radius:999px;border:.5px solid rgba(238,243,241,.12);background:rgba(17,20,19,.88);backdrop-filter:blur(18px);color:#eef3f1;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:background .15s ease,transform .18s var(--settle)}
+.cap-act:hover{background:rgba(44,48,47,.95)}
+.cap-act:active{transform:scale(.95)}
+.cap-act.primary{background:#eef3f1;color:#121313;border-color:#eef3f1}
+.cap-act.on{background:#eef3f1;color:#121313}
+/* A word's card, opening out of its word. */
+.cap-pop{animation:pop .24s var(--move) both;transform-origin:bottom center}
+@keyframes pop{from{opacity:0;transform:translateY(6px) scale(.94)}to{opacity:1;transform:none}}
+/* A checkpoint: Duet rises from behind the strip's edge and a coral stroke draws along its top. */
+.cap-peek{animation:peek .42s var(--move) .05s both}
+@keyframes peek{from{transform:translateY(26px)}to{transform:none}}
+.cap-stroke{animation:wipe .5s var(--settle) .15s both}
+.cap-say{animation:arrive .3s var(--settle) .3s both}
+.cap-settings{animation:sheet .26s var(--move) both;transform-origin:bottom right}
+@keyframes sheet{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+.cap-blink i{animation:blink 6.2s ease-in-out infinite}
+.dot-ok{position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:#32d74b;box-shadow:0 0 6px #32d74b}
+</style>
+</head><body style="margin:0">
+<div style="width: 1120px; height: 720px; position: relative; overflow: hidden; font-family: Inter, system-ui, sans-serif; background: #0d0f0f;">
+
+<div aria-hidden="true" style="position: absolute; inset: 0; background: radial-gradient(60% 50% at 30% 35%, rgba(214,160,92,0.35), transparent 70%), radial-gradient(40% 40% at 75% 30%, rgba(120,150,140,0.30), transparent 70%), radial-gradient(70% 60% at 55% 85%, rgba(90,60,40,0.45), transparent 70%), linear-gradient(180deg, #2a2723, #1a1816);"></div>
+<div aria-hidden="true" style="position: absolute; left: 22%; top: 18%; width: 180px; height: 260px; border-radius: 90px 90px 20px 20px; background: rgba(40,34,30,0.75); filter: blur(2px);"></div>
+<div aria-hidden="true" style="position: absolute; left: 56%; top: 46%; width: 260px; height: 70px; border-radius: 50%; background: rgba(30,26,22,0.8); filter: blur(1px);"></div>
+<div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,0.25);"><div style="width: 41%; height: 100%; background: #ff3b30;"></div></div>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 56px; display: flex; justify-content: center;">
+<div class="cap-dock">
+
+<div class="cap-actions">
+<button type="button" class="cap-act" title="Explain this line">Explain</button>
+<button type="button" class="cap-act" title="Save the line as a card">Save</button>
+<button type="button" class="cap-act" title="How much Spanish" style="width: 28px; padding: 0; justify-content: center;">2</button>
+<button type="button" class="cap-act" aria-label="Settings" style="width: 28px; padding: 0; justify-content: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></button>
+<button type="button" class="cap-act primary" title="Talk to Duet about this line">
+<span class="cap-blink" style="display: flex; gap: 2px;" aria-hidden="true"><span style="width: 8px; height: 6px; border-radius: 3px; background: #121313; display: grid; place-items: center;"><i style="display: block; width: 3px; height: 1.5px; border-radius: 1px; background: #eef3f1;"></i></span><span style="width: 8px; height: 6px; border-radius: 3px; background: #121313; display: grid; place-items: center;"><i style="display: block; width: 3px; height: 1.5px; border-radius: 1px; background: #eef3f1;"></i></span></span>Talk</button>
+</div>
+
+
+
+<div class="cap-strip" style="z-index: 1;">
+
+<span class="dot-ok" title="Lines are coming through" aria-label="Lines are coming through"></span>
+<p class="cap-mix"><span class="w">I have to </span><span class="w sw" role="button" tabindex="0" style="--c: #ffd60a; color: #ffd60a;">madrugar</span><span class="w"> tomorrow, so </span><span class="w sw" role="button" tabindex="0" style="--c: #4da3ff; color: #4da3ff;">vámonos</span><span class="w">.</span></p>
+<div class="cap-more"><div>
+<div style="display: flex; flex-direction: column; gap: 2px; padding-top: 6px;">
+<span style="font-size: 16px; line-height: 1.4; color: #e3e9e6;">Mañana tengo que madrugar, así que vámonos.</span>
+<span class="cap-en" style="font-size: 13.5px; line-height: 1.45; color: #9aa3a0;">I have to get up early tomorrow, so let’s go.</span>
+</div>
+</div></div>
+
+
+</div>
+
+
+
+</div>
+</div>
+
+<div style="position: absolute; left: 20px; top: 18px; font-size: 12px; color: rgba(238,243,241,0.55);">Point at the strip to open it; click “madrugar” for its card</div>
+</div>
+</body></html>

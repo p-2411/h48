@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Your words, the list and a word</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="duet.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="body" style="font-family: Inter, system-ui, sans-serif; color: var(--ink); background: var(--card);">
+
+<div style="display: flex; align-items: center; gap: 16px; padding: 0 16px 12px; border-bottom: 1px solid var(--line);">
+<ul class="words-ladder-counts" aria-label="On the ladder" style="list-style: none; margin: 0; padding: 0; display: flex; gap: 16px; font-size: 13px; color: var(--sub); white-space: nowrap;">
+<li><b style="color: var(--w-seen);">63</b> heard</li>
+<li><b style="color: var(--w-known);">88</b> known</li>
+<li><b style="color: var(--w-say);">27</b> you can say</li>
+<li><b style="color: var(--w-use);">19</b> you can use</li>
+</ul>
+<div style="flex-grow: 1;"></div>
+<button type="button" class="press" style="font: inherit; font-size: 13px; font-weight: 600; border: 0; cursor: pointer; padding: 9px 16px; border-radius: 999px; background: var(--ink); color: var(--on-ink); white-space: nowrap;">Review 14</button>
+</div>
+
+<div class="words-split" style="flex-grow: 1; min-height: 0; display: flex;">
+<aside class="words-list" aria-label="Words" style="width: 320px; flex-shrink: 0; border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0;">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 12px 8px;">
+<label style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 10px; background: var(--soft2);">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span class="sr-only">Search your words</span>
+<input type="search" placeholder="Search" style="flex-grow: 1; min-width: 0; border: 0; outline: none; background: none; font: inherit; font-size: 13px; color: var(--ink);">
+</label>
+<div class="seg" role="group" aria-label="Show" style="display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--seg);">
+<sc-for list="{{shows}}" as="f" hint-placeholder-count="4">
+<button type="button" onClick="{{f.pick}}" aria-pressed="{{f.pressed}}" style="{{f.style}}">{{f.name}}</button>
+</sc-for>
+</div>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0 6px 8px; overflow: auto; flex-grow: 1; min-height: 0;">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+<li>
+<button type="button" class="row-hover" onClick="{{r.pick}}" aria-pressed="{{r.pressed}}" style="{{r.style}}">
+<span style="width: 7px; height: 7px; border-radius: 4px; background: {{r.dot}}; flex-shrink: 0;"></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; flex-grow: 1;"><span style="font-size: 15px; font-weight: 500; color: {{r.color}};">{{r.word}}</span><span style="font-size: 12px; color: var(--faint);">{{r.meaning}}</span></span>
+<span style="font-size: 11px; color: {{r.metaColor}}; white-space: nowrap;">{{r.meta}}</span>
+</button>
+</li>
+</sc-for>
+</ul>
+</aside>
+
+<div class="words-detail" style="flex-grow: 1; min-width: 0; overflow: auto; padding: 24px 30px;">
+<div class="arrive" style="display: flex; flex-direction: column; gap: 20px; max-width: 560px;">
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 12px; color: var(--sub);">{{sel.rungName}}</span>
+<span class="serif words-big" style="align-self: flex-start; font-size: 60px; line-height: 0.95; background: {{sel.mark}}; padding: 0 4px; margin-left: -4px;">{{sel.word}}</span>
+<span style="font-size: 16px; color: var(--ink2); margin-top: 4px;">{{sel.meaning}}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<span style="font-size: 12px; color: var(--sub);">How well you know it</span>
+<ol aria-label="Ladder" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;">
+<sc-for list="{{sel.ladder}}" as="l" hint-placeholder-count="5">
+<li style="display: flex; flex-direction: column; gap: 6px;"><span style="{{l.bar}}"></span><span style="font-size: 11px; color: {{l.color}};">{{l.name}}</span></li>
+</sc-for>
+</ol>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<span style="font-size: 12px; color: var(--sub);">Where you heard it</span>
+<div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+<span style="position: relative; display: block; width: 160px; aspect-ratio: 16 / 9; border-radius: 10px; background: {{sel.frame}}; overflow: hidden; flex-shrink: 0;"><span style="position: absolute; left: 0; right: 0; bottom: 16%; display: flex; justify-content: center;"><span style="font-size: 10px; color: var(--soft2); background: rgba(0,0,0,0.55); padding: 2px 6px; border-radius: 4px; white-space: nowrap;">{{sel.line}}</span></span></span>
+<span style="display: flex; flex-direction: column; gap: 4px; min-width: 0;"><span style="font-size: 14px; font-weight: 600;">{{sel.video}}</span><span style="font-size: 13px; color: var(--sub);">{{sel.example}}</span><a href="#" style="font-size: 13px; color: var(--ink);">Replay the line</a></span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px; padding-top: 16px; border-top: 1px solid var(--line);">
+<div style="display: flex; justify-content: space-between; font-size: 13px;"><span style="font-weight: 600;">Card</span><span style="color: var(--sub);">{{sel.cardNote}}</span></div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap;">
+<button type="button" class="press" style="font: inherit; font-size: 13px; font-weight: 600; border: 0; cursor: pointer; padding: 9px 15px; border-radius: 999px; background: var(--ink); color: var(--on-ink);">Practise with Duet</button>
+<button type="button" class="soft-btn" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 9px 15px; border-radius: 999px; background: var(--soft); color: var(--ink);">Edit card</button>
+<button type="button" class="soft-btn" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 9px 15px; border-radius: 999px; background: var(--soft); color: var(--ink);">Pause</button>
+<button type="button" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 9px 10px; border-radius: 999px; background: none; color: var(--sub);">Stop colouring this word</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const RUNG = {
+      seen: { name: 'Heard', color: 'var(--w-seen)', dot: '#e8b923', mark: 'var(--mark-seen)', at: 1 },
+      known: { name: 'Known', color: 'var(--w-known)', dot: '#f2952e', mark: 'var(--mark-known)', at: 2 },
+      say: { name: 'You can say it', color: 'var(--w-say)', dot: '#4d93e6', mark: 'var(--mark-say)', at: 3 },
+      use: { name: 'You can use it', color: 'var(--w-use)', dot: '#3fb579', mark: 'var(--mark-use)', at: 4 }
+    };
+    const words = [
+      { word: 'madrugar', meaning: 'to get up early', rung: 'seen', meta: 'Due', due: true, card: true, video: 'Un día en Madrid · 1:25', line: 'I have to madrugar', example: 'Mañana tengo que madrugar.', frame: '#33302a', cardNote: 'Next review today' },
+      { word: 'sartén', meaning: 'frying pan', rung: 'known', meta: 'Due', due: true, card: true, video: 'Cómo hacer tortilla española · 2:04', line: 'heat the sartén first', example: 'Calienta el aceite en la sartén.', frame: '#2b302f', cardNote: 'Next review today' },
+      { word: 'cocina', meaning: 'kitchen; cooks', rung: 'say', meta: 'In 3 days', card: true, video: 'Cómo hacer tortilla española · 0:48', line: 'in my cocina', example: 'Mi abuela cocina los domingos.', frame: '#2b302f', cardNote: 'Next review in 3 days' },
+      { word: 'gracias', meaning: 'thank you', rung: 'use', meta: '', video: 'Un día en Madrid · 0:12', line: 'gracias, see you', example: 'Muchas gracias por todo.', frame: '#33302a', cardNote: 'No card yet' },
+      { word: 'cebolla', meaning: 'onion', rung: 'known', meta: 'Due', due: true, card: true, video: 'Cómo hacer tortilla española · 3:30', line: 'chop the cebolla', example: 'Pica la cebolla muy fina.', frame: '#2b302f', cardNote: 'Next review today' },
+      { word: 'huevo', meaning: 'egg', rung: 'say', meta: 'In 5 days', card: true, video: 'Cómo hacer tortilla española · 1:10', line: 'six huevos', example: 'Bate los huevos.', frame: '#2b302f', cardNote: 'Next review in 5 days' },
+      { word: 'aprovechar', meaning: 'to make the most of', rung: 'seen', meta: 'Paused', paused: true, card: true, video: 'Un día en Madrid · 3:40', line: 'aprovechar the day', example: 'Hay que aprovechar el día.', frame: '#33302a', cardNote: 'Paused' },
+      { word: 'vale', meaning: 'okay', rung: 'use', meta: '', video: 'Spanish slang you hear on the street · 2:02', line: 'vale, let us go', example: 'Vale, nos vemos luego.', frame: '#2a3030', cardNote: 'No card yet' },
+      { word: 'despacito', meaning: 'slowly', rung: 'say', meta: 'In 1 week', card: true, video: 'Despacito (en vivo) · 0:40', line: 'despacito, slowly', example: 'Habla despacito, por favor.', frame: '#2b2a33', cardNote: 'Next review in a week' }
+    ];
+    const show = st.show ?? 'all';
+    const keep = (w) => show === 'all' || (show === 'due' && w.due) || (show === 'card' && w.card) || (show === 'paused' && w.paused);
+    const list = words.filter(keep);
+    const selWord = list.find((w) => w.word === st.sel) || list[0] || words[0];
+    const rung = RUNG[selWord.rung];
+    const pill = (on) => `font: inherit; font-size: 12px; flex: 1; border: 0; cursor: pointer; padding: 6px 0; border-radius: 8px; white-space: nowrap; background: ${on ? 'var(--seg-on)' : 'transparent'}; box-shadow: ${on ? '0 1px 2px rgba(27,32,31,0.10)' : 'none'}; color: ${on ? 'var(--ink)' : 'var(--sub)'};`;
+    const ladderNames = ['New', 'Heard', 'Known', 'Can say', 'Can use'];
+    return {
+      shows: [['all', 'All'], ['due', 'Due'], ['card', 'Has a card'], ['paused', 'Paused']].map(([id, name]) => ({ name, pressed: show === id ? 'true' : 'false', style: pill(show === id), pick: () => this.setState({ show: id }) })),
+      rows: list.map((w) => {
+        const on = w.word === selWord.word;
+        return {
+          word: w.word, meaning: w.meaning, meta: w.meta, color: RUNG[w.rung].color, dot: RUNG[w.rung].dot,
+          metaColor: w.due ? 'var(--due)' : 'var(--faint)',
+          pressed: on ? 'true' : 'false',
+          pick: () => this.setState({ sel: w.word }),
+          style: `font: inherit; text-align: left; width: 100%; border: 0; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: ${on ? 'var(--soft)' : 'transparent'}; color: inherit;`
+        };
+      }),
+      sel: {
+        ...selWord,
+        rungName: rung.name,
+        mark: `linear-gradient(transparent 58%, ${rung.mark} 58%, ${rung.mark} 92%, transparent 92%)`,
+        ladder: ladderNames.map((name, i) => ({ name, color: i === rung.at ? 'var(--ink)' : 'var(--faint)', bar: `display: block; height: 6px; border-radius: 3px; background: ${i <= rung.at ? rung.dot : 'var(--track)'}; transition: background 0.5s ease;` }))
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

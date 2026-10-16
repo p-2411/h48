@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Duet top bar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bar-face .pupil{display:block;transform:translate(var(--px,0px),var(--py,0px));transition:transform .35s cubic-bezier(.32,.72,0,1)}
+.bar-face .socket i{animation:bar-blink 6.2s ease-in-out infinite}
+@keyframes bar-blink{0%,44%,49%,100%{scale:1 1}46.5%{scale:1 .15}}
+.bar-btn{transition:background .35s cubic-bezier(.4,0,.2,1),color .35s cubic-bezier(.4,0,.2,1)}
+.bar-btn:hover{color:#1b201f}
+</style>
+</helmet>
+<header onPointerMove="{{track}}" style="height: 48px; width: 1120px; box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 0 12px 0 14px; font-family: Inter, system-ui, sans-serif; color: #1b201f;">
+<div style="display: flex; align-items: center;">
+<nav aria-label="Places" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: #e9eaea;">
+<sc-for list="{{places}}" as="p" hint-placeholder-count="4">
+<a href="{{p.href}}" class="bar-btn" aria-label="{{p.name}}" title="{{p.name}}" aria-current="{{p.current}}" style="{{p.style}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.icon}}"></path></svg>
+</a>
+<sc-if value="{{p.rule}}" hint-placeholder-val="{{ false }}"><span style="width: 1px; height: 18px; align-self: center; margin: 0 3px; background: rgba(27,32,31,0.16);" aria-hidden="true"></span></sc-if>
+</sc-for>
+</nav>
+</div>
+<a href="Duet.dc.html" aria-label="{{duetLabel}}" title="{{duetLabel}}" style="position: relative; width: 44px; height: 44px; display: grid; place-items: center; text-decoration: none;">
+<sc-if value="{{duetOff}}" hint-placeholder-val="{{ true }}">
+<span class="bar-face" style="width: 36px; height: 36px; border-radius: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: #f7f8f7; box-shadow: inset 0 0 0 1px rgba(27,32,31,0.12), 0 1px 2px rgba(27,32,31,0.06);">
+<span style="display: flex; gap: 3px; margin-top: 2px;">
+<span class="socket" style="width: 13px; height: 10px; border-radius: 5px; background: #18211f; display: grid; place-items: center;"><i class="pupil" style="width: 5px; height: 2.5px; border-radius: 2px; background: #f7f8f7;"></i></span>
+<span class="socket" style="width: 13px; height: 10px; border-radius: 5px; background: #18211f; display: grid; place-items: center;"><i class="pupil" style="width: 5px; height: 2.5px; border-radius: 2px; background: #f7f8f7;"></i></span>
+</span>
+<span style="display: block; width: 6px; height: 2.5px; border-radius: 0 0 4px 4px; background: #3a4644;"></span>
+</span>
+</sc-if>
+<sc-if value="{{duetOn}}" hint-placeholder-val="{{ false }}">
+<svg width="38" height="36" viewBox="0 0 38 36" aria-hidden="true"><path d="M10 3.5h18a7.5 7.5 0 0 1 7.5 7.5v9a7.5 7.5 0 0 1-7.5 7.5H17l-6.5 5.2v-5.2H10A7.5 7.5 0 0 1 2.5 20v-9A7.5 7.5 0 0 1 10 3.5z" fill="#f7f8f7" stroke="rgba(27,32,31,0.16)" stroke-width="1"></path><circle cx="12.5" cy="15.5" r="2.3" fill="#18211f"></circle><circle cx="19" cy="15.5" r="2.3" fill="#18211f"></circle><circle cx="25.5" cy="15.5" r="2.3" fill="#18211f"></circle></svg>
+<span style="position: absolute; left: 50%; bottom: -3px; width: 14px; height: 3px; border-radius: 2px; background: #e0583a; transform: translateX(-50%);"></span>
+</sc-if>
+</a>
+<div style="justify-self: end; display: flex; align-items: center; gap: 6px;">
+<button type="button" title="Change language" style="font: inherit; font-size: 13px; border: 0; cursor: pointer; background: none; color: #666c6a; display: flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; border-radius: 8px;">Spanish<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<span style="width: 1px; height: 16px; margin: 0 4px; background: rgba(27,32,31,0.16);" aria-hidden="true"></span>
+<span title="12 days in a row" style="display: flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px 0 7px; border-radius: 999px; background: rgba(240,110,50,0.09); font-size: 13px; color: #666c6a;">
+<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="bar-flame" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#f0582c"></stop><stop offset="1" stop-color="#f8a43c"></stop></linearGradient></defs><path fill="url(#bar-flame)" d="M12 2.5c.6 3.1-1.1 4.9-2.7 6.6C7.7 10.8 6 12.6 6 15.3A6 6 0 0 0 12 21.5a6 6 0 0 0 6-6.2c0-2.4-1.1-4.3-2.6-5.7.1 1.6-.5 2.9-1.6 3.4.4-3.9-.6-7.4-1.8-10.5z"></path><path fill="#ffe0a0" d="M12.2 13.2c1.6 1.3 2.4 2.6 2.4 3.9A2.6 2.6 0 0 1 12 19.8a2.6 2.6 0 0 1-2.6-2.7c0-1.5 1.1-2.4 2.8-3.9z"></path></svg>
+<b style="color: #1b201f;">12</b> days
+</span>
+<button type="button" aria-label="Dark mode" title="Dark mode" style="border: 0; cursor: pointer; width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; background: none; color: #666c6a;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg></button>
+<a href="Settings.dc.html" class="bar-btn" aria-label="Settings" title="Settings" aria-current="{{settingsCurrent}}" style="{{settingsStyle}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+</div>
+</header>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["home","today","watching","cards","duet","settings"],"default":"home"},"$preview":{"width":1120,"height":48}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const active = this.props.active ?? 'home';
+    const chip = (on) => `border: 0; cursor: pointer; width: 36px; height: 28px; border-radius: 999px; display: grid; place-items: center; text-decoration: none; background: ${on ? '#ffffff' : 'transparent'}; box-shadow: ${on ? '0 1px 2px rgba(27,32,31,0.10), inset 0 0 0 1px rgba(27,32,31,0.06)' : 'none'}; color: ${on ? '#1b201f' : '#666c6a'};`;
+    const list = [
+      { id: 'home', name: 'Home', href: 'Tiling.dc.html', icon: 'M4 11l8-7 8 7M6 9.5V19a1 1 0 0 0 1 1h3.5v-5h3v5H17a1 1 0 0 0 1-1V9.5', rule: true },
+      { id: 'today', name: 'Today', href: 'Today.dc.html', icon: 'M12 3v2M12 19v2M5 12H3M21 12h-2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8z' },
+      { id: 'watching', name: 'Watching', href: 'Watching.dc.html', icon: 'M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM10 9v6l5-3z' },
+      { id: 'cards', name: 'Your words', href: 'Words.dc.html', icon: 'M8 4h11a2 2 0 0 1 2 2v9M5 8h11a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z' }
+    ];
+    return {
+      places: list.map((p) => ({ ...p, rule: !!p.rule, current: p.id === active ? 'page' : 'false', style: chip(p.id === active) })),
+      duetOn: active === 'duet',
+      duetOff: active !== 'duet',
+      duetLabel: active === 'duet' ? 'Close the chat with Duet' : 'Talk to Duet',
+      settingsCurrent: active === 'settings' ? 'page' : 'false',
+      settingsStyle: chip(active === 'settings').replace('width: 36px', 'width: 28px'),
+      // The eyes follow the pointer across the bar.
+      track: (e) => {
+        const face = e.currentTarget.querySelector('.bar-face');
+        if (!face) return;
+        const b = face.getBoundingClientRect();
+        const dx = e.clientX - (b.left + b.width / 2);
+        const dy = e.clientY - (b.top + b.height / 2);
+        const d = Math.hypot(dx, dy) || 1;
+        const k = Math.min(1, d / 160);
+        face.style.setProperty('--px', `${((dx / d) * 2.5 * k).toFixed(2)}px`);
+        face.style.setProperty('--py', `${((dy / d) * 1.5 * k).toFixed(2)}px`);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

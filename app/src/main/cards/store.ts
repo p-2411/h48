@@ -46,6 +46,12 @@ type CardRow = {
   /** The word it is for, on the knowledge ladder (shared/knowledge.ts wordKey); none in a backup from
    * before the ladder. */
   word_key?: string | null
+  /** Recall sooner (the flashcards page); none in a database from before it. */
+  sooner?: number
+  /** A picture card's picture (a data URL), or 'none'. */
+  picture?: string | null
+  /** A card made by hand: its example line (JSON), and whether Duet wrote it. */
+  example?: string | null
 }
 
 type ReviewRow = {
@@ -100,7 +106,10 @@ function toCard(row: CardRow): Card {
     reps: fsrs.reps,
     lapses: fsrs.lapses,
     createdAt: row.created_at,
-    updatedAt: row.updated_at
+    updatedAt: row.updated_at,
+    wordKey: row.word_key ?? undefined,
+    sooner: !!row.sooner,
+    example: row.example ? JSON.parse(row.example) : undefined
   }
 }
 

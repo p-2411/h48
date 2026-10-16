@@ -143,6 +143,20 @@ const MIGRATIONS: string[] = [
   // 5: the Words place lists a language's words, the last seen first.
   `
   CREATE INDEX words_recent ON words (language, last_seen);
+  `,
+  // 6: the flashcards page (src/main/flashcards): each word's dictionary entry, looked up once; and
+  // two things a card can have, Recall sooner and a picture.
+  `
+  CREATE TABLE dictionary (
+    language   TEXT NOT NULL,
+    word       TEXT NOT NULL,     -- the dictionary form, as written in the language
+    entry      TEXT,              -- JSON (shared/flashcards.ts DictEntry); null: not in the dictionary
+    fetched_at INTEGER NOT NULL,
+    PRIMARY KEY (language, word)
+  );
+  ALTER TABLE cards ADD COLUMN sooner INTEGER NOT NULL DEFAULT 0;  -- Recall sooner: a higher recall target
+  ALTER TABLE cards ADD COLUMN picture TEXT;                       -- a data URL, or 'none' (the learner chose none)
+  ALTER TABLE cards ADD COLUMN example TEXT;                       -- JSON: a hand-made card's line, and whether Duet wrote it
   `
 ]
 

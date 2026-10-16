@@ -9,6 +9,7 @@ export const ko: LanguageModule = {
     instructions:
       'Convert the Korean text into readable Revised Romanization of Korean for an English-speaking learner, written as it is pronounced (apply sound changes between syllables). Use ordinary Latin letters, spaces and punctuation. Return only the romanisation. Do not translate, label, explain or add quotation marks.'
   },
+  syllables: false,
   sample: {
     translation: 'My sister bought a new car.',
     source: [t('여동생', 'n', 2, false), t('이', 'g', null), t('새', 'a', 6), t('차', 'n', 5, false), t('를', 'g', null), t('샀어요', 'v', 3, false), t('.', 'g', null)],

@@ -1,12 +1,11 @@
 // The streak: how many study days in a row the learner kept. A day is kept by finishing the daily
-// session, finishing a checkpoint, or watching 10 minutes with Duet. Each week (Monday to Sunday)
+// session; watching and checkpoints are logged but don't keep a day. Each week (Monday to Sunday)
 // forgives up to two missed days on its own (freezes), so a missed day costs nothing; a third miss
 // in one week ends the streak (misses before the streak began use none). Today never breaks it: until today is kept, it runs to yesterday.
 // Days are study days (YYYY-MM-DD, see study-day.ts); date steps are done in UTC so clock changes
 // don't skip or repeat a day.
 import type { Streak, WeekDay } from '../../shared/home'
 
-export const WATCH_MS_FOR_A_DAY = 10 * 60_000
 export const FREEZES_PER_WEEK = 2
 
 export type DayRecord = {
@@ -17,9 +16,9 @@ export type DayRecord = {
 }
 export type { Streak, WeekDay } from '../../shared/home'
 
-/** Whether the learner kept this day. */
+/** Whether the learner kept this day: they finished the daily session. */
 export function kept(record: DayRecord): boolean {
-  return record.sessionDone || record.checkpoints > 0 || record.watchedMs >= WATCH_MS_FOR_A_DAY
+  return record.sessionDone
 }
 
 function parse(day: string): Date {

@@ -37,6 +37,10 @@ export type CardState = 'new' | 'learning' | 'review' | 'relearning'
 
 export type Card = CardDraft & {
   id: string
+  /** Recall sooner is on: it comes back sooner than the scheduler would bring it (flashcards page). */
+  sooner?: boolean
+  /** A card made by hand: a line it's used in, and whether Duet wrote it. */
+  example?: { line: string; byDuet: boolean }
   /** Goes up on every edit. */
   revision: number
   paused: boolean

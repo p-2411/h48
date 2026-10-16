@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Duet, the conversation</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="duet.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="body" style="font-family: Inter, system-ui, sans-serif; color: var(--ink); background: var(--card);">
+
+<div style="flex-grow: 1; min-height: 0; overflow: auto; display: flex; justify-content: center; padding: 0 16px;">
+<div class="arrive" style="width: 100%; max-width: 660px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 14px;">
+
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 2px 0 4px;">
+<span class="blink-eyes" style="width: 64px; height: 64px; border-radius: 19px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: var(--face); box-shadow: inset 0 0 0 1px var(--line2), 0 2px 6px var(--line);" aria-hidden="true">
+<span style="display: flex; gap: 5px; margin-top: 3px;">
+<span class="socket" style="width: 23px; height: 18px; border-radius: 8px; background: var(--eye); display: grid; place-items: center;"><i style="display: block; width: 9px; height: 4.5px; border-radius: 3px; background: var(--face); transform: translateY(1px);"></i></span>
+<span class="socket" style="width: 23px; height: 18px; border-radius: 8px; background: var(--eye); display: grid; place-items: center;"><i style="display: block; width: 9px; height: 4.5px; border-radius: 3px; background: var(--face); transform: translateY(1px);"></i></span>
+</span>
+<span style="display: block; width: 10px; height: 4px; border-radius: 0 0 6px 6px; background: var(--mouth);"></span>
+</span>
+<span style="font-size: 12px; color: var(--faint);">About what you watched this week</span>
+</div>
+
+<div style="align-self: flex-start; max-width: 82%; padding: 11px 14px; border-radius: 18px 18px 18px 6px; background: var(--soft2); font-size: 15px; line-height: 1.5;">Say anything in Spanish, or in English if you get stuck. Yesterday you heard <span style="color: var(--w-seen); font-weight: 500;">madrugar</span> four times. Want to try it in a sentence?</div>
+
+<div style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; max-width: 82%;">
+<div style="display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 18px 18px 6px 18px; background: var(--ink); color: var(--on-ink);">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+<span style="display: flex; align-items: center; gap: 2px; height: 18px;" aria-hidden="true"><i style="width: 2px; height: 6px; border-radius: 1px; background: #fff;"></i><i style="width: 2px; height: 12px; border-radius: 1px; background: #fff;"></i><i style="width: 2px; height: 16px; border-radius: 1px; background: #fff;"></i><i style="width: 2px; height: 9px; border-radius: 1px; background: #fff;"></i><i style="width: 2px; height: 14px; border-radius: 1px; background: #fff;"></i><i style="width: 2px; height: 7px; border-radius: 1px; background: #fff; opacity: .7;"></i><i style="width: 2px; height: 12px; border-radius: 1px; background: #fff; opacity: .7;"></i><i style="width: 2px; height: 5px; border-radius: 1px; background: #fff; opacity: .5;"></i><i style="width: 2px; height: 10px; border-radius: 1px; background: #fff; opacity: .5;"></i></span>
+<span style="font-size: 12px; opacity: .7;">0:03</span>
+</div>
+<span style="font-size: 13px; color: var(--sub);">“Mañana tengo que madrugar.”</span>
+</div>
+
+<div style="align-self: flex-start; max-width: 82%; display: flex; flex-direction: column; gap: 8px;">
+<div style="padding: 11px 14px; border-radius: 18px 18px 18px 6px; background: var(--soft2); font-size: 15px; line-height: 1.5;">¡Perfecto! That sentence is exactly right.</div>
+<div style="padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line2); display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 12px; font-weight: 600; color: var(--sub);">On your pronunciation</span>
+<span style="font-size: 15px; line-height: 1.5;"><span class="serif" style="font-size: 22px; background: linear-gradient(transparent 58%, var(--mark-seen) 58%, var(--mark-seen) 92%, transparent 92%); padding: 0 2px;">madrugar</span> — the r between vowels is one quick tap, like the tt in “butter”. Yours was a little long.</span>
+<button type="button" class="soft-btn" style="align-self: flex-start; font: inherit; font-size: 13px; border: 0; cursor: pointer; padding: 6px 12px; border-radius: 999px; background: var(--soft); color: var(--ink); display: flex; align-items: center; gap: 6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5zM15.5 8.5a5 5 0 0 1 0 7"></path></svg>Hear Duet say it</button>
+</div>
+</div>
+
+<sc-for list="{{sent}}" as="m" hint-placeholder-count="0">
+<div style="{{m.style}}">{{m.text}}</div>
+</sc-for>
+
+<sc-if value="{{noneSent}}" hint-placeholder-val="{{ true }}">
+<div style="align-self: flex-start; display: flex; gap: 6px; flex-wrap: wrap;">
+<sc-for list="{{chips}}" as="c" hint-placeholder-count="3">
+<button type="button" class="soft-btn" onClick="{{c.say}}" style="font: inherit; font-size: 13px; border: 1px solid var(--line2); cursor: pointer; padding: 7px 13px; border-radius: 999px; background: var(--card); color: var(--ink);">{{c.text}}</button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</div>
+
+<div style="display: flex; justify-content: center; padding: 8px 16px 16px;">
+<label style="width: 100%; max-width: 660px; display: flex; align-items: center; gap: 6px; padding: 5px 5px 5px 16px; border-radius: 999px; border: 1px solid var(--line2); background: var(--card); box-shadow: 0 2px 8px rgba(27,32,31,0.05);">
+<span class="sr-only">Message Duet</span>
+<input type="text" placeholder="Say something, in Spanish or English…" value="{{draft}}" onChange="{{type}}" onKeyDown="{{enter}}" style="flex-grow: 1; min-width: 0; border: 0; outline: none; background: none; font: inherit; font-size: 15px; color: var(--ink);">
+<button type="button" aria-label="Talk" style="border: 0; cursor: pointer; width: 38px; height: 38px; border-radius: 19px; background: var(--soft); color: var(--ink); display: grid; place-items: center; flex-shrink: 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg></button>
+<button type="button" class="press" onClick="{{send}}" style="font: inherit; font-size: 14px; font-weight: 600; border: 0; cursor: pointer; padding: 10px 16px; border-radius: 999px; background: var(--ink); color: var(--on-ink); flex-shrink: 0;">Send</button>
+</label>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":700,"height":620}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const sent = st.sent || [];
+    const bubble = (mine) => `align-self: ${mine ? 'flex-end' : 'flex-start'}; max-width: 82%; padding: 10px 14px; border-radius: ${mine ? '18px 18px 6px 18px' : '18px 18px 18px 6px'}; background: ${mine ? 'var(--ink)' : 'var(--soft2)'}; color: ${mine ? 'var(--on-ink)' : 'var(--ink)'}; font-size: 15px; line-height: 1.5; animation: arrive 0.45s var(--settle) backwards;`;
+    const say = (text) => {
+      if (!text.trim()) return;
+      this.setState({ draft: '', sent: [...sent, { mine: true, text }, { mine: false, text: 'Bien. One small thing: in Spanish it sounds more natural as “Mañana me tengo que levantar temprano” — but yours is right too.' }] });
+    };
+    return {
+      sent: sent.map((m) => ({ text: m.text, style: bubble(m.mine) })),
+      noneSent: sent.length === 0,
+      chips: ['Try it once more', 'Another word from the video', 'Why “tengo que”?'].map((text) => ({ text, say: () => say(text) })),
+      draft: st.draft ?? '',
+      type: (e) => this.setState({ draft: e.target.value }),
+      enter: (e) => { if (e.key === 'Enter') say(st.draft ?? ''); },
+      send: () => say(st.draft ?? '')
+    };
+  }
+}
+</script>
+</body>
+</html>

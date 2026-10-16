@@ -2,6 +2,7 @@
 // keyboard and screen readers); a click anywhere else on it does too, except on its own controls.
 // While its data loads it keeps its shape; if loading failed it says so in place, with Try again.
 import type { ReactNode } from 'react'
+import { Brush } from '../Brush'
 
 export type TileId = 'today' | 'watching' | 'words' | 'talk'
 
@@ -42,7 +43,7 @@ export function Tile({
           className="tile-title label"
           onClick={(event) => onOpen(tileOf(event.currentTarget))}
         >
-          {title}
+          <Brush>{title}</Brush>
         </button>
         <span className="spacer" />
         {loaded && aside}

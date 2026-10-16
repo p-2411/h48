@@ -12,6 +12,7 @@ export const es: LanguageModule = {
       { pattern: /[áíóú]/giu, weight: 1 }
     ]
   },
+  syllables: true,
   sample: {
     translation: 'My sister bought a new car.',
     source: [t('Mi', 'p', 1), t('hermana', 'n', 2), t('compró', 'v', 3), t('un', 'g', 4), t('coche', 'n', 5), t('nuevo', 'a', 6, false), t('.', 'g', null)],

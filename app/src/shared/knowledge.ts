@@ -21,7 +21,7 @@ export const LADDER: Exclude<WordState, 'ignored'>[] = ['unknown', 'encountered'
 /** Each rung as the learner reads it. */
 export const STATE_LABELS: Record<WordState, string> = {
   unknown: 'New to you',
-  encountered: 'Seen before',
+  encountered: 'Heard',
   known: 'Known',
   speakable: 'You can say it',
   usable: 'You can use it',

@@ -8,13 +8,16 @@
   /* The faintest text: 5.2 to 6.4:1 on every Duet surface, so small labels stay readable. */
   --text-3: #8e8e93;
   --fill: rgba(118, 118, 128, 0.24);
-  /* The rungs, warming then cooling as a word climbs: new white, seen before yellow, known orange,
-     sayable blue, usable green; ignored grey. */
+  /* Every word state has a colour, none white or black. New words wear Duet's lilac, because new
+     is where Duet steps in to explain. Then the ladder warms while a word is being learnt (heard
+     yellow, known orange) and cools once it's yours (sayable blue, usable green). Ignored words are
+     stone: put aside, still there. */
+  --k-unknown: #b9a6f7;
   --k-encountered: #ffd60a;
   --k-known: #ff9f0a;
   --k-speakable: #4da3ff;
   --k-usable: #32d74b;
-  --k-ignored: #8a8a8e;
+  --k-ignored: #a8998a;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -32,20 +35,23 @@ button:disabled { cursor: default; opacity: 0.45; }
 .icon { flex: none; vertical-align: -0.15em; }
 :focus-visible { outline: 2px solid #fff; outline-offset: 2px; border-radius: 4px; }
 
-/* Words glow a little in the colour of their rung, and change colour smoothly as they climb; new
-   words are plain white, ignored ones flat grey. */
+/* Words glow a little in the colour of their rung, and change colour smoothly as they climb;
+   ignored ones sit flat, without the glow. */
 .w {
   --c: var(--fg); color: var(--c); border-radius: 6px; padding: 0 0.04em; text-shadow: 0 0 14px color-mix(in srgb, var(--c) 60%, transparent);
   transition: color 0.4s var(--ease), text-shadow 0.4s var(--ease);
 }
 /* Each rung's colour, as --c, for anything marked with one (data-k): words, the word card's label,
    lists of words. */
+[data-k='unknown'] { --c: var(--k-unknown); }
 [data-k='encountered'] { --c: var(--k-encountered); }
 [data-k='known'] { --c: var(--k-known); }
 [data-k='speakable'] { --c: var(--k-speakable); }
 [data-k='usable'] { --c: var(--k-usable); }
 [data-k='ignored'] { --c: var(--k-ignored); }
-.w[data-k='unknown'], .w[data-k='ignored'] { text-shadow: none; }
+.w[data-k='ignored'] { text-shadow: none; }
+/* Glue (punctuation and other bits with no word behind them) isn't a word state: plain and quiet. */
+.w[data-k='glue'] { --c: var(--text-2); text-shadow: none; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 /* Read by screen readers, not shown: used in every window. */

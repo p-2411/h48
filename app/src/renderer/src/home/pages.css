@@ -1,0 +1,1029 @@
+/* The pages (Today, Watching, Your words, Duet, Settings) as they look in the home window. The
+ * window around them (bar, tiles, Settings panel) is workspace.css. */
+.workspace .home-page {
+  padding: 22px;
+  gap: 18px;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+.workspace .home-page > h1 {
+  display: none;
+}
+.workspace .tile {
+  padding: 22px;
+  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: auto;
+  cursor: pointer;
+}
+.workspace .tile-head {
+  min-height: 18px;
+}
+.workspace .tile-title:hover {
+  color: var(--ink);
+}
+.workspace .today-hello {
+  font:
+    400 34px/1.08 'Source Serif 4',
+    Georgia,
+    serif;
+  letter-spacing: -0.01em;
+  margin: 8px 0 0;
+}
+.workspace .today-hello .muted {
+  color: var(--sub);
+}
+.workspace .today-streak {
+  margin-top: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  gap: 10px;
+}
+.workspace .week-day {
+  width: 26px;
+  height: 26px;
+  background: var(--soft);
+  color: var(--faint);
+}
+.workspace .week-day.kept {
+  background: var(--ink);
+  color: var(--on-ink);
+  box-shadow: none;
+}
+.workspace .week-day.today {
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
+  color: var(--ink);
+}
+.workspace .today-word {
+  margin: 8px 0 0;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+.today-word .word-large {
+  font:
+    500 56px/1.1 'Source Serif 4',
+    Georgia,
+    serif;
+  display: table;
+  margin: 4px 0 8px;
+  text-decoration: underline;
+  text-decoration-color: var(--mark-seen);
+  text-decoration-thickness: 9px;
+  text-underline-offset: -4px;
+  text-decoration-skip-ink: none;
+}
+.today-start {
+  margin-top: auto !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.workspace .tile-videos {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.workspace .thumb {
+  background: var(--soft);
+  border-radius: 10px;
+  min-width: 0;
+  width: 100%;
+}
+.workspace .thumb-site {
+  color: var(--sub);
+}
+.workspace .tile-video-title {
+  font-size: 12px;
+  color: var(--ink);
+}
+.workspace .tile-video .faint {
+  font-size: 10px;
+}
+.workspace .rungs {
+  gap: 8px 24px;
+}
+.workspace .rung dd {
+  font-size: 30px;
+  font-weight: 500;
+}
+.workspace .rung dt {
+  font-size: 11px;
+}
+.workspace .ladder-bar {
+  height: 4px;
+  background: var(--track);
+}
+.workspace .tile-recent {
+  font-size: 15px;
+  gap: 5px 13px;
+}
+.workspace .badge-due {
+  color: var(--due);
+  background: var(--soft);
+  font-size: 10px;
+}
+.workspace .home-videos {
+  grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
+  gap: 18px;
+}
+.workspace .home-video {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  gap: 7px;
+  background: none;
+  border-radius: 10px;
+}
+.video-frame {
+  position: relative;
+  width: 100%;
+}
+.video-subtitle {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: white;
+  text-shadow: 0 1px 4px #000;
+  background: #0008;
+  padding: 3px 6px;
+  border-radius: 4px;
+  text-align: center;
+}
+.video-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+}
+.video-words span {
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--soft);
+}
+.watch-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+}
+.watch-lede {
+  margin: 0;
+  color: var(--sub);
+  font-size: 13px;
+}
+.workspace .seg,
+.workspace .segments {
+  display: flex;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--seg);
+  gap: 2px;
+  border: 0;
+}
+.workspace .seg button,
+.workspace .segments button {
+  background: transparent;
+  color: var(--sub);
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.workspace .seg button.selected,
+.workspace .segments button[aria-pressed='true'] {
+  background: var(--seg-on);
+  color: var(--ink);
+  box-shadow: 0 1px 3px #0000000a;
+}
+.workspace .home-settings {
+  padding: 22px 24px;
+  align-items: stretch;
+  gap: 24px;
+}
+.workspace .settings-group {
+  gap: 12px;
+}
+.workspace .settings-group > .label {
+  padding-left: 0;
+}
+.workspace .settings-group .glass {
+  padding: 0;
+  border: 0;
+  gap: 16px;
+  border-radius: 0;
+}
+.workspace .settings-group .seg button {
+  flex: 1;
+}
+.workspace .settings-group .toggle {
+  border-color: var(--line);
+}
+.workspace .your-words {
+  padding: 0;
+  gap: 0;
+}
+.workspace .yw-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  gap: 12px;
+}
+.workspace .yw-browse {
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 0;
+}
+.workspace .yw-side {
+  padding: 16px;
+  border-right: 1px solid var(--line);
+  gap: 12px;
+}
+.workspace .yw-row {
+  padding: 12px 10px;
+  border-radius: 7px;
+}
+.workspace .yw-row:hover {
+  background: var(--soft3);
+}
+.workspace .yw-detail {
+  border: 0;
+  border-radius: 0;
+  padding: 24px;
+  background: none;
+  box-shadow: none;
+}
+.workspace .yw-word {
+  font:
+    500 52px/1.15 'Source Serif 4',
+    Georgia,
+    serif;
+  text-shadow: none;
+}
+.workspace .yw-rung-pick {
+  background: var(--soft2);
+}
+.workspace .home-talk {
+  padding: 22px 20px 0;
+}
+.workspace .home-talk > * {
+  max-width: none;
+}
+.workspace .home-talk-head {
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+}
+.workspace .home-talk-head .head-slot {
+  grid-column: 1;
+}
+.workspace .home-talk-head .btn {
+  grid-column: 2;
+  font-size: 10px;
+  padding: 6px 10px;
+}
+.workspace .bubble {
+  box-shadow: none;
+  border-color: var(--line);
+  background: var(--soft2);
+  color: var(--ink);
+}
+.workspace .bubble.user {
+  background: var(--soft);
+  color: var(--ink);
+}
+.workspace .composer {
+  background: var(--soft2);
+  border-color: var(--line2);
+}
+@container (max-width:700px) {
+  .workspace .yw-browse {
+    display: flex;
+    flex-direction: column;
+  }
+  .workspace .yw-side {
+    width: 100%;
+    max-height: min(210px, 45%);
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .workspace .yw-counts {
+    display: none;
+  }
+  .workspace .yw-detail {
+    padding: 18px;
+  }
+  .workspace .yw-word {
+    font-size: 44px;
+  }
+}
+@container (max-width:520px) {
+  .watch-lede {
+    display: none;
+  }
+  .watch-toolbar {
+    justify-content: flex-end;
+  }
+  .workspace .home-page {
+    padding: 18px;
+  }
+  .workspace .your-words {
+    padding: 0;
+  }
+  .workspace .home-talk {
+    padding: 16px 14px 0;
+  }
+}
+/* Theme adaptations for the existing review, editing, and voice features. */
+.workspace .segment {
+  background: var(--seg);
+  padding: 3px;
+  border-radius: 10px;
+}
+.workspace .segment button {
+  color: var(--sub);
+  padding: 6px 11px;
+  border-radius: 8px;
+}
+.workspace .segment button[aria-pressed='true'] {
+  background: var(--seg-on);
+  color: var(--ink);
+  box-shadow: 0 1px 2px #0000001a;
+}
+.workspace .toggle {
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 500;
+}
+.workspace .toggle small {
+  color: var(--sub);
+  font-weight: 400;
+  margin-top: 2px;
+}
+.workspace .switch {
+  width: 40px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--switch-off);
+}
+.workspace .switch i {
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  box-shadow: 0 1px 3px #0003;
+}
+.workspace .toggle.is-on .switch {
+  background: var(--ink);
+}
+.workspace .toggle.is-on .switch i {
+  background: var(--on-ink);
+  transform: translateX(16px);
+}
+.set-lede {
+  font-size: 28px;
+  line-height: 1.05;
+  margin: 0;
+}
+.workspace .settings-group > .label {
+  color: var(--sub);
+}
+.settings-preview {
+  padding: 13px 16px;
+  border-radius: 12px;
+  background: #2b302f;
+  color: #eef3f1;
+  font-size: 15px;
+  text-align: center;
+}
+/* The preview is the strip in miniature: always dark, so it takes the strip's word colours. Words
+   left in English are plain; the Spanish ones wear their state's colour (new: lilac). */
+.workspace .settings-preview {
+  --k-unknown: #b9a6f7;
+  --k-encountered: #ffd60a;
+  --k-known: #ff9f0a;
+  --k-speakable: #4da3ff;
+  --k-usable: #32d74b;
+  --k-ignored: #a8998a;
+}
+.workspace .settings-preview .w {
+  text-shadow: none;
+}
+.workspace .settings-preview .w:not(.sw) {
+  --c: #b9bfbd;
+}
+.workspace .settings-preview .w.sw {
+  font-weight: 600;
+}
+.workspace .yw-word {
+  font-family: Inter, sans-serif;
+  font-size: 13px;
+}
+.workspace .yw-big {
+  font:
+    500 52px/1.15 'Source Serif 4',
+    Georgia,
+    serif;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+/* A big word (Your words' word, Today's word) sits in ink on its state's highlighter. Ignored has
+   no highlighter: it wears stone. */
+.workspace .yw-big .w {
+  --mark: var(--mark-new);
+  color: var(--ink);
+  background: linear-gradient(transparent 58%, var(--mark) 58%, var(--mark) 92%, transparent 92%);
+}
+.workspace :is(.yw-big .w, .word-large)[data-k='encountered'] {
+  --mark: var(--mark-seen);
+}
+.workspace :is(.yw-big .w, .word-large)[data-k='known'] {
+  --mark: var(--mark-known);
+}
+.workspace :is(.yw-big .w, .word-large)[data-k='speakable'] {
+  --mark: var(--mark-say);
+}
+.workspace :is(.yw-big .w, .word-large)[data-k='usable'] {
+  --mark: var(--mark-use);
+}
+.workspace :is(.yw-big .w, .word-large)[data-k='ignored'] {
+  --mark: transparent;
+  color: var(--w-ignored);
+}
+.workspace .yw-climb {
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+.workspace .yw-climb li {
+  flex: 1;
+  display: block;
+  min-width: 0;
+  border-top: 4px solid var(--track);
+  padding-top: 7px;
+  font-size: 10px;
+}
+.workspace .yw-climb li::before {
+  display: none;
+}
+.workspace .yw-climb li span {
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+  white-space: normal;
+}
+.workspace .yw-climb li.is-at {
+  border-color: var(--c);
+}
+.workspace .yw-climb li.is-past {
+  border-color: var(--ink);
+}
+.workspace .turn.duet .bubble {
+  background: var(--soft2);
+  color: var(--ink);
+  padding: 12px 14px;
+  border-radius: 18px 18px 18px 6px;
+}
+.workspace .turn.learner .bubble {
+  background: var(--ink);
+  color: var(--on-ink);
+  padding: 12px 14px;
+}
+.workspace .bubble .lead,
+.workspace .meaning-button:hover {
+  color: var(--ink);
+}
+.workspace .composer {
+  background: none;
+}
+.workspace .message-bar {
+  background: var(--card);
+  border: 1px solid var(--line2);
+  padding: 5px 5px 5px 16px;
+  border-radius: 24px;
+}
+.workspace .message-bar textarea {
+  background: none;
+  color: var(--ink);
+  font-size: 13px;
+}
+.workspace .bar-mic {
+  background: var(--soft);
+  color: var(--ink);
+}
+.workspace .bar-send {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.workspace .pill {
+  color: var(--ink);
+  border-color: var(--line2);
+  background: none;
+}
+.workspace .pill:hover {
+  background: var(--soft);
+}
+.workspace .voice-state i {
+  box-shadow: none;
+}
+.workspace .voice-state.speaking i {
+  background: var(--ink);
+}
+.workspace .typing-dots i {
+  animation-iteration-count: 2;
+}
+.workspace .challenge {
+  color: var(--ink);
+}
+.workspace .challenge-label {
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--sub);
+}
+.workspace .challenge-hint,
+.workspace .challenge-faint {
+  color: var(--sub);
+}
+.workspace .challenge-btn {
+  background: var(--soft);
+  color: var(--ink);
+  border: 0;
+}
+.workspace .challenge-btn.primary {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.workspace .challenge-answer {
+  background: var(--soft2);
+  color: var(--ink);
+  border-color: var(--line2);
+}
+.workspace .home-number {
+  font:
+    500 56px/1.1 'Source Serif 4',
+    Georgia,
+    serif;
+}
+.workspace .card-expression,
+.workspace .review-expression {
+  font-family: 'Source Serif 4', Georgia, serif;
+  color: var(--ink);
+}
+.workspace .today-word .word-large {
+  --mark: var(--mark-new);
+  text-decoration: none;
+  background: linear-gradient(transparent 58%, var(--mark) 58%, var(--mark) 92%, transparent 92%);
+}
+@container (max-width:700px) {
+  .workspace .yw-big {
+    font-size: 44px;
+  }
+}
+.workspace .tile {
+  padding: 24px;
+  gap: 14px;
+}
+.workspace .tile-today {
+  padding: 28px;
+}
+.workspace .today-hello {
+  margin: 2px 0 0;
+}
+.workspace .today-word {
+  border: 0;
+  padding: 0;
+  margin-top: 20px;
+}
+.workspace .today-word > .label {
+  font-weight: 400;
+  color: var(--sub);
+  font-size: 12px;
+}
+.workspace .today-word .word-large {
+  margin: 6px 0;
+}
+.hub-steps {
+  padding: 0;
+  margin: 20px 0 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.hub-steps li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+.hub-steps b {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 500;
+  display: grid;
+  place-items: center;
+}
+.hub-steps li:first-child b {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.hub-streak-details {
+  font-size: 11px;
+  color: var(--sub);
+}
+.hub-streak-details summary {
+  cursor: pointer;
+}
+.hub-streak-details .today-streak {
+  border: 0;
+}
+.today-start {
+  flex-direction: row-reverse;
+  justify-content: flex-end !important;
+}
+.hub-review-count {
+  font-size: 13px;
+  color: var(--sub);
+}
+.hub-review-count > span {
+  font:
+    400 35px 'Source Serif 4',
+    Georgia,
+    serif;
+  color: var(--ink);
+  margin-right: 5px;
+}
+.workspace .tile-words .rung dd {
+  font-size: 25px;
+}
+.workspace .tile-words .ladder-bar {
+  display: none;
+}
+.workspace .tile-words .rungs {
+  gap: 16px;
+}
+.watch-lede {
+  font:
+    400 28px/1.05 'Source Serif 4',
+    Georgia,
+    serif;
+  color: var(--ink);
+}
+.workspace .settings-group .glass {
+  gap: 0;
+}
+.workspace .settings-group .glass > .segment {
+  margin: 12px 0;
+}
+.workspace .settings-group .glass > .muted {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.workspace .settings-preview {
+  margin: 0 0 14px;
+}
+.workspace .settings-group .glass > .btn,
+.workspace .settings-group .glass > .row {
+  margin-top: 10px;
+}
+.workspace .yw-head > h1 {
+  display: none;
+}
+.workspace .yw-side {
+  gap: 10px;
+  padding: 12px;
+}
+.workspace .yw-more {
+  display: none;
+}
+.workspace .yw-find .search {
+  padding: 6px 10px;
+}
+.workspace .yw-show button {
+  padding: 5px 7px;
+}
+.workspace .yw-row {
+  padding: 9px 10px;
+}
+.workspace .yw-detail {
+  flex: 1;
+}
+.workspace .home-talk-head {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  min-height: 72px;
+  margin-bottom: 8px;
+}
+.workspace .home-talk-head .head-slot {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--face);
+  min-height: 64px;
+  min-width: 64px;
+  display: grid;
+  place-items: center;
+}
+.workspace .home-talk-head .btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+.workspace .duet-alive {
+  --bg: var(--face);
+  --eye: var(--ink);
+  --mouth: var(--ink2);
+  --g-glow: 0;
+  --g-grain: 0;
+  --g-cloud: 0;
+  --g-body: 1;
+}
+.workspace .stage-front {
+  font:
+    400 37px/1.2 'Source Serif 4',
+    Georgia,
+    serif;
+}
+.workspace .rate.good {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.workspace .rate.good .faint {
+  color: inherit;
+  opacity: 0.7;
+}
+.workspace .rate {
+  box-shadow: none !important;
+  padding: 10px 4px;
+  font-size: 11px;
+}
+.workspace .ratings {
+  gap: 5px;
+}
+.workspace .facts {
+  grid-template-columns: 90px minmax(0, 1fr);
+}
+.workspace .facts dt {
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.workspace .menu {
+  background: var(--card);
+  border-color: var(--line2);
+  box-shadow: 0 8px 24px #0002;
+  color: var(--ink);
+}
+.workspace .nuance-box {
+  background: var(--soft2);
+  border-color: var(--line);
+  box-shadow: none;
+}
+.workspace .keys {
+  letter-spacing: 0;
+  background: var(--soft);
+  color: var(--ink);
+}
+.workspace .yw-head {
+  padding: 8px 14px;
+}
+.workspace .yw-side {
+  padding: 8px;
+  gap: 4px;
+}
+.workspace .yw-find .search,
+.workspace .yw-rung-pick {
+  height: 28px;
+  padding: 3px 8px;
+}
+.workspace .yw-show {
+  height: 27px;
+}
+.workspace .yw-show button {
+  padding: 2px 6px;
+  font-size: 11px;
+}
+.workspace .yw-row {
+  padding: 4px 8px;
+  gap: 0;
+}
+.workspace .yw-list {
+  min-height: 26px;
+}
+.home-level-picker {
+  padding: 12px 0;
+}
+.home-level-picker .segment {
+  width: 100%;
+}
+.workspace .home-talk > .chat {
+  max-width: 680px;
+}
+.workspace .home-talk-head {
+  max-width: 680px;
+}
+.workspace .yw-show {
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.workspace .watch-toolbar {
+  flex-wrap: wrap;
+}
+.workspace .tile-video:hover,
+.workspace .home-video:hover {
+  transform: translateY(-2px);
+  transition: transform 0.3s var(--settle);
+}
+.workspace .home-video .video-frame::after {
+  content: '▶';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #111a;
+  color: white;
+  font-size: 12px;
+  opacity: 0;
+  transition:
+    opacity 0.18s,
+    transform 0.3s var(--move);
+  transform: scale(0.9);
+}
+.workspace .home-video:hover .video-frame::after {
+  opacity: 1;
+  transform: scale(1);
+}
+.workspace .detail .glass,
+.workspace .nuance-box {
+  background: var(--soft2);
+  box-shadow: none;
+}
+.workspace .detail {
+  padding: 0;
+}
+.workspace .detail .big {
+  font:
+    400 30px/1.2 'Source Serif 4',
+    Georgia,
+    serif;
+}
+.workspace .floating-empty {
+  padding: 14px;
+}
+.workspace .home-talk-head .head-slot {
+  padding: 0;
+  width: 64px;
+  min-width: 64px;
+  height: 64px;
+  border-radius: 20px;
+}
+.workspace .head-mascot {
+  align-items: center;
+  justify-content: center;
+}
+.workspace .today-steps {
+  width: 100%;
+}
+/* The round mic: its label is hidden (font-size 0) {
+  display: grid;
+  place-items: center;
+  gap: 0;
+}
+/* Big type scales with its tile's width (container units) instead of switching size at a
+ * breakpoint. */
+.workspace .today-hello {
+  font-size: clamp(28px, 3.2cqi + 12px, 40px);
+}
+.workspace .today-word .word-large {
+  font-size: clamp(40px, 6cqi + 14px, 64px);
+}
+.workspace .stage-front {
+  font-size: clamp(26px, 4.4cqi + 8px, 44px);
+}
+.workspace .yw-big {
+  font-size: clamp(38px, 5.5cqi + 12px, 60px);
+}
+.workspace .home-number {
+  font-size: clamp(44px, 6cqi + 12px, 64px);
+}
+.workspace .watch-lede {
+  font-size: clamp(22px, 2.4cqi + 10px, 32px);
+}
+.workspace .hub-review-count > span {
+  font-size: clamp(32px, 3cqi + 18px, 44px);
+}
+/* The ladder: every step up to where the word is, in the word's colour. */
+.workspace .yw-climb li.is-past,
+.workspace .yw-climb li.is-at {
+  border-color: var(--c-at, var(--ink));
+  transition: border-color 0.35s ease;
+}
+/* Words met in a video: plain words in their colours, not chips. */
+.workspace .video-words span {
+  padding: 0;
+  background: none;
+  font-size: 12px;
+}
+.workspace .video-words {
+  gap: 3px 10px;
+}
+/* Duet's chat: a quiet line under the face. */
+.workspace .home-talk-head {
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.workspace .talk-sub {
+  font-size: 12px;
+  color: var(--faint);
+}
+/* Settings on the same scale as the pages: a serif lede, ink section heads, 14px rows, 12px hints. */
+.workspace .settings-panel .home-settings {
+  padding: 20px 22px 28px;
+  gap: 28px;
+}
+.workspace .settings-panel .set-lede {
+  font-size: 25px;
+  margin-bottom: -6px;
+}
+.workspace .settings-panel .settings-group {
+  gap: 4px;
+}
+.workspace .settings-panel .settings-group > .label {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.workspace .settings-panel .segment,
+.workspace .settings-panel .seg {
+  display: flex;
+  width: 100%;
+}
+.workspace .settings-panel .segment button,
+.workspace .settings-panel .seg button {
+  flex: 1;
+  height: 30px;
+  padding: 0 8px;
+  font-size: 13px;
+}
+.workspace .settings-panel .settings-group .glass > p.muted {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--sub);
+  border-top: 0;
+}
+.workspace .settings-panel .settings-group .glass > .segment:first-child,
+.workspace .settings-panel .settings-group > .seg {
+  margin-top: 12px;
+}
+/* The section head already draws the line above a group's first row. */
+.workspace .settings-panel .settings-group .glass > .toggle:first-child {
+  border-top: 0;
+}
+/* The reminder's time: a row like the others, the time on the right. */
+.workspace .settings-panel .settings-group .glass > .field {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.workspace .settings-panel .settings-group .glass > .field > span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.workspace .settings-panel .settings-group .glass > .field input {
+  width: auto;
+  height: 30px;
+  font-size: 13px;
+}
+.workspace .settings-panel .btn {
+  font-size: 13px;
+}

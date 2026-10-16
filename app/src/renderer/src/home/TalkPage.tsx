@@ -14,7 +14,7 @@ import { LoadState } from '../components/LoadState'
 import type { TalkStart } from './tiles/TalkTile'
 
 // The mascot at the head of Talk: big enough to see it listen, think and speak (420 x 190 at full size).
-const TALK_MASCOT_SCALE = 0.3
+const TALK_MASCOT_SCALE = 64 / 420
 
 export function TalkPage({ start }: { start?: TalkStart }): React.JSX.Element {
   const [thread, setThread] = useState<ThreadState>()
@@ -25,8 +25,14 @@ export function TalkPage({ start }: { start?: TalkStart }): React.JSX.Element {
   const [mascotSlot, setMascotSlot] = useState<HTMLElement | null>(null)
   // A new conversation (New conversation) is a new Conversation, with its own voice session.
   const [round, setRound] = useState(0)
-  const failed = useCallback((cause: unknown) => setError(say(cause, 'Could not reach Duet. Try again.')), [])
-  const actionFailed = useCallback((cause: unknown) => setActionError(say(cause, 'Could not reach Duet. Try again.')), [])
+  const failed = useCallback(
+    (cause: unknown) => setError(say(cause, 'Could not reach Duet. Try again.')),
+    []
+  )
+  const actionFailed = useCallback(
+    (cause: unknown) => setActionError(say(cause, 'Could not reach Duet. Try again.')),
+    []
+  )
   const bridge = useMemo<ThreadBridge>(
     () => ({
       ask: (text) => {
@@ -63,6 +69,12 @@ export function TalkPage({ start }: { start?: TalkStart }): React.JSX.Element {
       }),
     [language, open]
   )
+  const previousStart = useRef(start)
+  useEffect(() => {
+    if (start === previousStart.current) return
+    previousStart.current = start
+    if (start?.first) bridge.ask(start.first)
+  }, [start, bridge])
   const startOver = (): void => {
     setActionError(undefined)
     window.duet.talk.start().then((next) => {
@@ -78,6 +90,7 @@ export function TalkPage({ start }: { start?: TalkStart }): React.JSX.Element {
       <div className="home-talk-head">
         <h1 className="sr-only">Talk</h1>
         <div className="head-slot" ref={setMascotSlot} />
+        <span className="talk-sub">About what you watched this week</span>
         {thread && thread.chat.length > 0 && (
           <button type="button" className="btn quiet" onClick={startOver}>
             New conversation
@@ -97,8 +110,9 @@ export function TalkPage({ start }: { start?: TalkStart }): React.JSX.Element {
             thread.chat.length === 0 && (
               <DuetBubble label="Duet">
                 <p className="turn-text">
-                  Say anything in {languageName(language)}, or in English if you get stuck. I answer at your level, can look at the cards you saved,
-                  and help you say it better. Type, or press the mic to talk.
+                  Say anything in {languageName(language)}, or in English if you get stuck. I answer
+                  at your level, can look at the cards you saved, and help you say it better. Type,
+                  or press the mic to talk.
                 </p>
               </DuetBubble>
             )
