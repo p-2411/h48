@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "node dev-server.cjs",
+    "dev:legacy": "node dev-server.cjs legacy",
+    "build": "node src/build.mjs",
     "migrate": "node scripts/migrate.js",
     "dashboard": "node --env-file=.env.local scripts/dashboard.js"
   },

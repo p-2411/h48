@@ -6,8 +6,9 @@
   color-scheme:dark;--bg:#000;--fg:#fff;--fg-2:#d6d6d6;--text-2:#a6a6a6;--text-3:#767676;--line:#1f1f1f;--line-2:#2c2c2c;--radius:8px;--ease:cubic-bezier(.16,1,.3,1);
   --sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   --ja:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Inter,sans-serif;
-  /* The knowledge ladder, as in the app: known, can say, can use, and met before. */
-  --k:#ff9f0a;--s:#4da3ff;--u:#32d74b;--e:#ffd60a;--bad:#ff6482;
+  /* The word colours, as in the app (docs/brand/word-colours.md): new to you (Duet's lilac), heard,
+     known, can say, can use, and ignored (stone). No word state is white or black. */
+  --nw:#b9a6f7;--e:#ffd60a;--k:#ff9f0a;--s:#4da3ff;--u:#32d74b;--ig:#a8998a;--bad:#ff6482;
   /* The app's grain: drawn at half its tile size, so each speck is one pixel on a Retina screen. */
   --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 .2 0 0 0 -.05'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -207,7 +208,7 @@ h1{margin-top:clamp(22px,4vh,40px);font-size:clamp(46px,7.2vw,104px);line-height
    little heavier, in their rung's colour with a soft glow of it, and changing colour smoothly. */
 .mix .w{color:#b4b4b8;transition:color .4s var(--ease),text-shadow .4s var(--ease)}
 .mix .w.sw{font-weight:500;color:var(--c);text-shadow:0 0 14px color-mix(in srgb,var(--c) 60%,transparent)}
-.mix .w.k{--c:var(--k)}.mix .w.s{--c:var(--s)}.mix .w.u{--c:var(--u)}.mix .w.e{--c:var(--e)}
+.mix .w.nw{--c:var(--nw)}.mix .w.e{--c:var(--e)}.mix .w.k{--c:var(--k)}.mix .w.s{--c:var(--s)}.mix .w.u{--c:var(--u)}.mix .w.ig{--c:var(--ig)}
 .ja{margin-top:.3cqw;font-size:max(11px,1.5cqw);line-height:1.4;color:rgba(255,255,255,.88)}
 .en{margin-top:.15cqw;font-size:max(10px,1.2cqw);line-height:1.4;color:rgba(255,255,255,.5)}
 .talk{position:absolute;z-index:1;right:calc(100% + 1cqw);bottom:.2cqw;display:grid;place-items:center;width:3.6cqw;height:3.6cqw;min-width:24px;min-height:24px;border-radius:50%;background:rgba(30,30,32,.92);border:.5px solid rgba(255,255,255,.1)}

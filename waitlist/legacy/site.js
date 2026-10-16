@@ -143,7 +143,7 @@
   // ---- How it works ------------------------------------------------------------------------------
   // The scene's subtitles: the clip's lines (Sintel, 1:45–2:27) as Duet shows them in Japanese. The
   // top line is the English with words swapped for Japanese, coloured by how well "you" know them
-  // (k known, s can say, u can use, e met). As in the app (shared/levels.ts, overlay/words.ts), a
+  // (nw new to you, e heard, k known, s can say, u can use). As in the app (shared/levels.ts, overlay/words.ts), a
   // level swaps words in by their job: 1 things (n), 2 and actions (v), 3 and describing words (a),
   // 4 and people and names (p); 5 is the whole line in the language (`all`, in its reading). Times
   // are seconds into the clip.
@@ -155,8 +155,8 @@
       mix: ['It', ['has shed', 'nagashite kita', 'e', 'v'], ['much', 'takusan', 'k', 'a'], ['innocent', 'tsumi no nai', 'e', 'a'], ['blood', 'chi', 's', 'n'], '.'],
       all: [['Tsumi no nai', 'e'], ['chi', 's'], 'o', ['takusan', 'k'], ['nagashite kita', 'e'], '.'] },
     { at: 13, en: 'You’re a fool for traveling alone, so completely unprepared.', ja: '何の準備もなく一人で旅をするなんて、ばかだ。',
-      mix: ['You’re a', ['fool', 'baka', 'k', 'n'], 'for', ['traveling', 'tabi o suru', 's', 'v'], ['alone', 'hitori de', 'u', 'a'], ', so completely', ['unprepared', 'junbi mo naku', 'e', 'a'], '.'],
-      all: ['Nan no', ['junbi mo naku', 'e'], ['hitori de', 'u'], ['tabi o suru', 's'], 'nante,', ['baka', 'k'], 'da.'] },
+      mix: ['You’re a', ['fool', 'baka', 'k', 'n'], 'for', ['traveling', 'tabi o suru', 's', 'v'], ['alone', 'hitori de', 'u', 'a'], ', so completely', ['unprepared', 'junbi mo naku', 'nw', 'a'], '.'],
+      all: ['Nan no', ['junbi mo naku', 'nw'], ['hitori de', 'u'], ['tabi o suru', 's'], 'nante,', ['baka', 'k'], 'da.'] },
     { at: 16.75, en: 'You’re lucky your blood’s still flowing.', ja: 'まだ血が流れているだけ運がいい。',
       mix: ['You’re', ['lucky', 'un ga ii', 's', 'a'], 'your', ['blood', 'chi', 's', 'n'], 'is', ['still', 'mada', 'k', 'a'], ['flowing', 'nagarete iru', 'e', 'v'], '.'],
       all: [['Mada', 'k'], ['chi', 's'], 'ga', ['nagarete iru', 'e'], 'dake', ['un ga ii', 's'], '.'] },
@@ -167,8 +167,8 @@
       mix: [['So', 'sorede', 'k', 'p'], '…'],
       all: [['Sorede', 'k'], '…'] },
     { at: 24.4, en: 'What brings you to the land of the gatekeepers?', ja: '門番の地に何の用だ？',
-      mix: [['What', 'nani', 'k', 'p'], 'brings you to the', ['land', 'chi', 'e', 'n'], 'of the', ['gatekeepers', 'monban', 'e', 'n'], '?'],
-      all: [['Monban', 'e'], 'no', ['chi', 'e'], 'ni', ['nan', 'k'], 'no yō da?'] },
+      mix: [['What', 'nani', 'k', 'p'], 'brings you to the', ['land', 'chi', 'e', 'n'], 'of the', ['gatekeepers', 'monban', 'nw', 'n'], '?'],
+      all: [['Monban', 'nw'], 'no', ['chi', 'e'], 'ni', ['nan', 'k'], 'no yō da?'] },
     { at: 30, en: 'I’m searching for someone.', ja: '人を探しているの。',
       mix: ['I’m', ['searching', 'sagashite iru', 'k', 'v'], 'for', ['someone', 'hito', 's', 'n'], '.'],
       all: [['Hito', 's'], 'o', ['sagashite iru', 'k'], 'no.'] },

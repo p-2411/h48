@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#000000">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f8f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121313" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
   <title>Privacy, Duet</title>
   <meta name="description" content="What the Duet waitlist collects, why, and how to have it deleted.">
   <meta property="og:title" content="Privacy, Duet">
@@ -15,34 +17,59 @@
   <meta name="twitter:image" content="https://useduet.io/og.png?v=4">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-  <link rel="stylesheet" href="./styles.css">
+  <style>
+  /* The home page's look (src/page.html): its colours, type and bar, for a page of plain words. */
+  @font-face { font-family: 'Source Serif 4'; font-style: normal; font-weight: 200 900; font-display: swap; src: url(./fonts/source-serif-4-latin.woff2) format('woff2') }
+  @font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url(./fonts/inter-latin.woff2) format('woff2') }
+  :root { --ground: #f7f8f7; --ink: #1b201f; --ink2: #3a403e; --sub: #666c6a; --on-ink: #ffffff; --line: rgba(27,32,31,0.08); --line2: rgba(27,32,31,0.14); --grain: url(./a/grain-light.svg) }
+  @media (prefers-color-scheme: dark) { :root { --ground: #121313; --ink: #eef3f1; --ink2: #c9d0ce; --sub: #9aa3a0; --on-ink: #121313; --line: rgba(238,243,241,0.08); --line2: rgba(238,243,241,0.16); --grain: url(./a/grain-dark.svg); color-scheme: dark } }
+  body { margin: 0; background: var(--ground) var(--grain); background-size: 160px 160px; color: var(--ink); font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-left, 0px)) }
+  .pill { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 6px 6px 6px 18px; border-radius: 999px; border: 1px solid var(--line2) }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; color: inherit; text-decoration: none }
+  .brand img { width: 34px; height: 34px; margin: -6px -4px }
+  .only-dark { display: none } @media (prefers-color-scheme: dark) { .only-dark { display: block } .only-light { display: none } }
+  .btn { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border-radius: 999px; background: var(--ink); color: var(--on-ink); font-size: 14px; font-weight: 600; text-decoration: none }
+  main { padding: 56px 0 24px }
+  h1, h2 { font-family: 'Source Serif 4', Georgia, serif; font-weight: 500; letter-spacing: -0.02em; margin: 0 }
+  h1 { font-size: clamp(34px, 6vw, 48px); line-height: 1.1 }
+  h2 { font-size: 22px; margin-top: 36px }
+  p { margin: 10px 0 0; color: var(--ink2) }
+  .lead { font-size: 18px; margin-top: 14px }
+  a { color: inherit }
+  footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 24px; margin-top: 56px; padding: 32px 0 40px; border-top: 1px solid var(--line); font-size: 14px; color: var(--sub) }
+  footer a { color: var(--sub); text-decoration: none; margin-right: 18px } footer a:hover { color: var(--ink) }
+  </style>
 </head>
 <body>
-  <header class="site-header">
-    <nav class="nav" aria-label="Main navigation">
-      <a class="brand" href="/" aria-label="Duet home"><svg class="mark" viewBox="0 0 30 24" width="30" height="24" aria-hidden="true"><rect x="1" y="2" width="17" height="12" rx="4" fill="#fff"/><rect x="10" y="9" width="19" height="13" rx="4" fill="#fff" stroke="#000" stroke-width="2"/></svg><span>Duet</span></a>
-      <div class="nav-links"><a class="button" href="/#waitlist"><span>Join the waitlist</span></a></div>
-    </nav>
-  </header>
-  <main id="main" class="container privacy">
-    <h1>Privacy</h1>
-    <p class="privacy-lead">The Duet waitlist collects as little as it can. This page says what, why, and how to have it removed.</p>
+  <div class="wrap">
+    <header class="pill">
+      <a class="brand" href="/" aria-label="Duet home"><img class="only-light" src="./a/mark-light.svg" alt=""><img class="only-dark" src="./a/mark-dark.svg" alt="">Duet</a>
+      <a class="btn" href="/#join">Join the waitlist</a>
+    </header>
+    <main>
+      <h1>Privacy</h1>
+      <p class="lead">The Duet waitlist keeps as little as it can. Here’s what, why, and how to have it removed.</p>
 
-    <h2>What we collect</h2>
-    <p>When you join the waitlist we store your email address, which sign-up form you used, and the time you joined. Nothing else.</p>
+      <h2>What we keep</h2>
+      <p>When you join the waitlist we store your email address, which sign-up form you used, and when you joined. Nothing else.</p>
 
-    <h2>Why</h2>
-    <p>To email you when Duet is ready and to offer you early access. We do not sell or share your email, and we will not add you to anything else.</p>
+      <h2>Why</h2>
+      <p>To email you when Duet is ready. We don’t sell or share your email, and we won’t sign you up for anything else.</p>
 
-    <h2>Where it is kept</h2>
-    <p>In a Postgres database run by Neon, connected to the site through Vercel, which hosts this page.</p>
+      <h2>Where it’s kept</h2>
+      <p>In a Postgres database run by Neon, connected to the site through Vercel, which hosts this page.</p>
 
-    <h2>The video on the page</h2>
-    <p>The page plays a muted scene from the open film Sintel (© Blender Foundation, CC BY 3.0), served from this site. Nothing on the page loads from YouTube or any other service, and the page sets no cookies.</p>
+      <h2>The page itself</h2>
+      <p>Everything on the page, fonts included, is served from this site. Nothing loads from YouTube, Google or any other service, and there are no cookies. Your browser remembers that you’ve joined, so the form doesn’t ask again; that stays on your device. The scenes shown are from the open film Sintel (© Blender Foundation, CC BY 3.0).</p>
 
-    <h2>Removing your email</h2>
-    <p>Ask us to delete it at any time by emailing <a href="mailto:hello@useduet.io">hello@useduet.io</a>. We keep it until launch, or until you ask us to remove it.</p>
-  </main>
-  <footer class="site-footer container"><div class="footer-inner"><span>© 2026 Duet</span><div class="footer-links"><a href="/">Home</a><a href="mailto:hello@useduet.io">Contact</a></div><span>Film: <a href="https://durian.blender.org/">Sintel</a> © Blender Foundation, CC BY 3.0</span></div></footer>
+      <h2>Removing your email</h2>
+      <p>Email <a href="mailto:hello@useduet.io">hello@useduet.io</a> and we’ll delete it. Otherwise we keep it until launch.</p>
+    </main>
+    <footer>
+      <span>© 2026 Duet</span>
+      <span><a href="/">Home</a><a href="mailto:hello@useduet.io">hello@useduet.io</a></span>
+    </footer>
+  </div>
 </body>
 </html>

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <title>Duet, learn a language from what you watch</title>
+  <meta name="description" content="Duet sits on top of YouTube and Netflix and turns what you watch into Japanese, Spanish or Korean you remember. Words you know light up, you can ask about any line, and five minutes a day keeps them. Join the waitlist.">
+  <meta property="og:title" content="Duet">
+  <meta property="og:description" content="Your on-screen language teacher: learn Japanese, Spanish or Korean watching YouTube or Netflix.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Duet">
+  <meta property="og:url" content="https://useduet.io/">
+  <meta property="og:image" content="https://useduet.io/og.png?v=4">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Duet’s face over the words Your on-screen language teacher.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://useduet.io/og.png?v=4">
+  <link rel="canonical" href="https://useduet.io/">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./mascot.css">
+  <script defer src="./site.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <nav class="nav" aria-label="Main navigation">
+      <a class="brand" href="#top" aria-label="Duet home"><svg class="mark" viewBox="0 0 30 24" width="30" height="24" aria-hidden="true"><rect x="1" y="2" width="17" height="12" rx="4" fill="#fff"/><rect x="10" y="9" width="19" height="13" rx="4" fill="#fff" stroke="#000" stroke-width="2"/></svg><span>Duet</span></a>
+      <div class="nav-links"><a class="nav-secondary" href="#how">How it works</a><a class="button" href="#waitlist" data-join-focus><span>Join the waitlist</span></a></div>
+    </nav>
+  </header>
+  <main id="main">
+
+    <!-- The hero: Duet itself (the app's mascot), the promise, and the email bar. -->
+    <section class="hero container" id="top" aria-labelledby="hero-title">
+      <!-- Duet calls for a click (a nudge every few seconds): clicking lets it speak, and takes you to how it works. -->
+      <a class="anchor hero-anchor" href="#how" data-anchor="hero" aria-label="Hear Duet show you how it works">
+        <svg class="call-label" viewBox="0 12 123 30" aria-hidden="true"><path pathLength="1" style="--i:0" d="M18 19C13 15 6 20 7 28C8 35 14 39 20 34"/><path pathLength="1" style="--i:1" d="M25 15C24 22 24 30 26 38"/><path pathLength="1" style="--i:2" d="M32 25C32 30 32 34 33 38"/><path pathLength="1" style="--i:3" d="M32.4 20.4l.1.1"/><path pathLength="1" style="--i:4" d="M45 27C41 23 35 26 36 32C37 38 43 39 46 35"/><path pathLength="1" style="--i:5" d="M51 15C50 22 50 30 51 38"/><path pathLength="1" style="--i:6" d="M61 24C57 27 53 30 51 31"/><path pathLength="1" style="--i:7" d="M54 29C57 32 59 35 62 38"/><path pathLength="1" style="--i:8" d="M79 25C79 30 79 34 79 38"/><path pathLength="1" style="--i:9" d="M79 29C80 24 86 23 87 28C87 32 87 35 87 38"/><path pathLength="1" style="--i:10" d="M87 29C88 24 94 23 95 28C95 32 95 35 96 38"/><path pathLength="1" style="--i:11" d="M101 31C106 31 110 29 109 26C108 23 102 23 101 28C100 34 104 39 111 36"/><path pathLength="1" style="--i:12" d="M118 16C118 21 117 26 117 31"/><path pathLength="1" style="--i:13" d="M116.8 37.6l.1.1"/></svg>
+        <span class="call-arrow" aria-hidden="true"><svg viewBox="0 0 30 18"><path d="M3 9h22M17 2.5 25 9l-8 6.5"/></svg></span>
+        <!-- Duet travels down the page (site.js): it starts here, and stays here without script. -->
+        <div class="flyer" aria-hidden="true">
+          <div class="duet-mascot" data-state="idle" style="--scale:.5;--opening-duration:2350ms">
+            <div class="mascot-canvas">
+              <div class="particle-field"><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span><span class="particle"></span></div>
+              <div class="sound-ring"></div>
+              <div class="duet-face"><span class="brow brow-left"></span><span class="brow brow-right"></span><div class="socket"><span class="eye eye-left"></span></div><div class="socket"><span class="eye eye-right"></span></div><span class="mouth"><span class="mouth-core"></span></span></div>
+            </div>
+          </div>
+        </div>
+      </a>
+      <!-- Duet's opening (the mark turning into Duet) only on a fresh visit to the top, started here
+           before the first paint; after a refresh or Back, Duet waits unseen and site.js decides once
+           the scroll is back. -->
+      <script>(function () { var n = performance.getEntriesByType && performance.getEntriesByType('navigation')[0]; var duet = document.querySelector('.hero-anchor .duet-mascot'); if (n && n.type !== 'navigate') duet.style.visibility = 'hidden'; else if (!location.hash && !matchMedia('(prefers-reduced-motion: reduce)').matches) duet.dataset.state = 'opening'; })();</script>
+      <h1 id="hero-title">Your on&#8209;screen<br>language teacher</h1>
+      <p class="hero-copy">Learn your favourite language watching YouTube or Netflix.</p>
+      <!-- Sign-ups go to /api/join (api/join.js). -->
+      <form class="join join-hero" action="/api/join" method="post" novalidate data-source="hero">
+        <input type="email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
+        <input class="join-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="button" type="submit"><span>Join the waitlist</span></button>
+        <p class="join-done">You’re on the list. We’ll email you when Duet is ready.</p>
+      </form>
+      <p class="hero-meta">Free early access · Mac and Windows</p>
+    </section>
+
+    <!-- How it works: one scene, pinned while you scroll through four beats. Duet docks above the
+         subtitles and says one line per beat, as it does in the app (site.js runs it). -->
+    <section class="how" id="how" aria-labelledby="how-title">
+      <h2 id="how-title" class="sr-only">How Duet works</h2>
+      <div class="how-pin">
+        <ol class="beats" data-beats>
+          <li class="beat is-on" data-beat="0">
+            <h3>Words you know light up.</h3>
+            <p>Orange: you know it. Blue: you’ve learnt to say it. Green: you’ve learnt to use it. Swipe the subtitles for more Japanese.</p>
+          </li>
+          <li class="beat" data-beat="1">
+            <h3>Ask about any line.</h3>
+            <p>Duet explains what just happened and helps you say it yourself. Speak, and it corrects your pronunciation and tone. Ask, and it shows you how it’s said.</p>
+          </li>
+          <li class="beat" data-beat="2">
+            <h3>Words stick, without pausing.</h3>
+            <p>At the end of a scene, or a long pause, answer a quick question.</p>
+          </li>
+          <li class="beat" data-beat="3">
+            <h3>Five minutes a day.</h3>
+            <p>A short session made from what you watched, your words climbing, and a streak to keep.</p>
+          </li>
+        </ol>
+
+        <div class="frame-wrap">
+        <div class="frame" data-frame data-beat="0" aria-hidden="true">
+          <div class="scene">
+            <video class="scene-video" autoplay muted loop playsinline preload="auto" poster="./media/sintel-scene.jpg" tabindex="-1"><source src="./media/sintel-scene.webm" type="video/webm"><source src="./media/sintel-scene.mp4" type="video/mp4"></video>
+          </div>
+
+          <div class="strip-area">
+            <!-- Duet pops up above the subtitles (and above a checkpoint, as it grows), and says its line under itself. -->
+            <div class="popup"><div class="anchor" data-anchor="popup"></div><p class="said" data-said></p></div>
+            <!-- The hover row, as in the app: the level circle on the left (a sideways swipe tugs it), the actions on the right. -->
+            <!-- The hover row, as the app's (Overlay.tsx): the level circle, then Explain, save, replay and
+                 settings, with the app's icons (Lucide's shapes). A sideways swipe tugs the circle. -->
+            <div class="actions">
+              <span class="level-blob" data-level-blob><span class="level-digit" data-level>2</span></span>
+              <span class="act-gap"></span>
+              <span class="act primary">Explain</span>
+              <span class="act icon"><svg viewBox="0 0 24 24"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg></span>
+              <span class="act icon"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span>
+              <span class="act icon"><svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+            </div>
+            <div class="strip-row">
+              <span class="talk"><svg viewBox="0 0 30 24"><rect x="1" y="2" width="17" height="12" rx="4" fill="#fff"/><rect x="10" y="9" width="19" height="13" rx="4" fill="#fff" stroke="#1e1e20" stroke-width="2"/></svg></span>
+              <!-- A checkpoint: the app's glow around the strip, and the card growing up out of it. -->
+              <div class="strip-glow"><span class="glow-layer"></span><span class="glow-layer"></span><span class="glow-layer"></span><span class="glow-layer"></span></div>
+              <div class="checkpoint" data-checkpoint>
+                <div class="challenge">
+                  <span class="challenge-label">Which word goes here?</span>
+                  <p class="challenge-line" lang="ja">人を<span class="challenge-blank" data-blank>　　</span>の。</p>
+                  <p class="challenge-hint">I’m searching for someone.</p>
+                  <div class="challenge-row"><span class="challenge-btn" data-right lang="ja">探している</span><span class="challenge-btn" lang="ja">待っている</span><span class="challenge-btn" lang="ja">忘れている</span></div>
+                  <span class="challenge-skip">Skip</span>
+                </div>
+              </div>
+              <div class="strip">
+                <div class="lines" data-lines>
+                  <div class="line"><p class="mix"></p><p class="ja" lang="ja"></p><p class="en"></p></div>
+                </div>
+              </div>
+            </div>
+            <p class="swipe-hint">Swipe to scroll difficulty</p>
+          </div>
+
+          <div class="explain">
+            <div class="ex-top"><span class="seg"><b>Script</b><b class="on">Explain</b></span><div class="anchor" data-anchor="panel"></div></div>
+            <div class="ex-card">
+              <p class="ex-ja" lang="ja">人を探しているの。</p>
+              <p class="ex-en">I’m searching for someone.</p>
+              <p class="ex-src">Sintel · 2:15</p>
+              <p class="ex-btns"><span>Replay</span><span class="save">Save</span></p>
+            </div>
+            <div class="ex-chat">
+              <p class="bub duet" data-step="1">“I’m looking for someone.” She says it softly, almost to herself. <b class="ro">Sagashite iru</b> is <b class="ro">sagasu</b> (to look for) plus <b class="ro">iru</b>: still going on, and the <b class="ro">no</b> makes it personal.</p>
+              <div class="bub me voice-note" data-step="2" aria-label="A voice message, 3 seconds"><span class="voice-play"><svg viewBox="0 0 12 12"><path d="M3 1.8v8.4L10 6z"/></svg></span><span class="voice-wave"><i style="--h:0.35"></i><i style="--h:0.55"></i><i style="--h:0.8"></i><i style="--h:0.5"></i><i style="--h:0.9"></i><i style="--h:0.65"></i><i style="--h:1"></i><i style="--h:0.7"></i><i style="--h:0.45"></i><i style="--h:0.85"></i><i style="--h:0.6"></i><i style="--h:0.95"></i><i style="--h:0.5"></i><i style="--h:0.75"></i><i style="--h:0.4"></i><i style="--h:0.6"></i><i style="--h:0.3"></i><i style="--h:0.45"></i></span><span class="voice-time">0:03</span></div>
+              <p class="bub duet" data-step="3">Close! The <b class="ro">shi</b> in <b class="ro">sagashite</b> is almost silent: <b class="ro">sa-gash-te</b>. And keep <b class="ro">iru</b> light and short.</p>
+            </div>
+            <div class="ex-chips"><span>Explain more</span><span>Can I say this?</span></div>
+            <div class="ex-bar"><span>Ask about this line, or practise it</span><i></i><i></i></div>
+          </div>
+
+          <div class="hub">
+            <div class="tile today" data-today>
+              <p class="tile-label">Today</p>
+              <p class="hello">Good evening.<br><span>5 minutes today?</span></p>
+              <p class="tile-copy">Your 6 cards, a line to say back, and one challenge.</p>
+              <span class="hub-button" data-start>Start today’s session</span>
+              <p class="tile-label streak-label">12 days in a row</p>
+              <p class="days"><i class="on">M</i><i class="on">T</i><i class="on">W</i><i class="on">T</i><i class="now">F</i><i>S</i><i>S</i></p>
+            </div>
+            <div class="tile watching">
+              <p class="tile-label">Continue watching</p>
+              <div class="thumb"><img src="./media/sintel-scene.jpg" alt=""><i style="--left:.3"></i></div>
+              <p class="tile-copy">Sintel · Left off at 2:15</p>
+            </div>
+            <div class="tile words">
+              <p class="tile-label">Your words <span class="due">6 due</span></p>
+              <p class="counts"><span class="k"><b>35</b>Known</span><span class="s"><b>10</b>You can say it</span><span class="u"><b>4</b>You can use it</span></p>
+              <p class="bar"><i class="k" style="flex:35"></i><i class="s" style="flex:10"></i><i class="u" style="flex:4"></i></p>
+              <p class="chips" lang="ja"><span class="k">探す</span><span class="s">人</span><span class="k">旅</span><span class="u">ありがとう</span><span class="k">剣</span></p>
+            </div>
+            <div class="tile talk-tile">
+              <p class="tile-label">Talk to Duet</p>
+              <div class="talk-row"><div class="anchor" data-anchor="hub"></div><p>Want to try <span class="s" lang="ja">探す</span> in a sentence?</p></div>
+            </div>
+            <!-- The Today tile grows into the daily session, as in the app (useSurface.ts): a solid
+                 surface covers the tile, grows to the window, and thins away under the page. -->
+            <div class="grow-surface" data-surface></div>
+            <div class="session" data-session>
+              <span class="home-back">‹ Home</span>
+              <p class="session-steps"><i class="on"></i><i></i><i></i></p>
+              <div class="card-stage">
+                <span class="stage-label">Card 1 of 6 · Do you know it?</span>
+                <p class="stage-front" lang="ja">人を探しているの</p>
+                <p class="stage-reading">hito o sagashite iru no</p>
+                <p class="stage-back">I’m searching for someone.</p>
+                <span class="hub-button stage-reveal" data-reveal>Show the English</span>
+                <div class="stage-answer">
+                  <p class="faint">What it tests: <span lang="ja">探す</span></p>
+                  <p><span lang="ja">探している</span> is <span lang="ja">探す</span> (to look for) plus <span lang="ja">いる</span>: something still going on.</p>
+                  <p class="stage-source"><span lang="ja">人を探しているの。</span><span class="faint">Sintel · 2:15</span><span class="faint">Replay</span></p>
+                </div>
+                <div class="ratings"><span class="rate again">Again<i>10 min</i></span><span class="rate">Hard<i>15 min</i></span><span class="rate good" data-good>Good<i>1 d</i></span><span class="rate">Easy<i>2 d</i></span></div>
+                <p class="stage-skips"><span>Skip</span><span>Skip the rest</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- While Duet is talking: cut it short and go on (Escape too). Above the scene's corner. -->
+        <button type="button" class="skip-line" data-skip aria-label="Skip what Duet is saying">Skip<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5 8 8l-5.5 4.5zM8.5 3.5 14 8l-5.5 4.5z"/></svg></button>
+        </div>
+
+        <nav class="beat-nav" aria-label="How it works, step by step">
+          <button type="button" data-go="0" aria-current="step">Watch</button><button type="button" data-go="1">Ask</button><button type="button" data-go="2">Keep</button><button type="button" data-go="3">Practice</button>
+        </nav>
+      </div>
+    </section>
+
+    <section class="closing container" id="waitlist" aria-labelledby="waitlist-title">
+      <div class="anchor closing-anchor" data-anchor="closing"></div>
+      <h2 id="waitlist-title" class="closing-heading">Be first in line.</h2>
+      <p class="closing-copy">We’ll email you when Duet is ready. Nothing else.</p>
+      <form class="join join-large" action="/api/join" method="post" novalidate data-source="closing">
+        <input type="email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
+        <input class="join-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="button" type="submit"><span>Join the waitlist</span></button>
+        <p class="join-done">You’re on the list. We’ll email you when Duet is ready.</p>
+      </form>
+      <p class="join-note">We only use your email to tell you about Duet. <a href="/privacy">Privacy</a></p>
+    </section>
+
+    <section class="faq container" id="faq" aria-labelledby="faq-title">
+      <h2 id="faq-title">A few things to know.</h2>
+      <div class="faq-items">
+        <details><summary>Which languages can I learn?<span aria-hidden="true">+</span></summary><p>Japanese, Spanish and Korean, from English.</p></details>
+        <details><summary>What do I install?<span aria-hidden="true">+</span></summary><p>A desktop app for Mac and Windows. Duet floats on top of your screen, so there is no browser extension to add.</p></details>
+        <details><summary>Which sites does it work on?<span aria-hidden="true">+</span></summary><p>YouTube and Netflix first. More after launch.</p></details>
+        <details><summary>Does it pause the show?<span aria-hidden="true">+</span></summary><p>No. The show keeps playing while you read, ask or answer. Pause it yourself whenever you like.</p></details>
+        <details><summary>How much does it cost?<span aria-hidden="true">+</span></summary><p>Early access is free. We will tell you about pricing before it changes.</p></details>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer container"><div class="footer-inner"><span>© 2026 Duet</span><div class="footer-links"><a href="#how">How it works</a><a href="#faq">FAQ</a><a href="/privacy">Privacy</a><a href="mailto:hello@useduet.io">Contact</a></div><span>Film: <a href="https://durian.blender.org/">Sintel</a> © Blender Foundation, CC BY 3.0</span></div></footer>
+  <form class="join join-dock" action="/api/join" method="post" novalidate data-source="dock" aria-label="Join the waitlist">
+    <input type="email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
+    <input class="join-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button class="button" type="submit"><span>Join the waitlist</span></button>
+    <p class="join-done">You’re on the list.</p>
+  </form>
+  <div class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>

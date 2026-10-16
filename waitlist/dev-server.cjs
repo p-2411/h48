@@ -4,7 +4,9 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const APP_DIR = path.join(__dirname, "app");
+// The site to serve: app/ (the live page), or legacy/ for the old one: node dev-server.cjs legacy
+const SITE = process.argv[2] === "legacy" ? "legacy" : "app";
+const APP_DIR = path.join(__dirname, SITE);
 const TYPES = {
   ".html": "text/html",
   ".css": "text/css",
@@ -84,5 +86,5 @@ const server = http.createServer((req, res) => {
 
 const PORT = process.env.PORT || 4321;
 server.listen(PORT, () => {
-  console.log(`Local dev (static) → http://localhost:${PORT}`);
+  console.log(`Local dev (${SITE}) → http://localhost:${PORT}`);
 });
