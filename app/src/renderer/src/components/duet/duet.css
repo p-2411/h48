@@ -1,0 +1,95 @@
+/* Duet, the mascot (engine.ts draws it). Colours are variables, set per theme; the face colour
+   (--gc) is flushed by a colour pop (--tc, --ta, set by the engine). */
+.duet-alive {
+  --bg: #080d0d;
+  --eye: #edf6f4;
+  --mouth: #c6ddd9;
+  --blush: #ff8fa3;
+  /* Frosted glass: one matte, slightly see-through layer with a fine, continuous grain and a soft,
+     uneven milkiness in it, and a tight glow around it that brightens with a feeling. */
+  --g-body: 0.84;
+  --g-glow: 0.24;
+  --g-grainc: #0b1716;
+  --g-grain: 0.2;
+  --g-cloud: 0.13;
+  --gc: color-mix(in oklab, var(--eye), var(--tc, #fff) var(--ta, 0%));
+  display: block;
+  flex: none;
+  overflow: visible;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.duet-alive[data-theme='light'] {
+  --bg: #f6f7f6;
+  --eye: #17211f;
+  --mouth: #3a4644;
+  --blush: #f07a90;
+  --g-body: 0.86;
+  --g-glow: 0.1;
+  --g-grainc: #ffffff;
+  --g-grain: 0.16;
+  --g-cloud: 0.11;
+}
+.duet-alive .sock,
+.duet-alive .hand {
+  fill: var(--gc);
+}
+.duet-alive[data-finish='glass'] .sock,
+.duet-alive[data-finish='glass'] .hand {
+  fill-opacity: var(--g-body);
+}
+.duet-alive .hand {
+  stroke: var(--bg);
+  stroke-width: 1.4;
+}
+.duet-alive .pupil {
+  fill: var(--bg);
+}
+.duet-alive .mouth {
+  fill: var(--mouth);
+  stroke: var(--mouth);
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+.duet-alive .blush {
+  fill: var(--blush);
+}
+.duet-alive .blush-lines {
+  fill: none;
+  stroke: var(--mouth);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+.duet-alive .brow {
+  fill: none;
+  stroke: var(--gc);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-dasharray: 1 1;
+}
+.duet-alive .z {
+  fill: none;
+  stroke: var(--mouth);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.duet-alive .g-grain {
+  opacity: var(--g-grain);
+  pointer-events: none;
+}
+.duet-alive .g-cloud {
+  opacity: var(--g-cloud);
+  pointer-events: none;
+}
+.duet-alive[data-finish='flat'] .g-grain,
+.duet-alive[data-finish='flat'] .g-cloud {
+  display: none;
+}
+.duet-alive .g-flood {
+  flood-color: var(--g-grainc);
+}
+.duet-alive .g-glow-flood {
+  flood-color: var(--gc);
+  flood-opacity: calc(var(--g-glow) + var(--g-boost, 0));
+}

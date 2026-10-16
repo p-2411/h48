@@ -1,0 +1,583 @@
+<div id="duet-caption-glow-study">
+  <style>
+    #duet-caption-glow-study {
+      --presence: 0.7;
+      color: #eee;
+      background: #080808;
+      font:
+        14px/1.5 -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      border-radius: 20px;
+      overflow: hidden;
+      color-scheme: dark;
+    }
+    #duet-caption-glow-study,
+    #duet-caption-glow-study * {
+      box-sizing: border-box;
+    }
+    #duet-caption-glow-study header {
+      padding: 24px 28px 0;
+      display: flex;
+      gap: 16px;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    #duet-caption-glow-study h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    #duet-caption-glow-study .version {
+      font-size: 12px;
+      color: #858585;
+    }
+    #duet-caption-glow-study .preview {
+      padding: 96px 36px;
+      background: #000;
+      margin-top: 24px;
+      display: grid;
+      place-items: center;
+      transition: background 500ms ease;
+    }
+    #duet-caption-glow-study[data-backdrop="ink"] .preview {
+      background: #090313;
+    }
+    #duet-caption-glow-study .caption {
+      position: relative;
+      isolation: isolate;
+      width: min(600px, 100%);
+      border-radius: 28px;
+      background: rgba(5, 5, 5, 0.94);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+    }
+    /* A quiet glass edge remains when no checkpoint is available. */
+    #duet-caption-glow-study .caption::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.085);
+      pointer-events: none;
+    }
+    #duet-caption-glow-study .signal {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 850ms ease;
+    }
+    #duet-caption-glow-study[data-state="checkpoint"] .signal {
+      opacity: var(--presence);
+      /* Let the arrival peak appear before the colour begins fading. */
+      transition-duration: 120ms;
+    }
+
+    /* Match the reference's silver contour: concentrated on the lower side curves,
+       with only a narrow, faint reflection along the upper edge. */
+    #duet-caption-glow-study .rim {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background:
+        radial-gradient(
+          ellipse 18% 76% at 0% 66%,
+          rgba(255, 255, 255, 0.56),
+          transparent 100%
+        ),
+        radial-gradient(
+          ellipse 20% 80% at 100% 73%,
+          rgba(255, 255, 255, 0.62),
+          transparent 100%
+        ),
+        radial-gradient(
+          ellipse 9% 12% at 47% 0%,
+          rgba(255, 255, 255, 0.2),
+          transparent 100%
+        ),
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.015) 15%,
+          rgba(255, 255, 255, 0.04) 100%
+        );
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      background-repeat: no-repeat;
+      animation: duet-rim-breathe 6.1s ease-in-out infinite;
+    }
+    /* Blur a masked light ribbon outside the glass; keep the centre clear. */
+    #duet-caption-glow-study .outer-glow {
+      position: absolute;
+      inset: -5px;
+      border-radius: 33px;
+      filter: blur(5px);
+      animation: duet-halo-breathe 5.4s ease-in-out infinite;
+    }
+    #duet-caption-glow-study .outer-ribbon {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 5px;
+      background:
+        radial-gradient(
+          ellipse 28% 95% at 0% 48%,
+          rgba(255, 255, 255, 0.24),
+          transparent
+        ),
+        radial-gradient(
+          ellipse 28% 95% at 100% 48%,
+          rgba(255, 255, 255, 0.24),
+          transparent
+        ),
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.045),
+          rgba(255, 255, 255, 0.025)
+        );
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+    }
+    #duet-caption-glow-study .rainbow-wash {
+      position: absolute;
+      inset: -8px -12px;
+      background:
+        radial-gradient(
+          ellipse 38% 100% at 0% 42%,
+          rgba(115, 205, 238, 0.8),
+          transparent
+        ),
+        radial-gradient(
+          ellipse 40% 80% at 30% 0%,
+          rgba(163, 145, 239, 0.38),
+          transparent
+        ),
+        radial-gradient(
+          ellipse 40% 80% at 72% 14%,
+          rgba(239, 155, 205, 0.38),
+          transparent
+        ),
+        radial-gradient(
+          ellipse 34% 100% at 100% 50%,
+          rgba(246, 179, 175, 0.75),
+          transparent
+        );
+      opacity: 0;
+    }
+    #duet-caption-glow-study[data-state="checkpoint"] .rainbow-wash {
+      animation:
+        duet-rainbow-arrival 2.6s linear both,
+        duet-colour-soften 2.6s ease-out both,
+        duet-colour-flow 5.4s cubic-bezier(0.45, 0, 0.55, 1) -0.7s infinite;
+    }
+    /* Travel continues while saturation and opacity settle into the white glow below. */
+    @keyframes duet-rainbow-arrival {
+      0% {
+        opacity: 0;
+      }
+      8%,
+      16% {
+        opacity: 0.75;
+      }
+      42% {
+        opacity: 0.5;
+      }
+      72% {
+        opacity: 0.2;
+      }
+      100% {
+        opacity: 0;
+      }
+    }
+    @keyframes duet-colour-soften {
+      0%,
+      16% {
+        filter: blur(7px) saturate(1) brightness(1);
+      }
+      72%,
+      100% {
+        filter: blur(7px) saturate(0) brightness(1.25);
+      }
+    }
+    @keyframes duet-colour-flow {
+      0%,
+      100% {
+        transform: translate(-10px, 3px) scaleX(0.98);
+      }
+      50% {
+        transform: translate(10px, -3px) scaleX(1.02);
+      }
+    }
+    @keyframes duet-halo-breathe {
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.75;
+      }
+      50% {
+        transform: scale(1.006, 1.025);
+        opacity: 1;
+      }
+    }
+    /* Interior reflections stay separate from the exterior checkpoint halo. */
+    #duet-caption-glow-study .glass-fill {
+      position: absolute;
+      inset: 1px;
+      border-radius: 27px;
+      overflow: hidden;
+    }
+    #duet-caption-glow-study .glass-fill::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.008) 54%,
+        rgba(255, 255, 255, 0.04) 100%
+      );
+      animation: duet-fill-breathe 5.4s ease-in-out infinite;
+    }
+    #duet-caption-glow-study .pool {
+      position: absolute;
+      top: 22%;
+      bottom: -26%;
+      width: 118px;
+      background: radial-gradient(
+        ellipse at 48% 65%,
+        rgba(255, 255, 255, 0.16),
+        rgba(255, 255, 255, 0.055) 36%,
+        transparent 72%
+      );
+      filter: blur(9px);
+      transform-origin: center bottom;
+    }
+    #duet-caption-glow-study .pool.left {
+      left: -54px;
+      animation: duet-pool-left 5.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    }
+    #duet-caption-glow-study .pool.right {
+      right: -54px;
+      animation: duet-pool-right 5.9s cubic-bezier(0.45, 0, 0.55, 1) -1.4s
+        infinite;
+    }
+    /* The outer light stays attached to the side: a few pixels of soft spill, no ring. */
+    #duet-caption-glow-study .spill {
+      position: absolute;
+      top: 30%;
+      bottom: 9%;
+      width: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.09);
+      filter: blur(6px);
+    }
+    #duet-caption-glow-study .spill.left {
+      left: -2px;
+      animation: duet-spill-left 5.4s ease-in-out infinite;
+    }
+    #duet-caption-glow-study .spill.right {
+      right: -2px;
+      animation: duet-spill-right 5.9s ease-in-out -1.4s infinite;
+    }
+    #duet-caption-glow-study .copy {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 22px 28px;
+    }
+    #duet-caption-glow-study p {
+      margin: 0;
+    }
+    #duet-caption-glow-study .japanese {
+      font-size: clamp(19px, 3vw, 24px);
+      line-height: 1.5;
+      font-weight: 400;
+      color: #f1f1f1;
+      text-wrap: balance;
+    }
+    #duet-caption-glow-study .english {
+      margin-top: 5px;
+      font-size: 13px;
+      color: #aaa;
+    }
+    @keyframes duet-pool-left {
+      0%,
+      100% {
+        transform: translate(7px, 3px) scale(0.88, 0.9);
+        opacity: 0.62;
+      }
+      48% {
+        transform: translate(-5px, -3px) scale(1.12, 1.06);
+        opacity: 1;
+      }
+    }
+    @keyframes duet-pool-right {
+      0%,
+      100% {
+        transform: translate(-7px, -3px) scale(0.9, 0.92);
+        opacity: 0.65;
+      }
+      52% {
+        transform: translate(5px, 3px) scale(1.12, 1.06);
+        opacity: 0.96;
+      }
+    }
+    @keyframes duet-spill-left {
+      0%,
+      100% {
+        transform: translateX(1px) scaleX(0.7);
+        opacity: 0.3;
+      }
+      48% {
+        transform: translateX(-3px) scaleX(1.22);
+        opacity: 0.65;
+      }
+    }
+    @keyframes duet-spill-right {
+      0%,
+      100% {
+        transform: translateX(-1px) scaleX(0.7);
+        opacity: 0.3;
+      }
+      52% {
+        transform: translateX(3px) scaleX(1.22);
+        opacity: 0.65;
+      }
+    }
+    @keyframes duet-fill-breathe {
+      0%,
+      100% {
+        transform: translateY(5px);
+        opacity: 0.68;
+      }
+      48% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    @keyframes duet-rim-breathe {
+      0%,
+      100% {
+        background-position:
+          0 8px,
+          0 -8px,
+          -9px 0,
+          0 0;
+        opacity: 0.72;
+      }
+      48% {
+        background-position:
+          0 -8px,
+          0 8px,
+          9px 0,
+          0 0;
+        opacity: 0.96;
+      }
+    }
+    #duet-caption-glow-study[data-state="rest"] .signal *,
+    #duet-caption-glow-study[data-state="rest"] .signal *::before {
+      animation-play-state: paused;
+    }
+    #duet-caption-glow-study .controls {
+      padding: 22px 28px 26px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 18px 28px;
+    }
+    #duet-caption-glow-study .state-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    #duet-caption-glow-study button,
+    #duet-caption-glow-study select {
+      font: inherit;
+      font-size: 12px;
+      padding: 8px 12px;
+      border: 1px solid #303030;
+      border-radius: 9px;
+      background: #111;
+      color: #bcbcbc;
+      min-height: 36px;
+    }
+    #duet-caption-glow-study button[aria-pressed="true"] {
+      background: #e9e9e9;
+      border-color: #e9e9e9;
+      color: #111;
+    }
+    #duet-caption-glow-study :focus-visible {
+      outline: 2px solid #eee;
+      outline-offset: 4px;
+    }
+    #duet-caption-glow-study label {
+      display: grid;
+      gap: 7px;
+      font-size: 12px;
+      color: #aaa;
+    }
+    #duet-caption-glow-study .presence {
+      flex: 1;
+      min-width: 130px;
+      max-width: 210px;
+    }
+    #duet-caption-glow-study .presence span {
+      display: flex;
+      justify-content: space-between;
+    }
+    #duet-caption-glow-study input {
+      width: 100%;
+      accent-color: #ddd;
+      margin: 0;
+    }
+    #duet-caption-glow-study .note {
+      padding: 0 28px 22px;
+      color: #909090;
+      font-size: 12px;
+    }
+    @media (max-width: 480px) {
+      #duet-caption-glow-study header {
+        padding: 20px 18px 0;
+      }
+      #duet-caption-glow-study .preview {
+        padding: 76px 18px;
+      }
+      #duet-caption-glow-study .copy {
+        padding: 20px 18px;
+      }
+      #duet-caption-glow-study .controls {
+        padding: 20px 18px;
+      }
+      #duet-caption-glow-study .note {
+        padding: 0 18px 20px;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #duet-caption-glow-study *,
+      #duet-caption-glow-study *::before {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+  <header>
+    <h2>Checkpoint glow</h2>
+    <span class="version">Pastel arrival · silver glow</span>
+  </header>
+  <div class="preview">
+    <div class="caption">
+      <div class="signal" aria-hidden="true">
+        <div class="outer-glow">
+          <div class="outer-ribbon">
+            <div class="rainbow-wash"></div>
+          </div>
+        </div>
+        <div class="spill left"></div>
+        <div class="spill right"></div>
+        <div class="glass-fill">
+          <div class="pool left"></div>
+          <div class="pool right"></div>
+        </div>
+        <div class="rim"></div>
+      </div>
+      <div class="copy">
+        <p class="japanese" lang="ja">もう一度、自分の言葉で言ってみて。</p>
+        <p class="english">Try saying it again in your own words.</p>
+      </div>
+    </div>
+  </div>
+  <div class="controls">
+    <div class="state-buttons" role="group" aria-label="Checkpoint state">
+      <button type="button" data-state="rest" aria-pressed="false">
+        No checkpoint
+      </button>
+      <button type="button" data-state="checkpoint" aria-pressed="true">
+        Checkpoint ready
+      </button>
+      <button type="button" id="caption-replay">Replay glow</button>
+    </div>
+    <label class="presence" for="caption-presence">
+      <span>Presence <output id="caption-presence-value">70%</output></span>
+      <input id="caption-presence" type="range" min="20" max="100" value="70" />
+    </label>
+    <label for="caption-background"
+      >Backdrop
+      <select id="caption-background">
+        <option value="black">Black</option>
+        <option value="ink">Deep ink</option>
+      </select>
+    </label>
+  </div>
+  <p class="note" id="caption-status" aria-live="polite">
+    Checkpoint available. A soft exterior colour glow settles into a faint white
+    halo; the gentle motion continues.
+  </p>
+  <script>
+    (() => {
+      const root = document.getElementById("duet-caption-glow-study");
+      const buttons = Array.from(root.querySelectorAll("button[data-state]"));
+      const presence = root.querySelector("#caption-presence");
+      const output = root.querySelector("#caption-presence-value");
+      const backdrop = root.querySelector("#caption-background");
+      const status = root.querySelector("#caption-status");
+      root.dataset.state = "checkpoint";
+      root.dataset.backdrop = "black";
+
+      function render() {
+        root.style.setProperty(
+          "--presence",
+          String(Number(presence.value) / 100),
+        );
+        output.value = presence.value + "%";
+        root.dataset.backdrop = backdrop.value;
+        buttons.forEach((button) =>
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.state === root.dataset.state),
+          ),
+        );
+        status.textContent =
+          root.dataset.state === "checkpoint"
+            ? "Checkpoint available. A soft exterior colour glow settles into a faint white halo; the gentle motion continues."
+            : "No checkpoint. Only the quiet glass outline remains.";
+      }
+      buttons.forEach((button) =>
+        button.addEventListener("click", () => {
+          root.dataset.state = button.dataset.state;
+          render();
+        }),
+      );
+      presence.addEventListener("input", render);
+      root.querySelector("#caption-replay").addEventListener("click", () => {
+        root.dataset.state = "checkpoint";
+        render();
+        for (const animation of root.getAnimations({ subtree: true })) {
+          if (
+            animation.animationName === "duet-rainbow-arrival" ||
+            animation.animationName.startsWith("duet-colour-")
+          ) {
+            animation.currentTime = 0;
+            animation.play();
+          }
+        }
+      });
+      backdrop.addEventListener("change", render);
+      render();
+    })();
+  </script>
+</div>
