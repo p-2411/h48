@@ -4,11 +4,20 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { LineAttempt, SayView } from '../../../../shared/daily'
 import { say } from '../errors'
 import { Icon } from '../Icon'
+import { MicButton } from '../MicButton'
 import type { ChallengeApi } from './api'
 import './challenges.css'
 import { useRecorder } from './useRecorder'
 
-export function SayLine({ line, api, onNext }: { line: SayView; api: ChallengeApi; onNext: (answered: boolean) => void }): React.JSX.Element {
+export function SayLine({
+  line,
+  api,
+  onNext
+}: {
+  line: SayView
+  api: ChallengeApi
+  onNext: (answered: boolean) => void
+}): React.JSX.Element {
   const [attempt, setAttempt] = useState<LineAttempt>()
   const [busy, setBusy] = useState<'hearing' | 'coaching'>()
   const [error, setError] = useState<string>()
@@ -27,7 +36,9 @@ export function SayLine({ line, api, onNext }: { line: SayView; api: ChallengeAp
       if (!url.current) {
         setBusy('hearing')
         const clip = await api.speak()
-        url.current = URL.createObjectURL(new Blob([new Uint8Array(clip.data)], { type: clip.mimeType }))
+        url.current = URL.createObjectURL(
+          new Blob([new Uint8Array(clip.data)], { type: clip.mimeType })
+        )
       }
       if (audio.current) {
         audio.current.src = url.current
@@ -40,47 +51,69 @@ export function SayLine({ line, api, onNext }: { line: SayView; api: ChallengeAp
     }
   }
 
-  const coach = useCallback(async (wav: Uint8Array) => {
-    setBusy('coaching')
-    setError(undefined)
-    try {
-      setAttempt(await api.coach({ data: wav, mimeType: 'audio/wav' }))
-    } catch (cause) {
-      setError(say(cause, 'Duet could not hear that. Try again.'))
-    } finally {
-      setBusy(undefined)
-    }
-  }, [api])
+  const coach = useCallback(
+    async (wav: Uint8Array) => {
+      setBusy('coaching')
+      setError(undefined)
+      try {
+        setAttempt(await api.coach({ data: wav, mimeType: 'audio/wav' }))
+      } catch (cause) {
+        setError(say(cause, 'Duet could not hear that. Try again.'))
+      } finally {
+        setBusy(undefined)
+      }
+    },
+    [api]
+  )
   const recorder = useRecorder(coach)
 
+  const coaching = busy === 'coaching'
+  const micLabel = recorder.recording
+    ? 'Listening… tap to stop'
+    : coaching
+      ? 'Checking…'
+      : attempt
+        ? 'Tap to try again'
+        : 'Tap, then say it'
   return (
-    <section className="challenge" aria-label="Say the line">
+    <section className="challenge say-practice" aria-label="Say the line">
       <span className="challenge-label">Say the line</span>
       <p className="challenge-line">{line.original}</p>
       <p className="challenge-hint">{line.translation}</p>
       <audio ref={audio} hidden />
-      <div className="challenge-row">
-        <button type="button" className="challenge-btn" disabled={!!busy || recorder.recording} onClick={() => void hear()}>
-          <Icon name="volume" size={14} />
-          {busy === 'hearing' ? 'Getting the line…' : 'Hear it'}
-        </button>
-        <button
-          type="button"
-          className={`challenge-btn${recorder.recording ? ' primary' : ''}`}
-          disabled={busy === 'coaching' || busy === 'hearing'}
-          onClick={() => (recorder.recording ? recorder.stop() : void recorder.start())}
-        >
-          <Icon name="mic" size={14} />
-          {recorder.recording ? 'Stop' : attempt ? 'Try again' : 'Say it'}
-        </button>
-      </div>
+      <MicButton
+        recording={recorder.recording}
+        checking={coaching}
+        level={recorder.level}
+        label={micLabel}
+        ariaLabel={
+          recorder.recording ? 'Stop recording' : attempt ? 'Try saying it again' : 'Say the line'
+        }
+        disabled={busy === 'hearing'}
+        onClick={() => (recorder.recording ? recorder.stop() : void recorder.start())}
+      />
+      <button
+        type="button"
+        className="challenge-btn hear-line"
+        disabled={!!busy || recorder.recording}
+        onClick={() => void hear()}
+      >
+        <Icon name="volume" size={14} />
+        {busy === 'hearing' ? 'Getting the line…' : 'Hear it'}
+      </button>
       <div role="status" className="challenge-feedback">
-        {busy === 'coaching' && <p className="challenge-faint">Listening…</p>}
-        {attempt && (
-          <>
-            {attempt.heard && <p className="challenge-faint">Duet heard: {attempt.heard}</p>}
-            <p>{attempt.note}</p>
-          </>
+        {attempt && !coaching && !recorder.recording && (
+          <div className={`say-result ${attempt.good ? 'is-good' : 'is-close'}`}>
+            <span className="say-result-head">
+              <span className="say-face" aria-hidden="true">
+                <i />
+                <i />
+              </span>
+              {attempt.good ? 'Sounds right' : 'Nearly there'}
+            </span>
+            {attempt.heard && <p className="say-heard">“{attempt.heard}”</p>}
+            {attempt.note && <p className="say-note">{attempt.note}</p>}
+          </div>
         )}
       </div>
       {(error || recorder.error) && (
@@ -88,7 +121,12 @@ export function SayLine({ line, api, onNext }: { line: SayView; api: ChallengeAp
           {error ?? recorder.error}
         </p>
       )}
-      <button type="button" className={`challenge-btn${attempt ? ' primary' : ' quiet'}`} disabled={recorder.recording} onClick={() => onNext(!!attempt)}>
+      <button
+        type="button"
+        className={`challenge-btn${attempt ? ' primary' : ' quiet'}`}
+        disabled={recorder.recording}
+        onClick={() => onNext(!!attempt)}
+      >
         {attempt ? 'Next' : 'Skip'}
       </button>
     </section>

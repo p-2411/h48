@@ -19,3 +19,10 @@
 .challenge-error { font-size: 13px; color: #ff6961; }
 .challenge-answer { display: flex; gap: 8px; width: 100%; }
 .challenge-answer input { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); color: var(--fg); font: inherit; }
+
+/* Say the line: the mic with its label, and what Duet heard. Plain here; Today (home/daily/daily.css)
+   and the strip's checkpoints dress them. */
+.say-result { display: flex; flex-direction: column; gap: 4px; }
+.say-result p { margin: 0; }
+.say-result-head { font-weight: 600; }
+.say-face { display: none; }

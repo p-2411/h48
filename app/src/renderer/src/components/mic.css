@@ -1,0 +1,91 @@
+/* The one mic (MicButton.tsx), the same everywhere it appears. */
+.mic-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.mic {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  padding: 0;
+  border: 0;
+  border-radius: 34px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  background: var(--ink);
+  color: var(--on-ink);
+  box-shadow: 0 8px 20px rgba(27, 32, 31, 0.18);
+  transition:
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.2s ease;
+}
+.mic:hover:not(:disabled) {
+  transform: scale(1.04);
+}
+.mic:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.mic:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+.mic .icon,
+.mic svg {
+  width: 24px;
+  height: 24px;
+  position: relative;
+}
+.mic-level {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--due) 22%, transparent);
+  transform: scale(calc(0.9 + var(--level, 0) * 0.55));
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.mic.is-recording {
+  background: var(--due);
+  color: #ffffff;
+}
+.mic.is-recording .mic-level {
+  opacity: 1;
+}
+.mic-stop {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: currentColor;
+}
+.mic.is-checking,
+.mic.is-checking:disabled {
+  opacity: 1;
+  animation: mic-breathe 1.2s ease-in-out infinite;
+}
+@keyframes mic-breathe {
+  50% {
+    transform: scale(0.94);
+    opacity: 0.7;
+  }
+}
+.mic-label {
+  font-size: 13px;
+  color: var(--sub);
+}
+.mic.is-recording + .mic-label {
+  color: var(--due);
+  font-weight: 500;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mic-level {
+    transform: none;
+  }
+  .mic.is-checking {
+    animation: none;
+  }
+}

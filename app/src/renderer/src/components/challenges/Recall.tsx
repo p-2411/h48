@@ -4,6 +4,7 @@ import type { RecallResult, RecallView } from '../../../../shared/daily'
 import { say } from '../errors'
 import type { ChallengeApi } from './api'
 import './challenges.css'
+import { duetReact } from '../duet/react'
 
 
 export function Recall({ challenge, api, onNext }: { challenge: RecallView; api: ChallengeApi; onNext: (answered: boolean) => void }): React.JSX.Element {
@@ -16,7 +17,9 @@ export function Recall({ challenge, api, onNext }: { challenge: RecallView; api:
     setError(undefined)
     setChecking(true)
     try {
-      setResult({ picked: choice, ...(await api.checkRecall(choice)) })
+      const checked = await api.checkRecall(choice)
+      duetReact(checked.correct ? 'right' : 'not-yet')
+      setResult({ picked: choice, ...checked })
     } catch (cause) {
       setError(say(cause, 'That could not be checked.'))
     } finally {
