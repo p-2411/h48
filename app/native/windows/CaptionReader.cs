@@ -512,7 +512,7 @@ internal static class CaptionReader
                     target.PlayButton = FindPlayButton(document);
                     target.Position = PositionOf(target.Progress);
                     target.Playing = PlayingFrom(target.PlayButton);
-                    target.Caption = CaptionFrom(document, target.Progress);
+                    target.Caption = CaptionFrom(document);
                 }
                 _watched = candidate.Item3;
                 return target;

@@ -20,6 +20,7 @@ const opened = []
 class WebContents extends EventEmitter {
   constructor() { super(); this.sent = [] }
   send(channel, value) { this.sent.push([channel, value]) }
+  setWindowOpenHandler(handler) { this.openHandler = handler }
   once(event, work) { if (event === 'did-finish-load') { if (module.exports.loading.slow) this.load = work; else work() } return this }
 }
 class BrowserWindow extends EventEmitter {
@@ -110,6 +111,16 @@ try {
     ],
     'Home opens on Cards, on that card (My cards listens for cards:show)'
   )
+  const before = electron.opened.length
+  assert.deepEqual(
+    window.webContents.openHandler({ url: 'https://kaikki.org/dictionary/' }),
+    { action: 'deny' },
+    'a link never opens a Duet window'
+  )
+  assert.equal(electron.opened.at(-1), 'https://kaikki.org/dictionary/', 'it opens in the browser')
+  window.webContents.openHandler({ url: 'file:///etc/hosts' })
+  assert.equal(electron.opened.length, before + 1, 'only https links open')
+  electron.opened.length = before
   home.open('settings')
   assert.equal(electron.windows.length, 1, 'opening again shows the same window')
   assert.ok(window.focused > 0)

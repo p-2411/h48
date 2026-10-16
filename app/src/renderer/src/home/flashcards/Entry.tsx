@@ -3,6 +3,7 @@
 // heard (like a dictionary's quotation), and one folded row of tips.
 import {
   mmss,
+  pitchMorae,
   STEP_LABELS,
   STEPS,
   type DictEntry,
@@ -56,6 +57,32 @@ export function StepBars({ step, ignored }: { step: Step; ignored?: boolean }): 
   )
 }
 
+/** A Japanese word's kana, with its pitch drawn when known: a line over the high morae and a mark
+ * where the pitch falls (た‾べꜜる). */
+export function Reading({ entry }: { entry: DictEntry }): React.JSX.Element | null {
+  if (!entry.reading) return null
+  if (entry.pitch === undefined)
+    return (
+      <span className="fc-reading" lang="ja">
+        {entry.reading}
+      </span>
+    )
+  const label = entry.pitch === 0 ? 'flat pitch' : `pitch falls after mora ${entry.pitch}`
+  return (
+    <span className="fc-reading" lang="ja" title={label} aria-label={`${entry.reading}, ${label}`}>
+      {pitchMorae(entry.reading, entry.pitch).map((mora, index) => (
+        <span
+          key={index}
+          className={mora.high ? 'high' : undefined}
+          data-drop={mora.drop || undefined}
+        >
+          {mora.text}
+        </span>
+      ))}
+    </span>
+  )
+}
+
 /** A line with its word bold. */
 export function Bolded({ line }: { line: SplitLine }): React.JSX.Element {
   if (!line.found) return <>{line.before}</>
@@ -89,8 +116,9 @@ export function Entry({
         {entry?.article && <span className="art">{entry.article} </span>}
         {headword}
       </span>
-      {(entry?.ipa || meta || onSound) && (
+      {(entry?.reading || entry?.ipa || meta || onSound) && (
         <div className="fc-meta">
+          {entry?.reading && <Reading entry={entry} />}
           {entry?.ipa && <span>{entry.ipa}</span>}
           {onSound && (
             <button

@@ -18,6 +18,7 @@ import {
 import { LoadState } from '../components/LoadState'
 import { AccountSection } from './AccountSection'
 import { FeedbackSection } from './FeedbackSection'
+import { SourcesPage } from './SourcesPage'
 
 // The reminder's time when it is first turned on.
 const DEFAULT_REMINDER = '19:00'
@@ -107,6 +108,7 @@ export function SettingsPage({
 }): React.JSX.Element {
   const [settings, setSettings] = useState<OverlaySettings>()
   const [error, setError] = useState<string>()
+  const [sources, showSources] = useState(false)
   const load = useCallback(() => {
     window.duet.getState().then(
       (state) => {
@@ -120,6 +122,7 @@ export function SettingsPage({
     load()
     return window.duet.onSettings(setSettings)
   }, [load])
+  if (sources) return <SourcesPage onBack={() => showSources(false)} />
   return (
     <main className="home-page home-settings">
       <h1>Settings</h1>
@@ -251,9 +254,19 @@ export function SettingsPage({
             </div>
           </section>
           <UpdatesSetting />
-          <p className="faint settings-credit">
-            Reading levels use word frequencies from wordfreq by Robyn Speer, under CC BY-SA 4.0.
-          </p>
+          <section className="settings-group" aria-labelledby="settings-sources">
+            <h2 className="label" id="settings-sources">
+              Sources
+            </h2>
+            <div className="glass">
+              <p className="muted">
+                Dictionaries from Wiktionary, JMdict and UniDic; word frequencies from wordfreq.
+              </p>
+              <button type="button" className="btn" onClick={() => showSources(true)}>
+                Sources and licences
+              </button>
+            </div>
+          </section>
         </>
       )}
     </main>

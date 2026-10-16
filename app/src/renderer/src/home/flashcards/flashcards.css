@@ -782,6 +782,17 @@
 .fc-meta .pos {
   font-style: italic;
 }
+/* A Japanese reading's pitch: a line over the high morae, a tick down where it falls. */
+.fc-reading {
+  font-size: 14px;
+  color: var(--ink);
+}
+.fc-reading .high {
+  border-top: 1px solid currentColor;
+}
+.fc-reading [data-drop] {
+  border-right: 1px solid currentColor;
+}
 .fc-meta .sep {
   width: 3px;
   height: 3px;
