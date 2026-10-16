@@ -109,7 +109,7 @@ button { font: inherit }
 .video { padding-block: 24px 64px }
 .scene { position: relative; border-radius: 28px; overflow: hidden; aspect-ratio: 16 / 9; background: #080d0d }
 .scene > img { width: 100%; height: 100%; object-fit: cover; object-position: 30% 50%; display: block }
-.scene .anchor { position: absolute; width: 140px; height: 92px }
+.scene .anchor { position: absolute; width: clamp(64px, 12%, 140px); aspect-ratio: 100 / 66 }
 
 /* Between features: a short brush stroke at the headline's left edge, in the next feature's colour,
    with more air outside a feature than inside it. */
@@ -121,16 +121,15 @@ button { font: inherit }
 .how-h em { font-style: italic }
 
 /* Each feature: Duet's landing spot on the left, the headline beside it and, under that, what Duet
-   says. Once Duet starts its tour, a feature's words wait in a faint ink and darken as it says them. */
+   says. Once Duet starts its tour, a feature's words wait in a faint ink and darken, letter by letter,
+   as it says them. */
 .feat { display: flex; flex-direction: column; gap: 26px }
 .say { display: grid; grid-template-columns: 196px minmax(0, 1fr); column-gap: 32px; align-items: start }
 .spot { width: 196px; height: 129px; margin-top: -38px }
 .say-text { position: relative; display: flex; flex-direction: column; gap: 14px }
 .say-h { font-size: 46px; line-height: 1.1; max-width: 760px }
 .speech { max-width: 600px; font-family: var(--serif); font-size: 22px; line-height: 1.5; color: var(--ink) }
-.speech .w { transition: color 0.18s ease }
-.feat.faint .speech .w { color: var(--ink-faint) }
-.feat.faint .speech .w.on { color: var(--ink) }
+.feat.faint .speech .rest { color: var(--ink-faint) }
 .feat.faint .mark svg { clip-path: inset(0 100% 0 0) }
 .feat.faint.brushed .mark svg { clip-path: inset(0 0 0 0) }
 /* The sound coming off Duet toward its words: three pen strokes, faint at rest, pulsing as it talks. */
@@ -143,7 +142,7 @@ button { font: inherit }
 .vig { margin-left: 228px }
 .panel { border-radius: 28px; padding: 28px; background-color: var(--honey) }
 .panel.aqua { background-color: var(--aqua) } .panel.foam { background-color: var(--foam) } .panel.lilac { background-color: var(--lilac) } .panel.peach { background-color: var(--peach) }
-.duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: end }
+.duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: stretch }
 
 /* Watch: the services Duet works on. */
 .plat { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px }
@@ -157,11 +156,14 @@ button { font: inherit }
 /* A screen: the caption window's pieces over a dimmed scene, as they'd sit on a video. */
 .screen { position: relative; border-radius: 20px; padding: 24px; background: linear-gradient(rgba(10,12,12,0.72), rgba(10,12,12,0.82)), url(./a/scene.jpg) 30% 50% / cover; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px; color: #f5f5f7 }
 .screen.tall { min-height: 300px; padding-top: 170px }
+/* A frame: a whole screen with a video, Duet's windows on it to scale (the side panel takes 30% of a
+   screen 1440 points wide, on the right). */
+.frame { position: relative; aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: linear-gradient(rgba(0,0,0,0.18), rgba(0,0,0,0.3)), url(./a/scene.jpg) 30% 50% / cover }
+.frame .frame-strip { position: absolute; left: 0; right: 31.5%; bottom: 5%; width: auto }
+.frame .frame-panel { position: absolute; right: 1.5%; top: 50%; width: 30%; transform: translateY(-50%) }
 .levels .lv, .steps .step { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100% }
 .levels .lv span, .steps .step span { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: rgba(235,235,245,0.6) }
 .steps { gap: 22px }
-.duo.cards { align-items: start }
-.duo.grow { align-items: stretch }
 
 /* The app's UI: each piece is the app's own markup and CSS (src/app-ui.json), in a shadow root of
    its own so the two can't touch, kept still (inert) and labelled for screen readers. */
@@ -209,9 +211,8 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   .hero h1 { font-size: 46px } .lede { font-size: 18px }
   .g3, .g4 { display: none !important } .hi { font-size: 15px; padding: 8px 13px }
   .g1 { right: auto; left: -4px; top: -26px } .g2 { left: auto; right: -4px; top: 166px }
-  .scene .anchor { width: 96px; height: 63px }
   .click-me { left: -10px; top: -34px; font-size: 24px }
-  .scene { aspect-ratio: 4 / 5 } .screen { padding: 16px } .screen.tall { padding-top: 150px }
+  .screen { padding: 16px }
   .divider { margin: 64px 0; padding-left: 0 } .divider-top { margin: 0 0 48px }
   .how-h { margin: 0 0 56px; font-size: 40px }
   .say { grid-template-columns: 1fr; row-gap: 12px } .spot { width: 120px; height: 79px; margin-top: 0 }
@@ -275,7 +276,7 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
 <section class="sec video" data-sec="video" aria-label="Duet’s caption window over a scene">
   <div class="scene" id="scene">
     <img src="./a/scene.jpg" alt="" width="1280" height="546">
-    <div class="over" data-ui="dock-l3" role="img" aria-label="Duet’s subtitles over a scene from the film Sintel: My hermana compró a nuevo coche, each Spanish word in the colour of how well you know it"></div>
+    <div class="over" data-ui="dock-l3" data-fit="video" role="img" aria-label="Duet’s subtitles over a scene from the film Sintel: My hermana compró a nuevo coche, each Spanish word in the colour of how well you know it"></div>
     <div class="anchor" data-anchor="video"></div>
   </div>
 </section>
@@ -338,9 +339,9 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     </div>
     <div class="vig">
       <div class="panel aqua grain">
-        <div class="duo">
-          <div class="screen tall" role="img" aria-label="Pointing at compró on the subtitles: its card says action word, known, bought, with Save, Explain line and Ignore"><div data-ui="dock-card"></div></div>
-          <div data-ui="explain" data-fit="flex" role="img" aria-label="Duet’s side panel explaining a line: a·pa·ñár·se·las, to manage on your own, and what it means in this scene"></div>
+        <div class="frame" role="img" aria-label="A video with Duet over it: pointing at compró on the subtitles shows its card (action word, known, bought), and Duet’s side panel explains a line: a·pa·ñár·se·las, to manage on your own, and what it means in this scene">
+          <div class="frame-strip" data-ui="dock-card" data-fit="video"></div>
+          <div class="frame-panel" data-ui="explain" data-fit="video"></div>
         </div>
       </div>
     </div>
@@ -489,7 +490,7 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   // following the page's. It's there to look at: kept still (inert) and labelled on its host.
   var UI = /*APP_UI*/;
   // The window's own root fills the window and clips it; a piece's root only holds the piece.
-  var BASE = '.ui-root { margin-inline: auto; height: auto; overflow: visible; background: transparent; font-family: Inter, -apple-system, system-ui, sans-serif; line-height: normal; letter-spacing: normal; text-align: left; -webkit-font-smoothing: antialiased }';
+  var BASE = '.ui-root.fill .ui-piece { height: 100%; box-sizing: border-box } .ui-root.fill .fc-deck > .fc-card { height: 100% } .ui-root { margin-inline: auto; height: auto; overflow: visible; background: transparent; font-family: Inter, -apple-system, system-ui, sans-serif; line-height: normal; letter-spacing: normal; text-align: left; -webkit-font-smoothing: antialiased }';
   var css = {};
   function cssOf(group) {
     // The window's :root, html and body are the piece's own root here.
@@ -528,6 +529,7 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     var t = document.createElement('template');
     t.innerHTML = part.html;
     parent.appendChild(t.content);
+    parent.lastElementChild.classList.add('ui-piece');
     pieces.push({ host: host, top: top, part: part, themed: themed, fit: host.getAttribute('data-fit') || 'zoom', min: Number(host.getAttribute('data-min')) || 360 });
   });
   onTheme.push(function (t) {
@@ -535,7 +537,8 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   });
   paint();
   // Sizes: a piece keeps its own width and shrinks (zoom) where there's less room; a flexible one
-  // (data-fit="flex") takes the room it's given, down to data-min.
+  // (data-fit="flex") takes the room it's given, down to data-min; the strip over the video
+  // (data-fit="video") is drawn to the video's scale.
   function fit() {
     pieces.forEach(function (p) {
       var room = p.host.clientWidth;
@@ -543,8 +546,22 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
       var width = p.part.width + (p.part.group === 'overlay' ? 32 : 0);
       var z;
       if (p.fit === 'flex') { z = Math.min(1, room / p.min); p.top.style.width = room / z + 'px'; }
+      // Over the video, to scale: the strip takes the share of the frame it takes of a full-screen
+      // video on a screen 1440 points wide.
+      else if (p.fit === 'video') { z = p.host.parentElement.clientWidth / 1440; p.top.style.width = width + 'px'; }
       else { z = Math.min(1, room / width); p.top.style.width = width + 'px'; }
       p.top.style.zoom = z;
+      p.zoom = z;
+      p.top.style.height = '';
+      p.top.classList.remove('fill');
+    });
+    // Two pieces side by side stand as tall as each other: the shorter one stretches, as tiles do
+    // in the app's own grid.
+    document.querySelectorAll('.duo').forEach(function (duo) {
+      var row = pieces.filter(function (p) { return p.host.parentElement === duo; });
+      if (row.length < 2 || getComputedStyle(duo).gridTemplateColumns.split(' ').length < 2) return;
+      var tallest = Math.max.apply(null, row.map(function (p) { return p.host.getBoundingClientRect().height; }));
+      row.forEach(function (p) { p.top.style.height = tallest / p.zoom + 'px'; p.top.classList.add('fill'); });
     });
     // Duet's spot over the video: just above the strip's left end.
     var scene = document.getElementById('scene');
@@ -621,22 +638,19 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     });
   });
 
-  // Each feature's line, one span per word, so Duet can say it word by word.
+  // Each feature's line in two parts, what Duet has said and the rest, so it can say it letter by letter.
   var feats = {};
   document.querySelectorAll('.feat[data-sec]').forEach(function (el) {
     var speech = el.querySelector('.speech');
     var text = speech.textContent.trim();
-    speech.textContent = '';
-    var words = text.split(' ').map(function (word, i) {
-      if (i) speech.appendChild(document.createTextNode(' '));
-      var w = document.createElement('span');
-      w.className = 'w';
-      w.textContent = word;
-      speech.appendChild(w);
-      return w;
-    });
-    feats[el.getAttribute('data-sec')] = { el: el, words: words, waves: el.querySelector('.waves'), text: text, done: false };
+    var said = document.createElement('span');
+    var rest = document.createElement('span');
+    rest.className = 'rest';
+    rest.textContent = text;
+    speech.replaceChildren(said, rest);
+    feats[el.getAttribute('data-sec')] = { el: el, said: said, rest: rest, waves: el.querySelector('.waves'), text: text, done: false };
   });
+  function sayUpTo(f, n) { f.said.textContent = f.text.slice(0, n); f.rest.textContent = f.text.slice(n); }
 
   var E = window.DuetEngine;
   if (!E) return;
@@ -690,7 +704,7 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   var timers = [], talking = null, speaking = null;
   function later(ms, fn) { timers.push(setTimeout(fn, ms)); }
   function endSpeech() {
-    clearInterval(talking);
+    clearTimeout(talking);
     talking = null;
     duet.setOptions({ speaking: false, watch: 'near' });
     if (speaking && feats[speaking]) feats[speaking].waves.classList.remove('on');
@@ -702,7 +716,7 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     timers = [];
     endSpeech();
     var f = speaking && feats[speaking];
-    if (f && !f.done) { f.el.classList.remove('brushed'); f.words.forEach(function (w) { w.classList.remove('on'); }); }
+    if (f && !f.done) { f.el.classList.remove('brushed'); sayUpTo(f, 0); }
     speaking = null;
     landed = null;
     said.style.opacity = 0;
@@ -718,13 +732,13 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   }
 
   // The bubble over the video and at the closing: to Duet's right, its foot level with Duet's, as
-  // wide as fits; it keeps the whole line's size from the start and the words appear in it.
-  function bubble(words, shown) {
-    said.textContent = words.slice(0, shown).join(' ');
-    if (shown < words.length) {
+  // wide as fits; it keeps the whole line's size from the start and the letters appear in it.
+  function bubble(text, shown) {
+    said.textContent = text.slice(0, shown);
+    if (shown < text.length) {
       var rest = document.createElement('span');
       rest.className = 'rest';
-      rest.textContent = ' ' + words.slice(shown).join(' ');
+      rest.textContent = text.slice(shown);
       said.appendChild(rest);
     }
     said.style.opacity = shown > 0 ? 1 : 0;
@@ -748,38 +762,38 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     }
   }
 
-  // Speaking: the engine's talking mouth, eyes on you and not the pointer, while the words come one
-  // by one. When the line is said: the stop's feeling and a small gesture.
+  // Speaking: the engine's talking mouth, eyes on you and not the pointer, while the line streams in
+  // letter by letter (about 50 a second, a breath longer after a comma or the end of a sentence). When
+  // the line is said: the stop's feeling and a small gesture.
   function speak(key) {
     var line = LINES[key], f = feats[key];
-    var words = f ? f.words : line[1].split(' ');
-    var show = function (n) {
-      if (f) { for (var i = 0; i < n; i++) words[i].classList.add('on'); }
-      else bubble(words, n);
-    };
+    var text = f ? f.text : line[1];
+    var show = function (n) { if (f) sayUpTo(f, n); else bubble(text, n); };
     var finish = function () {
       if (f) { f.done = true; f.el.classList.remove('faint'); }
       mood(line[2], line[4]);
     };
-    if (!f) bubble(words, 0);
+    if (!f) bubble(text, 0);
     later(line[0] === 'thinking' ? 1100 : 550, function () {
-      if (still) { show(words.length); finish(); return; }
+      if (still) { show(text.length); finish(); return; }
       speaking = key;
       duet.setOptions({ speaking: true, watch: 'off' });
       mood('speaking', line[4]);
       if (f) f.waves.classList.add('on');
-      var n = 1;
-      show(n);
-      talking = setInterval(function () {
-        if (n >= words.length) {
+      var n = 0;
+      var next = function () {
+        if (n >= text.length) {
           endSpeech();
           speaking = null;
           finish();
           later(250, function () { gesture(line[3]); });
           return;
         }
+        var c = text.charAt(n);
         show(++n);
-      }, 210);
+        talking = setTimeout(next, /[.?!]/.test(c) ? 200 : c === ',' ? 100 : 18);
+      };
+      next();
     });
   }
 
