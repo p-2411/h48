@@ -32,10 +32,6 @@ export function TodayTile({ onOpen }: { onOpen: (tile: HTMLElement) => void }): 
                 {today.word.word}
               </span>
               <p>{today.word.meaning}</p>
-              <p className="faint">
-                Heard {today.word.seen} {today.word.seen === 1 ? 'time' : 'times'}
-                {today.word.source && ` · ${today.word.source}`}
-              </p>
             </div>
           )}
           <ol className="hub-steps">

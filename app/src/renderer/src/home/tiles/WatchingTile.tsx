@@ -61,7 +61,6 @@ export function WatchingTile({
                 >
                   <span className="video-frame">
                     <Thumbnail video={video} />
-                    {video.subtitle && <span className="video-subtitle">{video.subtitle}</span>}
                   </span>
                   <span className="tile-video-title">{title}</span>
                   {video.position !== undefined && (

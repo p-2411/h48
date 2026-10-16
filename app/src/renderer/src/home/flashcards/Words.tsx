@@ -16,7 +16,6 @@ import { CardEditor } from '../../cards/CardEditor'
 import { say } from '../../components/errors'
 import { filterWords, joinWords } from '../words/join'
 import type { WordsData } from '../words/useWordsData'
-import { metAndKnownLine } from '../progress'
 import { icons } from './bits'
 import { ByDuet, Entry } from './Entry'
 import type { WordApi } from './sample'
@@ -120,13 +119,17 @@ function Detail({
   return (
     <div className="fc-detail" data-tour="word">
       <div className="fc-step-row" data-step={word.step}>
-        <span className="fc-step-chip">
-          <span className="dot" />
-          {word.ignored ? 'Ignored' : STEP_LABELS[word.step]}
-        </span>
-        <span className="fc-ladder-mini" aria-hidden="true">
+        {/* The four steps as bars, filled up to the word's, its name under that bar. */}
+        <span className="fc-ladder-mini">
           {STEPS.map((step, index) => (
-            <span key={step} className={index <= stepIndex ? 'on' : ''} />
+            <span key={step} className={`fc-rung${index <= stepIndex ? ' on' : ''}`}>
+              <span className="fc-rung-bar" aria-hidden="true" />
+              {index === stepIndex && (
+                <span className="fc-rung-name">
+                  {word.ignored ? 'Ignored' : STEP_LABELS[word.step]}
+                </span>
+              )}
+            </span>
           ))}
         </span>
         {word.nextReview !== undefined && (
@@ -251,8 +254,14 @@ function Detail({
             </button>
           </>
         ) : (
-          <button type="button" className="primary" onClick={() => onMake(word.word)}>
-            Make a card
+          // A word met but not yet reviewed: this makes its card, so it comes up in reviews.
+          <button
+            type="button"
+            className="primary"
+            title="Make a flashcard for this word, so it comes up in your reviews"
+            onClick={() => onMake(word.word)}
+          >
+            Add to review
           </button>
         )}
         {!sample && (
@@ -453,7 +462,6 @@ export function Words({
                 : 'Words you meet while watching land here.'}
             </p>
           )}
-          {total > 0 && <p className="fc-list-more">{metAndKnownLine(data.summary.counts)}</p>}
           {total > data.summary.words.length && (
             <p className="fc-list-more">
               Showing the {data.summary.words.length} words you met most recently.
