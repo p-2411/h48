@@ -108,11 +108,62 @@ button { font: inherit }
 .meta.error { color: var(--ink); font-weight: 600 }
 .done { margin-top: 14px; font-size: 15px; font-weight: 600; color: var(--w-use) }
 
-/* The caption window over a scene, as you'd see it on a film: the app's own (below, "The app's UI"). */
+/* The film: Duet at work on a scene, about half a minute, looping while it's on screen. A stage of
+   1120 × 630 points scaled to the frame (fit()), so it plays the same at every width, as a video
+   would. On it, the app's own UI (data-fit="film"), moved by the film's timeline in the script; the
+   page's Duet flies in and plays its part. Shots: the subtitles turn Spanish, the level goes up and
+   back, a word's card and Explain, talking to Duet, a checkpoint, a flashcard, the closing line. */
 .video { padding-block: 24px 64px }
-.scene { position: relative; border-radius: 28px; overflow: hidden; aspect-ratio: 16 / 9; background: #080d0d }
-.scene > img { width: 100%; height: 100%; object-fit: cover; object-position: 30% 50%; display: block }
-.scene .anchor { position: absolute; width: clamp(64px, 12%, 140px); aspect-ratio: 100 / 66 }
+.film { --glide: cubic-bezier(0.16,1,0.3,1); --f-window: var(--ground); position: relative; border-radius: 28px; overflow: hidden; aspect-ratio: 16 / 9; background: #080d0d; isolation: isolate }
+.film-stage { position: absolute; left: 0; top: 0; width: 1120px; height: 630px; overflow: hidden; transform-origin: 0 0 }
+.cam { position: absolute; inset: 0; overflow: hidden; transform-origin: 50% 50%; transition: transform 1.1s var(--glide), border-radius 1.1s var(--glide) }
+.cam video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 30% 50%; display: block }
+.shade { position: absolute; inset: 0; background: #060909; opacity: 0; transition: opacity 0.8s var(--glide) }
+.film.is-dim .shade { opacity: 0.62 }
+.film.is-end .shade { opacity: 0.8 }
+/* Explain: the video steps aside, smaller, and the side panel comes in beside it. */
+.film.is-explain .cam { transform: translateX(-211px) scale(0.58); border-radius: 26px }
+.f-strip { position: absolute; left: 0; right: 0; bottom: 40px; transition: opacity 0.5s var(--glide) }
+.film.is-end .f-strip { opacity: 0 }
+.film .f-strip > [data-ui] { position: absolute; left: 0; right: 0; bottom: 0; width: auto; transition: opacity 0.45s var(--glide), visibility 0s }
+.film .f-strip > .f-glow, .film .f-strip > .f-done { opacity: 0; visibility: hidden }
+.film.is-glow .f-strip > .f-main, .film.is-ask .f-strip > .f-glow { opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0s 0.3s }
+.film.is-glow .f-strip > .f-glow { opacity: 1; visibility: visible }
+/* The checkpoint grows up out of the strip. */
+.film .f-strip > .f-done { clip-path: inset(100% -60px 0 -60px); transition: clip-path 0.7s var(--glide), opacity 0.2s, visibility 0s }
+.film.is-ask .f-strip > .f-done { opacity: 1; visibility: visible; clip-path: inset(-60px -60px 0 -60px) }
+.film .f-panel { position: absolute; right: 24px; top: 50%; width: 372px; box-sizing: border-box; border-radius: 20px; overflow: hidden; background: var(--f-window); box-shadow: 0 30px 60px -30px rgba(0,0,0,0.8); transform: translate(calc(100% + 60px), -50%); transition: transform 1.1s var(--glide) }
+.film.is-explain .f-panel { transform: translate(0, -50%) }
+.film .f-talk { position: absolute; left: 50%; top: 50%; width: 650px; box-sizing: border-box; padding: 6px 12px; border-radius: 24px; background: var(--f-window); box-shadow: 0 30px 70px -30px rgba(0,0,0,0.85); opacity: 0; visibility: hidden; transform: translate(-50%, -44%) scale(0.97); transition: opacity 0.45s var(--glide), transform 0.9s var(--glide), visibility 0s 0.45s }
+.film.is-talk .f-talk { opacity: 1; visibility: visible; transform: translate(-50%, -50%); transition-delay: 0s }
+.f-cards { position: absolute; left: 50%; top: 50%; width: 513px; height: 330px; perspective: 1600px; opacity: 0; visibility: hidden; transform: translate(-50%, -44%); transition: opacity 0.45s var(--glide), transform 0.9s var(--glide), visibility 0s 0.45s }
+.film.is-cards .f-cards { opacity: 1; visibility: visible; transform: translate(-50%, -50%); transition-delay: 0s }
+.f-flip { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.9s var(--glide) }
+.film.is-flip .f-flip { transform: rotateY(180deg) }
+.film .f-flip > [data-ui] { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; filter: drop-shadow(0 26px 34px rgba(0,0,0,0.5)) }
+.film .f-flip > .f-back { transform: rotateY(180deg) }
+/* The closing line, over the darkened scene. */
+.f-end { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding-top: 80px; text-align: center; color: #f5f7f6; pointer-events: none }
+.f-end h2 { font-size: 66px; line-height: 1.04 }
+.f-end h2 em { font-style: italic }
+.f-end .l1, .f-end .l2, .f-end p { display: block; opacity: 0; transform: translateY(14px); transition: opacity 0.7s var(--glide), transform 0.9s var(--glide) }
+.f-end p { font-size: 18px; color: rgba(245,247,246,0.72) }
+.film.is-end .f-end .l1 { opacity: 1; transform: none }
+.film.is-end .f-end .l2 { opacity: 1; transform: none; transition-delay: 0.45s }
+.film.is-end .f-end p { opacity: 1; transform: none; transition-delay: 1.2s }
+.f-end .mark svg { clip-path: inset(0 100% 0 0); transition: clip-path 0.8s var(--glide) 1s }
+.film.is-end .f-end .mark svg { clip-path: inset(0 0 0 0) }
+/* Each shot's line, top left, in Duet's voice. */
+.f-kicker { position: absolute; left: 44px; top: 34px; margin: 0; max-width: 600px; font-family: var(--serif); font-size: 30px; line-height: 1.2; letter-spacing: -0.01em; color: #f5f7f6; text-shadow: 0 2px 20px rgba(0,0,0,0.55); opacity: 0; transform: translateY(10px); transition: opacity 0.5s var(--glide), transform 0.8s var(--glide) }
+.f-kicker.on { opacity: 1; transform: none }
+.f-cursor { position: absolute; left: 0; top: 0; z-index: 5; width: 28px; height: 28px; opacity: 0; transform: translate(1150px, 700px); transition: transform 0.95s cubic-bezier(0.45,0,0.15,1), opacity 0.35s; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.45)) }
+.f-black { position: absolute; inset: 0; z-index: 6; background: #080d0d; opacity: 0; transition: opacity 0.6s ease; pointer-events: none }
+.film.is-black .f-black { opacity: 1 }
+.film .anchor { position: absolute; left: 0; top: 0; width: 130px; aspect-ratio: 100 / 66 }
+.film-toggle { position: absolute; right: 14px; bottom: 14px; z-index: 7; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; background: rgba(20,24,23,0.5); color: #fff; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); cursor: pointer; opacity: 0.7; transition: opacity 0.2s }
+.film-toggle:hover, .film-toggle:focus-visible { opacity: 1 }
+.film-toggle svg[hidden] { display: none }
+.film.still .film-toggle { display: none }
 
 /* Between features: a short brush stroke at the headline's left edge, in the next feature's colour,
    with more air outside a feature than inside it. */
@@ -171,7 +222,6 @@ button { font: inherit }
    its own so the two can't touch, kept still (inert) and labelled for screen readers. */
 /* The window's root rules (:host here) fill and clip the window; a piece's host only holds it. */
 [data-ui] { display: block; width: 100%; max-width: 100%; min-width: 0; height: auto; margin: 0; overflow: visible; background: none }
-.scene .over { position: absolute; left: 16px; right: 16px; bottom: 5%; width: auto }
 .duo > *, .screen > * { min-width: 0 }
 
 /* The closing call: Duet on top, the words and the form under it. */
@@ -228,6 +278,7 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   .closing h2 { font-size: 40px } .closing-panel { padding: 40px 20px 44px; border-radius: 32px }
   footer { width: calc(100% - 32px) }
   .said { font-size: 15px; padding: 10px 14px }
+  .film { border-radius: 18px } .film-toggle { width: 28px; height: 28px; right: 8px; bottom: 8px }
 }
 @media (max-width: 420px) {
   .hero h1 { font-size: 40px }
@@ -279,11 +330,28 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   <p class="meta" data-done-for="join" aria-live="polite">Free early access · Mac and Windows</p>
 </section>
 
-<section class="sec video" data-sec="video" aria-label="Duet’s caption window over a scene">
-  <div class="scene" id="scene">
-    <img src="./a/scene.jpg" alt="" width="1280" height="546">
-    <div class="over" data-ui="dock-l3" data-fit="video" role="img" aria-label="Duet’s subtitles over a scene from the film Sintel: My hermana compró a nuevo coche, each Spanish word in the colour of how well you know it"></div>
-    <div class="anchor" data-anchor="video"></div>
+<section class="sec video" data-sec="video" aria-label="Duet at work, on a scene from the film Sintel">
+  <div class="film" id="film">
+    <div class="film-stage" id="film-stage" role="img" aria-label="A short film of Duet on a scene from Sintel: the subtitles turn Spanish word by word, each word in the colour of how well you know it; the level goes up to the whole line; pointing at compró shows its card and Explain opens beside the video; you say a line to Duet and it answers; the strip glows at the scene’s end with one quick question; a word becomes a flashcard. Then: Watch what you love. Learn as you go.">
+      <div class="cam" id="cam">
+        <video id="film-video" muted playsinline loop preload="none" poster="./a/scene.jpg" tabindex="-1"><source data-src="./a/sintel-scene.webm" type="video/webm"><source data-src="./a/sintel-scene.mp4" type="video/mp4"></video>
+        <div class="shade"></div>
+        <div class="f-strip">
+          <div class="f-main" data-ui="dock-card" data-fit="film"></div>
+          <div class="f-glow" data-ui="dock-glow" data-fit="film"></div>
+          <div class="f-done" data-ui="dock-done" data-fit="film"></div>
+        </div>
+      </div>
+      <div class="f-panel" data-ui="explain" data-fit="film"></div>
+      <div class="f-talk" data-ui="talk" data-fit="film"></div>
+      <div class="f-cards"><div class="f-flip"><div class="f-front" data-ui="card-front" data-fit="film"></div><div class="f-back" data-ui="card-back" data-fit="film"></div></div></div>
+      <div class="f-end"><h2><span class="l1">Watch what you love.</span><span class="l2"><em>Learn</em> as you <span class="mark">go.<svg viewBox="0 0 100 8" preserveAspectRatio="none"><path d="M1.2 3.9 C 6 2.6, 18 2.2, 34 2.5 C 52 2.8, 70 2.1, 86 2.4 C 93 2.5, 98.4 2.9, 99.3 3.8 C 99.8 4.6, 98.6 5.5, 95 5.7 C 80 6.2, 64 5.6, 46 6 C 30 6.3, 14 6, 5 5.8 C 2.2 5.7, 0.6 5, 1.2 3.9 Z" fill="#f2952e"></path></svg></span></span></h2><p>Free early access · Mac and Windows</p></div>
+      <p class="f-kicker" id="kicker"></p>
+      <svg class="f-cursor" id="film-cursor" viewBox="0 0 24 24"><path d="M5 2.5 L5 19.5 L9.3 15.4 L12.2 21.8 L15 20.6 L12.1 14.3 L18 14 Z" fill="#fff" stroke="#111" stroke-width="1.3" stroke-linejoin="round"></path></svg>
+      <div class="f-black"></div>
+      <div class="anchor" data-anchor="video"></div>
+    </div>
+    <button type="button" class="film-toggle" id="film-toggle" aria-label="Pause the film"><svg class="f-pause" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="2.5" y="1.5" width="3" height="11" rx="1" fill="currentColor"></rect><rect x="8.5" y="1.5" width="3" height="11" rx="1" fill="currentColor"></rect></svg><svg class="f-play" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" hidden><path d="M3.5 1.8 L12 7 L3.5 12.2 Z" fill="currentColor"></path></svg></button>
   </div>
 </section>
 
@@ -547,6 +615,8 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   function fit() {
     var phone = window.innerWidth <= 760;
     pieces.forEach(function (p) {
+      // The film's pieces are drawn to the film's stage, once (below).
+      if (p.fit === 'film') return;
       var room = p.host.clientWidth;
       // A little room to spare: this site's copy of Inter sets a hair wider than the app's.
       var width = p.part.width + (p.part.group === 'overlay' ? 32 : 0);
@@ -573,17 +643,284 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
       var tallest = Math.max.apply(null, row.map(function (p) { return p.host.getBoundingClientRect().height; }));
       row.forEach(function (p) { p.top.style.height = tallest / p.zoom + 'px'; p.top.classList.add('fill'); });
     });
-    // Duet's spot over the video: just above the strip's left end.
-    var scene = document.getElementById('scene');
-    var spot = scene.querySelector('.anchor');
-    var over = pieces.filter(function (p) { return p.host.classList.contains('over'); })[0];
-    var row = over && over.top.querySelector('.strip-row');
-    if (row) {
-      var s = scene.getBoundingClientRect(), r = row.getBoundingClientRect();
-      spot.style.left = Math.max(8, r.left - s.left) + 'px';
-      spot.style.top = r.top - s.top - spot.offsetHeight - 10 + 'px';
-    }
+    if (film) film.fit();
   }
+
+  // The film over the video. Its pieces are the app's own (mounted above), at fixed sizes on a stage
+  // of W × 630 points that fit() scales to the frame. A timeline of [ms, step] runs while the film is
+  // at least a third on screen and isn't paused; each step sets a class on the film (CSS moves the
+  // shots) or acts on a piece the way the app does (hover classes, the line's words, the level). The
+  // page's Duet plays its part through `hooks` (set once Duet is up) and follows `anchor`.
+  var film = (function () {
+    var el = document.getElementById('film');
+    if (!el) return null;
+    var W = 1120;
+    var EASE = 'cubic-bezier(0.16,1,0.3,1)';
+    var stage = document.getElementById('film-stage');
+    var video = document.getElementById('film-video');
+    var kicker = document.getElementById('kicker');
+    var cursor = document.getElementById('film-cursor');
+    var anchor = stage.querySelector('[data-anchor="video"]');
+    var toggle = document.getElementById('film-toggle');
+    // Inside each piece: the card waits for its cue, words can move, the strip's own face and the Talk
+    // page's face give way to the page's Duet, and Talk's turns come in one by one.
+    var INSIDE = '.ui-root:not(.f-card) .popup { opacity: 0 !important; transform: translateX(-50%) translateY(8px) scale(0.94) !important }' +
+      '.popup { transition: opacity 0.35s cubic-bezier(0.16,1,0.3,1), transform 0.45s cubic-bezier(0.16,1,0.3,1) }' +
+      '.mix .w { display: inline-block; transition: color 0.5s cubic-bezier(0.16,1,0.3,1), text-shadow 0.5s, background 0.3s }' +
+      '.talk-button, .head-mascot { visibility: hidden }' +
+      '.turn { transition: opacity 0.5s, transform 0.7s cubic-bezier(0.16,1,0.3,1) } .turn.f-hide { opacity: 0 !important; transform: translateY(12px) !important }' +
+      '.vn-wave i { transform-origin: 50% 50% } .f-play .vn-wave i { animation: f-bar 0.5s ease-in-out infinite alternate } .f-play .vn-wave i:nth-child(3n) { animation-delay: -0.2s } .f-play .vn-wave i:nth-child(3n+1) { animation-delay: -0.35s }' +
+      '@keyframes f-bar { from { transform: scaleY(0.35) } }';
+    // Each piece's size on the stage: the strip a little larger than life, so it reads in a small frame.
+    var ZOOM = { 'f-main': 1.45, 'f-glow': 1.45, 'f-done': 1.45, 'f-panel': 0.86, 'f-talk': 0.84, 'f-front': 0.95, 'f-back': 0.95 };
+    var P = {};
+    pieces.forEach(function (p) {
+      var name = Object.keys(ZOOM).filter(function (c) { return p.host.classList.contains(c); })[0];
+      if (!name || p.fit !== 'film') return;
+      P[name] = p;
+      p.top.style.width = p.part.width + (p.part.group === 'overlay' ? 32 : 0) + 'px';
+      p.top.style.zoom = ZOOM[name];
+      // Talk shows two turns here: a shorter window.
+      if (name === 'f-talk') { p.top.style.height = Math.round(p.part.height * 0.74) + 'px'; p.top.classList.add('fill'); }
+      var style = document.createElement('style');
+      style.textContent = INSIDE;
+      p.host.shadowRoot.appendChild(style);
+      p.top.querySelectorAll('.snap-hover').forEach(function (n) { n.classList.remove('snap-hover'); });
+    });
+    if (!P['f-main']) return null;
+    var main = P['f-main'].top;
+    var dock = main.querySelector('.dock');
+    var strip = main.querySelector('.strip');
+    var mix = main.querySelector('.mix');
+    var digit = main.querySelector('.level-digit');
+    var popup = main.querySelector('.popup');
+    var explainLine = popup && popup.querySelectorAll('.pill')[1];
+    var turns = P['f-talk'] ? [].slice.call(P['f-talk'].top.querySelectorAll('.turn')) : [];
+    var api = { hooks: { mood: function () {}, gesture: function () {} } };
+    function duet(m, tone) { api.hooks.mood(m, tone); }
+    function gesture(g) { api.hooks.gesture(g); }
+
+    // The line, as the app writes it: each word a .w, swapped-in words .sw in their rung's colour.
+    var EN = [['My'], ['sister'], ['bought'], ['a'], ['new'], ['car']];
+    var L3 = [['My'], ['hermana', 'encountered'], ['compró', 'known'], ['a'], ['nuevo', 'usable'], ['coche', 'speakable']];
+    var L5 = [['Mi', 'unknown'], ['hermana', 'encountered'], ['compró', 'known'], ['un', 'unknown'], ['coche', 'speakable'], ['nuevo', 'usable']];
+    function render(line, lang) {
+      mix.textContent = '';
+      line.forEach(function (w, i) {
+        var outer = document.createElement('span'), word = document.createElement('span');
+        word.className = 'w live' + (w[1] ? ' sw' : '');
+        if (w[1]) word.setAttribute('data-k', w[1]);
+        word.textContent = w[0];
+        outer.appendChild(word);
+        if (i < line.length - 1) outer.appendChild(document.createTextNode(' '));
+        mix.appendChild(outer);
+      });
+      var glue = document.createElement('span');
+      glue.innerHTML = '<span class="w" data-k="glue">.</span>';
+      mix.appendChild(glue);
+      if (lang) mix.setAttribute('lang', lang); else mix.removeAttribute('lang');
+    }
+    function words() { return mix.querySelectorAll('.w.live'); }
+    // A change to the line, with the strip easing to its new width instead of jumping; the line stays
+    // on one line meanwhile, rather than wrapping while the strip is still narrow.
+    var easing;
+    function morph(change) {
+      if (easing) easing.finish();
+      var from = strip.offsetWidth;
+      change();
+      var to = strip.offsetWidth;
+      if (from === to) return;
+      mix.style.whiteSpace = 'nowrap';
+      easing = strip.animate([{ width: from + 'px' }, { width: to + 'px' }], { duration: 520, easing: EASE });
+      easing.onfinish = easing.oncancel = function () { mix.style.whiteSpace = ''; easing = null; };
+    }
+    // One word turns into the language: it lifts away, and its partner settles in, in its colour.
+    function swap(i, text, k) {
+      var w = words()[i];
+      if (!w) return;
+      var out = w.animate([{ opacity: 1, filter: 'blur(0px)', transform: 'translateY(0)' }, { opacity: 0, filter: 'blur(5px)', transform: 'translateY(-0.3em)' }], { duration: 200, easing: 'ease-in', fill: 'forwards' });
+      out.onfinish = function () {
+        morph(function () { w.textContent = text; w.classList.add('sw'); w.setAttribute('data-k', k); });
+        out.cancel();
+        w.animate([{ opacity: 0, filter: 'blur(5px)', transform: 'translateY(0.3em)' }, { opacity: 1, filter: 'blur(0px)', transform: 'translateY(0)' }], { duration: 480, easing: EASE });
+      };
+    }
+    // The whole line at another level.
+    function relines(line, lang) {
+      var out = mix.animate([{ opacity: 1, filter: 'blur(0px)' }, { opacity: 0, filter: 'blur(6px)' }], { duration: 180, easing: 'ease-in', fill: 'forwards' });
+      out.onfinish = function () {
+        morph(function () { render(line, lang); });
+        out.cancel();
+        mix.animate([{ opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)' }], { duration: 420, easing: EASE });
+      };
+    }
+    function level(n) {
+      var out = digit.animate([{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-6px)' }], { duration: 110, fill: 'forwards' });
+      out.onfinish = function () {
+        digit.textContent = n;
+        out.cancel();
+        digit.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 260, easing: EASE });
+      };
+    }
+    function hover(node, on) { if (node) node.classList.toggle('snap-hover', on !== false); }
+    function cls(name, on) { el.classList.toggle(name, on !== false); }
+
+    // Where things are on the stage, in its own points (pieces inside the moved video included).
+    function rel(node) {
+      var s = stage.getBoundingClientRect(), r = node.getBoundingClientRect(), k = s.width / W || 1;
+      return { x: (r.left - s.left) / k, y: (r.top - s.top) / k, w: r.width / k, h: r.height / k };
+    }
+    // The card above a word: centred on it, as the app places it (--x, in its box's own points).
+    function cardOver(w) {
+      var parent = popup.offsetParent || strip;
+      var box = parent.getBoundingClientRect(), r = w.getBoundingClientRect();
+      var k = box.width / parent.offsetWidth || 1;
+      popup.style.setProperty('--x', (r.left + r.width / 2 - box.left) / k + 'px');
+    }
+    // The pointer: glides to a spot on an element, and clicks.
+    function point(node, fx, fy) {
+      var r = rel(node);
+      cursor.style.opacity = 1;
+      cursor.style.transform = 'translate(' + (r.x + r.w * fx).toFixed(1) + 'px,' + (r.y + r.h * fy).toFixed(1) + 'px)';
+    }
+    function click() { cursor.animate([{ scale: 1 }, { scale: 0.8 }, { scale: 1 }], { duration: 280, easing: 'ease-out' }); }
+    var kickTimer;
+    function kick(text) {
+      clearTimeout(kickTimer);
+      kicker.classList.remove('on');
+      if (text) kickTimer = setTimeout(function () { kicker.textContent = text; kicker.classList.add('on'); }, 320);
+    }
+
+    // Where Duet waits: just above the strip's left end, beside a word's card, in Talk's face, beside
+    // the flashcard, or above the closing line.
+    var follow = 'strip', shown = 'f-main';
+    function place() {
+      var a, AW = 130, AH = 86, r;
+      if (follow === 'talk' && P['f-talk']) { r = rel(P['f-talk'].top.querySelector('.head-slot')); a = [r.x + r.w / 2 - AW / 2, r.y + r.h / 2 - AH / 2]; }
+      else if (follow === 'cards' && P['f-front']) { r = rel(P['f-front'].host); a = [r.x - AW - 20, r.y + 4]; }
+      else if (follow === 'card') { cardOver(words()[2]); r = rel(popup); a = [r.x + r.w + 14, r.y - 10]; }
+      else if (follow === 'end') a = [W / 2 - AW / 2, 112];
+      else { r = rel(P[shown].top.querySelector('.strip-row')); a = [r.x - 18, r.y - AH - 4]; }
+      anchor.style.transform = 'translate(' + a[0].toFixed(1) + 'px,' + a[1].toFixed(1) + 'px)';
+    }
+
+    function reset() {
+      ['is-explain', 'is-dim', 'is-talk', 'is-glow', 'is-ask', 'is-cards', 'is-flip', 'is-end'].forEach(function (c) { cls(c, false); });
+      main.classList.remove('f-card');
+      hover(dock, false);
+      render(EN);
+      digit.textContent = '3';
+      cursor.style.transition = 'none';
+      cursor.style.opacity = 0;
+      cursor.style.transform = 'translate(1150px, 700px)';
+      void cursor.offsetWidth;
+      cursor.style.transition = '';
+      turns.forEach(function (t) { t.classList.add('f-hide'); t.classList.remove('f-play'); });
+      follow = 'strip';
+      shown = 'f-main';
+      kick(null);
+      try { if (video.readyState) video.currentTime = 0; } catch (e) { /* Not seekable yet: plays on. */ }
+    }
+
+    // The film, about 27 seconds.
+    var LOOP = 27600;
+    var T = [
+      [0, function () {
+        reset();
+        requestAnimationFrame(function () { cls('is-black', false); });
+        // A slow push in from a little wider, as the scene opens.
+        document.getElementById('cam').animate([{ transform: 'scale(1.07)' }, { transform: 'scale(1)' }], { duration: 6500, easing: 'cubic-bezier(0.3,0,0.2,1)' });
+        duet('idle');
+      }],
+      // Subtitles that meet you where you are: the words turn Spanish, one by one, each in its
+      // rung's colour; then the level goes up to the whole line and back.
+      [700, function () { kick('Subtitles that meet you where you are.'); }],
+      [1400, function () { swap(1, 'hermana', 'encountered'); duet('curious'); }],
+      [1850, function () { swap(5, 'coche', 'speakable'); }],
+      [2300, function () { swap(2, 'compró', 'known'); }],
+      [2750, function () { swap(4, 'nuevo', 'usable'); }],
+      [3500, function () { point(strip, 0.66, 0.6); }],
+      [4100, function () { hover(dock); }],
+      [4700, function () { level(4); }],
+      [4950, function () { level(5); relines(L5, 'es'); duet('correct', 'excited'); }],
+      [6000, function () { level(4); }],
+      [6250, function () { level(3); relines(L3); }],
+      // Ask about any word: its card, then Explain beside the video.
+      [6900, function () { kick('Ask about any line, or any word.'); point(words()[2], 0.5, 0.75); duet('curious'); }],
+      [7600, function () { var w = words()[2]; hover(w); cardOver(w); main.classList.add('f-card'); follow = 'card'; duet('thinking'); }],
+      [8500, function () { if (explainLine) point(explainLine, 0.5, 0.6); }],
+      [9200, function () { click(); }],
+      [9400, function () { main.classList.remove('f-card'); follow = 'strip'; hover(words()[2], false); hover(dock, false); cursor.style.opacity = 0; cls('is-explain'); duet('idle', 'warm'); }],
+      [12200, function () { cls('is-explain', false); kick(null); }],
+      // Say it out loud: Talk over the dimmed video, a line said and Duet's answer.
+      [12900, function () { kick('Say it out loud. I’m listening.'); cls('is-dim'); cls('is-talk'); follow = 'talk'; duet('listening', 'gentle'); }],
+      [13600, function () { if (turns[0]) turns[0].classList.remove('f-hide'); if (turns[0]) turns[0].classList.add('f-play'); }],
+      [14700, function () { if (turns[0]) turns[0].classList.remove('f-play'); if (turns[1]) turns[1].classList.remove('f-hide'); duet('correct', 'warm'); }],
+      [15200, function () { gesture('nod'); }],
+      [16800, function () { cls('is-talk', false); cls('is-dim', false); follow = 'strip'; kick(null); }],
+      // A quick question when the scene ends: the strip glows, one click, the question grows out of it.
+      [17300, function () { kick('A quick question when a scene ends.'); cls('is-glow'); shown = 'f-glow'; duet('curious'); }],
+      [18000, function () { point(P['f-glow'].top.querySelector('.strip'), 0.6, 0.6); }],
+      [18800, function () { click(); cls('is-ask'); shown = 'f-done'; }],
+      [19100, function () { cursor.style.opacity = 0; }],
+      [19700, function () { duet('correct', 'excited'); gesture('yes'); }],
+      [21000, function () { cls('is-glow', false); cls('is-ask', false); shown = 'f-main'; kick(null); }],
+      // Flashcards, made from your shows: the word's card, turned over.
+      [21400, function () { kick('Flashcards, made from your shows.'); cls('is-dim'); cls('is-cards'); follow = 'cards'; duet('encourage', 'warm'); }],
+      [22700, function () { cls('is-flip'); }],
+      [24000, function () { cls('is-cards', false); kick(null); }],
+      // The closing line, Duet above it.
+      [24300, function () { cls('is-dim', false); cls('is-end'); follow = 'end'; duet('adoring', 'warm'); }],
+      [25300, function () { gesture('wave'); }],
+      [27000, function () { cls('is-black'); }]
+    ];
+
+    // Plays while at least a third of it is on screen and it isn't paused; the video with it.
+    var elapsed = 0, next = 0, last = 0, raf = 0, seen = false, held = false, loaded = false;
+    function frame(now) {
+      raf = 0;
+      if (!playing()) return;
+      elapsed += Math.min(100, now - (last || now));
+      last = now;
+      while (next < T.length && T[next][0] <= elapsed) T[next++][1]();
+      if (elapsed >= LOOP) { elapsed = 0; next = 0; }
+      place();
+      raf = requestAnimationFrame(frame);
+    }
+    function playing() { return seen && !held && !still; }
+    function run() {
+      if (playing()) {
+        if (!loaded) {
+          loaded = true;
+          video.querySelectorAll('source').forEach(function (s) { s.src = s.getAttribute('data-src'); });
+          video.load();
+        }
+        var p = video.play();
+        if (p && p.catch) p.catch(function () { /* No autoplay: the poster stays. */ });
+        if (!raf) { last = 0; raf = requestAnimationFrame(frame); }
+      } else video.pause();
+    }
+    toggle.addEventListener('click', function () {
+      held = !held;
+      toggle.setAttribute('aria-label', held ? 'Play the film' : 'Pause the film');
+      toggle.querySelector('.f-pause').hidden = held;
+      toggle.querySelector('.f-play').hidden = !held;
+      run();
+    });
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (entries) { seen = entries[0].isIntersecting; run(); }, { threshold: 0.35 }).observe(el);
+    } else { seen = true; run(); }
+
+    // With reduced motion: one still frame, the line at level 3 over the scene.
+    if (still) { el.classList.add('still'); render(L3); }
+    else render(EN);
+
+    api.fit = function () {
+      stage.style.transform = 'scale(' + el.clientWidth / W + ')';
+      place();
+    };
+    return api;
+  })();
   fit();
   window.addEventListener('resize', fit);
   if (document.fonts) document.fonts.ready.then(fit);
@@ -607,14 +944,15 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     setTimeout(function () { dock.classList.add('gone'); }, quietly ? 0 : 2500);
   }
   try { if (localStorage.getItem(JOINED)) joined('You’re on the list. We’ll email you when Duet is ready.', true); } catch (e) { /* Storage blocked: ask again. */ }
-  // The docked bar steps aside while the hero's or the closing email bar, or the footer, is on screen.
+  // The docked bar steps aside while the hero's or the closing email bar, the film (it would cover the
+  // subtitles) or the footer is on screen.
   if ('IntersectionObserver' in window) {
     var onScreen = new Set();
     var watch = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) { if (entry.isIntersecting) onScreen.add(entry.target); else onScreen.delete(entry.target); });
       dock.classList.toggle('away', onScreen.size > 0);
     }, { threshold: 0.2 });
-    [document.getElementById('join'), document.getElementById('join2'), document.querySelector('footer')].forEach(function (el) { watch.observe(el); });
+    [document.getElementById('join'), document.getElementById('join2'), document.getElementById('film'), document.querySelector('footer')].forEach(function (el) { if (el) watch.observe(el); });
   } else dock.classList.add('gone');
   forms.forEach(function (form) {
     var input = form.querySelector('input[type="email"]');
@@ -668,7 +1006,6 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   // What Duet does and says at each stop: [mood on the way and as it lands, the line (a feature's
   // is its own text on the page), mood after, gesture after, tone].
   var LINES = {
-    video: ['curious', 'This is me, on your subtitles. Orange means you already know the word.', 'idle', 'nod', 'warm'],
     watch: ['idle', null, 'idle', 'yes', 'warm'],
     level: ['curious', null, 'correct', 'wink', 'excited'],
     ask: ['thinking', null, 'curious', 'nod', 'warm'],
@@ -693,6 +1030,11 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
   function duetTheme(key) { return key === 'video' ? 'dark' : theme(); }
   var duet = E.createDuet(document.getElementById('duet'), { theme: duetTheme('hero'), finish: 'glass', brows: 'strong', watch: 'near', doze: false }, 'asleep');
   onTheme.push(function () { duet.setOptions({ theme: duetTheme(at) }); });
+  // In the film, Duet plays each shot's part while it's there.
+  if (film) film.hooks = {
+    mood: function (name, tone) { if (at === 'video') mood(name, tone); },
+    gesture: function (name) { if (at === 'video') gesture(name); }
+  };
   var awake = false, pending = null;
   function mood(name, tone) { if (awake) duet.setState(name, tone ? { tone: tone } : undefined); else pending = [name, tone]; }
   function gesture(name) { if (awake && name) duet.gesture(name); }
@@ -817,6 +1159,8 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     stage.classList.toggle('calling', key === 'hero');
     if (key === 'hero') { mood('idle'); return; }
     tour();
+    // Over the film, the film says what Duet does.
+    if (key === 'video') { mood('idle'); return; }
     var line = LINES[key], f = feats[key];
     if (f && f.done) { mood(line[2], line[4]); return; }
     mood(line[0], line[4]);

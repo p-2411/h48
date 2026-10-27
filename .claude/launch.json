@@ -10,6 +10,16 @@
       "port": 4321
     },
     {
+      "name": "waitlist-static",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": [
+        "-NoProfile",
+        "-Command",
+        "$root=(Resolve-Path 'waitlist/app').Path; $l=New-Object Net.HttpListener; $l.Prefixes.Add('http://localhost:4322/'); $l.Start(); $t=@{'.html'='text/html; charset=utf-8';'.svg'='image/svg+xml';'.jpg'='image/jpeg';'.png'='image/png';'.woff2'='font/woff2';'.mp4'='video/mp4';'.webm'='video/webm';'.js'='text/javascript';'.css'='text/css'}; while($l.IsListening){ $c=$l.GetContext(); $p=[Uri]::UnescapeDataString($c.Request.Url.AbsolutePath); if($p -eq '/'){ $p='/index.html' }; $f=Join-Path $root $p.TrimStart('/'); if(Test-Path $f -PathType Leaf){ $b=[IO.File]::ReadAllBytes($f); $e=[IO.Path]::GetExtension($f); if($t.ContainsKey($e)){ $c.Response.ContentType=$t[$e] }; $c.Response.ContentLength64=$b.Length; try { $c.Response.OutputStream.Write($b,0,$b.Length) } catch {} } else { $c.Response.StatusCode=404 }; try { $c.Response.Close() } catch {} }"
+      ],
+      "port": 4322
+    },
+    {
       "name": "dashboard",
       "runtimeExecutable": "node",
       "runtimeArgs": [

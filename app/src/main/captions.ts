@@ -72,7 +72,10 @@ export class CaptionSource extends EventEmitter {
     // The reader reads only the browser window in front; Duet's own windows (its main process's)
     // coming to the front, as when the strip is pressed, keep the video it was reading.
     const args = standIn ? [] : ['--duet-pid', String(process.pid)]
-    const child = spawn(path, args, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
+    // A stand-in script runs on Electron's own Node: Windows can't start a script by its shebang.
+    const child = standIn
+      ? spawn(process.execPath, [standIn], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } })
+      : spawn(path, args, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
     this.child = child
     this.child.stdout?.setEncoding('utf8')
     this.child.stdout?.on('data', (chunk: string) => {
