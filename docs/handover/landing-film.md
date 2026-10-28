@@ -1,9 +1,17 @@
 # Handover: the landing page's product film (2026-10-28)
 
-Branch `demo`. The film was reworked on 2026-10-28 to match how Duet really behaves, from running
-the app here. That work is in the working tree (not committed yet): `waitlist/src/page.html`,
-`waitlist/src/app-ui.json`, the built `waitlist/app/index.html`, and the new
-`waitlist/scripts/app-ui/capture-live.mjs`. `app/.env.local` (git-ignored) holds a working OpenAI key.
+Branch `demo`, pushed to origin (github.com/p-2411/h48). Everything is committed: `9b24f86` (the
+film reworked from running the app, two acts) and `96c453a` (the film in Korean too). Not in git:
+`app/.env.local` (git-ignored) holds a working OpenAI key; it was pasted into a chat, so replace it.
+The owner has seen both versions and is happy with them ("lock this in").
+
+## Where to see it
+
+`.claude/launch.json` → `waitlist-static` serves `waitlist/app` on http://localhost:4322 (no Node needed);
+open it in a normal browser tab (the Claude preview pane throttles animation while hidden), scroll
+to the film under the hero, and use "See it in Spanish · Korean" under it. After any `page.html`
+change: `cd waitlist && npm run build:page`. Not deployed: the live site still has the old film
+until `demo` is merged/deployed.
 
 ## Goal
 
@@ -125,7 +133,9 @@ captures after it.
 
 ## Next steps
 
-1. Watch the film in a normal browser (`waitlist-static` in `.claude/launch.json` serves `waitlist/app`
-   on port 4322), and tune timing and wording to taste.
-2. Commit the film on `demo`.
-3. Fix the key in Vercel.
+1. Merge `demo` into `main` (or deploy it) when the owner wants the film live.
+2. Fix the OpenAI key in Vercel (the live server still refuses to translate, as of 2026-10-27), and
+   replace the dev key in `app/.env.local`.
+3. Optional, raised but not asked for: trim the film toward 45 s (the 5 → 4 → 3 swipe back, one round
+   of Home Talk); a Japanese version would follow the Korean one (`SCENES.ja`, `feed.mjs` lines,
+   captures of `dock-card-ja` / `panel-ja`, and `ja` in `useLang()` and the switch).
