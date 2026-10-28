@@ -226,6 +226,15 @@ button { font: inherit }
 .film-toggle:hover, .film-toggle:focus-visible { opacity: 1 }
 .film-toggle svg[hidden] { display: none }
 .film.still .film-toggle { display: none }
+/* A piece made for the other language is out of the film. */
+.film [data-lang].f-off { display: none !important }
+/* Under the film: which language it shows (it starts over in the one chosen). */
+.film-langs { display: flex; align-items: center; gap: 2px; width: max-content; margin: 16px auto 0; padding: 4px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); font-size: 14px }
+.film-langs span { padding: 0 8px 0 10px; color: var(--sub) }
+.film-langs button { border: 0; background: none; padding: 6px 14px; border-radius: 999px; font: 500 14px var(--sans); color: var(--ink2); cursor: pointer; transition: background 0.2s, color 0.2s }
+.film-langs button:hover { color: var(--ink) }
+.film-langs button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink) }
+.film-langs button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px }
 
 /* Between features: a short brush stroke at the headline's left edge, in the next feature's colour,
    with more air outside a feature than inside it. */
@@ -405,7 +414,8 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
           <div class="shade"></div>
         </div>
         <div class="f-strip">
-          <div class="f-main" data-ui="dock-card" data-fit="film"></div>
+          <div class="f-main" data-ui="dock-card" data-fit="film" data-lang="es"></div>
+          <div class="f-main" data-ui="dock-card-ko" data-fit="film" data-lang="ko"></div>
           <div class="f-talk" data-ui="dock-talk" data-fit="film"></div>
           <div class="f-glow" data-ui="dock-glow" data-fit="film"></div>
           <div class="f-ask" data-ui="dock-ask" data-fit="film"></div>
@@ -413,7 +423,8 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
           <span class="f-swipe" id="film-swipe" aria-hidden="true"><i></i><i></i></span>
         </div>
       </div>
-      <div class="f-panel" data-ui="panel" data-fit="film"></div>
+      <div class="f-panel" data-ui="panel" data-fit="film" data-lang="es"></div>
+      <div class="f-panel" data-ui="panel-ko" data-fit="film" data-lang="ko"></div>
       <div class="f-app">
         <div class="f-bar" data-ui="home-bar" data-fit="film"></div>
         <div class="f-pages">
@@ -432,6 +443,7 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     </div>
     <button type="button" class="film-toggle" id="film-toggle" aria-label="Pause the film"><svg class="f-pause" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="2.5" y="1.5" width="3" height="11" rx="1" fill="currentColor"></rect><rect x="8.5" y="1.5" width="3" height="11" rx="1" fill="currentColor"></rect></svg><svg class="f-play" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" hidden><path d="M3.5 1.8 L12 7 L3.5 12.2 Z" fill="currentColor"></path></svg></button>
   </div>
+  <div class="film-langs" role="group" aria-label="The film in another language"><span>See it in</span><button type="button" data-film-lang="es" aria-pressed="true">Spanish</button><button type="button" data-film-lang="ko" aria-pressed="false">Korean</button></div>
 </section>
 
 <section class="sec how" id="how" aria-labelledby="how-title">
@@ -770,7 +782,8 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     pieces.forEach(function (p) {
       var name = Object.keys(ZOOM).filter(function (c) { return p.host.classList.contains(c); })[0];
       if (!name || p.fit !== 'film') return;
-      P[name] = p;
+      var only = p.host.getAttribute('data-lang');
+      P[only ? name + ':' + only : name] = p;
       // The strip's states share one width (the strip itself is as wide as its line).
       p.top.style.width = (p.part.group === 'overlay' ? STRIP_WIDTH : p.part.width) + 'px';
       p.top.style.zoom = ZOOM[name];
@@ -787,16 +800,14 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
       p.top.querySelectorAll('.snap-hover').forEach(function (n) { n.classList.remove('snap-hover'); });
     });
     var STRIPS = ['f-main', 'f-talk', 'f-glow', 'f-ask', 'f-done'];
-    if (STRIPS.some(function (n) { return !P[n]; })) return null;
+    // The pieces each language has of its own: the strip at rest (its word card) and the side panel.
+    var OWN = ['f-main', 'f-panel'];
+    if (STRIPS.concat(OWN).some(function (n) { return !P[n] && !(P[n + ':es'] && P[n + ':ko']); })) return null;
     function q(name, sel) { return P[name] ? P[name].top.querySelector(sel) : null; }
     function say(node, text) { if (node) node.textContent = text; }
     function sayHtml(node, html) { if (node) node.innerHTML = html; }
-    var main = P['f-main'].top;
-    var dock = q('f-main', '.dock');
-    var popup = q('f-main', '.popup');
-    var explainLine = popup && popup.querySelectorAll('.pill')[1];
-    var digit = q('f-main', '.level-digit');
-    var blob = q('f-main', '.level-blob');
+    var main, dock, popup, explainLine, digit, blob;
+    var homeTurns = P['f-hometalk'] ? [].slice.call(P['f-hometalk'].top.querySelectorAll('.turn')) : [];
     var answer = q('f-ask', '.challenge-answer input');
     var check = q('f-ask', '.challenge-answer button');
     var api = { hooks: {} };
@@ -806,55 +817,79 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     function duet(m, tone) { hook('mood', m, tone); }
     function gesture(g) { hook('gesture', g); }
 
-    // The scene: Sintel's own lines, mixed as Duet mixes them at each level (read off the running
-    // app): [word, its rung] for a word in Spanish, [word] for one left in English, a bare string for
-    // punctuation.
-    var GRACIAS = [['Gracias', 'known'], '.'];
-    var ENTONCES = [['Entonces', 'encountered'], '...'];
-    var TRAE = {
-      3: [['What'], ['trae', 'encountered'], ['you'], ['to'], ['the'], ['tierra', 'usable'], ['of'], ['the'], ['guardianes', 'unknown'], '?'],
-      4: [['Qué', 'known'], ['trae', 'encountered'], ['te', 'speakable'], ['to'], ['the'], ['tierra', 'usable'], ['of'], ['the'], ['guardianes', 'unknown'], '?'],
-      5: ['¿', ['Qué', 'known'], ['te', 'speakable'], ['trae', 'encountered'], ['a', 'known'], ['la', 'known'], ['tierra', 'usable'], ['de', 'known'], ['los', 'known'], ['guardianes', 'unknown'], '?']
+    // The scene in each language: Sintel's own lines, mixed as Duet mixes them at each level (read
+    // off the running app): [word, its rung] for a word in the language, [word] for one left in
+    // English, { p } for a Korean particle (it joins the word before it), a bare string for
+    // punctuation. Korean's lines are the Spanish track's, in Korean. Then what's said to Duet, the
+    // checkpoint, the flashcard, and Home's word for today, words met lately and a talk.
+    var SCENES = {
+      es: {
+        name: 'Spanish', code: 'es',
+        thanks: [['Gracias', 'known'], '.'],
+        then: [['Entonces', 'encountered'], '...'],
+        line: {
+          3: [['What'], ['trae', 'encountered'], ['you'], ['to'], ['the'], ['tierra', 'usable'], ['of'], ['the'], ['guardianes', 'unknown'], '?'],
+          4: [['Qué', 'known'], ['trae', 'encountered'], ['te', 'speakable'], ['to'], ['the'], ['tierra', 'usable'], ['of'], ['the'], ['guardianes', 'unknown'], '?'],
+          5: ['¿', ['Qué', 'known'], ['te', 'speakable'], ['trae', 'encountered'], ['a', 'known'], ['la', 'known'], ['tierra', 'usable'], ['de', 'known'], ['los', 'known'], ['guardianes', 'unknown'], '?']
+        },
+        looking: [['Estoy buscando', 'usable'], ['someone'], '.'],
+        word: 'trae',
+        heard: '¿Qué te trae a la tierra de los guardianes?',
+        reply: '¡Muy bien! Roll the r in “tierra”.',
+        check: 'Estoy buscando a alguien.',
+        flash: { word: 'traer', hw: 'tra·er', say: '/tɾaˈeɾ/', pos: 'verb', def: 'to bring; to carry something somewhere', line: '¿Qué te <b>trae</b> a la tierra de los guardianes?', tip: 'Most often heard as ¿qué te trae…?, what brings you…?' },
+        today: { hw: 'ma·dru·gar', say: '/ma.ðɾuˈɣaɾ/', pos: 'verb', def: 'to get up early, usually because you have to', line: 'Mañana tengo que <b>madrugar</b>.', show: 'Un día en Madrid', tip: 'Most often heard as tengo que madrugar, I have to get up early.' },
+        recent: ['traer', 'tierra', 'alguien', 'guardianes', 'madrugar', 'cocina', 'gracias', 'hola'],
+        talk: ['Mañana tengo que madrugar.', '¡Perfecto! That sentence is exactly right. One small thing: the r in madrugar is one quick tap, like the tt in “butter”.', '¿Cómo se dice “I overslept”?', 'Me quedé dormido. Word for word it’s “I stayed asleep”. Want to try it out loud?']
+      },
+      ko: {
+        name: 'Korean', code: 'ko',
+        thanks: [['고마워요', 'known'], '.'],
+        then: [['So'], '...'],
+        line: {
+          3: [['무슨 일로 왔지', 'encountered'], ['you'], ['to'], ['the'], ['땅', 'usable'], ['of'], ['the'], ['수호자들', 'unknown'], '?'],
+          4: [['무슨 일로', 'encountered'], ['왔지', 'known'], ['to'], ['the'], ['땅', 'usable'], ['of'], ['the'], ['수호자들', 'unknown'], '?'],
+          5: [['수호자들', 'unknown'], { p: '의' }, ['땅', 'usable'], { p: '에는' }, ['무슨 일로 왔지', 'encountered'], '?']
+        },
+        looking: [['찾고 있어요', 'usable'], ['someone'], '.'],
+        word: '땅',
+        heard: '수호자들의 땅에는 무슨 일로 왔지?',
+        reply: '아주 좋아요! Make the ㄸ in “땅” tighter.',
+        check: '누군가를 찾고 있어요.',
+        flash: { word: '땅', hw: '땅', say: 'ttang', pos: 'noun', def: 'land; the ground', line: '수호자들의 <b>땅</b>에는 무슨 일로 왔지?', tip: 'Its ㄸ is tense: say it tight, with no puff of air.' },
+        today: { hw: '일찍', say: 'iljjik', pos: 'adverb', def: 'early, before the usual time', line: '내일은 <b>일찍</b> 일어나야 해요.', show: '서울의 하루', tip: 'Most often heard in 일찍 일어나다, to get up early.' },
+        recent: ['땅', '수호자', '누군가', '용', '일찍', '부엌', '고마워요', '안녕하세요'],
+        talk: ['내일은 일찍 일어나야 해요.', '완벽해요! That sentence is exactly right. One small thing: 일찍 is “il-jjik”, with a tight jj.', '“I overslept”는 한국어로 뭐예요?', '늦잠 잤어요. Word for word it’s “I slept a late sleep”. Want to try it out loud?']
+      }
     };
-    var BUSCANDO = [['Estoy buscando', 'usable'], ['someone'], '.'];
-    // What you say to Duet, and its answer.
-    var HEARD = '¿Qué te trae a la tierra de los guardianes?';
-    var REPLY = '¡Muy bien! Roll the r in “tierra”.';
+    var S = SCENES.es;
     var ANSWER = 'She’s looking for someone';
 
-    // The captured pieces, told about this scene instead of the ones they were captured on.
+    // The captured pieces, told about this scene instead of the ones they were captured on: once for
+    // what doesn't change with the language, and on each change of language for what does.
     (function () {
-      say(popup.querySelector('.job'), 'action');
-      var rung = popup.querySelector('.rung');
-      if (rung) { rung.setAttribute('data-k', 'encountered'); rung.textContent = 'Heard'; }
-      say(popup.querySelector('b'), 'trae');
-      say(popup.querySelector(':scope > span:not([class])'), 'brings');
-      ['f-ask', 'f-done'].forEach(function (n) {
-        say(q(n, '.challenge-line'), 'Estoy buscando a alguien.');
-        say(q(n, '.challenge-line + p'), 'What is she doing?');
+      // Spanish's word card was captured on another line (Korean's is the app's own, on this one).
+      var card = P['f-main:es'] && P['f-main:es'].top.querySelector('.popup');
+      if (card) {
+        say(card.querySelector('.job'), 'action');
+        var rung = card.querySelector('.rung');
+        if (rung) { rung.setAttribute('data-k', 'encountered'); rung.textContent = 'Heard'; }
+        say(card.querySelector('b'), 'trae');
+        say(card.querySelector(':scope > span:not([class])'), 'brings');
+      }
+      // Every strip's status dot says it's following the video (some were captured mid-translation).
+      Object.keys(P).forEach(function (k) {
+        var dot = P[k].part.group === 'overlay' && P[k].top.querySelector('.strip .dot');
+        if (dot) { dot.className = 'dot ok'; dot.title = dot.ariaLabel = 'Following the transcript in your browser'; }
       });
-      // Explain's word, glossed as a dictionary would (the app gave the line's translation here).
-      say(q('f-panel', '.entry-gloss'), 'to bring, to carry');
+      // Explain's word, glossed as a dictionary would (the app gave the line's translation there).
+      say(P['f-panel:es'] && P['f-panel:es'].top.querySelector('.entry-gloss'), 'to bring, to carry');
       say(q('f-done', '.challenge-feedback p'), 'Yes! “I’m looking for someone.” You got it.');
-      var front = P['f-front'], back = P['f-back'];
-      var line = '¿Qué te <b>trae</b> a la tierra de los guardianes?';
-      if (front) {
-        say(q('f-front', '.fc-step .src'), 'Sintel · 1:58');
-        sayHtml(q('f-front', '.sub-line span'), line);
-        say(q('f-front', '.fc-word'), 'traer');
-        sayHtml(q('f-front', '.fc-hint'), line);
-      }
-      if (back) {
-        say(q('f-back', '.fc-hw'), 'tra·er');
-        say(q('f-back', '.fc-meta span'), '/tɾaˈeɾ/');
-        say(q('f-back', '.fc-def'), 'to bring; to carry something somewhere');
-        sayHtml(q('f-back', '.fc-cite-line'), line);
-        sayHtml(q('f-back', '.fc-cite-src span'), 'Last heard in <b>Sintel</b> at 1:58');
-        say(q('f-back', '.fc-cite-src .times'), 'Heard 3 times');
-        say(q('f-back', '.fc-tip span:last-child'), 'Most often heard as ¿qué te trae…?, what brings you…?');
-      }
-      [front, back].forEach(function (p) { var card = p && p.top.querySelector('.fc-card'); if (card) card.setAttribute('aria-label', 'traer'); });
-      // Home: Sintel is the last thing watched, and its words are among those met lately.
+      ['f-ask', 'f-done'].forEach(function (n) { say(q(n, '.challenge-line + p'), 'What is she doing?'); });
+      say(q('f-front', '.fc-step .src'), 'Sintel · 1:58');
+      sayHtml(q('f-back', '.fc-cite-src span'), 'Last heard in <b>Sintel</b> at 1:58');
+      say(q('f-back', '.fc-cite-src .times'), 'Heard 3 times');
+      // Home: Sintel is the last thing watched.
       var watched = P['f-watching'] && P['f-watching'].top.querySelector('.tile-video');
       if (watched) {
         var img = watched.querySelector('img');
@@ -865,9 +900,42 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
         [].slice.call(P['f-watching'].top.querySelectorAll('.tile-videos > li')).slice(1).forEach(function (li) { li.remove(); });
         say(watched.querySelector('.tile-video-title'), 'Sintel');
       }
-      var recent = q('f-words', '.tile-recent');
-      if (recent) sayHtml(recent, ['traer', 'tierra', 'alguien', 'guardianes', 'madrugar', 'cocina', 'gracias', 'hola'].map(function (w) { return '<span class="w">' + w + '</span>'; }).join(''));
     })();
+    function tell(s) {
+      ['f-ask', 'f-done'].forEach(function (n) { say(q(n, '.challenge-line'), s.check); });
+      var f = s.flash;
+      sayHtml(q('f-front', '.sub-line span'), f.line);
+      say(q('f-front', '.fc-word'), f.word);
+      sayHtml(q('f-front', '.fc-hint'), f.line);
+      say(q('f-back', '.fc-hw'), f.hw);
+      say(q('f-back', '.fc-meta span'), f.say);
+      say(q('f-back', '.fc-meta .pos'), f.pos);
+      say(q('f-back', '.fc-def'), f.def);
+      sayHtml(q('f-back', '.fc-cite-line'), f.line);
+      say(q('f-back', '.fc-tip span:last-child'), f.tip);
+      ['f-front', 'f-back'].forEach(function (n) { var card = q(n, '.fc-card'); if (card) card.setAttribute('aria-label', f.word); });
+      var t = s.today;
+      say(q('f-today', '.today-word .fc-hw'), t.hw);
+      say(q('f-today', '.today-word .fc-meta span'), t.say);
+      say(q('f-today', '.today-word .fc-meta .pos'), t.pos);
+      say(q('f-today', '.today-word .fc-def'), t.def);
+      sayHtml(q('f-today', '.today-word .fc-cite-line'), t.line);
+      sayHtml(q('f-today', '.today-word .fc-cite-src span'), 'Last heard in <b>' + t.show + '</b> at 1:25');
+      say(q('f-today', '.today-word .fc-tip span:last-child'), t.tip);
+      sayHtml(q('f-words', '.tile-recent'), s.recent.map(function (w) { return '<span class="w">' + w + '</span>'; }).join(''));
+      // Home's bar says which language; Talk is in it.
+      var named = q('f-bar', '.language-name');
+      if (named && named.firstChild) named.firstChild.textContent = s.name;
+      if (named) named.setAttribute('aria-label', 'Learning ' + s.name + ': change language');
+      homeTurns.forEach(function (turn, n) {
+        var text = s.talk[n];
+        if (turn.classList.contains('learner')) {
+          say(turn.querySelector('.bubble .sr-only'), 'You, by voice: ' + text);
+          say(turn.querySelector('.vn-said'), '“' + text + '”');
+        } else say(turn.querySelector('.turn-text'), text);
+      });
+      say(q('f-hometalk', '.notices .sr-only'), 'Duet: ' + s.talk[3]);
+    }
     // What the daily session changes, set back each loop: once it's done, the streak goes up a day;
     // then, in Your words, one fewer is due and the word just reviewed (traer) is up the ladder.
     function streakDone(done) {
@@ -885,17 +953,19 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
       if (first) first.classList.toggle('f-glint', !!done);
     }
 
-    // The line, as the app writes it: each word a .w, Spanish ones .sw in their rung's colour, a space
-    // between words (none after an opening ¿ or before punctuation).
+    // The line, as the app writes it: each word a .w, those in the language .sw in their rung's
+    // colour, a space before each word (none after an opening ¿); punctuation and Korean particles join
+    // the word before them.
     function render(mix, line, lang) {
       mix.textContent = '';
       line.forEach(function (t, i) {
         var outer = document.createElement('span'), w = document.createElement('span');
         if (typeof t === 'string') { w.className = 'w'; w.setAttribute('data-k', 'glue'); w.textContent = t; }
+        else if (t.p) { w.className = 'w sw'; w.setAttribute('data-k', 'glue'); w.textContent = t.p; }
         else { w.className = 'w live' + (t[1] ? ' sw' : ''); if (t[1]) w.setAttribute('data-k', t[1]); w.textContent = t[0]; }
         outer.appendChild(w);
         var next = line[i + 1];
-        if (next && typeof next !== 'string' && t !== '¿') outer.appendChild(document.createTextNode(' '));
+        if (Array.isArray(next) && t !== '¿') outer.appendChild(document.createTextNode(' '));
         mix.appendChild(outer);
       });
       if (lang) mix.setAttribute('lang', lang); else mix.removeAttribute('lang');
@@ -907,6 +977,10 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     // Which state of the strip is shown. `under` stays a moment under the new one (a checkpoint
     // growing out of the glowing strip); `now` swaps them at once, with no fade or growing (the
     // checkpoint's card is glass: the one before would show through it).
+    var timers = [];
+    function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
+    function every(fn, ms) { var t = setInterval(fn, ms); timers.push(t); return t; }
+    function stopTimers() { timers.forEach(function (t) { clearTimeout(t); clearInterval(t); }); timers = []; }
     var shown = 'f-main';
     function show(name, under, now) {
       STRIPS.forEach(function (n) {
@@ -917,7 +991,7 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
         if (now) { void host.offsetWidth; host.style.transition = ''; }
       });
       shown = name;
-      if (under) setTimeout(function () { if (shown === name) P[under].host.classList.remove('on'); }, 650);
+      if (under) later(function () { if (shown === name) P[under].host.classList.remove('on'); }, 650);
     }
     function strip() { return q(shown, '.strip'); }
     // The strip glides to its new line's size (the app's layout glide) rather than jumping, the line
@@ -969,7 +1043,7 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
         { opacity: 1, offset: 0.7 },
         { opacity: 0, transform: 'translate(-50%,-50%) translateX(' + 70 * way + 'px)' }
       ], { duration: 650, easing: 'cubic-bezier(0.45,0,0.2,1)' });
-      setTimeout(function () {
+      later(function () {
         blob.style.transformOrigin = way > 0 ? '0% 50%' : '100% 50%';
         blob.animate([
           { transform: 'none' },
@@ -978,7 +1052,7 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
           { transform: 'none' }
         ], { duration: 520, easing: EASE });
         var out = digit.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(' + 9 * way + 'px)' }], { duration: 120, easing: EASE_IN, fill: 'forwards' });
-        setTimeout(function () {
+        later(function () {
           out.cancel();
           digit.textContent = level;
           digit.animate([{ opacity: 0, transform: 'translateX(' + -9 * way + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 180, easing: EASE });
@@ -993,12 +1067,12 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     var speaking;
     function reply(text) {
       clearInterval(speaking);
-      var n = 0, heard = '<p class="talk-heard">' + HEARD + '</p>';
+      var n = 0, heard = '<p class="talk-heard">' + S.heard + '</p>';
       hook('speak', true);
       duet('speaking', 'warm');
-      speaking = setInterval(function () {
+      speaking = every(function () {
         n += 1;
-        talk(heard + '<p class="talk-said" lang="es">' + text.slice(0, n) + '</p>');
+        talk(heard + '<p class="talk-said" lang="' + S.code + '">' + text.slice(0, n) + '</p>');
         if (n >= text.length) { clearInterval(speaking); hook('speak', false); }
       }, 34);
     }
@@ -1009,7 +1083,7 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     }
     function typeAnswer() {
       var n = 0;
-      var t = setInterval(function () {
+      var t = every(function () {
         n += 1;
         answer.value = ANSWER.slice(0, n);
         if (n >= ANSWER.length) { clearInterval(t); check.removeAttribute('disabled'); }
@@ -1051,7 +1125,6 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     }
     function zoomOut() { hub.style.transform = ''; }
     // Talk in Home: its turns, shown one by one; a voice note's wave moves while it plays.
-    var homeTurns = P['f-hometalk'] ? [].slice.call(P['f-hometalk'].top.querySelectorAll('.turn')) : [];
     function turn(n, playing) {
       var t = homeTurns[n];
       if (!t) return;
@@ -1118,7 +1191,23 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
       if (elapsed - movedAt > 1250) hook('track', true);
     }
 
+    function useLang(code) {
+      S = SCENES[code];
+      OWN.forEach(function (n) {
+        P[n] = P[n + ':' + code] || P[n];
+        ['es', 'ko'].forEach(function (l) { var o = P[n + ':' + l]; if (o) o.host.classList.toggle('f-off', l !== code); });
+      });
+      main = P['f-main'].top;
+      dock = q('f-main', '.dock');
+      popup = q('f-main', '.popup');
+      explainLine = popup && popup.querySelectorAll('.pill')[1];
+      digit = q('f-main', '.level-digit');
+      blob = q('f-main', '.level-blob');
+      tell(S);
+    }
+
     function reset() {
+      stopTimers();
       ['is-near', 'is-desk', 'is-title', 'is-app', 'is-session', 'is-flip', 'is-got', 'is-words', 'is-talkpage', 'is-langs', 'is-end'].forEach(function (c) { cls(c, false); });
       titleEl.className = 'f-title';
       titleEl.textContent = '';
@@ -1131,7 +1220,7 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
       hover(dock, false);
       [].forEach.call(main.querySelectorAll('.w.snap-hover'), function (w) { hover(w, false); });
       show('f-main', null, true);
-      setLine(GRACIAS);
+      setLine(S.thanks);
       digit.textContent = '3';
       talk('');
       clearInterval(speaking);
@@ -1153,32 +1242,32 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
       [0, function () {
         reset();
         // Out of black once the last loop's ending has gone.
-        setTimeout(function () { cls('is-black', false); }, 400);
+        later(function () { cls('is-black', false); }, 400);
         // A slow push in from a little wider, as the scene opens.
         video.animate([{ transform: 'scale(1.07)' }, { transform: 'scale(1)' }], { duration: 6500, easing: 'cubic-bezier(0.3,0,0.2,1)' });
         duet('asleep');
       }],
       // Lines arrive, each already mixed, each word in its rung's colour; Duet dozes in its seat.
-      [400, function () { kick('A little Spanish in everything you watch.'); }],
-      [1300, function () { arrive(ENTONCES); }],
-      [2600, function () { arrive(TRAE[3]); }],
+      [400, function () { kick('A little ' + S.name + ' in everything you watch.'); }],
+      [1300, function () { arrive(S.then); }],
+      [2600, function () { arrive(S.line[3]); }],
       // The level: closer in, the pointer on the strip brings up its actions; two fingers swiped
       // sideways turn the Spanish up to the whole line, and back.
-      [4000, function () { kick('Swipe for more Spanish. Or less.'); cls('is-near'); }],
+      [4000, function () { kick('Swipe for more ' + S.name + '. Or less.'); cls('is-near'); }],
       [4500, function () { point(strip(), 0.62, 0.62); }],
       [5000, function () { hover(dock); duet('sleepy'); }],
-      [5500, function () { swipe(1, 4, TRAE[4]); }],
-      [6500, function () { swipe(1, 5, TRAE[5], 'es'); duet('curious'); }],
-      [7800, function () { swipe(-1, 4, TRAE[4]); }],
-      [8500, function () { swipe(-1, 3, TRAE[3]); }],
+      [5500, function () { swipe(1, 4, S.line[4]); }],
+      [6500, function () { swipe(1, 5, S.line[5], S.code); duet('curious'); }],
+      [7800, function () { swipe(-1, 4, S.line[4]); }],
+      [8500, function () { swipe(-1, 3, S.line[3]); }],
       // A word's card.
-      [9300, function () { kick('Point at any word.'); point(word('trae'), 0.5, 0.7); }],
-      [9950, function () { var w = word('trae'); hover(w); cardOver(w); main.classList.add('f-card'); }],
+      [9300, function () { kick('Point at any word.'); point(word(S.word), 0.5, 0.7); }],
+      [9950, function () { var w = word(S.word); hover(w); cardOver(w); main.classList.add('f-card'); }],
       // Explain: the side panel opens at the screen's edge, beside the video, now a window.
       [11000, function () { point(explainLine, 0.5, 0.6); }],
       [11600, function () { click(); }],
       [11800, function () {
-        main.classList.remove('f-card'); hover(word('trae'), false); hover(dock, false); away();
+        main.classList.remove('f-card'); hover(word(S.word), false); hover(dock, false); away();
         cls('is-near', false); cls('is-desk');
         kick('Ask what a line really means.');
         go('panel', 'page'); duet('thinking');
@@ -1191,13 +1280,13 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
       [16400, function () { hover(dock); duet('sleepy'); }],
       [16800, function () { click(); talk('<p class="talk-wait">Listening…</p>'); show('f-talk'); pop(); hover(dock, false); go('talk'); duet('listening'); }],
       [17200, function () { away(); }],
-      [17700, function () { talk('<p class="talk-heard">' + HEARD + '</p>'); }],
-      [18700, function () { reply(REPLY); }],
+      [17700, function () { talk('<p class="talk-heard">' + S.heard + '</p>'); }],
+      [18700, function () { reply(S.reply); }],
       [20600, function () { duet('correct', 'warm'); gesture('nod'); }],
       [21200, function () { point(q('f-talk', '.talk-button'), 0.5, 0.55); }],
       [21700, function () { click(); show('f-main'); go('seat'); duet('asleep'); kick(null); }],
       // A checkpoint: at the scene's end the strip glows; a click, and one question grows out of it.
-      [22200, function () { away(); kick('A quick question when a scene ends.'); arrive(BUSCANDO); }],
+      [22200, function () { away(); kick('A quick question when a scene ends.'); arrive(S.looking); }],
       [23000, function () { show('f-glow'); duet('sleepy'); }],
       [23600, function () { point(strip(), 0.7, 0.62); }],
       [24200, function () { click(); show('f-ask', 'f-glow'); }],
@@ -1280,9 +1369,18 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     } else { seen = true; run(); }
 
     // With reduced motion: one still frame, the line at level 3 over the scene.
+    useLang('es');
     show('f-main', null, true);
-    if (still) { el.classList.add('still'); setLine(TRAE[3]); }
-    else setLine(GRACIAS);
+    if (still) { el.classList.add('still'); setLine(S.line[3]); }
+    else setLine(S.thanks);
+    api.lang = function (code) {
+      if (!SCENES[code] || code === S.code) return;
+      useLang(code);
+      if (still) { show('f-main', null, true); setLine(S.line[3]); return; }
+      elapsed = 0; next = 0; movedAt = 0;
+      T[next++][1]();
+      place();
+    };
 
     api.fit = function () {
       stage.style.transform = 'scale(' + el.clientWidth / W + ')';
@@ -1290,6 +1388,13 @@ footer a { color: var(--sub) } footer a:hover { color: var(--ink) }
     };
     return api;
   })();
+  // Under the film, the language it shows.
+  [].forEach.call(document.querySelectorAll('[data-film-lang]'), function (b, n, all) {
+    b.addEventListener('click', function () {
+      [].forEach.call(all, function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+      if (film) film.lang(b.getAttribute('data-film-lang'));
+    });
+  });
   fit();
   window.addEventListener('resize', fit);
   if (document.fonts) document.fonts.ready.then(fit);

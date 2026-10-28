@@ -2,10 +2,10 @@
 // then saves a frame of it every STEP ms, as <out>/f-<ms>.jpg. Start the browser first, e.g.
 //   msedge --headless=new --remote-debugging-port=9333 --user-data-dir=<a scratch folder> about:blank
 // and serve waitlist/app on port 4322 (the waitlist-static launch config).
-//   node record.mjs <out dir> [seconds] [step ms] [width] [theme light|dark]
+//   node record.mjs <out dir> [seconds] [step ms] [width] [theme light|dark] [film language es|ko]
 // sheet.ps1.txt tiles the frames into contact sheets: powershell -File sheet.ps1 -dir <out dir>
 import { mkdirSync, writeFileSync } from 'fs'
-const [out, seconds = '36', step = '500', width = '1280', theme = 'dark'] = process.argv.slice(2)
+const [out, seconds = '36', step = '500', width = '1280', theme = 'dark', lang = 'es'] = process.argv.slice(2)
 mkdirSync(out, { recursive: true })
 const targets = await (await fetch('http://127.0.0.1:9333/json/list')).json()
 const page = targets.find((t) => t.type === 'page')
@@ -22,6 +22,7 @@ await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-sch
 await send('Page.enable')
 await send('Page.navigate', { url: 'http://localhost:4322/' })
 await wait(2500)
+if (lang !== 'es') await evaluate(`document.querySelector('[data-film-lang="${lang}"]').click()`)
 await evaluate(`(() => { const f = document.getElementById('film'); window.scrollTo({ top: f.getBoundingClientRect().top + scrollY - Math.max(0, (innerHeight - f.offsetHeight) / 2), behavior: 'instant' }); })()`)
 const t0 = Date.now()
 const box = await evaluate(`(() => { const b = document.getElementById('film').getBoundingClientRect(); return { x: b.x + scrollX, y: b.y + scrollY, width: b.width, height: b.height } })()`)

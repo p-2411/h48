@@ -12,7 +12,8 @@ Duet **as it really works**, with movement. The first version (2026-10-27) was m
 code and was "close but not real". This version was made after running the app on Sintel and watching
 each feature. It has two acts: the strip on a scene, then the app (Home), joined by Apple-style
 transitions (a title that comes into focus word by word, an iris into Home, passing through one shot
-into the next, a dissolve through focus, a slow push-in).
+into the next, a dissolve through focus, a slow push-in). It plays in Spanish or Korean: a switch under
+the film (`.film-langs`, "See it in Spanish · Korean") starts it over in the one chosen.
 
 ## The film (`waitlist/src/page.html`, built into `waitlist/app/index.html`)
 
@@ -38,6 +39,17 @@ into the next, a dissolve through focus, a slow push-in).
     asks about *Estoy buscando a alguien*, the flashcard is *traer*, Watching shows Sintel only (the
     other video's thumbnail isn't on the site), Sintel's words are among those met lately). What the
     session changes (streak 12 → 13, due 14 → 13, Known 88 → 89) is set back each loop.
+- **Languages:** `SCENES.es` and `SCENES.ko` hold each language's lines, word, what you say to Duet and
+  its answer, the checkpoint, the flashcard, and Home's word for today, words met lately and Talk.
+  Pieces made for one language have `data-lang` (the strip at rest with its word card: `dock-card` /
+  `dock-card-ko`; the side panel: `panel` / `panel-ko`); `useLang()` shows that language's and retells
+  the shared ones (`tell()`); `film.lang(code)` starts the film over in it. Korean particles are `{ p }`
+  in a line (joined to the word before, as the app writes them).
+- **Korean is real too:** run with Korean chosen (`window.duet.setLanguage('ko')` from Home) and
+  `feed.mjs <file> ko`, which feeds the same Sintel lines in Korean (written for this; Sintel's own
+  Korean track wasn't at hand). The mixes at levels 3 to 5, the 땅 card (thing · Heard · ttang · land)
+  and the Explain of 무슨 일로 오다 are Duet's own; the panel's gloss and one clause of "In this
+  scene" were tidied before capturing. Hovering a word works over CDP (`cdp.mjs mouse … moved`).
 - **The lines are real:** Sintel's Spanish lines as Duet mixed them at levels 3, 4 and 5 in the running
   app (`TRAE`, `BUSCANDO`, …). Colours are set per word (rungs), as a learner with some progress sees
   them; a fresh install shows every new word in one colour.
@@ -71,7 +83,7 @@ into the next, a dissolve through focus, a slow push-in).
   frame (the level 3 line).
 - **Checked:** recorded at real speed in a headless Edge (a frame every 0.5 s, 1280 wide, dark and
   light; the second act on 2026-10-28 too), and at 390 wide (no sideways scroll), with `landing-film-tools/record.mjs` and
-  `sheet.ps1.txt`. The Claude preview pane was hidden, which throttles animation frames, so it's not a
+  `sheet.ps1.txt` (`record.mjs … dark ko` records the Korean film). The Claude preview pane was hidden, which throttles animation frames, so it's not a
   good place to watch the film; a normal browser tab or the recorder is.
 
 ## Pieces captured from the running app
@@ -79,9 +91,10 @@ into the next, a dissolve through focus, a slow push-in).
 `waitlist/scripts/app-ui/capture-live.mjs <name> <group> <window> <selector>` snapshots one element of
 a running Duet (DevTools port 9222) into `app-ui.json` with `snap.js`, adding its rules (both themes)
 to its group's stylesheet. Used for `dock-talk` (`overlay index.html .dock`, talking), `panel`
-(`panel panel.html main`, on Explain; the "too long ago to hear" note removed and the time set to 1:58
-before capturing) and `home-bar` (`home home.html header.workspace-bar`, streak set to 12).
-**`capture.mjs` (the design-preview capture) rebuilds `app-ui.json` without these three**: rerun these
+(`panel panel.html main`, on Explain; `panel-ko` the same in Korean; the "too long ago to hear" note removed and the time set to 1:58
+before capturing) and `home-bar` (`home home.html header.workspace-bar`, streak set to 12), and `dock-card-ko`
+(`overlay index.html .dock` with the pointer on 땅, captured right after pointing; the card closes soon).
+**`capture.mjs` (the design-preview capture) rebuilds `app-ui.json` without these five**: rerun these
 captures after it.
 
 ## Running the app on this Windows PC
