@@ -1,0 +1,26 @@
+param([string]$dir, [int]$per = 12, [int]$cols = 3, [int]$w = 560)
+Add-Type -AssemblyName System.Drawing
+$files = Get-ChildItem $dir -Filter 'f-*.jpg' | Sort-Object Name
+$n = 0
+for ($i = 0; $i -lt $files.Count; $i += $per) {
+  $batch = $files[$i..([Math]::Min($i + $per, $files.Count) - 1)]
+  $first = [Drawing.Image]::FromFile($batch[0].FullName)
+  $h = [int]($w * $first.Height / $first.Width); $first.Dispose()
+  $rows = [Math]::Ceiling($batch.Count / $cols)
+  $bmp = New-Object Drawing.Bitmap ($cols * $w), ($rows * ($h + 22))
+  $g = [Drawing.Graphics]::FromImage($bmp)
+  $g.Clear([Drawing.Color]::White)
+  $g.InterpolationMode = 'HighQualityBicubic'
+  $font = New-Object Drawing.Font 'Segoe UI', 11
+  for ($k = 0; $k -lt $batch.Count; $k++) {
+    $img = [Drawing.Image]::FromFile($batch[$k].FullName)
+    $x = ($k % $cols) * $w; $y = [Math]::Floor($k / $cols) * ($h + 22)
+    $g.DrawImage($img, $x, $y + 22, $w, $h)
+    $g.DrawString($batch[$k].BaseName, $font, [Drawing.Brushes]::Black, $x + 4, $y + 2)
+    $img.Dispose()
+  }
+  $out = Join-Path $dir ("sheet-{0}.png" -f $n++)
+  $bmp.Save($out, [Drawing.Imaging.ImageFormat]::Png)
+  $g.Dispose(); $bmp.Dispose()
+  $out
+}
