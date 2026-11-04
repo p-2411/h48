@@ -17,8 +17,9 @@ import { is } from '@electron-toolkit/utils'
 import type { Moment } from '../shared/moment'
 import type { Language, OverlayLine, OverlayStatus, Script } from '../shared/types'
 import type { LineModel } from './ai'
-import type { CaptionSource, CaptionStatus } from './captions'
+import type { CaptionSource, CaptionStatus, PlayerCommand } from './captions'
 import type { PlayerTime } from './clock'
+import type { PageLink, PageTime } from './page-link'
 import type { Player } from './player'
 import { LineSession } from './session'
 import type { Settings } from './settings'
@@ -33,6 +34,9 @@ const SESSIONS_KEPT = 12
 const NO_CAPTIONS_MS = 6000
 // How many recent lines (read or heard) decide which language the video is in.
 const RECENT_LINES = 4
+// The extension reports at least once a second (extension/content.js); without a report for this
+// long, the caption reader's time is used again.
+const LINK_FRESH_MS = 2500
 
 /** The video open in the browser. */
 type Video = { source: Source; id: string; url: string; title?: string }
@@ -48,12 +52,16 @@ export class Watcher extends EventEmitter {
   // The language of recent lines (captions or heard), newest last.
   private recentLanguages: (Language | 'other')[] = []
 
+  // The extension's latest report: which video and when.
+  private linked?: { id: string; at: number; time: PageTime }
+
   constructor(
-    captions: CaptionSource,
+    private captions: CaptionSource,
     private player: Player,
     private settings: Settings,
     private model: LineModel | undefined,
-    modelError?: string
+    modelError?: string,
+    private link?: PageLink
   ) {
     super()
     this._status = { trusted: false, model: model?.name, modelError }
@@ -67,6 +75,8 @@ export class Watcher extends EventEmitter {
         if (id !== this.video?.id || source !== this.video.source) {
           this.video = { source, id, url: change.url, title }
           player.reset()
+          // The extension may have reported this video before the reader noticed it.
+          if (this.linkedNow()) player.update(this.linked!.time)
           this.open()
           this.emit('video', this.currentVideo)
         }
@@ -86,12 +96,24 @@ export class Watcher extends EventEmitter {
       if (!this.session?.hasTranscript) this.emit('live', line.text)
     })
     captions.on('line', (line: { text: string; at: number }) => {
+      // Following the transcript, the captions on screen aren't used, so their language (English
+      // ones on a Japanese video, say) is no reason to tell the learner to change them.
+      if (this.session?.hasTranscript) return
       if (!this.inLanguage(line.text, 'captions', true)) return
       // Where the video was when the caption appeared, so Replay can go back to it.
       const now = player.now()
       this.session?.add(line.text, line.at, now === undefined ? undefined : Math.max(0, now - (Date.now() - line.at) / 1000))
     })
-    captions.on('time', (time: PlayerTime) => player.update(time))
+    // The seek bar's time only while the extension isn't reporting the video (page-link.ts).
+    captions.on('time', (time: PlayerTime) => {
+      if (!this.linkedNow()) player.update(time)
+    })
+    link?.on('time', (time: PageTime) => {
+      const id = sourceFor(time.url)?.videoId(time.url)
+      if (!id) return
+      this.linked = { id, at: Date.now(), time }
+      if (this.linkedNow()) player.update(time)
+    })
     settings.on('change', (_, changed) => {
       if ('language' in changed && this.video) this.open()
     })
@@ -99,6 +121,23 @@ export class Watcher extends EventEmitter {
 
   get status(): OverlayStatus {
     return this._status
+  }
+
+  /** Whether the extension is reporting the open video right now. */
+  private linkedNow(): boolean {
+    const linked = this.linked
+    return !!linked && linked.id === this.video?.id && Date.now() - linked.at < LINK_FRESH_MS
+  }
+
+  /** Pauses, plays or seeks the video: through the extension when it reports the video (exact and
+   * immediate), otherwise through the caption reader. */
+  command(command: PlayerCommand): void {
+    const video = this.video
+    const sent =
+      this.linkedNow() &&
+      !!video &&
+      !!this.link?.command((url) => video.source.videoId(url) === video.id, command)
+    if (!sent) this.captions.command(command)
   }
 
   /** The video open in the browser, if any: its site, the site's id for it, URL and title. */
@@ -255,7 +294,10 @@ export class Watcher extends EventEmitter {
       .then((lines) => {
         if (abort.signal.aborted || !lines) return
         target.loadTranscript(lines)
-        this.setStatus({ source: 'transcript' })
+        // A notice about the captions on screen no longer applies: the transcript is used instead.
+        const fromCaptions = this._status.otherLanguage?.from === 'captions'
+        if (fromCaptions) this.recentLanguages = []
+        this.setStatus({ source: 'transcript', ...(fromCaptions && { otherLanguage: undefined }) })
         if (is.dev) console.log(`[duet] transcript for ${id} (${language}): ${lines.length} lines`)
       })
       .catch((error) => {

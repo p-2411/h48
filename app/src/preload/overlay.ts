@@ -10,6 +10,7 @@ import type {
   OverlaySettings,
   OverlayStatus,
   ShortcutKind,
+  VideoKey,
   WordScript
 } from '../shared/types'
 import { invoke } from './invoke'
@@ -55,6 +56,10 @@ export const overlayApi = {
     ipcRenderer.send('duet:hovered-word', lineId, text),
   /** Plays the video Wait is holding for a line. */
   playOn: () => ipcRenderer.send('duet:play-on'),
+  /** Gives the keyboard back to the browser after a click on the strip. */
+  releaseKeyboard: () => ipcRenderer.send('duet:release-keyboard'),
+  /** One of YouTube's playback keys, pressed while the strip had the keyboard. */
+  videoKey: (key: VideoKey) => ipcRenderer.send('duet:video-key', key),
   /** Whether the pointer is over something of Duet's (take clicks) or not (let them through). */
   setSolid: (solid: boolean) => ipcRenderer.send('duet:solid', solid),
   /** Dragging the subtitles: the window follows the pointer between start and end. */

@@ -122,6 +122,11 @@ export type WordScript = 'native' | 'reading'
 /** Which of Duet's global keys: show or hide the strip, or talk to Duet. */
 export type ShortcutKind = 'show' | 'talk'
 
+/** YouTube's playback keys, passed on to the video when the strip has the keyboard: ← and → (5 s),
+ * J and L (10 s), K and Space (play or pause). */
+export const VIDEO_KEYS = ['back5', 'forward5', 'back10', 'forward10', 'toggle'] as const
+export type VideoKey = (typeof VIDEO_KEYS)[number]
+
 export type OverlaySettings = {
   language: Language
   level: Level

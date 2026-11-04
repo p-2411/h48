@@ -1,11 +1,14 @@
 // A watching session: the lines of one video, in order, with their processed results. Lines go to
-// the line model in chunks, one chunk at a time, with the earlier lines as context.
+// the line model in chunks, with the earlier lines as context.
 //
 // Lines arrive one of two ways:
 // - From a transcript, all at once with timings. The line on screen follows the video's position,
 //   and the lines after it are processed ahead in chunks that grow as the lead grows: 3 lines
-//   first (quick, and enough for each to make sense of the others), then 6, then 12 at a time. Once ahead, every
-//   line is ready before it is spoken. A seek starts again from the new position.
+//   first (quick, and enough for each to make sense of the others), then 6, then 12 at a time. Up
+//   to PARALLEL chunks are in flight at once, so the lead builds in the time one chunk takes
+//   (measured on Japanese: 3 lines 5 s, 6 lines 10 s, 12 lines 16 s; one at a time, the 12 came
+//   long after the video reached them). Once ahead, every line is ready before it is spoken. A seek
+//   starts from the new position at once; chunks still useful there (a short rewind) carry on.
 // - From the captions on screen, one by one as they finish. Lines that wait are sent together; if
 //   too many wait, the oldest are skipped so the overlay never falls behind the video.
 //
@@ -33,6 +36,8 @@ const CHUNK_MAX = 12
 // translated alone often picks the wrong sense of a word (measured: "hoja" came back as "leaf"
 // instead of "blade" alone or in twos, "blade" every time in threes).
 const FIRST_CHUNK = 3
+// From a transcript: chunks in flight at once. From captions, one at a time (they come in order).
+const PARALLEL = 3
 
 // The context frozen with a moment. The spec's starting budget (20 s, 1,500 characters) was too
 // little to read tone and who is talking to whom; this is still well inside one request.
@@ -57,9 +62,8 @@ export class LineSession extends EventEmitter {
   /** Index of the line on screen, or of the next one when the video is between lines. */
   private position = 0
   private current?: OverlayLine
-  private busy = false
-  private inFlight: OverlayLine[] = []
-  private abort?: AbortController
+  /** The chunks being processed, each with its lines and a way to stop it. */
+  private requests = new Set<{ lines: OverlayLine[]; abort: AbortController }>()
   private paused = false
   // While the translator can't be reached: how long the last wait was, and the wait under way.
   private retryMs = 0
@@ -143,9 +147,19 @@ export class LineSession extends EventEmitter {
     const position = Math.max(index, 0)
     if (position !== this.position) {
       this.position = position
-      // After a seek to lines not yet done, the chunk in flight is elsewhere: drop it and start here.
-      const here = this.lines[position]
-      if (this.busy && here.state === 'pending' && !this.inFlight.includes(here)) this.cancel()
+      // Chunks wholly behind the line on screen, or beyond the lines processed ahead (after a seek),
+      // are of no use now: drop them, so their places go to chunks from here.
+      const end = position + AHEAD
+      for (const request of this.requests) {
+        const useful = request.lines.some((line) => {
+          const index = this.lines.indexOf(line)
+          return index >= position && index <= end
+        })
+        if (!useful) {
+          this.requests.delete(request)
+          request.abort.abort()
+        }
+      }
       void this.next()
     }
     this.show(index >= 0 ? this.lines[index] : undefined)
@@ -158,7 +172,7 @@ export class LineSession extends EventEmitter {
     this.lines.push(line)
     this.emit('changed', line)
     this.show(line)
-    const waiting = this.lines.filter((item) => item.state === 'pending' && !this.inFlight.includes(item))
+    const waiting = this.lines.filter((item) => item.state === 'pending' && !this.inFlight(item))
     for (const skipped of waiting.slice(0, -QUEUE_MAX))
       this.update(skipped, { state: 'failed', error: 'Skipped to keep up with the video.' })
     void this.next()
@@ -183,27 +197,32 @@ export class LineSession extends EventEmitter {
     void this.next()
   }
 
-  /** Stops the chunk in flight, and any wait to try again; their lines stay pending. */
+  /** Stops every chunk in flight, and any wait to try again; their lines stay pending. */
   private cancel(): void {
-    this.abort?.abort()
-    this.busy = false
-    this.inFlight = []
+    for (const request of this.requests) request.abort.abort()
+    this.requests.clear()
     clearTimeout(this.retry)
     this.retry = undefined
   }
 
-  /** The next chunk to process, in order. */
+  private inFlight(line: OverlayLine): boolean {
+    for (const request of this.requests) if (request.lines.includes(line)) return true
+    return false
+  }
+
+  /** The next chunk to process, in order: lines neither done nor in flight. */
   private pick(): OverlayLine[] {
-    if (!this.transcript) return this.lines.filter((line) => line.state === 'pending')
+    const free = (line: OverlayLine): boolean => line.state === 'pending' && !this.inFlight(line)
+    if (!this.transcript) return this.lines.filter(free)
     const window = this.lines.slice(this.position, this.position + AHEAD + 1)
-    const first = window.findIndex((line) => line.state === 'pending')
+    const first = window.findIndex(free)
     if (first < 0) return []
-    // `first` lines from the one on screen are already done: the lead. The chunk is twice the lead,
-    // so it finishes before the lead runs out.
+    // `first` lines from the one on screen are done or on their way: the lead. The chunk is twice
+    // the lead, so it finishes before the lead runs out.
     const size = Math.min(Math.max(first * 2, FIRST_CHUNK), CHUNK_MAX)
     const chunk: OverlayLine[] = []
     for (const line of window.slice(first)) {
-      if (line.state !== 'pending' || chunk.length === size) break
+      if (!free(line) || chunk.length === size) break
       chunk.push(line)
     }
     return chunk
@@ -218,13 +237,20 @@ export class LineSession extends EventEmitter {
     return earlier.slice(start)
   }
 
-  private async next(): Promise<void> {
-    if (this.busy || this.paused || this.retry) return
-    const chunk = this.pick()
-    if (!chunk.length) return
-    this.busy = true
-    this.inFlight = chunk
-    const abort = (this.abort = new AbortController())
+  /** Starts chunks until PARALLEL are in flight (one from captions) or nothing is left to do. */
+  private next(): void {
+    const most = this.transcript ? PARALLEL : 1
+    while (!this.paused && !this.retry && this.requests.size < most) {
+      const chunk = this.pick()
+      if (!chunk.length) return
+      void this.process(chunk)
+    }
+  }
+
+  private async process(chunk: OverlayLine[]): Promise<void> {
+    const abort = new AbortController()
+    const request = { lines: chunk, abort }
+    this.requests.add(request)
     const language = this.language
     try {
       const processed = await this.model.processLines(
@@ -245,12 +271,15 @@ export class LineSession extends EventEmitter {
       if (!abort.signal.aborted) {
         const retrying = error instanceof ModelError ? RETRYING[error.kind] : undefined
         if (retrying) {
-          // The lines stay pending and are tried again after a moment, longer each time.
-          this.retryMs = Math.min(Math.max(this.retryMs * 2, RETRY_FIRST_MS), RETRY_MOST_MS)
-          this.retry = setTimeout(() => {
-            this.retry = undefined
-            void this.next()
-          }, this.retryMs)
+          // The lines stay pending and are tried again after a moment, longer each time. Chunks
+          // that fail together share one wait.
+          if (!this.retry) {
+            this.retryMs = Math.min(Math.max(this.retryMs * 2, RETRY_FIRST_MS), RETRY_MOST_MS)
+            this.retry = setTimeout(() => {
+              this.retry = undefined
+              void this.next()
+            }, this.retryMs)
+          }
           this.emit('model-error', retrying)
         } else {
           const message =
@@ -263,9 +292,9 @@ export class LineSession extends EventEmitter {
         }
       }
     } finally {
+      // An aborted chunk was already let go (cancel, or a seek away from it).
       if (!abort.signal.aborted) {
-        this.busy = false
-        this.inFlight = []
+        this.requests.delete(request)
         void this.next()
       }
     }

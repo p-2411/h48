@@ -23,7 +23,7 @@ import { app, ipcMain, Menu, type BrowserWindow } from 'electron'
 import type { SaveResult } from '../../shared/cards'
 import { isLanguage } from '../../shared/languages'
 import { isLevel } from '../../shared/levels'
-import type { ShortcutKind } from '../../shared/types'
+import { VIDEO_KEYS, type ShortcutKind, type VideoKey } from '../../shared/types'
 import { parseReminder } from '../daily/reminder'
 import { settingsChange } from './settings-change'
 import type { Settings } from '../settings'
@@ -40,6 +40,8 @@ type Actions = {
   openSettings: () => void
   hoveredWord: (lineId: number, text: string) => void
   playOn: () => void
+  /** One of YouTube's playback keys pressed while the strip had the keyboard. */
+  videoKey: (key: VideoKey) => void
   setShortcut: (keys: string, kind: ShortcutKind) => string | undefined
   drag: (phase: 'start' | 'end') => void
   /** How wide the strip may be to stay inside the video, when one is in view. */
@@ -98,6 +100,15 @@ export function connectOverlay(
     actions.hoveredWord(lineId, text)
   )
   ipcMain.on('duet:play-on', () => actions.playOn())
+  // A click on the strip gives it the keyboard; it hands it back so the video's keys work again.
+  ipcMain.on('duet:release-keyboard', (event) => {
+    if (overlay.isDestroyed() || event.sender !== overlay.webContents || !overlay.isFocused()) return
+    overlay.blur()
+  })
+  ipcMain.on('duet:video-key', (event, key: unknown) => {
+    if (event.sender !== overlay.webContents || !VIDEO_KEYS.includes(key as VideoKey)) return
+    actions.videoKey(key as VideoKey)
+  })
   // The window lets clicks through to the video except where Duet is drawn (see windows/overlay.ts).
   ipcMain.on('duet:solid', (_, solid: boolean) => {
     if (!overlay.isDestroyed()) overlay.setIgnoreMouseEvents(!solid, { forward: true })

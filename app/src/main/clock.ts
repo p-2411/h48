@@ -6,8 +6,21 @@
 // - the number going up by one, promptly, marks the moment that second began;
 // - a number that agrees with the clock (the bar catching up after a stall) leaves it running;
 // - anything else is a seek, and the clock guesses the middle of that second.
+//
+// The companion extension (page-link.ts) reads the video element itself: its updates are exact,
+// come with every play, pause, seek and speed change, and carry the playback rate, so the clock
+// takes them as they are and runs at that rate.
 
-export type PlayerTime = { t: number; playing: boolean; ad: boolean; at: number }
+export type PlayerTime = {
+  t: number
+  playing: boolean
+  ad: boolean
+  at: number
+  /** From the video element (the extension), not the seek bar: taken as given. */
+  exact?: boolean
+  /** Playback rate; 1 when not known (the seek bar doesn't say). */
+  rate?: number
+}
 
 // An update this soon after the last one, one second further on, is the bar moving live.
 const LIVE_TICK_MS = 1500
@@ -21,7 +34,9 @@ export class PlayerClock {
     // Where the video had got to, worked out before this update replaces the last one.
     const reached = this.now(time.at)
     this.last = time
-    if (!last || !Number.isInteger(time.t)) {
+    if (time.exact) {
+      this.anchor = { time: time.t, at: time.at }
+    } else if (!last || !Number.isInteger(time.t)) {
       this.anchor = { time: Number.isInteger(time.t) ? time.t + 0.5 : time.t, at: time.at }
     } else if (last.playing && time.playing && time.t === last.t + 1 && time.at - last.at < LIVE_TICK_MS) {
       this.anchor = { time: time.t, at: time.at }
@@ -50,7 +65,7 @@ export class PlayerClock {
     const last = this.last
     if (!this.anchor || !last || last.ad) return undefined
     if (!last.playing) return this.anchor.time
-    return this.anchor.time + (at - this.anchor.at) / 1000
+    return this.anchor.time + ((at - this.anchor.at) / 1000) * (last.rate ?? 1)
   }
 
   reset(): void {

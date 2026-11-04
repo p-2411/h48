@@ -27,6 +27,7 @@ import { SettingsPopover } from './SettingsPopover'
 import { TalkBubble, type TalkLook } from './TalkBubble'
 import { useOverlay } from './useOverlay'
 import { useSolid } from './useSolid'
+import { useVideoKeys } from './useVideoKeys'
 import { useRoomAbove } from './useRoomAbove'
 import { useStripTalk } from './useStripTalk'
 
@@ -65,6 +66,7 @@ function startDrag(event: PointerEvent<HTMLElement>): void {
 
 export function Overlay(): React.JSX.Element {
   useSolid()
+  useVideoKeys()
   const dock = useRef<HTMLDivElement>(null)
   useRoomAbove(dock)
   const { settings, status, current, building, translating, fit, loaded } = useOverlay()

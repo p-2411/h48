@@ -50,6 +50,7 @@ import { SpokenLanguageCheck } from './spoken'
 import { Panel } from './panel'
 import { connectOverlay } from './ipc/overlay'
 import { Placement } from './placement'
+import { PageLink } from './page-link'
 import { Player } from './player'
 import { replay } from './replay'
 import { Settings } from './settings'
@@ -147,8 +148,10 @@ app.whenReady().then(() => {
   track('app_opened')
   const captions = new CaptionSource()
   const audio = new AudioSource()
-  const player = new Player((command) => captions.command(command))
-  const watcher = new Watcher(captions, player, settings, models?.lines, modelError)
+  // The companion extension's exact time and controls, when it is installed (page-link.ts).
+  const pageLink = new PageLink()
+  const player = new Player((command) => watcher.command(command))
+  const watcher = new Watcher(captions, player, settings, models?.lines, modelError, pageLink)
   const wait = new WaitForTranslation(
     player,
     settings,
@@ -375,7 +378,15 @@ app.whenReady().then(() => {
       return error
     },
     // Pressing play for the learner counts as their own play, so Wait lets this line go.
-    playOn: () => captions.command({ type: 'play' }),
+    playOn: () => watcher.command({ type: 'play' }),
+    // As the learner's own press: the video does what YouTube's key would (and drops any hold).
+    videoKey: (key) => {
+      if (key === 'toggle') return watcher.command({ type: player.playing ? 'pause' : 'play' })
+      const now = player.now()
+      if (now === undefined) return
+      const step = { back5: -5, forward5: 5, back10: -10, forward10: 10 }[key]
+      watcher.command({ type: 'seek', seconds: Math.max(0, now + step), from: now, play: player.playing })
+    },
     drag: (phase) => placement.drag(phase),
     fit: () => placement.maxWidth()
   })
@@ -454,11 +465,13 @@ app.whenReady().then(() => {
   })
   setInterval(() => spoken.tick(), 1000)
   captions.start()
+  pageLink.start()
   audio.start()
 
   app.on('will-quit', () => {
     globalShortcut.unregisterAll()
     captions.stop()
+    pageLink.stop()
     audio.stop()
     updates.stop()
     tray?.destroy()
